@@ -1,0 +1,24 @@
+
+/* Class = "NSButtonCell"; title = "Restore Purchases…"; ObjectID = "7Au-Xg-Hs2"; */
+"7Au-Xg-Hs2.title" = "Restore Purchases…";
+
+/* Class = "NSTextFieldCell"; title = "jps Telephone local-build information"; ObjectID = "W5b-g9-V4l"; */
+"W5b-g9-V4l.title" = "jps Telephone is an unofficial local GPL build by jps IT ltd. It is not affiliated with, endorsed by, or supported by the App Store developer of Telephone.\n\nThis build provides the full call history, up to 30 simultaneous calls, and local keychain and macOS stability fixes. No purchase, subscription, App Store receipt, or recurring payment is required.";
+
+/* Class = "NSTextFieldCell"; title = "Local features enabled permanently"; ObjectID = "Z9K-5X-9uS"; */
+"Z9K-5X-9uS.title" = "Local features enabled permanently";
+
+/* Class = "NSTextFieldCell"; title = "Dec 31, 2016"; ObjectID = "efh-fd-jws"; */
+"efh-fd-jws.title" = "Dec 31, 2016";
+
+/* Class = "NSTextFieldCell"; title = "Terms of Use"; ObjectID = "iih-o0-zci"; */
+"iih-o0-zci.title" = "Terms of Use";
+
+/* Class = "NSButtonCell"; title = "Manage Subscriptions…"; ObjectID = "lhf-s5-m1W"; */
+"lhf-s5-m1W.title" = "Manage Subscriptions…";
+
+/* Class = "NSTextFieldCell"; title = "Could not fetch products."; ObjectID = "quy-Sv-sGw"; */
+"quy-Sv-sGw.title" = "Could not fetch products.";
+
+/* Class = "NSButtonCell"; title = "Button"; ObjectID = "wUB-pq-l64"; */
+"wUB-pq-l64.title" = "Button";

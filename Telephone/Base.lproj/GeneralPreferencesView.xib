@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="18122" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="18122"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="GeneralPreferencesViewController">
+            <connections>
+                <outlet property="recordingFolderPathField" destination="rec-folder-field" id="rec-folder-outlet"/>
+                <outlet property="recordingFormatPopUpButton" destination="rec-format-popup" id="rec-format-outlet"/>
+                <outlet property="view" destination="150" id="528"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <userDefaultsController representsSharedInstance="YES" id="201"/>
+        <customView translatesAutoresizingMaskIntoConstraints="NO" id="150" userLabel="General">
+            <rect key="frame" x="0.0" y="0.0" width="573" height="220"/>
+            <subviews>
+                <button translatesAutoresizingMaskIntoConstraints="NO" id="255">
+                    <rect key="frame" x="129" y="189" width="250" height="18"/>
+                    <buttonCell key="cell" type="check" title="Automatically format phone numbers" bezelStyle="regularSquare" imagePosition="left" alignment="left" state="on" inset="2" id="256">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <binding destination="201" name="value" keyPath="values.FormatTelephoneNumbers" id="303"/>
+                    </connections>
+                </button>
+                <button translatesAutoresizingMaskIntoConstraints="NO" id="520">
+                    <rect key="frame" x="129" y="167" width="292" height="18"/>
+                    <buttonCell key="cell" type="check" title="Pause Music, iTunes, and Spotify during call" bezelStyle="regularSquare" imagePosition="left" alignment="left" state="on" inset="2" id="521">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <binding destination="201" name="value" keyPath="values.PauseITunes" id="523"/>
+                    </connections>
+                </button>
+                <button translatesAutoresizingMaskIntoConstraints="NO" id="524">
+                    <rect key="frame" x="129" y="145" width="224" height="18"/>
+                    <buttonCell key="cell" type="check" title="Automatically close call windows" bezelStyle="regularSquare" imagePosition="left" alignment="left" state="on" inset="2" id="525">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <binding destination="201" name="value" keyPath="values.AutoCloseCallWindow" id="527"/>
+                    </connections>
+                </button>
+                <button translatesAutoresizingMaskIntoConstraints="NO" id="529">
+                    <rect key="frame" x="129" y="123" width="96" height="18"/>
+                    <buttonCell key="cell" type="check" title="Call waiting" bezelStyle="regularSquare" imagePosition="left" alignment="left" state="on" inset="2" id="530">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <binding destination="201" name="value" keyPath="values.CallWaiting" id="532"/>
+                    </connections>
+                </button>
+                <button toolTip="Your microphone is recorded on the left and the remote party on the right." translatesAutoresizingMaskIntoConstraints="NO" id="rec-pref-1">
+                    <rect key="frame" x="129" y="101" width="408" height="18"/>
+                    <buttonCell key="cell" type="check" title="Automatically record all calls (ensure everyone consents)" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="rec-pref-2">
+                        <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <binding destination="201" name="value" keyPath="values.AutomaticallyRecordCalls" id="rec-pref-3"/>
+                    </connections>
+                </button>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rec-format-label">
+                    <rect key="frame" x="129" y="71" width="60" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Format:" id="rec-format-label-cell">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rec-format-popup">
+                    <rect key="frame" x="195" y="66" width="220" height="25"/>
+                    <popUpButtonCell key="cell" type="push" title="OGG — smallest files" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" inset="2" selectedItem="rec-format-item" id="rec-format-popup-cell">
+                        <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="menu"/>
+                        <menu key="menu" id="rec-format-menu">
+                            <items>
+                                <menuItem title="OGG — smallest files" state="on" id="rec-format-item"/>
+                            </items>
+                        </menu>
+                    </popUpButtonCell>
+                    <connections>
+                        <action selector="recordingFormatChanged:" target="-2" id="rec-format-action"/>
+                    </connections>
+                </popUpButton>
+                <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rec-folder-label">
+                    <rect key="frame" x="129" y="31" width="55" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Save to:" id="rec-folder-label-cell">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <textField horizontalHuggingPriority="249" horizontalCompressionResistancePriority="250" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rec-folder-field">
+                    <rect key="frame" x="190" y="26" width="250" height="24"/>
+                    <textFieldCell key="cell" lineBreakMode="truncatingMiddle" selectable="YES" editable="NO" borderStyle="bezel" drawsBackground="YES" title="" id="rec-folder-field-cell">
+                        <font key="font" metaFont="system"/>
+                        <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rec-folder-button">
+                    <rect key="frame" x="446" y="22" width="94" height="32"/>
+                    <buttonCell key="cell" type="push" title="Choose…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="rec-folder-button-cell">
+                        <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                        <font key="font" metaFont="system"/>
+                    </buttonCell>
+                    <connections>
+                        <action selector="chooseRecordingFolder:" target="-2" id="rec-folder-action"/>
+                    </connections>
+                </button>
+            </subviews>
+            <constraints>
+                <constraint firstItem="255" firstAttribute="top" secondItem="150" secondAttribute="top" constant="14" id="2kn-hj-njc"/>
+                <constraint firstItem="529" firstAttribute="leading" secondItem="255" secondAttribute="leading" id="C59-j6-zmt"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="524" secondAttribute="trailing" constant="20" symbolic="YES" id="IhF-4p-AGg"/>
+                <constraint firstItem="520" firstAttribute="top" secondItem="255" secondAttribute="bottom" constant="6" symbolic="YES" id="KwA-9X-odP"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="520" secondAttribute="trailing" constant="20" symbolic="YES" id="QmD-dR-FEA"/>
+                <constraint firstItem="520" firstAttribute="leading" secondItem="255" secondAttribute="leading" id="XDy-In-hkp"/>
+                <constraint firstItem="524" firstAttribute="top" secondItem="520" secondAttribute="bottom" constant="6" symbolic="YES" id="bYN-kQ-3qA"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="255" secondAttribute="trailing" constant="20" symbolic="YES" id="dv5-Vh-KSx"/>
+                <constraint firstItem="255" firstAttribute="leading" secondItem="150" secondAttribute="leading" constant="131" id="e1c-UN-4Jo"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="529" secondAttribute="trailing" constant="20" symbolic="YES" id="gZv-dz-5VV"/>
+                <constraint firstItem="524" firstAttribute="leading" secondItem="255" secondAttribute="leading" id="nu2-4y-9uR"/>
+                <constraint firstItem="529" firstAttribute="top" secondItem="524" secondAttribute="bottom" constant="6" symbolic="YES" id="ppE-Nr-wnN"/>
+                <constraint firstItem="rec-pref-1" firstAttribute="top" secondItem="529" secondAttribute="bottom" constant="6" symbolic="YES" id="rec-pref-4"/>
+                <constraint firstItem="rec-pref-1" firstAttribute="leading" secondItem="255" secondAttribute="leading" id="rec-pref-5"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="rec-pref-1" secondAttribute="trailing" constant="20" symbolic="YES" id="rec-pref-6"/>
+                <constraint firstItem="rec-format-label" firstAttribute="top" secondItem="rec-pref-1" secondAttribute="bottom" constant="14" id="rec-format-top"/>
+                <constraint firstItem="rec-format-label" firstAttribute="leading" secondItem="255" secondAttribute="leading" id="rec-format-leading"/>
+                <constraint firstItem="rec-format-popup" firstAttribute="leading" secondItem="rec-format-label" secondAttribute="trailing" constant="8" id="rec-format-popup-leading"/>
+                <constraint firstItem="rec-format-popup" firstAttribute="centerY" secondItem="rec-format-label" secondAttribute="centerY" id="rec-format-center"/>
+                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="rec-format-popup" secondAttribute="trailing" constant="20" id="rec-format-trailing"/>
+                <constraint firstItem="rec-folder-label" firstAttribute="top" secondItem="rec-format-label" secondAttribute="bottom" constant="20" id="rec-folder-top"/>
+                <constraint firstItem="rec-folder-label" firstAttribute="leading" secondItem="255" secondAttribute="leading" id="rec-folder-leading"/>
+                <constraint firstItem="rec-folder-field" firstAttribute="leading" secondItem="rec-folder-label" secondAttribute="trailing" constant="8" id="rec-folder-field-leading"/>
+                <constraint firstItem="rec-folder-field" firstAttribute="centerY" secondItem="rec-folder-label" secondAttribute="centerY" id="rec-folder-field-center"/>
+                <constraint firstItem="rec-folder-button" firstAttribute="leading" secondItem="rec-folder-field" secondAttribute="trailing" constant="8" id="rec-folder-button-leading"/>
+                <constraint firstItem="rec-folder-button" firstAttribute="centerY" secondItem="rec-folder-label" secondAttribute="centerY" id="rec-folder-button-center"/>
+                <constraint firstAttribute="trailing" secondItem="rec-folder-button" secondAttribute="trailing" constant="33" id="rec-folder-trailing"/>
+                <constraint firstAttribute="bottom" secondItem="rec-folder-button" secondAttribute="bottom" constant="20" id="rec-folder-bottom"/>
+            </constraints>
+            <point key="canvasLocation" x="332.5" y="454.5"/>
+        </customView>
+    </objects>
+</document>

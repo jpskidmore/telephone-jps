@@ -1,0 +1,13 @@
+.DS_Store
+*.xcodeproj/*.mode?v?
+*.xcodeproj/*.pbxuser
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+build/
+.idea/
+
+ThirdParty/Opus
+ThirdParty/LibreSSL/*
+!ThirdParty/LibreSSL/patches
+ThirdParty/PJSIP/*
+!ThirdParty/PJSIP/patches
