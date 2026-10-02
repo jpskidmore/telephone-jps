@@ -187,6 +187,20 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 // Sets sound input and output.
 - (BOOL)setSoundInputDevice:(NSInteger)input soundOutputDevice:(NSInteger)output;
 
+// Audio failure stays visible until a real device selection succeeds. Recovery
+// is explicit; generic device notifications never reset the retry barrier.
+@property(nonatomic, readonly) BOOL hasAudioFailure;
+@property(atomic, readonly) NSUInteger audioGeneration;
+// A pending make-call must finish classification on main before another is
+// enqueued. This bounds SDK implicit audio opens across rapid/double requests.
+- (BOOL)beginOutgoingCall;
+- (void)finishOutgoingCallForGeneration:(NSUInteger)generation;
+@property(nonatomic, copy, nullable) BOOL (^soundIOSelectionRetry)(void);
+- (BOOL)retrySoundAfterFailure;
+- (void)resetAudioFailure;
+- (pj_status_t)connectAudioSource:(pjsua_conf_port_id)source destination:(pjsua_conf_port_id)destination;
+- (void)reportAudioFailure:(pj_status_t)status operation:(NSString *)operation;
+
 // Stops sound.
 - (BOOL)stopSound;
 

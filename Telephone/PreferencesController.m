@@ -198,6 +198,12 @@
     [self changeView:self.accountsToolbarItem];
 }
 
+- (void)showSound {
+    [self showWindowCentered];
+    self.toolbar.selectedItemIdentifier = self.soundToolbarItem.itemIdentifier;
+    [self changeView:self.soundToolbarItem];
+}
+
 - (BOOL)isNetworkPreferencesViewCurrent {
     return self.networkPreferencesViewController.isViewLoaded &&
     [self.window.contentView isEqual:self.networkPreferencesViewController.view];

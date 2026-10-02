@@ -29,6 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PJSUACallInfo : NSObject
 
 @property(nonatomic, readonly) NSInteger identifier;
+@property(nonatomic, readonly, copy) NSString *dialogIdentifier;
 @property(nonatomic, readonly) NSInteger accountIdentifier;
 @property(nonatomic, readonly) AKSIPCallState state;
 @property(nonatomic, readonly) NSString *stateText;

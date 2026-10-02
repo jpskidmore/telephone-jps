@@ -126,12 +126,21 @@ final class CompositionRoot: NSObject {
             target: ReceiptValidatingStoreEventTarget(origin: storeEventTargets, receipt: receipt)
         )
 
-        let userAgentEventsUserAgentSoundIOSelection = UserAgentEventsUserAgentSoundIOSelectionUseCase(
-            useCase: UserAgentSoundIOSelectionUseCase(
-                devicesFactory: systemAudioDevicesFactory, soundIOFactory: soundIOFactory, agent: userAgent
-            ),
-            calls: userAgent
+        let soundIOSelection = UserAgentSoundIOSelectionUseCase(
+            devicesFactory: systemAudioDevicesFactory, soundIOFactory: soundIOFactory, agent: userAgent
         )
+        let userAgentEventsUserAgentSoundIOSelection = UserAgentEventsUserAgentSoundIOSelectionUseCase(
+            useCase: soundIOSelection, calls: userAgent
+        )
+        userAgent.soundIOSelectionRetry = { [weak soundIOSelection] in
+            guard let soundIOSelection else { return false }
+            do {
+                try soundIOSelection.execute()
+                return true
+            } catch {
+                return false
+            }
+        }
 
         let userAgentSoundIOSelection = AudioDevicesEventsUserAgentSoundIOSelectionUseCase(
             origin: userAgentEventsUserAgentSoundIOSelection

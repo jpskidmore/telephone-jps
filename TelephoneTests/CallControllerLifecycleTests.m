@@ -204,3 +204,84 @@
     XCTAssertEqual(scope.releases, 2u);
 }
 @end
+
+// These tests exercise actual controller transitions with no PJSUA operations.
+// Run the hosted suite only in the documented disposable test account; the
+// standalone audio policy harness is safe in an ordinary isolated workspace.
+@interface AKAudioStateAgentStub : NSObject
+@property(nonatomic) BOOL hasAudioFailure;
+@property(nonatomic, getter=isStarted) BOOL started;
+@end
+@implementation AKAudioStateAgentStub
+@end
+
+@interface AKAudioStateCallStub : AKSIPCall
+@property(nonatomic) NSUInteger stops;
+@property(nonatomic) NSUInteger refreshes;
+@end
+@implementation AKAudioStateCallStub
+- (BOOL)isRecording { return NO; }
+- (void)stopRecording { self.stops++; }
+- (void)refreshRecordingConnections { self.refreshes++; }
+- (BOOL)isOnLocalHold { return NO; }
+- (BOOL)isOnRemoteHold { return NO; }
+@end
+
+@interface CallController (AudioRecoveryTests)
+- (void)SIPCallMediaDidBecomeActive:(NSNotification *)notification;
+- (void)SIPUserAgentAudioStateDidChange:(NSNotification *)notification;
+@end
+
+@interface AudioRecoveryPresentationTests : XCTestCase
+@end
+@implementation AudioRecoveryPresentationTests
+- (void)testFailedAudioPreservesWarningAndStillProcessesOffHold {
+    AKAudioStateAgentStub *agent = [AKAudioStateAgentStub new];
+    agent.hasAudioFailure = YES;
+    agent.started = YES;
+    AKHeadlessCallController *controller = [[AKHeadlessCallController alloc]
+        initWithWindowNibName:@"Call" accountController:nil
+        userAgent:(AKSIPUserAgent *)agent delegate:nil];
+    AKAudioStateCallStub *call = [AKAudioStateCallStub new];
+    call.state = kAKSIPCallConfirmedState;
+    controller.call = call;
+    controller.callActive = YES;
+    controller.callOnHold = YES;
+    controller.status = @"00:12";
+    XCTAssertEqualObjects(controller.status, NSLocalizedString(@"Audio unavailable", nil));
+    [controller SIPCallMediaDidBecomeActive:[NSNotification notificationWithName:@"test" object:call]];
+    XCTAssertFalse(controller.isCallOnHold);
+    XCTAssertEqual(call.refreshes, 0u);
+    XCTAssertEqualObjects(controller.status, NSLocalizedString(@"Audio unavailable", nil));
+    controller.callActive = NO;
+    controller.status = @"call ended";
+    XCTAssertEqualObjects(controller.status, @"call ended");
+    XCTAssertNil(controller.intermediateStatusTimer);
+}
+
+- (void)testFailureFinalizesWithoutChangingCallStateAndStoppedRecoveryUsesCache {
+    AKAudioStateAgentStub *agent = [AKAudioStateAgentStub new];
+    agent.started = YES;
+    AKHeadlessCallController *controller = [[AKHeadlessCallController alloc]
+        initWithWindowNibName:@"Call" accountController:nil
+        userAgent:(AKSIPUserAgent *)agent delegate:nil];
+    AKAudioStateCallStub *call = [AKAudioStateCallStub new];
+    call.state = kAKSIPCallConfirmedState;
+    controller.call = call;
+    controller.callActive = YES;
+    controller.status = @"00:12";
+    NSUInteger stopsBefore = call.stops;
+    agent.hasAudioFailure = YES;
+    [controller SIPUserAgentAudioStateDidChange:
+        [NSNotification notificationWithName:@"test" object:agent]];
+    XCTAssertEqual(call.stops, stopsBefore + 1);
+    XCTAssertEqual(call.state, kAKSIPCallConfirmedState);
+    XCTAssertTrue(controller.isCallActive);
+    agent.hasAudioFailure = NO;
+    agent.started = NO;
+    [controller SIPUserAgentAudioStateDidChange:
+        [NSNotification notificationWithName:@"test" object:agent]];
+    XCTAssertEqualObjects(controller.status, @"00:12");
+    XCTAssertEqual(call.refreshes, 0u);
+}
+@end

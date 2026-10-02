@@ -37,6 +37,7 @@ const NSInteger kAKSIPAccountRegistrationExpireTimeNotSpecified = PJSIP_EXPIRES_
 
 @property(nonatomic, readonly) URI *destination;
 @property(nonatomic, readonly) pjsua_acc_id account;
+@property(nonatomic) NSUInteger audioGeneration;
 @property(nonatomic, readonly) void (^ _Nonnull completion)(BOOL, PJSUACallInfo *);
 
 - (instancetype)initWithDestination:(URI *)destination
@@ -299,6 +300,11 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)makeCallTo:(AKSIPURI *)destination completion:(void (^ _Nonnull)(AKSIPCall * _Nullable))completion {
+    AKSIPUserAgent *agent = [AKSIPUserAgent sharedUserAgent];
+    if (![agent beginOutgoingCall]) {
+        dispatch_async(dispatch_get_main_queue(), ^{ completion(nil); });
+        return;
+    }
     URI *uri = [[URI alloc] initWithURI:destination transport:self.transport];
     void (^onCallMakeCompletion)(BOOL, PJSUACallInfo *) = ^(BOOL success, PJSUACallInfo *call) {
         if (success) {
@@ -311,14 +317,32 @@ NS_ASSUME_NONNULL_END
     AKSIPCallParameters *parameters = [[AKSIPCallParameters alloc] initWithDestination:uri
                                                                                account:(pjsua_acc_id)self.identifier
                                                                             completion:onCallMakeCompletion];
+    parameters.audioGeneration = agent.audioGeneration;
     assert(self.thread);
     [self performSelector:@selector(thread_makeCallWithParameters:) onThread:self.thread withObject:parameters waitUntilDone:NO];
 }
 
 - (void)thread_makeCallWithParameters:(AKSIPCallParameters *)parameters {
+    // The owner may have requested shutdown while this request was queued.
+    // audioGeneration is the only atomic cross-thread lifecycle token used here.
+    if ([AKSIPUserAgent sharedUserAgent].audioGeneration != parameters.audioGeneration) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [[AKSIPUserAgent sharedUserAgent] finishOutgoingCallForGeneration:parameters.audioGeneration];
+            parameters.completion(NO, nil);
+        });
+        return;
+    }
     pj_str_t uri = parameters.destination.stringValue.pjString;
     pjsua_call_id callID = PJSUA_INVALID_ID;
-    BOOL success = pjsua_call_make_call(parameters.account, &uri, 0, NULL, NULL, &callID) == PJ_SUCCESS;
+    NSTimeInterval started = NSProcessInfo.processInfo.systemUptime;
+    pj_status_t makeStatus = pjsua_call_make_call(parameters.account, &uri, 0, NULL, NULL, &callID);
+    NSTimeInterval elapsed = NSProcessInfo.processInfo.systemUptime - started;
+    // No destination/account values in this audio diagnostic. The SDK can open
+    // sound internally after idle auto-close, bypassing the conference wrapper.
+    if (makeStatus != PJ_SUCCESS) {
+        PJ_LOG(3, ("AKAudio", "make-call end status=%d elapsed=%.3fs thread=control", makeStatus, elapsed));
+    }
+    BOOL success = makeStatus == PJ_SUCCESS;
     PJSUACallInfo *infoWrapper = nil;
     if (success) {
         pjsua_call_info info;
@@ -328,9 +352,22 @@ NS_ASSUME_NONNULL_END
         }
     }
     dispatch_async(dispatch_get_main_queue(), ^{
-        parameters.completion(success, infoWrapper);
+        // The controller is main-thread owned. Classify before changing audio
+        // state; ordinary SIP failures must not disable a working device.
+        AKSIPUserAgent *agent = [AKSIPUserAgent sharedUserAgent];
+        [agent finishOutgoingCallForGeneration:parameters.audioGeneration];
+        if (agent.isStarted && agent.audioGeneration == parameters.audioGeneration) {
+            [agent reportAudioFailure:makeStatus operation:@"make-call"];
+            parameters.completion(success, infoWrapper);
+        } else {
+            // Never let a delayed result from the previous SIP instance latch
+            // new audio or attach its obsolete call identifier after restart.
+            parameters.completion(NO, nil);
+        }
     });
 }
+
+- (NSArray<AKSIPCall *> *)callsSnapshot { return [self.calls copy]; }
 
 - (AKSIPCall *)addCallWithInfo:(PJSUACallInfo *)info {
     AKSIPCall *call = [self callWithIdentifier:info.identifier];

@@ -212,3 +212,21 @@
 "Choose Call Recordings Folder" = "Choose Call Recordings Folder";
 "Choose" = "Choose";
 "The recordings folder could not be saved." = "The recordings folder could not be saved.";
+
+/* Persistent status while call audio has failed. */
+"Audio unavailable" = "Audio unavailable";
+
+/* Explicit audio recovery action. */
+"Retry Audio" = "Retry Audio";
+
+/* Persistent audio failure and recovery menu item. */
+"Audio unavailable: Retry Audio" = "Audio unavailable: Retry Audio";
+
+/* Open sound preferences after an audio failure. */
+"Sound Settings" = "Sound Settings";
+
+/* Dismiss an audio failure alert. */
+"Dismiss" = "Dismiss";
+
+/* Audio failure explanation and explicit recovery options. */
+"Your call may still be connected, but your microphone and speakers are unavailable. Telephone will not retry automatically. Retry Audio tries the selected devices again. To choose different devices, open Sound Settings, then select Retry Audio from the application menu." = "Your call may still be connected, but your microphone and speakers are unavailable. Telephone will not retry automatically. Retry Audio tries the selected devices again. To choose different devices, open Sound Settings, then select Retry Audio from the application menu.";

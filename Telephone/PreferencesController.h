@@ -66,6 +66,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)showWindowCentered;
 - (void)showAccounts;
+- (void)showSound;
 
 @end
 

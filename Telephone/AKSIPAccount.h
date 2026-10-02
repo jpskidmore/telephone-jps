@@ -141,6 +141,7 @@ extern const NSInteger kAKSIPAccountRegistrationExpireTimeNotSpecified;
 - (nullable AKSIPCall *)callWithIdentifier:(NSInteger)identifier;
 - (void)removeCall:(AKSIPCall *)call;
 - (void)removeAllCalls;
+- (NSArray<AKSIPCall *> *)callsSnapshot;
 - (NSInteger)activeCallsCount;
 
 @end

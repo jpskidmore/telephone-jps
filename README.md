@@ -16,6 +16,7 @@
 </p>
 
 > [!IMPORTANT]
+> The unreleased [audio-recovery changes](docs/AUDIO_RECOVERY.md) contain repeated failed audio opens and add explicit recovery. A first hardware timeout can still block; real-device acceptance remains separate.
 > Call recording is disabled by default. Only enable it when recording is lawful and everyone whose consent is required has consented.
 
 ## Download

@@ -17,6 +17,16 @@
 //
 
 #import "AKSIPUserAgent.h"
+#import "AKAudioDeviceController.h"
+#import <CoreAudio/AudioHardwareBase.h>
+#import <pjmedia-audiodev/errno.h>
+
+// The Foundation-only policy/harness use these audited numeric constants. Fail
+// compilation if a future SDK/vendor update changes their production meaning.
+_Static_assert(PJMEDIA_AUDIODEV_ERRNO_START == 420000, "Review audio error range");
+_Static_assert(PJMEDIA_AUDIODEV_ERRNO_END == 469999, "Review audio error range");
+_Static_assert(PJMEDIA_AUDIODEV_COREAUDIO_ERRNO_START == 440000, "Review CoreAudio mapping");
+_Static_assert(kAudioHardwareNotRunningError == 1937010544, "Review CoreAudio stop mapping");
 
 @import UseCases;
 
@@ -57,10 +67,28 @@ static const BOOL kAKSIPUserAgentDefaultUsesG711Only = NO;
 static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 
 
+// The injected backend lets the recovery policy run in a headless harness
+// without initializing PJSUA, using the microphone, or making a SIP call.
+@interface AKPJSUAAudioBackend : NSObject <AKAudioDeviceBackend>
+@end
+@implementation AKPJSUAAudioBackend
+- (int)selectInput:(int)input output:(int)output { return pjsua_set_snd_dev(input, output); }
+- (int)useNullSoundDevice { return pjsua_set_null_snd_dev(); }
+- (int)connectSource:(int)source destination:(int)destination { return pjsua_conf_connect(source, destination); }
+@end
+
 @interface AKSIPUserAgent ()
 
 // Read-write redeclaration.
 @property(nonatomic) AKSIPUserAgentState state;
+@property(nonatomic, strong) AKAudioDeviceController *audioDeviceController;
+@property(nonatomic) BOOL audioRecoveryPending;
+@property(nonatomic) pj_status_t audioFailureStatus;
+@property(atomic, readwrite) NSUInteger audioGeneration;
+@property(nonatomic) NSInteger requestedInputDevice;
+@property(nonatomic) NSInteger requestedOutputDevice;
+- (void)restoreCurrentAudioConnections;
+- (void)audioDidFail:(int)status;
 
 @property(nonatomic) pj_pool_t *pool;
 
@@ -232,6 +260,20 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     
     [self setDelegate:aDelegate];
     _accounts = [[NSMutableArray alloc] init];
+    _requestedInputDevice = PJMEDIA_AUD_DEFAULT_CAPTURE_DEV;
+    _requestedOutputDevice = PJMEDIA_AUD_DEFAULT_PLAYBACK_DEV;
+    __weak AKSIPUserAgent *weakSelf = self;
+    _audioDeviceController = [[AKAudioDeviceController alloc] initWithBackend:[[AKPJSUAAudioBackend alloc] init]
+        logger:^(NSString *message) {
+            if (weakSelf.isStarted) {
+                // Default level 3 reaches Telephone.log without enabling SIP
+                // packet logging. Every field in this message is non-secret.
+                PJ_LOG(3, ("AKAudio", "%s", message.UTF8String));
+            } else {
+                NSLog(@"%@", message);
+            }
+        }];
+    _audioDeviceController.failureHandler = ^(int status) { [weakSelf audioDidFail:status]; };
     [self setDetectedNATType:kAKNATTypeUnknown];
 
     [self setOutboundProxyPort:kAKSIPUserAgentDefaultOutboundProxyPort];
@@ -278,6 +320,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
         NSLog(@"Error initializing PJSIP");
         return;
     }
+    self.audioGeneration++;
     self.state = AKSIPUserAgentStateStarting;
     void (^completion)(BOOL) = ^(BOOL didStart) {
         self.state = didStart ? AKSIPUserAgentStateStarted : AKSIPUserAgentStateStopped;
@@ -544,6 +587,8 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     if (self.state != AKSIPUserAgentStateStarted) {
          return;
     }
+    self.audioGeneration++;
+    [self.audioDeviceController finishOutgoingCall];
     self.state = AKSIPUserAgentStateStopping;
     [self performSelector:@selector(thread_stopWithCompletion:) onThread:self.thread withObject:^{[self finishStopping];} waitUntilDone:NO];
 }
@@ -552,6 +597,8 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     if (self.state != AKSIPUserAgentStateStarted) {
          return;
     }
+    self.audioGeneration++;
+    [self.audioDeviceController finishOutgoingCall];
     self.state = AKSIPUserAgentStateStopping;
     [self performSelector:@selector(thread_stop) onThread:self.thread withObject:nil waitUntilDone:YES];
     [self finishStopping];
@@ -594,6 +641,13 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     pj_shutdown();
     [self.accounts removeAllObjects];
     self.state = AKSIPUserAgentStateStopped;
+    BOOL hadAudioFailure = self.hasAudioFailure;
+    [self.audioDeviceController resetFailure];
+    self.audioRecoveryPending = NO;
+    self.audioFailureStatus = PJ_SUCCESS;
+    if (hadAudioFailure) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentAudioStateDidChangeNotification object:self];
+    }
     [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentDidFinishStoppingNotification object:self];
 }
 
@@ -732,19 +786,23 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (void)startRingbackForCall:(AKSIPCall *)call {
+    if (call.identifier < 0 || call.identifier >= PJSUA_MAX_CALLS) return;
     if (self.callData[call.identifier].ringbackOn) {
         return;
     }
     
-    self.callData[call.identifier].ringbackOn = PJ_TRUE;
-    
-    self.ringbackCount = self.ringbackCount + 1;
-    if (self.ringbackCount == 1 && self.ringbackSlot != PJSUA_INVALID_ID) {
-        pjsua_conf_connect(self.ringbackSlot, 0);
+    if (self.hasAudioFailure || self.ringbackSlot == PJSUA_INVALID_ID) {
+        return;
     }
+    if (self.ringbackCount == 0 && [self connectAudioSource:self.ringbackSlot destination:0] != PJ_SUCCESS) {
+        return;
+    }
+    self.callData[call.identifier].ringbackOn = PJ_TRUE;
+    self.ringbackCount = self.ringbackCount + 1;
 }
 
 - (void)stopRingbackForCall:(AKSIPCall *)call {
+    if (call.identifier < 0 || call.identifier >= PJSUA_MAX_CALLS) return;
     if (self.callData[call.identifier].ringbackOn) {
         self.callData[call.identifier].ringbackOn = PJ_FALSE;
         
@@ -763,9 +821,106 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
         return NO;
     }
 
-    pj_status_t status = pjsua_set_snd_dev([self inputDeviceIDWithID:input], [self outputDeviceIDWithID:output]);
-    
-    return (status == PJ_SUCCESS) ? YES : NO;
+    self.requestedInputDevice = input;
+    self.requestedOutputDevice = output;
+    pj_status_t status = [self.audioDeviceController selectInput:[self inputDeviceIDWithID:input]
+                                                        output:[self outputDeviceIDWithID:output]];
+    if (status == PJ_SUCCESS && self.audioRecoveryPending) {
+        self.audioRecoveryPending = NO;
+        self.audioFailureStatus = PJ_SUCCESS;
+        [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentAudioStateDidChangeNotification object:self];
+        [self restoreCurrentAudioConnections];
+    }
+    return status == PJ_SUCCESS;
+}
+
+- (BOOL)beginOutgoingCall {
+    if (!self.isStarted || self.hasAudioFailure) return NO;
+    return [self.audioDeviceController beginOutgoingCall];
+}
+
+- (void)finishOutgoingCallForGeneration:(NSUInteger)generation {
+    if (self.audioGeneration == generation) [self.audioDeviceController finishOutgoingCall];
+}
+
+- (BOOL)hasAudioFailure {
+    return self.audioRecoveryPending || self.audioDeviceController.hasFailed;
+}
+
+- (void)audioDidFail:(int)status {
+    self.audioRecoveryPending = YES;
+    self.audioFailureStatus = status;
+    [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentAudioStateDidChangeNotification object:self];
+}
+
+- (void)resetAudioFailure {
+    // Unlock one user-requested attempt; the visible error remains until an
+    // actual hardware selection succeeds. Null sound is never success here.
+    [self.audioDeviceController resetFailure];
+}
+
+- (BOOL)retrySoundAfterFailure {
+    if (!self.isStarted || !self.hasAudioFailure) {
+        return NO;
+    }
+    [self resetAudioFailure];
+    // Device IDs are an enumeration snapshot. Refresh after an explicit retry,
+    // then map the current saved names rather than reusing possibly stale IDs.
+    [self updateAudioDevices];
+    if (self.audioDeviceController.hasFailed) return NO;
+    BOOL succeeded = self.soundIOSelectionRetry ? self.soundIOSelectionRetry() :
+        [self setSoundInputDevice:self.requestedInputDevice soundOutputDevice:self.requestedOutputDevice];
+    if (!succeeded && !self.audioDeviceController.hasFailed) {
+        // Mapping/enumeration may fail before a backend attempt. Keep the gate
+        // closed rather than silently allowing a later implicit hardware open.
+        [self.audioDeviceController reportDeviceFailure:self.audioFailureStatus operation:@"retry-selection"];
+    }
+    if (succeeded && !self.hasAudioFailure && self.activeCallsCount == 0 && self.ringbackSlot != PJSUA_INVALID_ID) {
+        // Remove our idle ringback route. PJSUA's disconnect path schedules its
+        // normal idle-close check, releasing the mic without replacing the
+        // real device IDs with null IDs. An already-absent edge is harmless;
+        // its graph error must not be treated as a new hardware failure.
+        pjsua_conf_disconnect(self.ringbackSlot, 0);
+    }
+    return succeeded && !self.hasAudioFailure;
+}
+
+- (pj_status_t)connectAudioSource:(pjsua_conf_port_id)source destination:(pjsua_conf_port_id)destination {
+    if (!self.isStarted) return PJ_EINVALIDOP;
+    if (self.audioRecoveryPending && !self.audioDeviceController.hasFailed) return self.audioFailureStatus;
+    return [self.audioDeviceController connectSource:source destination:destination];
+}
+
+- (void)reportAudioFailure:(pj_status_t)status operation:(NSString *)operation {
+    if (!self.isStarted) return;
+    [self.audioDeviceController reportAudioFailure:status operation:operation];
+}
+
+- (void)restoreCurrentAudioConnections {
+    // The callback snapshots the native dialog identity and verifies it again
+    // on main; numeric call slots alone are not safe across redial/replacement.
+    for (AKSIPAccount *account in [self.accounts copy]) {
+        for (AKSIPCall *call in [account callsSnapshot]) {
+            if (call.state != kAKSIPCallDisconnectedState && call.isActive) {
+                pjsua_call_info info;
+                if (pjsua_call_get_info((pjsua_call_id)call.identifier, &info) != PJ_SUCCESS ||
+                    ![[NSString stringWithPJString:info.call_id] isEqualToString:call.dialogIdentifier]) continue;
+                // NONE must not synthesize a callback that stops the ringback
+                // we are about to restore for a still-ringing outgoing call.
+                if (info.media_cnt > 0 && info.media[0].type == PJMEDIA_TYPE_AUDIO &&
+                    (info.media[0].status == PJSUA_CALL_MEDIA_ACTIVE ||
+                     info.media[0].status == PJSUA_CALL_MEDIA_LOCAL_HOLD ||
+                     info.media[0].status == PJSUA_CALL_MEDIA_REMOTE_HOLD)) {
+                    PJSUAOnCallMediaState((pjsua_call_id)call.identifier);
+                }
+                if (info.role == PJSIP_ROLE_UAC && call.state == kAKSIPCallEarlyState &&
+                    call.lastStatus == PJSIP_SC_RINGING &&
+                    (info.media_cnt == 0 || info.media[0].status == PJSUA_CALL_MEDIA_NONE)) {
+                    [self startRingbackForCall:call];
+                }
+            }
+        }
+    }
 }
 
 - (int)inputDeviceIDWithID:(NSInteger)deviceID {
@@ -781,9 +936,8 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
         return NO;
     }
     
-    pj_status_t status = pjsua_set_null_snd_dev();
-    
-    return (status == PJ_SUCCESS) ? YES : NO;
+    pj_status_t status = [self.audioDeviceController useNullSoundDevice];
+    return status == PJ_SUCCESS;
 }
 
 // This method will leave application silent. |setSoundInputDevice:soundOutputDevice:| must be called after calling this
@@ -794,12 +948,16 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
         return;
     }
     
-    // Stop sound device and disconnect it from the conference.
-    pjsua_set_null_snd_dev();
-    
-    // Reinit sound device.
+    // Never tear down a backend whose stream could not be stopped. Preserve
+    // the failure latch across device-list events: they are not user retries.
+    if (![self stopSound]) {
+        return;
+    }
     pjmedia_snd_deinit();
-    pjmedia_snd_init(pjsua_get_pool_factory());
+    pj_status_t status = pjmedia_snd_init(pjsua_get_pool_factory());
+    if (status != PJ_SUCCESS) {
+        [self.audioDeviceController reportDeviceFailure:status operation:@"device-refresh"];
+    }
 }
 
 - (void)updateCodecs {

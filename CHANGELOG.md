@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased audio-failure recovery after 2.0.3
+
+- Contain repeated audio-device open failures across media, ringback, unmute and recording paths
+- Keep audio failure visible and add an explicit Retry Audio action with current-device remapping
+- Preserve signaling, finalize interrupted recording segments and guard delayed media/outgoing work
+- Add privacy-safe error/timing diagnostics and fix enumeration-buffer cleanup on failure
+- Add a standalone fake-backend native harness and an isolated unsigned-build runner
+
+The first blocking hardware operation is not eliminated. See [audio recovery](docs/AUDIO_RECOVERY.md)
+for behavior, validation limits and remaining device acceptance. This is not an
+installation or a new downloadable release; version/build remain 2.0.3/154.
+
 ## Unreleased source cleanup after 2.0.3
 
 - Give each recording its own destination-access and completion lifetime across redial and controller teardown

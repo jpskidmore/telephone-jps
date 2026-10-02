@@ -21,3 +21,4 @@
 NSString * const AKSIPUserAgentDidFinishStartingNotification = @"AKSIPUserAgentDidFinishStarting";
 NSString * const AKSIPUserAgentDidFinishStoppingNotification = @"AKSIPUserAgentDidFinishStopping";
 NSString * const AKSIPUserAgentDidDetectNATNotification = @"AKSIPUserAgentDidDetectNAT";
+NSString * const AKSIPUserAgentAudioStateDidChangeNotification = @"AKSIPUserAgentAudioStateDidChange";

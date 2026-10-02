@@ -19,6 +19,22 @@ and 21 linked libraries; 47 localization tables parsed without duplicate or remo
 keys. Shell scripts and documented shell examples parsed; both PJSIP patches
 applied in dry-run to their bundled source. These are structural/model results.
 
+## Audio-recovery validation
+
+As of 2 October 2026, the audio candidate has 11 passing portable wiring checks
+and six passing lifecycle-model tests, plus an independent source review. The
+Mac validation executor disconnected before file transfer or compilation; no
+native harness, app build or hosted XCTest result is claimed for this candidate.
+
+
+The additional audio recovery has a separate safe native entry point,
+`Scripts/run-isolated-audio-validation.sh`. It runs the production failure gate
+against injected fake operations and the existing synthetic recording harness,
+then compiles an unsigned app. It deliberately does not launch the hosted
+TelephoneTests app. See [audio behavior and limitations](AUDIO_RECOVERY.md).
+Native execution results for the exact candidate must be recorded before claiming
+a successful build; source wiring checks alone are insufficient.
+
 ## Portable entry points
 
 From the repository root:

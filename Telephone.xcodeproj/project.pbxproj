@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AFA000030000000000000003 /* AKAudioDeviceController.m in Sources */ = {isa = PBXBuildFile; fileRef = AFA000020000000000000002 /* AKAudioDeviceController.m */; };
 		B20000010000000000000001 /* CallControllerLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B20000020000000000000002 /* CallControllerLifecycleTests.m */; };
 		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
 		8A00076523F733AB00963069 /* SIPAddressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A00076423F733AB00963069 /* SIPAddressTests.swift */; };
@@ -844,6 +845,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AFA000010000000000000001 /* AKAudioDeviceController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AKAudioDeviceController.h; sourceTree = "<group>"; };
+		AFA000020000000000000002 /* AKAudioDeviceController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AKAudioDeviceController.m; sourceTree = "<group>"; };
 		B20000020000000000000002 /* CallControllerLifecycleTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CallControllerLifecycleTests.m; sourceTree = "<group>"; };
 		089C165DFE840E0CC02AAC07 /* en */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -3173,6 +3176,8 @@
 				8AC0EE8E275160B400E4B471 /* AKSIPAccountKeys.swift */,
 				AA2CCC820E2E4EEB00871057 /* AKSIPCall.h */,
 				AA2CCC830E2E4EEB00871057 /* AKSIPCall.m */,
+				AFA000010000000000000001 /* AKAudioDeviceController.h */,
+				AFA000020000000000000002 /* AKAudioDeviceController.m */,
 				1F8A00010000000000000001 /* AKStereoRecording.h */,
 				1F8A00020000000000000002 /* AKStereoRecording.m */,
 				AAE33B101BA7269600C6E48B /* AKSIPCallDelegate.h */,
@@ -3722,6 +3727,7 @@
 				AABAD7ED0E0C171A00CB5930 /* PreferencesController.m in Sources */,
 				8A42E0C81E168F4F00CE09B8 /* DurationFormatter.swift in Sources */,
 				AA2CCC840E2E4EEB00871057 /* AKSIPCall.m in Sources */,
+				AFA000030000000000000003 /* AKAudioDeviceController.m in Sources */,
 				1F8A00030000000000000003 /* AKStereoRecording.m in Sources */,
 				8AA891DE1F83F6EA0064B2EA /* SanitizedCallDestination.swift in Sources */,
 				8A8495F624350641000A3A90 /* TCPTransportSettingsMigration.swift in Sources */,

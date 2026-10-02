@@ -40,7 +40,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface AppController () <AKSIPUserAgentDelegate, NSUserNotificationCenterDelegate, NameServersChangeEventTarget, PreferencesControllerDelegate, ObjCStoreEventTarget>
+@interface AppController () <AKSIPUserAgentDelegate, NSUserNotificationCenterDelegate, NSMenuItemValidation, NameServersChangeEventTarget, PreferencesControllerDelegate, ObjCStoreEventTarget>
 
 @property(nonatomic, readonly) AKSIPUserAgent *userAgent;
 @property(nonatomic, readonly) AccountControllers *accountControllers;
@@ -50,6 +50,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, getter=isTerminating) BOOL terminating;
 @property(nonatomic) BOOL waitingForRecordingFinalizations;
 @property(nonatomic) BOOL shouldPresentUserAgentLaunchError;
+@property(nonatomic) BOOL hasPresentedAudioFailure;
+@property(nonatomic, nullable) NSAlert *audioFailureAlert;
+@property(nonatomic, nullable) NSMenuItem *retryAudioMenuItem;
 @property(nonatomic) AccountsMenuItems *accountsMenuItems;
 @property(nonatomic, weak) IBOutlet NSMenu *windowMenu;
 @property(nonatomic, weak) IBOutlet NSMenuItem *preferencesMenuItem;
@@ -111,6 +114,12 @@ NS_ASSUME_NONNULL_END
     _nameServers = _compositionRoot.nameServers;
     NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
 
+    if (_userAgent != nil) {
+        [notificationCenter addObserver:self
+                               selector:@selector(SIPUserAgentAudioStateDidChange:)
+                                   name:AKSIPUserAgentAudioStateDidChangeNotification
+                                 object:_userAgent];
+    }
     [notificationCenter addObserver:self
                            selector:@selector(accountSetupControllerDidAddAccount:)
                                name:AKAccountSetupControllerDidAddAccountNotification
@@ -200,6 +209,97 @@ NS_ASSUME_NONNULL_END
 
 - (IBAction)showPreferencePanel:(id)sender {
     [self.preferencesController showWindowCentered];
+}
+
+- (void)installAudioRecoveryMenuItem {
+    if (self.retryAudioMenuItem != nil) {
+        return;
+    }
+    NSMenu *menu = self.preferencesMenuItem.menu;
+    if (menu == nil) {
+        return;
+    }
+    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Retry Audio", @"Explicit audio recovery action.")
+                                               action:@selector(retryAudio:)
+                                        keyEquivalent:@""];
+    item.target = self;
+    [menu insertItem:item atIndex:[menu indexOfItem:self.preferencesMenuItem] + 1];
+    self.retryAudioMenuItem = item;
+    [self updateAudioRecoveryMenuItem];
+}
+
+- (void)updateAudioRecoveryMenuItem {
+    self.retryAudioMenuItem.title = self.userAgent.hasAudioFailure
+        ? NSLocalizedString(@"Audio unavailable: Retry Audio", @"Persistent audio failure and recovery menu item.")
+        : NSLocalizedString(@"Retry Audio", @"Explicit audio recovery action.");
+    self.retryAudioMenuItem.enabled = self.userAgent.hasAudioFailure && self.userAgent.isStarted && !self.isTerminating;
+}
+
+- (IBAction)retryAudio:(id)sender {
+    if (!self.userAgent.hasAudioFailure || !self.userAgent.isStarted || self.isTerminating) {
+        return;
+    }
+    // Only an explicit user action may reopen a device that has failed. A failed
+    // retry leaves the warning and menu action available without another sheet.
+    [self.userAgent retrySoundAfterFailure];
+    [self updateAudioRecoveryMenuItem];
+}
+
+- (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
+    if (menuItem.action == @selector(retryAudio:)) {
+        return self.userAgent.hasAudioFailure && self.userAgent.isStarted && !self.isTerminating;
+    }
+    return YES;
+}
+
+- (void)SIPUserAgentAudioStateDidChange:(NSNotification *)notification {
+    if (self.userAgent == nil || notification.object != self.userAgent) {
+        return;
+    }
+    [self updateAudioRecoveryMenuItem];
+    if (!self.userAgent.hasAudioFailure) {
+        self.hasPresentedAudioFailure = NO;
+        NSWindow *sheet = self.audioFailureAlert.window;
+        if (sheet.sheetParent != nil) {
+            [sheet.sheetParent endSheet:sheet returnCode:NSAlertThirdButtonReturn];
+        }
+        return;
+    }
+    if (self.hasPresentedAudioFailure || self.audioFailureAlert != nil || self.isTerminating || NSApp == nil) {
+        return;
+    }
+
+    NSWindow *window = NSApp.keyWindow ?: NSApp.mainWindow;
+    while (window.sheetParent != nil) {
+        window = window.sheetParent;
+    }
+    if (window == nil) {
+        [self.preferencesController showSound];
+        window = self.preferencesController.window;
+    }
+    if (window == nil) {
+        return;
+    }
+
+    self.hasPresentedAudioFailure = YES;
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.alertStyle = NSAlertStyleWarning;
+    alert.messageText = NSLocalizedString(@"Audio unavailable", @"Persistent status while call audio has failed.");
+    alert.informativeText = NSLocalizedString(@"Your call may still be connected, but your microphone and speakers are unavailable. Telephone will not retry automatically. Retry Audio tries the selected devices again. To choose different devices, open Sound Settings, then select Retry Audio from the application menu.", @"Audio failure explanation and explicit recovery options.");
+    [alert addButtonWithTitle:NSLocalizedString(@"Retry Audio", @"Explicit audio recovery action.")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Sound Settings", @"Open sound preferences after an audio failure.")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Dismiss", @"Dismiss an audio failure alert.")];
+    self.audioFailureAlert = alert;
+    __weak AppController *weakSelf = self;
+    [alert beginSheetModalForWindow:window completionHandler:^(NSModalResponse returnCode) {
+        AppController *controller = weakSelf;
+        controller.audioFailureAlert = nil;
+        if (returnCode == NSAlertFirstButtonReturn) {
+            [controller retryAudio:controller];
+        } else if (returnCode == NSAlertSecondButtonReturn) {
+            [controller.preferencesController showSound];
+        }
+    }];
 }
 
 - (IBAction)addAccountOnFirstLaunch:(id)sender {
@@ -513,6 +613,7 @@ NS_ASSUME_NONNULL_END
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     NSWindow.allowsAutomaticWindowTabbing = NO;
+    [self installAudioRecoveryMenuItem];
     [self.compositionRoot.defaultAppSettings registerDefaults];
     [self.compositionRoot.settingsMigration execute];
     self.helpMenuActionRedirect.target = self.compositionRoot.helpMenuActionTarget;

@@ -19,25 +19,25 @@
 #import "PJSUACallbacks.h"
 
 #import "AKSIPCall.h"
+#import "AKNSString+PJSUA.h"
 #import "AKSIPUserAgent.h"
 
 #define THIS_FILE "PJSUAOnCallMediaState.m"
 
 static void LogCallMedia(const pjsua_call_info *callInfo);
-static void CallMediaStateChanged(pjsua_call_id identifier, pjsua_call_media_status status, pjsua_conf_port_id port);
+static void CallMediaStateChanged(pjsua_call_id identifier, NSString *dialogIdentifier);
 static const char *MediaStatusTextWithStatus(pjsua_call_media_status status);
 static void ConnectCallToSoundDevice(AKSIPCall *call, pjsua_call_media_status status, pjsua_conf_port_id port);
 static void PostMediaStateChangeNotification(AKSIPCall *call, pjsua_call_media_status status);
 
 void PJSUAOnCallMediaState(pjsua_call_id callID) {
     pjsua_call_info info;
-    pjsua_call_get_info(callID, &info);
+    if (pjsua_call_get_info(callID, &info) != PJ_SUCCESS) return;
     LogCallMedia(&info);
     pjsua_call_id identifier = info.id;
-    pjsua_call_media_status status = info.media[0].status;
-    pjsua_conf_port_id port = info.media[0].stream.aud.conf_slot;
+    NSString *dialogIdentifier = [NSString stringWithPJString:info.call_id];
     dispatch_async(dispatch_get_main_queue(), ^{
-        CallMediaStateChanged(identifier, status, port);
+        CallMediaStateChanged(identifier, dialogIdentifier);
     });
 }
 
@@ -49,13 +49,25 @@ static void LogCallMedia(const pjsua_call_info *callInfo) {
     }
 }
 
-static void CallMediaStateChanged(pjsua_call_id identifier, pjsua_call_media_status status, pjsua_conf_port_id port) {
+static void CallMediaStateChanged(pjsua_call_id identifier, NSString *dialogIdentifier) {
     AKSIPUserAgent *userAgent = [AKSIPUserAgent sharedUserAgent];
+    if (!userAgent.isStarted) return;
     AKSIPCall *call = [userAgent callWithIdentifier:identifier];
-    if (call == nil) {
-        PJ_LOG(3, (THIS_FILE, "Could not find AKSIPCall for call %d during media state change", identifier));
+    if (call == nil || ![call.dialogIdentifier isEqualToString:dialogIdentifier] ||
+        call.state == kAKSIPCallDisconnectedState) {
         return;
     }
+    // Main may have been blocked in a prior hardware open. Re-read current
+    // native state; do not replay stale ports/hold transitions or reused IDs.
+    pjsua_call_info info;
+    if (pjsua_call_get_info(identifier, &info) != PJ_SUCCESS ||
+        info.state == PJSIP_INV_STATE_DISCONNECTED || info.media_cnt == 0 ||
+        info.media[0].type != PJMEDIA_TYPE_AUDIO ||
+        ![[NSString stringWithPJString:info.call_id] isEqualToString:dialogIdentifier]) {
+        return;
+    }
+    pjsua_call_media_status status = info.media[0].status;
+    pjsua_conf_port_id port = info.media[0].stream.aud.conf_slot;
     ConnectCallToSoundDevice(call, status, port);
     [userAgent stopRingbackForCall:call];
     PostMediaStateChangeNotification(call, status);
@@ -63,14 +75,15 @@ static void CallMediaStateChanged(pjsua_call_id identifier, pjsua_call_media_sta
 
 static const char *MediaStatusTextWithStatus(pjsua_call_media_status status) {
     const char *texts[] = { "None", "Active", "Local hold", "Remote hold", "Error" };
-    return texts[status];
+    return status >= PJSUA_CALL_MEDIA_NONE && status <= PJSUA_CALL_MEDIA_ERROR ? texts[status] : "Unknown";
 }
 
 static void ConnectCallToSoundDevice(AKSIPCall *call, pjsua_call_media_status status, pjsua_conf_port_id port) {
     if (status == PJSUA_CALL_MEDIA_ACTIVE || status == PJSUA_CALL_MEDIA_REMOTE_HOLD) {
-        pjsua_conf_connect(port, 0);
+        AKSIPUserAgent *agent = [AKSIPUserAgent sharedUserAgent];
+        if ([agent connectAudioSource:port destination:0] != PJ_SUCCESS) return;
         if (!call.isMicrophoneMuted) {
-            pjsua_conf_connect(0, port);
+            [agent connectAudioSource:0 destination:port];
         }
     }
 }

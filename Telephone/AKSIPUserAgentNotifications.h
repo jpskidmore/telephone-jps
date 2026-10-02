@@ -30,3 +30,6 @@ extern NSString * const AKSIPUserAgentDidFinishStoppingNotification;
 // Posted when the user agent detects NAT type, which can be accessed via
 // the |detectedNATType| property.
 extern NSString * const AKSIPUserAgentDidDetectNATNotification;
+// Posted on the main thread when local audio fails or a real device recovers.
+// SIP signaling/call state is independent of this local audio state.
+extern NSString * const AKSIPUserAgentAudioStateDidChangeNotification;

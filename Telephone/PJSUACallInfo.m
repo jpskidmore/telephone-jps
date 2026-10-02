@@ -27,6 +27,7 @@
 - (instancetype)initWithInfo:(pjsua_call_info)info parser:(AKSIPURIParser *)parser {
     if ((self = [super init])) {
         _identifier = info.id;
+        _dialogIdentifier = [NSString stringWithPJString:info.call_id];
         _accountIdentifier = info.acc_id;
         _state = (AKSIPCallState)info.state;
         _stateText = [NSString stringWithPJString:info.state_text];

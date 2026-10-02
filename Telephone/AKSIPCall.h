@@ -56,6 +56,7 @@ typedef NS_ENUM(NSUInteger, AKSIPCallState) {
 
 @property(nonatomic, readonly) AKSIPAccount<Account> *account;
 @property(nonatomic) NSInteger identifier;
+@property(nonatomic, readonly, copy) NSString *dialogIdentifier;
 
 @property(nonatomic, weak) id<AKSIPCallDelegate> delegate;
 

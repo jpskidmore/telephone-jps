@@ -29,10 +29,10 @@ struct UserAgentAudioDevices {
 
 private func makeDevices() throws -> [UserAgentAudioDevice] {
     let bytes = UnsafeMutablePointer<pjmedia_aud_dev_info>.allocate(capacity: bufferSize)
+    defer { bytes.deallocate() }
     var count = UInt32(bufferSize)
     try copyDevicesBytes(to: bytes, count: &count)
     let result = devices(with: bytes, count: Int(count))
-    bytes.deallocate()
     return result
 }
 

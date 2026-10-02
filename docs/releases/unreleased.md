@@ -3,6 +3,14 @@
 Application metadata stays at **2.0.3 (build 154)**. This is a source-only update;
 no new application release, signature or deployment is implied.
 
+## Audio failure containment
+
+The later audio-recovery update adds a shared failure gate, explicit Retry Audio,
+checked conference connections, privacy-safe diagnostics, stale-media protection
+and a headless native policy harness. See [audio recovery](../AUDIO_RECOVERY.md).
+It prevents repeated failed attempts; it does not claim to remove the first
+CoreAudio timeout or establish live-device acceptance. No application was installed.
+
 ## Recording ownership and shutdown
 
 - Recording destination access belongs to the recording's call/session and is

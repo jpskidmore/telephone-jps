@@ -47,6 +47,7 @@
 @property(nonatomic, strong, nullable) NSURL *accessedRecordingDirectoryURL;
 
 - (BOOL)stopNativeRecorders;
+- (BOOL)currentAudioInfo:(pjsua_call_info *)info;
 - (void)finalizeRecordingFromLocalURL:(NSURL *)localURL remoteURL:(NSURL *)remoteURL
                      destinationURL:(NSURL *)destinationURL completion:(void (^)(BOOL))completion;
 
@@ -156,13 +157,21 @@
     return (pjsua_call_is_active((pjsua_call_id)[self identifier])) ? YES : NO;
 }
 
+- (BOOL)currentAudioInfo:(pjsua_call_info *)info {
+    if (self.identifier == kAKSIPUserAgentInvalidIdentifier ||
+        pjsua_call_get_info((pjsua_call_id)self.identifier, info) != PJ_SUCCESS ||
+        info->state == PJSIP_INV_STATE_DISCONNECTED || info->media_cnt == 0 ||
+        info->media[0].type != PJMEDIA_TYPE_AUDIO) return NO;
+    return [[NSString stringWithPJString:info->call_id] isEqualToString:self.dialogIdentifier];
+}
+
 - (BOOL)isOnLocalHold {
     if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
         return NO;
     }
     
     pjsua_call_info callInfo;
-    pjsua_call_get_info((pjsua_call_id)[self identifier], &callInfo);
+    if (![self currentAudioInfo:&callInfo]) return NO;
     
     return (callInfo.media[0].status == PJSUA_CALL_MEDIA_LOCAL_HOLD) ? YES : NO;
 }
@@ -173,7 +182,7 @@
     }
     
     pjsua_call_info callInfo;
-    pjsua_call_get_info((pjsua_call_id)[self identifier], &callInfo);
+    if (![self currentAudioInfo:&callInfo]) return NO;
     
     return (callInfo.media[0].status == PJSUA_CALL_MEDIA_REMOTE_HOLD) ? YES : NO;
 }
@@ -189,6 +198,7 @@
 
     _account = account;
     _identifier = info.identifier;
+    _dialogIdentifier = [info.dialogIdentifier copy];
 
     _date = [NSDate date];
 
@@ -223,6 +233,7 @@
     if (status == PJ_SUCCESS) {
         self.missed = NO;
     } else {
+        [[AKSIPUserAgent sharedUserAgent] reportAudioFailure:status operation:@"answer-call"];
         NSLog(@"Error answering call %@", self);
     }
 }
@@ -306,7 +317,7 @@
     }
     
     pjsua_call_info callInfo;
-    pjsua_call_get_info((pjsua_call_id)[self identifier], &callInfo);
+    if (![self currentAudioInfo:&callInfo]) return;
     
     pj_status_t status = pjsua_conf_disconnect(0, callInfo.media[0].stream.aud.conf_slot);
     if (status == PJ_SUCCESS) {
@@ -325,13 +336,13 @@
     }
     
     pjsua_call_info callInfo;
-    pjsua_call_get_info((pjsua_call_id)[self identifier], &callInfo);
+    if (![self currentAudioInfo:&callInfo]) return;
     
-    pj_status_t status = pjsua_conf_connect(0, callInfo.media[0].stream.aud.conf_slot);
+    pj_status_t status = [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:callInfo.media[0].stream.aud.conf_slot];
     if (status == PJ_SUCCESS) {
         [self setMicrophoneMuted:NO];
         if ([self isRecording] && ![self isOnLocalHold]) {
-            pjsua_conf_connect(0, _localRecorderPort);
+            [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:_localRecorderPort];
         }
     } else {
         NSLog(@"Error unmuting microphone in call %@", self);
@@ -393,7 +404,8 @@
     if ([self isRecording]) {
         return YES;
     }
-    if (![URL isFileURL] || [self state] != kAKSIPCallConfirmedState) {
+    if (![URL isFileURL] || [self state] != kAKSIPCallConfirmedState ||
+        [AKSIPUserAgent sharedUserAgent].hasAudioFailure) {
         return NO;
     }
 
@@ -440,7 +452,7 @@
 
     pjsua_conf_port_id localRecorderPort = pjsua_recorder_get_conf_port(localRecorderIdentifier);
     pjsua_conf_port_id remoteRecorderPort = pjsua_recorder_get_conf_port(remoteRecorderIdentifier);
-    status = pjsua_conf_connect(callPort, remoteRecorderPort);
+    status = [[AKSIPUserAgent sharedUserAgent] connectAudioSource:callPort destination:remoteRecorderPort];
     if (status != PJ_SUCCESS) {
         NSLog(@"Could not connect remote call audio to recorder (PJSIP error %d)", status);
         pjsua_recorder_destroy(localRecorderIdentifier);
@@ -450,7 +462,7 @@
     }
 
     if (![self isMicrophoneMuted] && ![self isOnLocalHold]) {
-        status = pjsua_conf_connect(0, localRecorderPort);
+        status = [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:localRecorderPort];
         if (status != PJ_SUCCESS) {
             NSLog(@"Could not connect microphone audio to recorder (PJSIP error %d)", status);
             pjsua_recorder_destroy(localRecorderIdentifier);
@@ -559,7 +571,7 @@
 }
 
 - (void)refreshRecordingConnections {
-    if (![self isRecording]) {
+    if (![self isRecording] || [AKSIPUserAgent sharedUserAgent].hasAudioFailure) {
         return;
     }
 
@@ -567,9 +579,11 @@
     if (callPort == PJSUA_INVALID_ID) {
         return;
     }
-    pjsua_conf_connect(callPort, _remoteRecorderPort);
+    if ([[AKSIPUserAgent sharedUserAgent] connectAudioSource:callPort destination:_remoteRecorderPort] != PJ_SUCCESS) {
+        return;
+    }
     if (![self isMicrophoneMuted] && ![self isOnLocalHold]) {
-        pjsua_conf_connect(0, _localRecorderPort);
+        [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:_localRecorderPort];
     }
 }
 

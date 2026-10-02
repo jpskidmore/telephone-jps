@@ -52,6 +52,9 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 @property(nonatomic, readonly) NSUserDefaults *defaults;
 
+// Keep the actual call status while a recoverable audio failure is displayed.
+@property(nonatomic, copy) NSString *statusWithoutAudioFailure;
+
 // Call info view.
 @property(nonatomic, strong) NSView *callInfoView;
 
@@ -70,6 +73,29 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 @synthesize callTransferController = _callTransferController;
 @synthesize incomingCallViewController = _incomingCallViewController;
+@synthesize status = _status;
+@synthesize callActive = _callActive;
+
+- (void)setStatus:(NSString *)status {
+    self.statusWithoutAudioFailure = status;
+    if (self.isCallActive && self.call != nil &&
+        self.call.state != kAKSIPCallDisconnectedState && self.userAgent.hasAudioFailure) {
+        _status = NSLocalizedString(@"Audio unavailable", @"Persistent status while call audio has failed.");
+    } else {
+        _status = [status copy];
+    }
+}
+
+- (void)setCallActive:(BOOL)callActive {
+    _callActive = callActive;
+    if (!callActive) {
+        [self.intermediateStatusTimer invalidate];
+        self.intermediateStatusTimer = nil;
+    }
+    // A call may be created after the user agent has already reported failure.
+    // Ended calls must still display their normal final SIP status.
+    [self setStatus:self.statusWithoutAudioFailure];
+}
 
 - (void)setCall:(AKSIPCall *)call {
     if (_call != call) {
@@ -146,11 +172,20 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         _userAgent = userAgent;
         _delegate = delegate;
         _defaults = NSUserDefaults.standardUserDefaults;
+        if (_userAgent != nil) {
+            [NSNotificationCenter.defaultCenter addObserver:self
+                                                   selector:@selector(SIPUserAgentAudioStateDidChange:)
+                                                       name:AKSIPUserAgentAudioStateDidChangeNotification
+                                                     object:_userAgent];
+        }
     }
     return self;
 }
 
 - (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self
+                                                 name:AKSIPUserAgentAudioStateDidChangeNotification
+                                               object:_userAgent];
     AKSIPCall *call = _call;
     if (call.delegate == self) {
         call.delegate = nil;
@@ -333,7 +368,8 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)startAutomaticRecordingIfNeeded {
-    if (![self.defaults boolForKey:UserDefaultsKeys.automaticallyRecordCalls] ||
+    if (self.userAgent.hasAudioFailure ||
+        ![self.defaults boolForKey:UserDefaultsKeys.automaticallyRecordCalls] ||
         self.call.state != kAKSIPCallConfirmedState ||
         self.call.isRecording) {
         return;
@@ -353,7 +389,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)stopRecording {
-    [self.activeCallViewController setRecordingIndicatorVisible:NO];
+    [_activeCallViewController setRecordingIndicatorVisible:NO];
     // Recorder IDs are cleared synchronously. Each call's asynchronous encoder
     // owns its own destination access, independent of this reusable window.
     [self.call stopRecording];
@@ -619,6 +655,37 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 #pragma mark -
 #pragma mark AKSIPCallDelegate
 
+- (void)SIPUserAgentAudioStateDidChange:(NSNotification *)notification {
+    if (self.userAgent == nil || notification.object != self.userAgent) {
+        return;
+    }
+    if (self.userAgent.hasAudioFailure) {
+        // Finalize the existing recording, but leave SIP signaling and the call
+        // timer alone. A silent recording must not appear to keep running.
+        [self stopRecording];
+        [self setStatus:self.statusWithoutAudioFailure];
+        return;
+    }
+    [self setStatus:self.statusWithoutAudioFailure];
+    // Teardown also clears the failure latch. Restore the cached status without
+    // asking native call/media state after the user agent has stopped.
+    if (!self.userAgent.isStarted || !self.isCallActive || self.call == nil ||
+        self.call.state == kAKSIPCallDisconnectedState) {
+        return;
+    }
+
+    if (self.call.isOnLocalHold) {
+        [self setStatus:NSLocalizedString(@"on hold", @"Call on local hold status text.")];
+    } else if (self.call.isOnRemoteHold) {
+        [self setStatus:NSLocalizedString(@"on remote hold", @"Call on remote hold status text.")];
+    } else if (self.call.isMicrophoneMuted) {
+        [self setStatus:NSLocalizedString(@"mic muted", @"Microphone muted status text.")];
+    } else if (self.call.state == kAKSIPCallConfirmedState) {
+        [_activeCallViewController callTimerTick:nil];
+    }
+    // Only a subsequent native active-media notification may resume recording.
+}
+
 - (void)SIPCallEarly:(NSNotification *)notification {
     if (![[self call] isIncoming]) {
         NSNumber *sipEventCode = [notification userInfo][@"AKSIPEventCode"];
@@ -714,8 +781,12 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)SIPCallMediaDidBecomeActive:(NSNotification *)notification {
-    [self startAutomaticRecordingIfNeeded];
-    [self.call refreshRecordingConnections];
+    if (!self.userAgent.hasAudioFailure) {
+        [self startAutomaticRecordingIfNeeded];
+        [self.call refreshRecordingConnections];
+    }
+    // A local audio failure must not suppress the signaling transition out of
+    // hold. The persistent audio warning is applied separately by setStatus:.
     if ([self isCallOnHold]) {  // Call is being taken off hold.
         [self setCallOnHold:NO];
         
