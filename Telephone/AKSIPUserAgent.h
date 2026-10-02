@@ -80,7 +80,7 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 @property(nonatomic, readonly) BOOL hasUnansweredIncomingCalls;
 
 // Receiver's call data.
-@property(nonatomic, readonly, assign) AKSIPUserAgentCallData *callData;
+@property(nonatomic, readonly, assign, nonnull) AKSIPUserAgentCallData *callData;
 
 @property(nonatomic, assign) NSInteger maxCalls;
 
@@ -199,7 +199,7 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 - (BOOL)retrySoundAfterFailure;
 - (void)resetAudioFailure;
 - (pj_status_t)connectAudioSource:(pjsua_conf_port_id)source destination:(pjsua_conf_port_id)destination;
-- (void)reportAudioFailure:(pj_status_t)status operation:(NSString *)operation;
+- (void)reportAudioFailure:(pj_status_t)status operation:(nonnull NSString *)operation;
 
 // Stops sound.
 - (BOOL)stopSound;

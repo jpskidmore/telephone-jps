@@ -38,11 +38,11 @@ const NSInteger kAKSIPAccountRegistrationExpireTimeNotSpecified = PJSIP_EXPIRES_
 @property(nonatomic, readonly) URI *destination;
 @property(nonatomic, readonly) pjsua_acc_id account;
 @property(nonatomic) NSUInteger audioGeneration;
-@property(nonatomic, readonly) void (^ _Nonnull completion)(BOOL, PJSUACallInfo *);
+@property(nonatomic, readonly) void (^ _Nonnull completion)(BOOL, PJSUACallInfo * _Nullable);
 
 - (instancetype)initWithDestination:(URI *)destination
                             account:(pjsua_acc_id)account
-                         completion:(void (^ _Nonnull)(BOOL, PJSUACallInfo *))completion;
+                         completion:(void (^ _Nonnull)(BOOL, PJSUACallInfo * _Nullable))completion;
 
 @end
 
@@ -306,7 +306,7 @@ NS_ASSUME_NONNULL_END
         return;
     }
     URI *uri = [[URI alloc] initWithURI:destination transport:self.transport];
-    void (^onCallMakeCompletion)(BOOL, PJSUACallInfo *) = ^(BOOL success, PJSUACallInfo *call) {
+    void (^onCallMakeCompletion)(BOOL, PJSUACallInfo * _Nullable) = ^(BOOL success, PJSUACallInfo * _Nullable call) {
         if (success) {
             completion([self addCallWithInfo:call]);
         } else {
@@ -411,7 +411,7 @@ NS_ASSUME_NONNULL_END
 
 - (instancetype)initWithDestination:(URI *)destination
                             account:(pjsua_acc_id)account
-                         completion:(void (^ _Nonnull)(BOOL, PJSUACallInfo *))completion {
+                         completion:(void (^ _Nonnull)(BOOL, PJSUACallInfo * _Nullable))completion {
     if ((self = [super init])) {
         _destination = destination;
         _account = account;

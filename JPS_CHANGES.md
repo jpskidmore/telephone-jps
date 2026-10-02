@@ -109,7 +109,9 @@ and adds staged build instructions for all six dependencies. Validation scripts
 now pin/check the full archive inventory and reject missing tools or invalid
 entitlement plists instead of treating those errors as successful checks.
 
-This is a source-only cleanup. Version/build remain 2.0.3/154; no native build,
+The initial cleanup was source-only. The later [audio-recovery CI](docs/VALIDATION.md)
+passed an unsigned native build and standalone harnesses. Version/build remain
+2.0.3/154. During that initial cleanup, no native build,
 XCTest, recording harness, signing, app launch or live call was run in the Linux
 cleanup environment. See [the cleanup notes](docs/releases/unreleased.md) and
 [validation instructions](docs/VALIDATION.md) before treating the update as ready

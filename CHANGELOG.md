@@ -22,9 +22,11 @@ installation or a new downloadable release; version/build remain 2.0.3/154.
 - Document all six dependency builds; verify source hashes, all 24 archive hashes/architectures and parsed entitlements
 - Add a four-bundle macOS validation runner and recording-library notices
 
-Version/build remain 2.0.3/154. This is an unbuilt source update, with native macOS
-validation still required; see [cleanup notes](docs/releases/unreleased.md) and
-[validation limits](docs/VALIDATION.md). No binary release or deployment was made.
+Version/build remain 2.0.3/154. The initial cleanup was source-only; the later
+audio-recovery CI passed an unsigned native build and two standalone harnesses.
+Hosted tests and real-device acceptance remain separate; see
+[cleanup notes](docs/releases/unreleased.md) and [validation limits](docs/VALIDATION.md).
+No binary release or deployment was made.
 
 ## jps Telephone 2.0.3 (build 154)
 

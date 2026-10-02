@@ -75,13 +75,17 @@ reproduces calls or changes device settings for this investigation.
 
 ## Validation
 
-Current candidate status (2 October 2026): independent source review completed,
-11 portable wiring checks and six recording-lifecycle model tests passed, and
-dependency hashes/inventory plus shell/whitespace checks passed. The Mac became
-unavailable before transfer or compilation, so the standalone native harnesses,
-unsigned application build and hosted XCTest execution have **not run** for this
-candidate. No application was installed. Native verification remains a merge
-requirement; a temporary source branch is not a validated release.
+Native CI passed on 2 October 2026: [run 37037958671](https://github.com/jpskidmore/telephone-jps/actions/runs/37037958671)
+built commit `fcd45a2f0fc12b5b9c0352091a4859ac6d3bd6fd` on a standard arm64
+runner with macOS 15.7.9, Xcode 26.3, Swift 6.2.4 and macOS SDK 26.2. The log
+records **232 production audio-controller checks**, the synthetic recording
+harness, 11 wiring checks, six lifecycle-model tests and the unsigned Release
+build all passing. See [the validation record](validation/audio-recovery-2026-10-02.md).
+
+This did not run Telephone, the hosted XCTest suite, or physical audio/SIP tests.
+It is not verification of macOS 27 hardware behavior. No application was signed,
+installed or deployed. Subsequent candidate changes must pass the same CI gate
+before publication to main; the first hardware timeout remains a limitation.
 
 
 Run the standalone policy harness on a Mac:

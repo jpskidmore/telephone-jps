@@ -135,7 +135,7 @@ extern const NSInteger kAKSIPAccountRegistrationExpireTimeNotSpecified;
 - (void)updateIdentifier:(NSInteger)identifier;
 
 // Makes a call to a given destination URI.
-- (void)makeCallTo:(AKSIPURI *)destination completion:(void (^)(AKSIPCall *))completion;
+- (void)makeCallTo:(AKSIPURI *)destination completion:(void (^)(AKSIPCall * _Nullable))completion;
 
 - (AKSIPCall *)addCallWithInfo:(PJSUACallInfo *)info;
 - (nullable AKSIPCall *)callWithIdentifier:(NSInteger)identifier;

@@ -3,8 +3,10 @@
 ## Current source-cleanup status
 
 The October 2026 changes are an **unreleased source update**. Application metadata
-remains version 2.0.3, build 154. No new binary, signature, release ZIP or deployment
-was produced as part of this cleanup.
+remains version 2.0.3, build 154. An unsigned Release build now passes the
+additional audio-recovery CI below. No distribution signature, release ZIP,
+installation or deployment was produced. The initial source-cleanup-only checks
+are recorded separately from that later native validation.
 
 Portable checks run on Linux can check hashes, inventories, source structure,
 localization keys, shell syntax and the explicit recording-lifecycle model. They
@@ -21,10 +23,13 @@ applied in dry-run to their bundled source. These are structural/model results.
 
 ## Audio-recovery validation
 
-As of 2 October 2026, the audio candidate has 11 passing portable wiring checks
-and six passing lifecycle-model tests, plus an independent source review. The
-Mac validation executor disconnected before file transfer or compilation; no
-native harness, app build or hosted XCTest result is claimed for this candidate.
+On 2 October 2026, [GitHub run 37037958671](https://github.com/jpskidmore/telephone-jps/actions/runs/37037958671)
+passed 232 fake-backend production-controller checks, the synthetic recording
+harness, an unsigned arm64 Release build, 11 wiring checks and six lifecycle-model
+tests. Environment: macOS 15.7.9, Xcode 26.3, Swift 6.2.4, macOS SDK 26.2. This
+replaced a local build attempt that stopped before transfer when its executor
+disconnected. No hosted XCTest, app launch, signing or real-device testing ran.
+See the [versioned validation record](validation/audio-recovery-2026-10-02.md).
 
 
 The additional audio recovery has a separate safe native entry point,
