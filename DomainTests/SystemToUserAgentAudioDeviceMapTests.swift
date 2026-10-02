@@ -42,7 +42,12 @@ final class SystemToUserAgentAudioDeviceMapTests: XCTestCase {
     }
 
     func testMapsSystemToUserAgentDeviceByNameAndIOPortWhenTwoDevicesHaveTheSameName() {
-        let systemDevices = [factory.someInput, factory.outputWithNameLikeSomeInput]
+        let systemDevices = [factory.firstInput, factory.outputWithNameLikeSomeInput]
+        XCTAssertEqual(systemDevices[0].name, systemDevices[1].name)
+        XCTAssertTrue(systemDevices[0].hasInputs)
+        XCTAssertFalse(systemDevices[0].hasOutputs)
+        XCTAssertFalse(systemDevices[1].hasInputs)
+        XCTAssertTrue(systemDevices[1].hasOutputs)
         let userAgentDevices: [UserAgentAudioDevice] = [
             SimpleUserAgentAudioDevice(device: systemDevices[1]),
             SimpleUserAgentAudioDevice(device: systemDevices[0])

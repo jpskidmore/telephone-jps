@@ -61,7 +61,7 @@ Requirements:
 
 - Xcode with the macOS SDK;
 - Apple silicon Mac;
-- `rg` for the vendor-security verification script.
+- Python 3 and `rg` for the dependency/release verification scripts.
 
 Build the release configuration:
 
@@ -79,12 +79,17 @@ xcodebuild \
   build
 ```
 
-Run the focused recording tests and dependency checks:
+Run the ordinary (unsanitized) focused recording tests and dependency checks:
 
 ```sh
 ./Scripts/run-recording-tests.sh
 ./Scripts/verify-vendor-security.sh
 ```
+
+For the recording harness, all four XCTest bundles and an unsigned Release build,
+use `./Scripts/run-macos-validation.sh` on a clean macOS test account. This runner
+has not been executed in the Linux cleanup environment. See
+[VALIDATION.md](docs/VALIDATION.md) for prerequisites and remaining release checks.
 
 For a local or downloadable ad-hoc build, sign nested code and apply the
 documented ad-hoc-only library-validation exception:
@@ -100,68 +105,25 @@ Do not use the ad-hoc signing script for a Developer ID release. A Developer ID
 build should keep normal library validation and sign the app and embedded
 frameworks with the same Apple Team ID.
 
-Instructions for rebuilding Opus, LibreSSL, and PJSIP are retained below in [Dependency builds](#dependency-builds). Encoder versions and checksums are documented in [ThirdParty/ENCODERS.md](ThirdParty/ENCODERS.md).
-
 ## Dependency builds
 
-### Opus
+The complete [dependency rebuild guide](docs/DEPENDENCY_BUILDS.md) covers the six
+bundled source archives: Opus, libogg, LAME, libopusenc, LibreSSL, and PJSIP. It uses
+an isolated staging directory, the checked-in PJSIP configuration and patches, and
+explicit arm64/macOS 15.6 settings. Its commands were checked against the bundled
+source but have not been executed on macOS during the current cleanup.
+
+Verify the source manifest and prebuilt archive inventory on macOS or Linux:
 
 ```sh
-curl -O https://downloads.xiph.org/releases/opus/opus-1.6.1.tar.gz
-tar xzvf opus-1.6.1.tar.gz
-cd opus-1.6.1
-./configure --prefix=/path/to/telephone-jps/ThirdParty/Opus \
-  --disable-shared --disable-extra-programs --disable-doc \
-  CFLAGS='-arch arm64 -Os -mmacosx-version-min=15.6'
-make
-make install
+python3 Scripts/verify-dependency-manifests.py
 ```
 
-### LibreSSL
-
-```sh
-curl -O https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-4.3.2.tar.gz
-curl -O https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-4.3.2.tar.gz.asc
-gpg --verify libressl-4.3.2.tar.gz.asc
-tar xzvf libressl-4.3.2.tar.gz
-cd libressl-4.3.2
-./configure --prefix=/path/to/telephone-jps/ThirdParty/LibreSSL \
-  --with-openssldir=/etc/ssl --disable-shared --disable-tests \
-  CFLAGS='-arch arm64 -Os -mmacosx-version-min=15.6'
-make
-make install
-```
-
-### PJSIP
-
-Download PJSIP 2.17, then create `pjlib/include/pj/config_site.h`:
-
-```c
-#define PJSIP_DONT_SWITCH_TO_TCP 1
-#define PJSUA_MAX_ACC 32
-#define PJMEDIA_RTP_PT_TELEPHONE_EVENTS 101
-#define PJ_DNS_MAX_IP_IN_A_REC 32
-#define PJ_DNS_SRV_MAX_ADDR 32
-#define PJSIP_MAX_RESOLVED_ADDRESSES 32
-#define PJ_HAS_IPV6 1
-#define PJ_SEMAPHORE_USE_DISPATCH_SEM 1
-```
-
-Apply the two patches in `ThirdParty/PJSIP/patches/`, then build:
-
-```sh
-./configure \
-  --prefix=/path/to/telephone-jps/ThirdParty/PJSIP \
-  --with-opus=/path/to/telephone-jps/ThirdParty/Opus \
-  --with-ssl=/path/to/telephone-jps/ThirdParty/LibreSSL \
-  --disable-video --disable-libyuv --disable-libwebrtc \
-  --host=arm-apple-darwin \
-  CFLAGS='-arch arm64 -Os -DNDEBUG -mmacosx-version-min=15.6' \
-  CXXFLAGS='-arch arm64 -Os -DNDEBUG -mmacosx-version-min=15.6'
-make dep
-make lib
-make install
-```
+This checks seven source files and all 24 bundled static archives, including every
+library referenced by the project. Hash agreement establishes snapshot integrity,
+not upstream authenticity or source-to-binary reproducibility. Full architecture
+and entitlement checks still require macOS. See [validation status and commands](docs/VALIDATION.md)
+and [dependency licence/source inventory](ThirdParty/ENCODERS.md).
 
 ## Project lineage and licence
 

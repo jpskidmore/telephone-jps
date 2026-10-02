@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased source cleanup after 2.0.3
+
+- Give each recording its own destination-access and completion lifetime across redial and controller teardown
+- Wait asynchronously for SIP shutdown and recording completion before normal Quit
+- Add recording ownership/shutdown regression sources and a portable lifecycle model
+- Remove reviewed unused code and repair stale or misleading tests
+- Correct repository links and English/German/Russian recording and menu explanations
+- Document all six dependency builds; verify source hashes, all 24 archive hashes/architectures and parsed entitlements
+- Add a four-bundle macOS validation runner and recording-library notices
+
+Version/build remain 2.0.3/154. This is an unbuilt source update, with native macOS
+validation still required; see [cleanup notes](docs/releases/unreleased.md) and
+[validation limits](docs/VALIDATION.md). No binary release or deployment was made.
+
 ## jps Telephone 2.0.3 (build 154)
 
 - Remapped release compiler paths so downloadable binaries do not expose the

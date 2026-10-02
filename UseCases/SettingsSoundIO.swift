@@ -19,48 +19,22 @@
 import Domain
 
 @MainActor
-struct SettingsSoundIO {
-    private let devices: SystemAudioDevices
-    private let settings: KeyValueSettings
-    private var optionalInput: SystemAudioDevice!
-    private var optionalOutput: SystemAudioDevice!
-    private var optionalRingtoneOutput: SystemAudioDevice!
+struct SettingsSoundIO: SoundIO {
+    let input: SystemAudioDevice
+    let output: SystemAudioDevice
+    let ringtoneOutput: SystemAudioDevice
 
     init(devices: SystemAudioDevices, settings: KeyValueSettings) {
-        self.devices = devices
-        self.settings = settings
-        optionalInput = inputDeviceByName(withSettingsKey: SettingsKeys.soundInput)
-        optionalOutput = outputDeviceByName(withSettingsKey: SettingsKeys.soundOutput)
-        optionalRingtoneOutput = outputDeviceByName(withSettingsKey: SettingsKeys.ringtoneOutput)
+        input = Self.device(withName: settings.string(forKey: SettingsKeys.soundInput), lookup: devices.inputDevice)
+        output = Self.device(withName: settings.string(forKey: SettingsKeys.soundOutput), lookup: devices.outputDevice)
+        ringtoneOutput = Self.device(withName: settings.string(forKey: SettingsKeys.ringtoneOutput), lookup: devices.outputDevice)
     }
 
-    private func inputDeviceByName(withSettingsKey key: String) -> SystemAudioDevice {
-        return deviceByName(withSettingsKey: key, function: devices.inputDevice)
-    }
-
-    private func outputDeviceByName(withSettingsKey key: String) -> SystemAudioDevice {
-        return deviceByName(withSettingsKey: key, function: devices.outputDevice)
-    }
-
-    private func deviceByName(withSettingsKey key: String, function: (String) -> SystemAudioDevice) -> SystemAudioDevice {
-        if let name = settings.string(forKey: key) {
-            return function(name)
+    private static func device(withName name: String?, lookup: (String) -> SystemAudioDevice) -> SystemAudioDevice {
+        if let name = name {
+            return lookup(name)
         } else {
             return NullSystemAudioDevice()
         }
-    }
-}
-
-extension SettingsSoundIO: SoundIO {
-    var input: SystemAudioDevice {
-        return optionalInput
-    }
-
-    var output: SystemAudioDevice {
-        return optionalOutput
-    }
-
-    var ringtoneOutput: SystemAudioDevice {
-        return optionalRingtoneOutput
     }
 }

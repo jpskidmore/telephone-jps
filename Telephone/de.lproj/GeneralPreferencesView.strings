@@ -13,3 +13,12 @@
 
 /* Class = "NSButtonCell"; title = "Automatically record all calls (ensure everyone consents)"; ObjectID = "rec-pref-2"; */
 "rec-pref-2.title" = "Alle Anrufe automatisch aufzeichnen (Einwilligung sicherstellen)";
+
+/* Class = "NSTextFieldCell"; title = "Format:"; ObjectID = "rec-format-label-cell"; */
+"rec-format-label-cell.title" = "Format:";
+
+/* Class = "NSTextFieldCell"; title = "Save to:"; ObjectID = "rec-folder-label-cell"; */
+"rec-folder-label-cell.title" = "Speichern unter:";
+
+/* Class = "NSButtonCell"; title = "Choose…"; ObjectID = "rec-folder-button-cell"; */
+"rec-folder-button-cell.title" = "Auswählen …";

@@ -206,3 +206,11 @@
 
 /* Product name. */
 "Yearly" = "Jährlich";
+
+/* Call recording format choices and destination chooser. */
+"OGG — smallest files" = "OGG — kleinste Dateien";
+"MP3 — good quality" = "MP3 — gute Qualität";
+"Source — no added loss" = "Quelle — ohne zusätzliche Verluste";
+"Choose Call Recordings Folder" = "Ordner für Anrufaufzeichnungen auswählen";
+"Choose" = "Auswählen";
+"The recordings folder could not be saved." = "Der Ordner für Anrufaufzeichnungen konnte nicht gespeichert werden.";

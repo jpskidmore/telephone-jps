@@ -232,14 +232,3 @@ private func makeReceiptRefreshAlert() -> NSAlert {
     result.addButton(withTitle: NSLocalizedString("Cancel", comment: "Cancel button.")).keyEquivalent = "\u{1b}"
     return result
 }
-
-@MainActor
-private func makeHyperlink(from field: NSTextField, url: URL) {
-    field.attributedStringValue = makeHyperlink(from: field.attributedStringValue, url: url)
-}
-
-private func makeHyperlink(from string: NSAttributedString, url: URL) -> NSAttributedString {
-    let result = NSMutableAttributedString(attributedString: string)
-    result.addAttribute(.link, value: url, range: NSRange(location: 0, length: result.length))
-    return result
-}

@@ -52,10 +52,6 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 @property(nonatomic, readonly) NSUserDefaults *defaults;
 
-@property(nonatomic, strong, nullable) NSURL *activeRecordingDirectoryURL;
-@property(nonatomic) BOOL isAccessingRecordingDirectory;
-@property(nonatomic) BOOL isFinalizingRecording;
-
 // Call info view.
 @property(nonatomic, strong) NSView *callInfoView;
 
@@ -63,11 +59,10 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 - (void)closeCallWindow;
 
 // Returns a unique destination for a new recording in the selected format.
-- (NSURL *)newRecordingURL;
+- (NSURL *)newRecordingURLAccessingDirectory:(NSURL * _Nullable * _Nonnull)accessedDirectoryURL;
 
 - (NSURL *)selectedRecordingDirectoryURL;
 - (NSURL *)defaultRecordingDirectoryURL;
-- (void)stopAccessingRecordingDirectory;
 
 @end
 
@@ -161,20 +156,10 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         call.delegate = nil;
     }
 
-    // A weak reference cannot be initialized after Objective-C deallocation
-    // has begun. Normal recording finalization captures self weakly, so do not
-    // route teardown through setCall:/stopRecording. If the recorders are still
-    // active, finish them with a completion that owns only the directory and
-    // call objects needed by the asynchronous encoder.
-    if (!_isFinalizingRecording && call.isRecording) {
-        NSURL *directoryURL = _activeRecordingDirectoryURL;
-        BOOL wasAccessingDirectory = _isAccessingRecordingDirectory;
-        [call stopRecordingWithCompletion:^(BOOL succeeded) {
-            if ((succeeded || !call.isRecording) && wasAccessingDirectory) {
-                [directoryURL stopAccessingSecurityScopedResource];
-            }
-        }];
-    }
+    // The call owns its recording resources. Its completion captures only the
+    // recording URLs, so this path never creates a weak reference to a controller
+    // whose deallocation has already begun.
+    [call stopRecording];
     [self unsubscribeFromWindowFloatingChanges];
 }
 
@@ -354,57 +339,28 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         return;
     }
 
-    NSURL *recordingURL = [self newRecordingURL];
+    NSURL *accessedDirectoryURL = nil;
+    NSURL *recordingURL = [self newRecordingURLAccessingDirectory:&accessedDirectoryURL];
     if (recordingURL == nil) {
         NSLog(@"Could not create the call recordings folder");
         return;
     }
 
-    if ([self.call startRecordingToURL:recordingURL]) {
+    // The call consumes this access lifetime even if recording setup fails.
+    if ([self.call startRecordingToURL:recordingURL accessedDirectoryURL:accessedDirectoryURL]) {
         [self.activeCallViewController setRecordingIndicatorVisible:YES];
-    } else {
-        [NSFileManager.defaultManager removeItemAtURL:recordingURL error:nil];
-        [self stopAccessingRecordingDirectory];
     }
 }
 
 - (void)stopRecording {
     [self.activeCallViewController setRecordingIndicatorVisible:NO];
-
-    // Hang-up, disconnect, window close, and controller teardown can all ask
-    // to stop the same recording. The first request owns finalization; later
-    // requests must not report immediate success and release the security-
-    // scoped destination while the asynchronous encoder is still using it.
-    if (self.isFinalizingRecording || !self.call.isRecording) {
-        return;
-    }
-
-    AKSIPCall *call = self.call;
-    NSURL *directoryURL = self.activeRecordingDirectoryURL;
-    BOOL wasAccessingDirectory = self.isAccessingRecordingDirectory;
-    self.isFinalizingRecording = YES;
-    __weak typeof(self) weakSelf = self;
-    [call stopRecordingWithCompletion:^(BOOL succeeded) {
-        typeof(self) strongSelf = weakSelf;
-        BOOL finalizationEnded = succeeded || !call.isRecording;
-        if (!finalizationEnded) {
-            strongSelf.isFinalizingRecording = NO;
-            return;
-        }
-        if (wasAccessingDirectory) {
-            [directoryURL stopAccessingSecurityScopedResource];
-        }
-        if ([strongSelf.activeRecordingDirectoryURL isEqual:directoryURL]) {
-            strongSelf.isAccessingRecordingDirectory = NO;
-            strongSelf.activeRecordingDirectoryURL = nil;
-        }
-        strongSelf.isFinalizingRecording = NO;
-    }];
+    // Recorder IDs are cleared synchronously. Each call's asynchronous encoder
+    // owns its own destination access, independent of this reusable window.
+    [self.call stopRecording];
 }
 
-- (NSURL *)newRecordingURL {
-    [self stopAccessingRecordingDirectory];
-
+- (NSURL *)newRecordingURLAccessingDirectory:(NSURL **)accessedDirectoryURL {
+    *accessedDirectoryURL = nil;
     NSURL *directoryURL = [self selectedRecordingDirectoryURL];
     if (directoryURL == nil) {
         return nil;
@@ -412,13 +368,13 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
     BOOL usesCustomDirectory = [self.defaults dataForKey:UserDefaultsKeys.recordingFolderBookmark] != nil;
     if (usesCustomDirectory) {
-        self.isAccessingRecordingDirectory = [directoryURL startAccessingSecurityScopedResource];
-        if (!self.isAccessingRecordingDirectory) {
+        if ([directoryURL startAccessingSecurityScopedResource]) {
+            *accessedDirectoryURL = directoryURL;
+        } else {
             NSLog(@"The selected recordings folder could not be accessed; using the default folder");
             directoryURL = [self defaultRecordingDirectoryURL];
         }
     }
-    self.activeRecordingDirectoryURL = directoryURL;
 
     NSError *error = nil;
     if (![NSFileManager.defaultManager createDirectoryAtURL:directoryURL
@@ -426,7 +382,8 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
                                                  attributes:nil
                                                       error:&error]) {
         NSLog(@"Could not use the selected recordings folder: %@", error.localizedDescription);
-        [self stopAccessingRecordingDirectory];
+        [*accessedDirectoryURL stopAccessingSecurityScopedResource];
+        *accessedDirectoryURL = nil;
 
         directoryURL = [self defaultRecordingDirectoryURL];
         if (directoryURL == nil ||
@@ -437,7 +394,6 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
             NSLog(@"Could not create the default recordings folder: %@", error);
             return nil;
         }
-        self.activeRecordingDirectoryURL = directoryURL;
     }
 
     NSString *party = self.displayedName.length > 0 ? self.displayedName : self.call.remoteURI.user;
@@ -468,7 +424,8 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     NSURL *reservedURL = AKReserveRecordingURL(directoryURL, filenameStem, extension, &error);
     if (reservedURL == nil) {
         NSLog(@"Could not reserve a call-recording file: %@", error.localizedDescription);
-        [self stopAccessingRecordingDirectory];
+        [*accessedDirectoryURL stopAccessingSecurityScopedResource];
+        *accessedDirectoryURL = nil;
     }
     return reservedURL;
 }
@@ -509,14 +466,6 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     NSURL *downloadsURL = [NSFileManager.defaultManager URLsForDirectory:NSDownloadsDirectory
                                                                inDomains:NSUserDomainMask].firstObject;
     return [downloadsURL URLByAppendingPathComponent:@"jps Telephone Recordings" isDirectory:YES];
-}
-
-- (void)stopAccessingRecordingDirectory {
-    if (self.isAccessingRecordingDirectory) {
-        [self.activeRecordingDirectoryURL stopAccessingSecurityScopedResource];
-    }
-    self.isAccessingRecordingDirectory = NO;
-    self.activeRecordingDirectoryURL = nil;
 }
 
 - (void)setIntermediateStatus:(NSString *)newIntermediateStatus {

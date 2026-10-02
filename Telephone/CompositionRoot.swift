@@ -130,7 +130,6 @@ final class CompositionRoot: NSObject {
             useCase: UserAgentSoundIOSelectionUseCase(
                 devicesFactory: systemAudioDevicesFactory, soundIOFactory: soundIOFactory, agent: userAgent
             ),
-            agent: userAgent,
             calls: userAgent
         )
 

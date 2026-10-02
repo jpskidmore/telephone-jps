@@ -25,4 +25,9 @@ void AKMergeMonoRecordingsIntoStereoAsync(NSURL *localURL,
                                           NSURL *destinationURL,
                                           void (^completion)(BOOL succeeded));
 
+// Asynchronously waits for conversions already submitted, including their main-
+// queue completion/cleanup callbacks. Stop call production before using this as
+// the application-termination barrier. Always calls back on the main queue.
+void AKWaitForPendingRecordingFinalizations(dispatch_block_t completion);
+
 NS_ASSUME_NONNULL_END

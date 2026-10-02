@@ -95,6 +95,12 @@ typedef NS_ENUM(NSUInteger, AKSIPCallState) {
 // Starts synchronized mono recordings of the local and remote sides of the active call.
 - (BOOL)startRecordingToURL:(NSURL *)URL;
 
+// Consumes one already-started security-scoped access lifetime. The call releases
+// it on setup failure or after this recording's conversion (including failure).
+// URL must be an owned empty reservation; failed setup removes it before release.
+// Pass nil when the destination did not require security-scoped access.
+- (BOOL)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(nullable NSURL *)directoryURL;
+
 // Stops the mono recorders and finalizes the selected stereo format off the main thread.
 - (void)stopRecording;
 - (void)stopRecordingWithCompletion:(nullable void (^)(BOOL succeeded))completion;

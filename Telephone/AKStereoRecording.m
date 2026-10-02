@@ -59,6 +59,17 @@ NSURL *AKReserveRecordingURL(NSURL *directoryURL,
     return nil;
 }
 
+static dispatch_group_t RecordingFinalizations(void) {
+    static dispatch_group_t group;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{ group = dispatch_group_create(); });
+    return group;
+}
+
+void AKWaitForPendingRecordingFinalizations(dispatch_block_t completion) {
+    dispatch_group_notify(RecordingFinalizations(), dispatch_get_main_queue(), completion);
+}
+
 void AKMergeMonoRecordingsIntoStereoAsync(NSURL *localURL,
                                           NSURL *remoteURL,
                                           NSURL *destinationURL,
@@ -68,12 +79,15 @@ void AKMergeMonoRecordingsIntoStereoAsync(NSURL *localURL,
     dispatch_once(&onceToken, ^{
         queue = dispatch_queue_create("com.tlphn.Telephone.recording-encoder", DISPATCH_QUEUE_SERIAL);
     });
+    dispatch_group_enter(RecordingFinalizations());
     dispatch_async(queue, ^{
         BOOL succeeded = AKMergeMonoRecordingsIntoStereo(localURL, remoteURL, destinationURL);
         dispatch_async(dispatch_get_main_queue(), ^{
             if (completion != nil) {
                 completion(succeeded);
             }
+            // Leave after cleanup on the main queue, not just after encoding.
+            dispatch_group_leave(RecordingFinalizations());
         });
     });
 }

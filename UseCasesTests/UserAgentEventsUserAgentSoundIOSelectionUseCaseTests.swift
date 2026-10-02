@@ -29,7 +29,6 @@ final class UserAgentEventsUserAgentSoundIOSelectionUseCaseTests: XCTestCase {
         agent = UserAgentSpy()
         sut = UserAgentEventsUserAgentSoundIOSelectionUseCase(
             useCase: UserAgentSoundIOSelectionUseCaseFake(agent: agent),
-            agent: agent,
             calls: CallsStub(haveActive: false)
         )
     }
@@ -119,7 +118,6 @@ final class UserAgentEventsUserAgentSoundIOSelectionUseCaseTests: XCTestCase {
         let agent = UserAgentSpy()
         let sut = UserAgentEventsUserAgentSoundIOSelectionUseCase(
             useCase: UserAgentSoundIOSelectionUseCaseFake(agent: agent),
-            agent: agent,
             calls: CallsStub(haveActive: true)
         )
         sut.didFinishStarting(agent)
@@ -128,5 +126,67 @@ final class UserAgentEventsUserAgentSoundIOSelectionUseCaseTests: XCTestCase {
         sut.execute()
 
         XCTAssertEqual(agent.soundIOSelectionCallCount, 2)
+    }
+
+    func testRetriesDeferredSelectionAfterFailureAndClearsItOnlyAfterSuccess() {
+        let selection = RetryingSoundIOSelectionUseCase()
+        let sut = UserAgentEventsUserAgentSoundIOSelectionUseCase(
+            useCase: selection, calls: CallsStub(haveActive: false)
+        )
+        sut.didFinishStarting(agent)
+
+        sut.didMakeCall(agent)
+        XCTAssertEqual(selection.attempts, 1)
+        selection.shouldFail = false
+        sut.didReceiveCall(agent)
+        sut.didMakeCall(agent)
+
+        XCTAssertEqual(selection.attempts, 2)
+    }
+
+    func testRetriesSelectionOnNextCallWhenImmediateSelectionFails() {
+        let selection = RetryingSoundIOSelectionUseCase()
+        let sut = UserAgentEventsUserAgentSoundIOSelectionUseCase(
+            useCase: selection, calls: CallsStub(haveActive: true)
+        )
+
+        sut.execute()
+        XCTAssertEqual(selection.attempts, 1)
+        selection.shouldFail = false
+        sut.didReceiveCall(agent)
+        sut.didMakeCall(agent)
+
+        XCTAssertEqual(selection.attempts, 2)
+    }
+
+    func testStoppingClearsFailedDeferredSelection() {
+        let selection = RetryingSoundIOSelectionUseCase()
+        let sut = UserAgentEventsUserAgentSoundIOSelectionUseCase(
+            useCase: selection, calls: CallsStub(haveActive: false)
+        )
+        sut.didFinishStarting(agent)
+        sut.didMakeCall(agent)
+
+        sut.didFinishStopping(agent)
+        selection.shouldFail = false
+        sut.didReceiveCall(agent)
+
+        XCTAssertEqual(selection.attempts, 1)
+    }
+}
+
+private final class RetryingSoundIOSelectionUseCase: ThrowingUseCase {
+    var shouldFail = true
+    private(set) var attempts = 0
+
+    func execute() throws {
+        attempts += 1
+        if shouldFail {
+            throw SelectionFailure.expected
+        }
+    }
+
+    private enum SelectionFailure: Error {
+        case expected
     }
 }

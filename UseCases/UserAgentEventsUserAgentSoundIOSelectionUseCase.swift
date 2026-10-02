@@ -20,12 +20,10 @@ public final class UserAgentEventsUserAgentSoundIOSelectionUseCase {
     private var selection: ThrowingUseCase?
 
     private let useCase: ThrowingUseCase
-    private let agent: UserAgent
     private let calls: Calls
 
-    public init(useCase: ThrowingUseCase, agent: UserAgent, calls: Calls) {
+    public init(useCase: ThrowingUseCase, calls: Calls) {
         self.useCase = useCase
-        self.agent = agent
         self.calls = calls
     }
 }

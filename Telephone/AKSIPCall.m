@@ -44,6 +44,11 @@
 @property(nonatomic, copy, nullable) NSURL *localRecordingURL;
 @property(nonatomic, copy, nullable) NSURL *remoteRecordingURL;
 @property(nonatomic, copy, nullable) NSURL *recordingTemporaryDirectoryURL;
+@property(nonatomic, strong, nullable) NSURL *accessedRecordingDirectoryURL;
+
+- (BOOL)stopNativeRecorders;
+- (void)finalizeRecordingFromLocalURL:(NSURL *)localURL remoteURL:(NSURL *)remoteURL
+                     destinationURL:(NSURL *)destinationURL completion:(void (^)(BOOL))completion;
 
 @end
 
@@ -368,6 +373,22 @@
     return _localRecorderIdentifier != PJSUA_INVALID_ID || _remoteRecorderIdentifier != PJSUA_INVALID_ID;
 }
 
+- (BOOL)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(NSURL *)directoryURL {
+    // Do not replace an existing recording's access token, even for an equal URL.
+    if ([self isRecording]) {
+        [directoryURL stopAccessingSecurityScopedResource];
+        return NO;
+    }
+    if (![self startRecordingToURL:URL]) {
+        // Remove the reserved placeholder while the consumed scope is valid.
+        [NSFileManager.defaultManager removeItemAtURL:URL error:nil];
+        [directoryURL stopAccessingSecurityScopedResource];
+        return NO;
+    }
+    self.accessedRecordingDirectoryURL = directoryURL;
+    return YES;
+}
+
 - (BOOL)startRecordingToURL:(NSURL *)URL {
     if ([self isRecording]) {
         return YES;
@@ -468,58 +489,73 @@
     NSURL *destinationURL = self.recordingURL;
     NSURL *temporaryDirectoryURL = self.recordingTemporaryDirectoryURL;
 
-    pj_status_t localStatus = PJ_SUCCESS;
-    pj_status_t remoteStatus = PJ_SUCCESS;
-    for (NSUInteger attempt = 0; attempt < 3; attempt++) {
-        if (_localRecorderIdentifier != PJSUA_INVALID_ID) {
-            localStatus = pjsua_recorder_destroy(_localRecorderIdentifier);
-            if (localStatus == PJ_SUCCESS) {
-                _localRecorderIdentifier = PJSUA_INVALID_ID;
-                _localRecorderPort = PJSUA_INVALID_ID;
-            }
-        }
-        if (_remoteRecorderIdentifier != PJSUA_INVALID_ID) {
-            remoteStatus = pjsua_recorder_destroy(_remoteRecorderIdentifier);
-            if (remoteStatus == PJ_SUCCESS) {
-                _remoteRecorderIdentifier = PJSUA_INVALID_ID;
-                _remoteRecorderPort = PJSUA_INVALID_ID;
-            }
-        }
-        if (_localRecorderIdentifier == PJSUA_INVALID_ID && _remoteRecorderIdentifier == PJSUA_INVALID_ID) {
-            break;
-        }
-    }
-    if (_localRecorderIdentifier != PJSUA_INVALID_ID || _remoteRecorderIdentifier != PJSUA_INVALID_ID) {
-        NSLog(@"Could not finalize call tracks after three attempts (PJSIP errors %d and %d)",
-              localStatus, remoteStatus);
+    if (![self stopNativeRecorders]) {
         if (completion != nil) {
             completion(NO);
         }
         return;
     }
 
+    NSURL *accessedDirectoryURL = self.accessedRecordingDirectoryURL;
+    self.accessedRecordingDirectoryURL = nil;
     self.recordingURL = nil;
     self.localRecordingURL = nil;
     self.remoteRecordingURL = nil;
     self.recordingTemporaryDirectoryURL = nil;
     if (localURL == nil || remoteURL == nil || destinationURL == nil) {
+        [accessedDirectoryURL stopAccessingSecurityScopedResource];
         if (completion != nil) {
             completion(NO);
         }
         return;
     }
 
-    AKMergeMonoRecordingsIntoStereoAsync(localURL, remoteURL, destinationURL, ^(BOOL succeeded) {
+    [self finalizeRecordingFromLocalURL:localURL remoteURL:remoteURL destinationURL:destinationURL completion:^(BOOL succeeded) {
         if (succeeded) {
             [NSFileManager.defaultManager removeItemAtURL:temporaryDirectoryURL error:nil];
             NSLog(@"Saved stereo call recording (local left, remote right)");
         } else {
             NSLog(@"Could not create the stereo recording; private recovery tracks were retained temporarily");
         }
+        // This captured token belongs to this recording, not the controller's
+        // current call or another recording using the same directory.
+        [accessedDirectoryURL stopAccessingSecurityScopedResource];
         if (completion != nil) {
             completion(succeeded);
         }
-    });
+    }];
+}
+// Kept separate from conversion so native stop failures retain their resources
+// for a later stop request. The bundled PJSIP destroy has no transient retry case.
+- (BOOL)stopNativeRecorders {
+    pj_status_t localStatus = PJ_SUCCESS;
+    pj_status_t remoteStatus = PJ_SUCCESS;
+    if (_localRecorderIdentifier != PJSUA_INVALID_ID) {
+        localStatus = pjsua_recorder_destroy(_localRecorderIdentifier);
+        if (localStatus == PJ_SUCCESS) {
+            _localRecorderIdentifier = PJSUA_INVALID_ID;
+            _localRecorderPort = PJSUA_INVALID_ID;
+        }
+    }
+    if (_remoteRecorderIdentifier != PJSUA_INVALID_ID) {
+        remoteStatus = pjsua_recorder_destroy(_remoteRecorderIdentifier);
+        if (remoteStatus == PJ_SUCCESS) {
+            _remoteRecorderIdentifier = PJSUA_INVALID_ID;
+            _remoteRecorderPort = PJSUA_INVALID_ID;
+        }
+    }
+    if (_localRecorderIdentifier != PJSUA_INVALID_ID || _remoteRecorderIdentifier != PJSUA_INVALID_ID) {
+        NSLog(@"Could not finalize call tracks (PJSIP errors %d and %d)", localStatus, remoteStatus);
+        return NO;
+    }
+    return YES;
+}
+
+- (void)finalizeRecordingFromLocalURL:(NSURL *)localURL
+                          remoteURL:(NSURL *)remoteURL
+                     destinationURL:(NSURL *)destinationURL
+                         completion:(void (^)(BOOL))completion {
+    AKMergeMonoRecordingsIntoStereoAsync(localURL, remoteURL, destinationURL, completion);
 }
 
 - (void)refreshRecordingConnections {

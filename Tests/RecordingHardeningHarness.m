@@ -147,6 +147,40 @@ int main(void) {
         }
         if (!finished || !callbackOnMainThread) return 12;
 
+        // Termination must wait for every queued conversion AND its main-queue
+        // cleanup, including conversion failure. An empty barrier is also async.
+        __block NSUInteger completions = 0;
+        __block BOOL successfulConversion = NO;
+        __block BOOL failedConversion = NO;
+        __block BOOL drained = NO;
+        AKMergeMonoRecordingsIntoStereoAsync(local, remote,
+            [directory URLByAppendingPathComponent:@"pending.wav"], ^(BOOL succeeded) {
+                successfulConversion = succeeded && NSThread.isMainThread;
+                completions++;
+            });
+        AKMergeMonoRecordingsIntoStereoAsync(local, remote,
+            [directory URLByAppendingPathComponent:@"unsupported.invalid"], ^(BOOL succeeded) {
+                failedConversion = !succeeded && NSThread.isMainThread;
+                completions++;
+            });
+        AKWaitForPendingRecordingFinalizations(^{
+            drained = completions == 2 && successfulConversion && failedConversion && NSThread.isMainThread;
+        });
+        if (drained) return 13;
+        deadline = [NSDate dateWithTimeIntervalSinceNow:10];
+        while (!drained && [deadline timeIntervalSinceNow] > 0) {
+            [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        }
+        if (!drained) return 14;
+        __block BOOL emptyDrain = NO;
+        AKWaitForPendingRecordingFinalizations(^{ emptyDrain = NSThread.isMainThread; });
+        if (emptyDrain) return 15;
+        deadline = [NSDate dateWithTimeIntervalSinceNow:2];
+        while (!emptyDrain && [deadline timeIntervalSinceNow] > 0) {
+            [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        }
+        if (!emptyDrain) return 16;
+
         [manager removeItemAtURL:directory error:nil];
         printf("recording hardening harness passed\n");
     }

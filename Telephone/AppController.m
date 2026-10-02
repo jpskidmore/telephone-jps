@@ -24,6 +24,7 @@
 #import "AKNSString+Scanning.h"
 #import "AKSIPAccount.h"
 #import "AKSIPCall.h"
+#import "AKStereoRecording.h"
 
 #import "AccountController.h"
 #import "AccountControllers.h"
@@ -47,6 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) BOOL shouldRegisterAllAccounts;
 @property(nonatomic) BOOL shouldRestartUserAgentASAP;
 @property(nonatomic, getter=isTerminating) BOOL terminating;
+@property(nonatomic) BOOL waitingForRecordingFinalizations;
 @property(nonatomic) BOOL shouldPresentUserAgentLaunchError;
 @property(nonatomic) AccountsMenuItems *accountsMenuItems;
 @property(nonatomic, weak) IBOutlet NSMenu *windowMenu;
@@ -65,6 +67,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy) NSString *destinationToCall;
 @property(nonatomic, getter=isUserSessionActive) BOOL userSessionActive;
 @property(nonatomic, readonly) NameServers *nameServers;
+
+- (void)finishTerminationAfterRecordings;
 
 @end
 
@@ -378,7 +382,14 @@ NS_ASSUME_NONNULL_END
 #pragma mark -
 #pragma mark AKSIPUserAgentDelegate
 
+- (BOOL)SIPUserAgentShouldStart {
+    return !self.isTerminating;
+}
+
 - (BOOL)SIPUserAgentShouldAddAccount:(AKSIPAccount *)account {
+    if (self.isTerminating) {
+        return NO;
+    }
     if (self.userAgent.isStarted) {
         return YES;
     } else {
@@ -390,6 +401,14 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)SIPUserAgentDidFinishStarting:(NSNotification *)notification {
+    if (self.isTerminating) {
+        if (self.userAgent.isStarted) {
+            [self stopUserAgent];
+        } else {
+            [self finishTerminationAfterRecordings];
+        }
+        return;
+    }
     if ([[self userAgent] isStarted]) {
         if ([self shouldRegisterAllAccounts]) {
             [self.accountControllers registerAllAccounts];
@@ -437,7 +456,7 @@ NS_ASSUME_NONNULL_END
 
 - (void)SIPUserAgentDidFinishStopping:(NSNotification *)notification {
     if ([self isTerminating]) {
-        [NSApp replyToApplicationShouldTerminate:YES];
+        [self finishTerminationAfterRecordings];
         
     } else if ([self shouldRegisterAllAccounts]) {
         if (self.accountControllers.enabled.count > 0) {
@@ -592,17 +611,34 @@ NS_ASSUME_NONNULL_END
         }
     }
     
+    [self setTerminating:YES];
     if ([[self userAgent] isStarted]) {
-        [self setTerminating:YES];
         [self stopUserAgent];
-        
-        // Terminate after SIP user agent is stopped in the secondary thread.
-        // We should send replyToApplicationShouldTerminate: to NSApp from
-        // AKSIPUserAgentDidFinishStoppingNotification.
-        return NSTerminateLater;
+        // SIP shutdown first stops all native recorders and prevents new calls.
+        // Its completion then waits for conversions and main-queue cleanup.
+    } else if (self.userAgent.state == AKSIPUserAgentStateStopped) {
+        [self finishTerminationAfterRecordings];
     }
-    
-    return NSTerminateNow;
+    // If starting/stopping, its notification completes the same shutdown path.
+    return NSTerminateLater;
+}
+
+- (void)finishTerminationAfterRecordings {
+    if (self.waitingForRecordingFinalizations) {
+        return;
+    }
+    self.waitingForRecordingFinalizations = YES;
+    AKWaitForPendingRecordingFinalizations(^{
+        self.waitingForRecordingFinalizations = NO;
+        // Defensive recheck: startup results or stop notifications may have
+        // arrived while the conversion queue was draining.
+        if (self.userAgent.state == AKSIPUserAgentStateStopped) {
+            [NSApp replyToApplicationShouldTerminate:YES];
+        } else if (self.userAgent.isStarted) {
+            [self stopUserAgent];
+        }
+        // Starting/stopping notifications resume termination once stopped.
+    });
 }
 
 
@@ -742,7 +778,7 @@ NS_ASSUME_NONNULL_END
 }
 
 - (BOOL)canMakeCall {
-    return NSApp.modalWindow == nil && self.accountControllers.enabled.count > 0;
+    return !self.isTerminating && NSApp.modalWindow == nil && self.accountControllers.enabled.count > 0;
 }
 
 #pragma mark - NameServersChangeEventTarget

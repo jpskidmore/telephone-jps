@@ -27,7 +27,9 @@ final class RepeatingSoundFactoryTests: XCTestCase {
     override func setUp() {
         super.setUp()
         factory = SoundFactorySpy()
-        sut = RepeatingSoundFactory(soundFactory: factory, timerFactory: TimerFactorySpy())
+        let timerFactory = TimerFactorySpy()
+        timerFactory.stub(with: TimerSpy())
+        sut = RepeatingSoundFactory(soundFactory: factory, timerFactory: timerFactory)
     }
 
     func testCallsCreateSound() {
@@ -42,5 +44,33 @@ final class RepeatingSoundFactoryTests: XCTestCase {
         let result = try! sut.makeRingtone(interval: interval)
 
         XCTAssertEqual(result.interval, interval)
+    }
+
+    func testRingtonePlaysAndStopsTheCreatedSound() throws {
+        let ringtone = try sut.makeRingtone(interval: 2)
+        let sound = try XCTUnwrap(factory.lastCreatedSound)
+
+        ringtone.startPlaying()
+        XCTAssertTrue(sound.didCallPlay)
+        ringtone.stopPlaying()
+        XCTAssertTrue(sound.didCallStop)
+    }
+
+    func testPropagatesSoundCreationFailure() {
+        let sut = RepeatingSoundFactory(soundFactory: FailingSoundFactory(), timerFactory: TimerFactorySpy())
+
+        XCTAssertThrowsError(try sut.makeRingtone(interval: 2)) { error in
+            XCTAssertEqual(error as? SoundCreationFailure, .expected)
+        }
+    }
+}
+
+private enum SoundCreationFailure: Error, Equatable {
+    case expected
+}
+
+private struct FailingSoundFactory: SoundFactory {
+    func makeSound(target: SoundEventTarget) throws -> Sound {
+        throw SoundCreationFailure.expected
     }
 }

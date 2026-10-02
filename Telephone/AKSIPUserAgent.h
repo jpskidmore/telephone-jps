@@ -45,9 +45,7 @@ typedef NS_ENUM(NSUInteger, AKNATType) {
 };
 
 typedef struct _AKSIPUserAgentCallData {
-    pj_timer_entry timer;
     pj_bool_t ringbackOn;
-    pj_bool_t ringbackOff;
 } AKSIPUserAgentCallData;
 
 // An invalid identifier for all sorts of identifiers.
@@ -196,8 +194,5 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 // You might want to call this method when system audio devices are changed. After calling this method,
 // |setSoundInputDevice:soundOutputDevice:| must be called to set appropriate sound IO.
 - (void)updateAudioDevices;
-
-// Returns a string that describes given SIP response code from RFC 3261.
-- (NSString *)stringForSIPResponseCode:(NSInteger)responseCode;
 
 @end

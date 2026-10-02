@@ -17,15 +17,11 @@
 //
 
 public final class SystemToUserAgentAudioDeviceMap {
-    private let systemDevices: [SystemAudioDevice]
-    private let userAgentDevices: [UserAgentAudioDevice]
     private var idMap: [SystemAudioDeviceID: UserAgentAudioDeviceID] = [:]
     private let idToUserAgentDevice: [UserAgentAudioDeviceID: UserAgentAudioDevice]
     private let nameToUserAgentDevice: UserAgentAudioDeviceNameToDeviceMap
 
     public init(systemDevices: [SystemAudioDevice], userAgentDevices: [UserAgentAudioDevice]) {
-        self.systemDevices = systemDevices
-        self.userAgentDevices = userAgentDevices
         idToUserAgentDevice = makeIDToDeviceMap(from: userAgentDevices)
         nameToUserAgentDevice = UserAgentAudioDeviceNameToDeviceMap(devices: userAgentDevices)
         systemDevices.forEach(updateIDMap(with:))

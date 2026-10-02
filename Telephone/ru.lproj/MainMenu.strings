@@ -21,7 +21,7 @@
 "57.title" = "jps Telephone";
 
 /* Class = "NSMenuItem"; title = "About Telephone"; ObjectID = "58"; */
-"58.title" = "About jps Telephone";
+"58.title" = "О программе jps Telephone";
 
 /* Class = "NSMenuItem"; title = "Close Window"; ObjectID = "73"; */
 "73.title" = "Закрыть окно";
@@ -48,10 +48,10 @@
 "131.title" = "Службы";
 
 /* Class = "NSMenuItem"; title = "Hide Telephone"; ObjectID = "134"; */
-"134.title" = "Hide jps Telephone";
+"134.title" = "Скрыть jps Telephone";
 
 /* Class = "NSMenuItem"; title = "Quit Telephone"; ObjectID = "136"; */
-"136.title" = "Quit jps Telephone";
+"136.title" = "Завершить jps Telephone";
 
 /* Class = "NSMenuItem"; title = "Hide Others"; ObjectID = "145"; */
 "145.title" = "Скрыть остальные";

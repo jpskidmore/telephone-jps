@@ -6,7 +6,21 @@ if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
     exit 64
 fi
 
+if [ "$(uname -s)" != Darwin ]; then
+    echo "Ad-hoc release signing requires macOS." >&2
+    exit 69
+fi
+for tool in codesign ditto xattr plutil; do
+    command -v "$tool" >/dev/null 2>&1 || {
+        echo "Missing prerequisite: $tool" >&2
+        exit 69
+    }
+done
+test -x /usr/libexec/PlistBuddy || { echo "Missing prerequisite: PlistBuddy" >&2; exit 69; }
+
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+plutil -lint "$project_root/Telephone/Telephone.entitlements" \
+    "$project_root/ReceiptValidation/ReceiptValidation.entitlements" >/dev/null
 source_app_path=$1
 app_path=${2:-$source_app_path}
 

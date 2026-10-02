@@ -94,6 +94,27 @@ seconds on the existing background encoder queue. A regression test recreates
 the timing window by replacing an incomplete track with a finalized WAV while
 conversion is waiting.
 
+## Unreleased — recording ownership and reviewed cleanup
+
+The source update after 2.0.3 moves destination-access ownership from a reusable
+call controller to the individual recording call/session. Finalization takes its
+own destination-access lifetime, so a new call in the same window can stop and
+finalize independently while the old conversion is still pending. Normal Quit
+waits asynchronously for both SIP shutdown and registered recording completions,
+including the main-queue callbacks, without blocking the interface.
+
+The update also removes reviewed dead code, repairs stale tests, completes
+localized recording explanations, reuses the existing repository-link rename,
+and adds staged build instructions for all six dependencies. Validation scripts
+now pin/check the full archive inventory and reject missing tools or invalid
+entitlement plists instead of treating those errors as successful checks.
+
+This is a source-only cleanup. Version/build remain 2.0.3/154; no native build,
+XCTest, recording harness, signing, app launch or live call was run in the Linux
+cleanup environment. See [the cleanup notes](docs/releases/unreleased.md) and
+[validation instructions](docs/VALIDATION.md) before treating the update as ready
+for binary distribution.
+
 ## Main implementation locations
 
 - `Telephone/AKStereoRecording.h` and `.m`: secure output creation, stereo merge, MP3/Ogg encoding, and cleanup.
@@ -102,8 +123,10 @@ conversion is waiting.
 - `Telephone/GeneralPreferencesViewController.m` and `Telephone/Base.lproj/GeneralPreferencesView.xib`: recording preferences UI.
 - `Telephone/ActiveCallViewController.m` and its XIB: visible recording indicator.
 - `Tests/RecordingHardeningHarness.m`: focused recording and encoder regression harness.
-- `Scripts/run-recording-tests.sh`: normal and sanitizer-enabled harness runs.
-- `Scripts/verify-vendor-security.sh`: dependency versions, architectures, metadata, and entitlement checks.
+- `Scripts/run-recording-tests.sh`: the ordinary, unsanitized recording harness build and run.
+- `Scripts/verify-dependency-manifests.py`: portable source/binary hashes, inventories and linked-library checks.
+- `Scripts/verify-vendor-security.sh`: native dependency versions, all archive architectures, metadata, and parsed entitlement checks.
+- `Scripts/run-macos-validation.sh`: focused harness, all four XCTest bundles and unsigned Release build.
 - `Scripts/sign-adhoc-release.sh`: nested-code signing and the ad-hoc-only library-validation exception.
 - `Scripts/verify-adhoc-release.sh`: validates the finished app's signatures, version, architecture, and distribution entitlements.
 

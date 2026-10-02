@@ -17,12 +17,10 @@
 //
 
 final class UserAgentAudioDeviceNameToDeviceMap {
-    private let devices: [UserAgentAudioDevice]
     private var inputMap: [String: UserAgentAudioDevice] = [:]
     private var outputMap: [String: UserAgentAudioDevice] = [:]
 
     init(devices: [UserAgentAudioDevice]) {
-        self.devices = devices
         devices.forEach(updateInputDeviceMap)
         devices.forEach(updateOutputDeviceMap)
     }

@@ -25,6 +25,10 @@
 
 @optional
 
+/// Called immediately before starting, including delayed purchase-check results.
+/// Returning NO prevents a restart while the application is terminating.
+- (BOOL)SIPUserAgentShouldStart;
+
 /// Called when AKSIPUserAgent is about to add an account.
 - (BOOL)SIPUserAgentShouldAddAccount:(AKSIPAccount *)anAccount;
 

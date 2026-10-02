@@ -60,4 +60,16 @@ final class FirstSystemAudioDeviceTests: XCTestCase {
 
         XCTAssertTrue(sut.isNil)
     }
+
+    func testStopsSearchingAfterFirstMatchingDevice() {
+        var checkedIdentifiers: [Int] = []
+
+        let sut = FirstSystemAudioDevice(devices: factory.all) { device in
+            checkedIdentifiers.append(device.identifier)
+            return device.hasOutputs
+        }
+
+        XCTAssertTrue(sut == factory.firstOutput)
+        XCTAssertEqual(checkedIdentifiers, [factory.firstInput.identifier, factory.firstOutput.identifier])
+    }
 }

@@ -25,7 +25,7 @@ struct FirstSystemAudioDevice {
 }
 
 private func first(of devices: [SystemAudioDevice], predicate: (SystemAudioDevice) -> Bool) -> SystemAudioDevice {
-    if let result = devices.filter(predicate).first {
+    if let result = devices.first(where: predicate) {
         return result
     } else {
         return NullSystemAudioDevice()

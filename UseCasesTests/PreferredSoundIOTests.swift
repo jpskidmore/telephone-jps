@@ -194,6 +194,43 @@ struct PreferredSoundIOTests {
 
         #expect(sut.ringtoneOutput == factory.firstOutput)
     }
+
+    // MARK: - Settings snapshot
+
+    @Test func settingsSoundIOKeepsSelectedDevicesWhenSettingsChange() {
+        settings[SettingsKeys.soundInput] = factory.someInput.name
+        settings[SettingsKeys.soundOutput] = factory.someOutput.name
+        settings[SettingsKeys.ringtoneOutput] = factory.firstOutput.name
+        let sut = SettingsSoundIO(devices: SystemAudioDevices(devices: factory.all), settings: settings)
+
+        settings[SettingsKeys.soundInput] = factory.firstInput.name
+        settings[SettingsKeys.soundOutput] = factory.firstOutput.name
+        settings[SettingsKeys.ringtoneOutput] = factory.someOutput.name
+
+        #expect(sut.input == factory.someInput)
+        #expect(sut.output == factory.someOutput)
+        #expect(sut.ringtoneOutput == factory.firstOutput)
+    }
+
+    @Test func settingsSoundIOReturnsNullDevicesForMissingNames() {
+        let sut = SettingsSoundIO(devices: SystemAudioDevices(devices: factory.all), settings: settings)
+
+        #expect(sut.input.isNil)
+        #expect(sut.output.isNil)
+        #expect(sut.ringtoneOutput.isNil)
+    }
+
+    @Test func settingsSoundIOReturnsNullDevicesForUnknownOrWrongDirectionNames() {
+        settings[SettingsKeys.soundInput] = factory.outputOnly.name
+        settings[SettingsKeys.soundOutput] = factory.inputOnly.name
+        settings[SettingsKeys.ringtoneOutput] = nonexistentDeviceName
+
+        let sut = SettingsSoundIO(devices: SystemAudioDevices(devices: factory.all), settings: settings)
+
+        #expect(sut.input.isNil)
+        #expect(sut.output.isNil)
+        #expect(sut.ringtoneOutput.isNil)
+    }
 }
 
 private extension PreferredSoundIOTests {
