@@ -53,6 +53,8 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 
 @class AKSIPAccount, AKSIPCall, AKSIPURIParser;
 
+// Legacy object-pointer contracts remain explicitly unspecified to preserve their
+// existing Swift importer behavior; new recovery APIs state their own contract.
 // The AKSIPUserAgent class implements SIP User Agent functionality. You can use it to create, configure, and start user
 // agent, add and remove accounts, and set sound devices for input and output. You need to restart the user agent after
 // you change its properties when it is already running.
@@ -63,7 +65,7 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 }
 
 // The receiver's delegate.
-@property(nonatomic, weak) id <AKSIPUserAgentDelegate> delegate;
+@property(nonatomic, weak) id <AKSIPUserAgentDelegate> _Null_unspecified delegate;
 
 // A Boolean value indicating whether the receiver has been started.
 @property(nonatomic, readonly, assign, getter=isStarted) BOOL started;
@@ -86,29 +88,29 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 
 // An array of DNS servers to use by the receiver. If set, DNS SRV will be
 // enabled. Only first kAKSIPUserAgentNameServersMax are used.
-@property(nonatomic, copy) NSArray *nameServers;
+@property(nonatomic, copy) NSArray * _Null_unspecified nameServers;
 
 // SIP proxy host to visit for all outgoing requests. Will be used for all
 // accounts. The final route set for outgoing requests consists of this proxy
 // and proxy configured for the account.
-@property(nonatomic, copy) NSString *outboundProxyHost;
+@property(nonatomic, copy) NSString * _Null_unspecified outboundProxyHost;
 
 // Network port to use with the outbound proxy.
 // Default: 5060.
 @property(nonatomic, assign) NSUInteger outboundProxyPort;
 
 // STUN server host.
-@property(nonatomic, copy) NSString *STUNServerHost;
+@property(nonatomic, copy) NSString * _Null_unspecified STUNServerHost;
 
 // Network port to use with the STUN server.
 // Default: 3478.
 @property(nonatomic, assign) NSUInteger STUNServerPort;
 
 // User agent string.
-@property(nonatomic, copy) NSString *userAgentString;
+@property(nonatomic, copy) NSString * _Null_unspecified userAgentString;
 
 // Path to the log file.
-@property(nonatomic, copy) NSString *logFileName;
+@property(nonatomic, copy) NSString * _Null_unspecified logFileName;
 
 // Verbosity level.
 // Default: 3.
@@ -148,13 +150,13 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 /// Default: YES.
 @property(nonatomic, assign) BOOL locksCodec;
 
-@property(nonatomic, readonly) AKSIPURIParser *parser;
+@property(nonatomic, readonly) AKSIPURIParser * _Null_unspecified parser;
 
 // Returns the shared SIP user agent object.
-+ (AKSIPUserAgent *)sharedUserAgent;
++ (AKSIPUserAgent * _Null_unspecified )sharedUserAgent;
 
 // Designated initializer. Initializes a SIP user agent and sets its delegate.
-- (instancetype)initWithDelegate:(id<AKSIPUserAgentDelegate>)aDelegate;
+- (instancetype _Null_unspecified)initWithDelegate:(id <AKSIPUserAgentDelegate> _Null_unspecified)aDelegate;
 
 // Starts user agent.
 - (void)start;
@@ -164,25 +166,25 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 - (void)stopAndWait;
 
 // Adds an account to the user agent.
-- (BOOL)addAccount:(AKSIPAccount *)anAccount withPassword:(NSString *)aPassword;
+- (BOOL)addAccount:(AKSIPAccount * _Null_unspecified )anAccount withPassword:(NSString * _Null_unspecified )aPassword;
 
 // Removes an account from the user agent.
-- (BOOL)removeAccount:(AKSIPAccount *)account;
+- (BOOL)removeAccount:(AKSIPAccount * _Null_unspecified )account;
 
 // Returns a SIP account with a given identifier.
-- (AKSIPAccount *)accountWithIdentifier:(NSInteger)identifier;
+- (AKSIPAccount * _Null_unspecified )accountWithIdentifier:(NSInteger)identifier;
 
 // Returns a SIP call with a given identifier.
-- (AKSIPCall *)callWithIdentifier:(NSInteger)identifier;
+- (AKSIPCall * _Null_unspecified )callWithIdentifier:(NSInteger)identifier;
 
 // Hangs up all calls controlled by the receiver.
 - (void)hangUpAllCalls;
 
 // Starts local ringback sound for the specified call.
-- (void)startRingbackForCall:(AKSIPCall *)call;
+- (void)startRingbackForCall:(AKSIPCall * _Null_unspecified )call;
 
 // Stops local ringback sound for the specified call.
-- (void)stopRingbackForCall:(AKSIPCall *)call;
+- (void)stopRingbackForCall:(AKSIPCall * _Null_unspecified )call;
 
 // Sets sound input and output.
 - (BOOL)setSoundInputDevice:(NSInteger)input soundOutputDevice:(NSInteger)output;
