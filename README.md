@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/jps-Telephone-2/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/jpskidmore/jps-Telephone-2"></a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/jpskidmore/telephone-jps"></a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
   <a href="LICENSE"><img alt="GPL version 3" src="https://img.shields.io/badge/license-GPLv3-blue"></a>
@@ -20,7 +20,7 @@
 
 ## Download
 
-Download the tested application ZIP from the [latest GitHub release](https://github.com/jpskidmore/jps-Telephone-2/releases/latest). The release also contains a complete source ZIP, checksums, and the verification report for the exact build.
+Download the tested application ZIP from the [latest GitHub release](https://github.com/jpskidmore/telephone-jps/releases/latest). The release also contains a complete source ZIP, checksums, and the verification report for the exact build.
 
 This build targets Apple silicon and macOS 15.6 or later. It is ad-hoc signed but not Apple-notarized. After unzipping and moving the app to **Applications**, macOS may require you to Control-click the app and choose **Open** the first time.
 
@@ -110,7 +110,7 @@ Instructions for rebuilding Opus, LibreSSL, and PJSIP are retained below in [Dep
 curl -O https://downloads.xiph.org/releases/opus/opus-1.6.1.tar.gz
 tar xzvf opus-1.6.1.tar.gz
 cd opus-1.6.1
-./configure --prefix=/path/to/jps-Telephone/ThirdParty/Opus \
+./configure --prefix=/path/to/telephone-jps/ThirdParty/Opus \
   --disable-shared --disable-extra-programs --disable-doc \
   CFLAGS='-arch arm64 -Os -mmacosx-version-min=15.6'
 make
@@ -125,7 +125,7 @@ curl -O https://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-4.3.2.tar.gz.asc
 gpg --verify libressl-4.3.2.tar.gz.asc
 tar xzvf libressl-4.3.2.tar.gz
 cd libressl-4.3.2
-./configure --prefix=/path/to/jps-Telephone/ThirdParty/LibreSSL \
+./configure --prefix=/path/to/telephone-jps/ThirdParty/LibreSSL \
   --with-openssldir=/etc/ssl --disable-shared --disable-tests \
   CFLAGS='-arch arm64 -Os -mmacosx-version-min=15.6'
 make
@@ -151,9 +151,9 @@ Apply the two patches in `ThirdParty/PJSIP/patches/`, then build:
 
 ```sh
 ./configure \
-  --prefix=/path/to/jps-Telephone/ThirdParty/PJSIP \
-  --with-opus=/path/to/jps-Telephone/ThirdParty/Opus \
-  --with-ssl=/path/to/jps-Telephone/ThirdParty/LibreSSL \
+  --prefix=/path/to/telephone-jps/ThirdParty/PJSIP \
+  --with-opus=/path/to/telephone-jps/ThirdParty/Opus \
+  --with-ssl=/path/to/telephone-jps/ThirdParty/LibreSSL \
   --disable-video --disable-libyuv --disable-libwebrtc \
   --host=arm-apple-darwin \
   CFLAGS='-arch arm64 -Os -DNDEBUG -mmacosx-version-min=15.6' \
