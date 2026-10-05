@@ -45,8 +45,7 @@
     XCTAssertEqual(backdrop.material, reduced ? NSVisualEffectMaterialWindowBackground : NSVisualEffectMaterialUnderWindowBackground);
     XCTAssertEqual(window.isOpaque, reduced);
     XCTAssertTrue((window.styleMask & NSWindowStyleMaskFullSizeContentView) != 0);
-    NSLayoutGuide *contentGuide = window.contentLayoutGuide;
-    XCTAssertLessThanOrEqual(NSMaxY([form convertRect:form.bounds toView:window.contentView]), NSMaxY(contentGuide.layoutFrame));
+    XCTAssertLessThanOrEqual(NSMaxY([form convertRect:form.bounds toView:window.contentView]), NSMaxY(window.contentLayoutRect));
 }
 
 - (void)testMaterialRebuildPreservesFocusedFieldAndSelection {
