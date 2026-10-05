@@ -44,7 +44,12 @@ version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$app_pa
 build_number=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$app_path/Contents/Info.plist")
 source_sha=$(git rev-parse HEAD)
 dist="$run_dir/distribution"
-ditto -c -k --sequesterRsrc --keepParent "$app_path" "$dist/jps-Telephone-${version}-arm64.zip"
+ditto -c -k --norsrc --noextattr --keepParent "$app_path" "$dist/jps-Telephone-${version}-arm64.zip"
+# Verify the distributed bytes after an extraction, not just the source bundle.
+roundtrip_dir="$run_dir/Unpacked"
+mkdir -p "$roundtrip_dir"
+ditto -x -k --norsrc --noextattr "$dist/jps-Telephone-${version}-arm64.zip" "$roundtrip_dir"
+./Scripts/verify-adhoc-release.sh "$roundtrip_dir/jps Telephone.app"
 git archive --format=zip --prefix="telephone-jps-${version}/" \
     --output="$dist/jps-Telephone-${version}-source.zip" "$source_sha"
 {

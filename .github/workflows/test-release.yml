@@ -9,6 +9,11 @@ on:
       - .github/workflows/test-release.yml
       - Scripts/build-test-release.sh
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish this verified build after local interface acceptance
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -53,7 +58,14 @@ jobs:
             build/test-release/*.xcresult
             build/test-release.log
           if-no-files-found: ignore
+      - name: Preserve local test candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: local-test-release-${{ github.sha }}
+          path: build/test-release/distribution/*
+          if-no-files-found: error
       - name: Upload verified local test build and source
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}

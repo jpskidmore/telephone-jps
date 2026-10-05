@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        A62000000000000000000002 /* PreferencesControllerLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */; };
         A61000000000000000000003 /* AKLiquidGlass.m in Sources */ = {isa = PBXBuildFile; fileRef = A61000000000000000000002 /* AKLiquidGlass.m */; };
 		AFA000030000000000000003 /* AKAudioDeviceController.m in Sources */ = {isa = PBXBuildFile; fileRef = AFA000020000000000000002 /* AKAudioDeviceController.m */; };
 		B20000010000000000000001 /* CallControllerLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B20000020000000000000002 /* CallControllerLifecycleTests.m */; };
@@ -846,6 +847,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PreferencesControllerLifecycleTests.m; sourceTree = "<group>"; };
         A61000000000000000000001 /* AKLiquidGlass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AKLiquidGlass.h; sourceTree = "<group>"; };
         A61000000000000000000002 /* AKLiquidGlass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AKLiquidGlass.m; sourceTree = "<group>"; };
 		AFA000010000000000000001 /* AKAudioDeviceController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AKAudioDeviceController.h; sourceTree = "<group>"; };
@@ -2848,6 +2850,7 @@
 			isa = PBXGroup;
 			children = (
 				B20000020000000000000002 /* CallControllerLifecycleTests.m */,
+                A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */,
 				8A68C9511FFE6A8C005125AF /* ApplicationDataLocationsFake.swift */,
 				8A778C0D1E0C136C004B00B8 /* CallHistoryViewSpy.swift */,
 				8A769CFA2825A43400BC57CB /* ClipboardSpy.swift */,
@@ -4140,6 +4143,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B20000010000000000000001 /* CallControllerLifecycleTests.m in Sources */,
+                A62000000000000000000002 /* PreferencesControllerLifecycleTests.m in Sources */,
 				AAC0FFBF1BE38B3800A5C7E5 /* AKSIPUserAgentEventSource.swift in Sources */,
 				8A68C9521FFE6A8C005125AF /* ApplicationDataLocationsFake.swift in Sources */,
 				8AD2C5EA1EADFF32005EED3E /* ArrayDifferenceTests.swift in Sources */,
@@ -5258,7 +5262,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 155;
+				CURRENT_PROJECT_VERSION = 156;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -5284,7 +5288,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 2.1.3;
+				MARKETING_VERSION = 2.1.4;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",
@@ -5326,7 +5330,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 155;
+				CURRENT_PROJECT_VERSION = 156;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "PJ_AUTOCONF=1";
@@ -5349,7 +5353,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 2.1.3;
+				MARKETING_VERSION = 2.1.4;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",

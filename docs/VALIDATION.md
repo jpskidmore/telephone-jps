@@ -1,5 +1,24 @@
 # Validation and release checks
 
+## 2.1.4 Settings initialization repair
+
+Actual local inspection of 2.1.3 found a blank Settings window. The AppKit
+exception stack showed `NSTableView.setDataSource` synchronously selecting a row
+and entering `displaySettingsController:animate:` before the detail view existed.
+The previous component checks and four suites did not cover that startup path.
+
+The corrected controller assembles the hierarchy before populating the table and
+guards initial selection. A hosted regression loads the actual Preferences nib
+and complete controller. An independent local native harness reproduces the old
+exception and checks the corrected content hierarchy. The corrected compiled app
+must also pass local General, Accounts, Sound and Network inspection before
+release publication.
+
+The workflow now uploads an app/source candidate after all automatic gates pass.
+Publication requires an explicit workflow run with `publish_release` enabled
+after local interface acceptance. Archive extraction and signature verification
+are included in the packaging gate.
+
 ## 2.1.3 local test release
 
 Version 2.1.3 (build 155) adds Liquid Glass and native call/settings presentation

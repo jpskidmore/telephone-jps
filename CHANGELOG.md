@@ -1,5 +1,15 @@
 # Changelog
 
+## jps Telephone 2.1.4 (build 156) — Settings initialization repair
+
+- Prevent initial sidebar selection from navigating before the detail hierarchy exists
+- Keep the window title consistently named Settings
+- Add a complete Settings window initialization regression
+- Preserve a downloadable candidate for local GUI acceptance before release publication
+- Verify the app ZIP after extraction without Finder/resource metadata
+
+See [release notes](docs/releases/2.1.4.md).
+
 ## jps Telephone 2.1.3 (build 155) — local test release
 
 - Add system Liquid Glass to call controls and Settings navigation on macOS 26+, with native macOS 15 fallback

@@ -160,6 +160,9 @@
 }
 
 - (void)buildSettingsSidebar {
+    // NSTableView can select its first row synchronously when a data source is
+    // attached. Suppress navigation until the complete detail hierarchy exists.
+    self.updatingSidebarSelection = YES;
     self.settingsContainerController = [[NSViewController alloc] init];
     NSView *container = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 708, 360)];
     self.settingsContainerController.view = container;
@@ -190,8 +193,6 @@
     self.settingsSidebar.allowsEmptySelection = NO;
     self.settingsSidebar.allowsMultipleSelection = NO;
     self.settingsSidebar.columnAutoresizingStyle = NSTableViewLastColumnOnlyAutoresizingStyle;
-    self.settingsSidebar.delegate = self;
-    self.settingsSidebar.dataSource = self;
     self.settingsSidebar.accessibilityLabel = NSLocalizedString(@"Settings sections", @"Settings navigation accessibility label.");
     scroll.documentView = self.settingsSidebar;
     [sidebar.contentView addSubview:scroll];
@@ -216,6 +217,10 @@
         [self.settingsDetailView.topAnchor constraintEqualToAnchor:container.topAnchor],
         [self.settingsDetailView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor]
     ]];
+    self.settingsSidebar.dataSource = self;
+    self.settingsSidebar.delegate = self;
+    [self.settingsSidebar reloadData];
+    self.updatingSidebarSelection = NO;
 }
 
 - (void)displaySettingsController:(NSViewController *)controller animate:(BOOL)animate {
@@ -244,7 +249,7 @@
     frame.size.height += heightDelta;
     frame.origin.y -= heightDelta;
     [self.window setFrame:frame display:YES animate:animate && !NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion];
-    self.window.title = controller.title;
+    self.window.title = NSLocalizedString(@"Settings", @"Settings window title.");
     [self.window recalculateKeyViewLoop];
 }
 
@@ -344,7 +349,6 @@
     }
     [self displaySettingsController:controller animate:YES];
     [self selectSidebarItem:sender];
-    self.window.title = title;
     if ([firstResponder acceptsFirstResponder]) {
         [self.window makeFirstResponder:firstResponder];
     }
