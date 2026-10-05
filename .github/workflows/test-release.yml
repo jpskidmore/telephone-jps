@@ -31,6 +31,13 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
+      - name: Install verification prerequisite
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v rg >/dev/null 2>&1; then
+            brew install ripgrep
+          fi
       - name: Validate, build, sign and package
         shell: bash
         run: |
