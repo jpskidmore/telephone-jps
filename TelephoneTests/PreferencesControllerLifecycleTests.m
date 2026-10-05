@@ -44,6 +44,14 @@
     XCTAssertEqual(backdrop.blendingMode, NSVisualEffectBlendingModeBehindWindow);
     XCTAssertEqual(backdrop.material, reduced ? NSVisualEffectMaterialWindowBackground : NSVisualEffectMaterialUnderWindowBackground);
     XCTAssertEqual(window.isOpaque, reduced);
+    XCTAssertEqualObjects(window.backgroundColor, NSColor.windowBackgroundColor);
+    // Reapplying accessibility options must retain the opaque native titlebar
+    // without changing the body material or making the normal window opaque.
+    [NSWorkspace.sharedWorkspace.notificationCenter postNotificationName:NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification
+                                                                   object:nil];
+    XCTAssertEqualObjects(window.backgroundColor, NSColor.windowBackgroundColor);
+    XCTAssertEqual(window.isOpaque, reduced);
+    XCTAssertEqual(backdrop.material, reduced ? NSVisualEffectMaterialWindowBackground : NSVisualEffectMaterialUnderWindowBackground);
     XCTAssertTrue((window.styleMask & NSWindowStyleMaskTitled) != 0);
     XCTAssertTrue((window.styleMask & NSWindowStyleMaskClosable) != 0);
     XCTAssertFalse((window.styleMask & NSWindowStyleMaskFullSizeContentView) != 0);

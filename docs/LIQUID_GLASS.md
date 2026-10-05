@@ -13,7 +13,10 @@ controls. The background is a standard AppKit material; the settings forms and
 caller text are not wrapped in additional glass.
 
 Settings keeps the standard native titlebar with a visible title and close
-control. Its material fills the content area below that titlebar; the sidebar
+control. Its titlebar uses the opaque semantic `windowBackgroundColor`, including
+after accessibility options change, while the window remains nonopaque for its
+desktop-blending content material. The forms and sidebar keep their existing
+composition. Its material fills the content area below that titlebar; the sidebar
 and forms stay inside the window content layout guide. Minimize and zoom retain
 the disabled behavior appropriate to a pane-sized Settings window. The call
 backdrop is inserted underneath the existing content and account footer,
@@ -48,6 +51,7 @@ The existing DTMF responder, SIP state transitions, call handling, recording and
 - [Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass) — use standard system components and reserve glass for the navigation/control layer.
 - [NSGlassEffectView](https://developer.apple.com/documentation/appkit/nsglasseffectview) — native AppKit material and content embedding.
 - [UnderWindowBackground](https://developer.apple.com/documentation/appkit/nsvisualeffectview/material-swift.enum/underwindowbackground) and [BehindWindow](https://developer.apple.com/documentation/appkit/nsvisualeffectview/blendingmode-swift.enum/behindwindow) — semantic window backdrop and desktop blending.
+- [windowBackgroundColor](https://developer.apple.com/documentation/appkit/nscolor/windowbackgroundcolor) and [titlebarAppearsTransparent](https://developer.apple.com/documentation/appkit/nswindow/titlebarappearstransparent) — semantic window background and the native titlebar's own background drawing.
 - [Build an AppKit app with the new design](https://developer.apple.com/videos/play/wwdc2025/310/) — native content embedding, glass hierarchy and titlebar/sidebar layout.
 - [Materials](https://developer.apple.com/design/human-interface-guidelines/materials) — semantic material choice and legibility.
 - [Windows](https://developer.apple.com/design/human-interface-guidelines/windows) and [Settings](https://developer.apple.com/design/human-interface-guidelines/settings) — recognizable system window controls and disabled minimize/zoom for Settings.
@@ -67,6 +71,7 @@ After installing the test build, check:
 - Incoming Answer/Decline; outgoing Connecting/End Call; active Mute/Unmute, Hold/Resume, Transfer and DTMF; ended Call Back; automatic recording and the existing transfer sheets.
 - Settings with mouse, sidebar arrow keys, Tab and VoiceOver. Verify the selected section, accessible action names, copyable caller/status labels and disabled controls.
 - Settings shows its title and native red close control when active. Click that control, reopen with Command-comma, then verify Command-W closes it as well.
+- Put a detailed window behind Settings: its text and shapes stay hidden behind the titlebar, while the forms and glass sidebar retain their existing appearance. Check after toggling Reduce Transparency on and off.
 - Network edit followed by another section or window close: Save, Cancel and Don't Save. Cancel keeps Network selected and its pending edits intact.
 - macOS 15.6 fallback in addition to macOS 26+ native glass; Reduce Motion during Settings section changes.
 

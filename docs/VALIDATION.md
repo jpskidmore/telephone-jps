@@ -43,6 +43,15 @@ The hosted lifecycle regression now checks the native close control and actual
 close/reopen behavior. The replacement candidate must pass the same release
 gates and local window inspection before publication.
 
+[Titlebar candidate run 37357912823](https://github.com/jpskidmore/telephone-jps/actions/runs/37357912823)
+passed all 519 tests across the four suites, including the native Close-button
+and reopen regression, plus Release signing and ZIP verification for
+`e4fd5792d908ada30bf9051ff19010698418e275`. User inspection confirmed the traffic
+lights were present and the fields looked correct, but the title bar was too
+transparent. The final refinement gives only the title bar a semantic opaque
+window backing; the existing field and sidebar materials are preserved. It
+follows the same candidate-build and local-interface publication gate.
+
 The workflow now uploads an app/source candidate after all automatic gates pass.
 Publication requires an explicit workflow run with `publish_release` enabled
 after local interface acceptance. Archive extraction and signature verification

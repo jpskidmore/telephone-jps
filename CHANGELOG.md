@@ -7,6 +7,7 @@
 - Preserve an opaque accessibility fallback and keyboard focus when materials change
 - Keep the window title consistently named Settings
 - Restore the standard macOS title bar and visible native close control in Settings
+- Give the Settings title bar an opaque system backing while preserving the existing form and sidebar materials
 - Add a complete Settings window initialization regression
 - Preserve a downloadable candidate for local GUI acceptance before release publication
 - Verify the app ZIP after extraction without Finder/resource metadata

@@ -19,6 +19,11 @@
     [NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self];
 }
 
+- (void)setUsesOpaqueTitlebarBackground:(BOOL)usesOpaqueTitlebarBackground {
+    _usesOpaqueTitlebarBackground = usesOpaqueTitlebarBackground;
+    [self updateWindowComposition];
+}
+
 - (void)viewDidMoveToWindow {
     [super viewDidMoveToWindow];
     [self updateWindowComposition];
@@ -39,7 +44,10 @@
     // explicitly opaque, whereas UnderWindowBackground permits desktop blend.
     self.material = reduced ? NSVisualEffectMaterialWindowBackground : NSVisualEffectMaterialUnderWindowBackground;
     self.window.opaque = reduced;
-    self.window.backgroundColor = reduced ? NSColor.windowBackgroundColor : NSColor.clearColor;
+    // A normal Settings titlebar draws the window background. Preserve its
+    // semantic opaque color without making the desktop-blending body opaque.
+    self.window.backgroundColor = reduced || self.usesOpaqueTitlebarBackground
+                                  ? NSColor.windowBackgroundColor : NSColor.clearColor;
     self.needsDisplay = YES;
     [self.window invalidateShadow];
 }

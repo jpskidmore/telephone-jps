@@ -7,6 +7,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// It also switches the containing window to an opaque background when Reduce
 /// Transparency is enabled, without changing any controls or their hierarchy.
 @interface AKWindowMaterialView : NSVisualEffectView
+/// Keeps the native titlebar's semantic background while the content backdrop
+/// remains nonopaque. Settings opts in; call-window composition is unchanged.
+@property(nonatomic) BOOL usesOpaqueTitlebarBackground;
 @end
 
 /// A system material reserved for controls and navigation, not primary content.

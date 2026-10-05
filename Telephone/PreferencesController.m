@@ -170,7 +170,8 @@
     // attached. Suppress navigation until the complete detail hierarchy exists.
     self.updatingSidebarSelection = YES;
     self.settingsContainerController = [[NSViewController alloc] init];
-    NSView *container = [[AKWindowMaterialView alloc] initWithFrame:NSMakeRect(0, 0, 708, 360)];
+    AKWindowMaterialView *container = [[AKWindowMaterialView alloc] initWithFrame:NSMakeRect(0, 0, 708, 360)];
+    container.usesOpaqueTitlebarBackground = YES;
     self.settingsContainerController.view = container;
     self.contentViewController = self.settingsContainerController;
 
