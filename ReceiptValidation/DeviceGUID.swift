@@ -25,11 +25,18 @@ struct DeviceGUID {
     init() {
         dataValue = makeGUID()
     }
+
+    static func macAddressData(from property: Unmanaged<CFTypeRef>?) -> Data? {
+        // IOKit can return no property, or a CF type other than the expected data.
+        // Consume a successful Create result exactly once in either case.
+        return property?.takeRetainedValue() as? Data
+    }
 }
 
 private func makeGUID() -> Data {
     let iterator = makeIterator()
     guard iterator != 0 else { return Data() }
+    defer { IOObjectRelease(iterator) }
 
     var mac = Data()
     var service = IOIteratorNext(iterator)
@@ -37,14 +44,15 @@ private func makeGUID() -> Data {
         var parent: io_object_t = 0
         let status = IORegistryEntryGetParentEntry(service, kIOServicePlane, &parent)
         if status == KERN_SUCCESS {
-            mac = (IORegistryEntryCreateCFProperty(parent, "IOMACAddress" as CFString, kCFAllocatorDefault, 0).takeRetainedValue() as! CFData) as Data
+            if let address = DeviceGUID.macAddressData(from:
+                IORegistryEntryCreateCFProperty(parent, "IOMACAddress" as CFString, kCFAllocatorDefault, 0)) {
+                mac = address
+            }
             IOObjectRelease(parent)
         }
         IOObjectRelease(service)
         service = IOIteratorNext(iterator)
     }
-
-    IOObjectRelease(iterator)
 
     return mac
 }

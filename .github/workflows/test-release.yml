@@ -1,0 +1,64 @@
+name: Build local test release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Telephone.xcodeproj/project.pbxproj
+      - .github/workflows/test-release.yml
+      - Scripts/build-test-release.sh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'jpskidmore/telephone-jps'
+    runs-on: macos-15
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Validate, build, sign and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          ./Scripts/build-test-release.sh 2>&1 | tee build/test-release.log
+      - name: Preserve validation results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: native-validation-${{ github.sha }}
+          path: |
+            build/test-release/*.xcresult
+            build/test-release.log
+          if-no-files-found: ignore
+      - name: Upload verified local test build and source
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' 'build/test-release/Products/Release/jps Telephone.app/Contents/Info.plist')
+          tag="v${version}"
+          # Never replace an existing version's assets or move its tag.
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists; refusing to replace it." >&2
+            exit 1
+          fi
+          gh release create "$tag" build/test-release/distribution/* \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "jps Telephone ${version} — local test build" \
+            --notes-file "docs/releases/${version}.md" --prerelease --latest=false

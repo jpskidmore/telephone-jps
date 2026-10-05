@@ -16,12 +16,13 @@
 //  GNU General Public License for more details.
 //
 
+import Foundation
 import UseCases
 
 final class FoundationToUseCasesTimerAdapterFactory: TimerFactory {
     func makeRepeatingTimer(interval: Double, action: @escaping () -> Void) -> UseCases.Timer {
         let timer = FoundationToUseCasesTimerAdapter(action: action)
-        timer.timer = Timer.scheduledTimer(
+        timer.timer = Foundation.Timer.scheduledTimer(
             timeInterval: interval,
             target: timer,
             selector: #selector(FoundationToUseCasesTimerAdapter.tick),

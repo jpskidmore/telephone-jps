@@ -38,8 +38,8 @@
 /* Class = "NSMenu"; title = "Help"; ObjectID = "106"; */
 "106.title" = "Help";
 
-/* Class = "NSMenuItem"; title = "Preferences…"; ObjectID = "129"; */
-"129.title" = "Preferences…";
+/* Class = "NSMenuItem"; title = "Settings…"; ObjectID = "129"; */
+"129.title" = "Settings…";
 
 /* Class = "NSMenu"; title = "Services"; ObjectID = "130"; */
 "130.title" = "Services";

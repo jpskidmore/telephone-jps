@@ -212,3 +212,13 @@
 "Choose Call Recordings Folder" = "Выберите папку для записей звонков";
 "Choose" = "Выбрать";
 "The recordings folder could not be saved." = "Не удалось сохранить папку для записей.";
+
+/* Liquid Glass call presentation and Settings navigation. */
+"Transfer" = "Перевести";
+"Call Back" = "Перезвонить";
+"Settings" = "Настройки";
+"Settings sections" = "Разделы настроек";
+"Caller" = "Абонент";
+"Call status" = "Статус звонка";
+"Recording in progress" = "Идёт запись";
+"Connecting call" = "Соединение";

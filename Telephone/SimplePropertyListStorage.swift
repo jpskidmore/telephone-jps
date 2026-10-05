@@ -36,8 +36,6 @@ extension SimplePropertyListStorage: PropertyListStorage {
             return plist as? [[String : Any]] ?? []
         } catch CocoaError.fileReadNoSuchFile {
             return []
-        } catch {
-            throw error
         }
     }
 
@@ -51,8 +49,6 @@ extension SimplePropertyListStorage: PropertyListStorage {
             try manager.removeItem(at: url)
         } catch CocoaError.fileNoSuchFile {
             // Do nothing.
-        } catch {
-            throw error
         }
     }
 }

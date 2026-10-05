@@ -76,4 +76,31 @@ final class RepeatingSoundTests: XCTestCase {
 
         XCTAssertTrue(sound.didCallStop)
     }
+
+    func testInvalidatesTimerAndStopsSoundWhenReleasedWhilePlaying() {
+        sut.startPlaying()
+        weak var releasedSound = sut
+
+        sut = nil
+
+        XCTAssertNil(releasedSound)
+        XCTAssertEqual(timer.invalidateCallCount, 1)
+        XCTAssertTrue(sound.didCallStop)
+    }
+
+    func testDoesNotInvalidateTimerAgainWhenReleasedAfterStopping() {
+        sut.startPlaying()
+        sut.stopPlaying()
+
+        sut = nil
+
+        XCTAssertEqual(timer.invalidateCallCount, 1)
+    }
+
+    func testDoesNotStopUnstartedSoundWhenReleased() {
+        sut = nil
+
+        XCTAssertFalse(sound.didCallStop)
+        XCTAssertEqual(timer.invalidateCallCount, 0)
+    }
 }

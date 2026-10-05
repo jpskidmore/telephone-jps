@@ -17,6 +17,7 @@
 //
 
 #import "IncomingCallViewController.h"
+#import "AKLiquidGlass.h"
 
 #import "AppController.h"
 #import "CallController.h"
@@ -46,6 +47,15 @@
     NSString *reason = @"Initialize IncomingCallViewController with initWithCallController:";
     @throw [NSException exceptionWithName:@"AKBadInitCall" reason:reason userInfo:nil];
     return nil;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    AKStyleCallButton(self.declineCallButton, NSLocalizedString(@"Decline", @"Decline. Call menu item."), @"phone.down", YES);
+    AKStyleCallButton(self.acceptCallButton, NSLocalizedString(@"Answer", @"Answer call button."), @"phone", NO);
+    self.acceptCallButton.bezelColor = NSColor.controlAccentColor;
+    AKInstallCallPresentation(self.view, self.displayedNameField, self.statusField,
+                              @[self.declineCallButton, self.acceptCallButton], nil, nil);
 }
 
 - (void)removeObservations {

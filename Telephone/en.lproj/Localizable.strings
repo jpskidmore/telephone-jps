@@ -230,3 +230,13 @@
 
 /* Audio failure explanation and explicit recovery options. */
 "Your call may still be connected, but your microphone and speakers are unavailable. Telephone will not retry automatically. Retry Audio tries the selected devices again. To choose different devices, open Sound Settings, then select Retry Audio from the application menu." = "Your call may still be connected, but your microphone and speakers are unavailable. Telephone will not retry automatically. Retry Audio tries the selected devices again. To choose different devices, open Sound Settings, then select Retry Audio from the application menu.";
+
+/* Liquid Glass call presentation and Settings navigation. */
+"Transfer" = "Transfer";
+"Call Back" = "Call Back";
+"Settings" = "Settings";
+"Settings sections" = "Settings sections";
+"Caller" = "Caller";
+"Call status" = "Call status";
+"Recording in progress" = "Recording in progress";
+"Connecting call" = "Connecting call";

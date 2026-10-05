@@ -32,7 +32,7 @@ final class UserDefaultsPurchaseReminderSettings {
 extension UserDefaultsPurchaseReminderSettings: PurchaseReminderSettings {
     var date: Date {
         get {
-            return defaults.object(forKey: dateKey) as! Date
+            return defaults.object(forKey: dateKey) as? Date ?? Date.distantPast
         }
         set {
             defaults.set(newValue, forKey: dateKey)
@@ -41,7 +41,7 @@ extension UserDefaultsPurchaseReminderSettings: PurchaseReminderSettings {
 
     var version: String {
         get {
-            return defaults.string(forKey: versionKey)!
+            return defaults.string(forKey: versionKey) ?? ""
         }
         set {
             defaults.set(newValue, forKey: versionKey)

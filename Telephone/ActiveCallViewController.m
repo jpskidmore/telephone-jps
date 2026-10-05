@@ -17,6 +17,7 @@
 //
 
 #import "ActiveCallViewController.h"
+#import "AKLiquidGlass.h"
 
 #import "AKNSWindow+Resizing.h"
 #import "AKSIPCall.h"
@@ -37,6 +38,7 @@
 
 @property(nonatomic) IBOutlet NSProgressIndicator *callProgressIndicator;
 @property(nonatomic) IBOutlet NSButton *hangUpButton;
+@property(nonatomic) NSArray<NSButton *> *visibleCallControls;
 
 @end
 
@@ -58,6 +60,38 @@
     return nil;
 }
 
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Transfer subclasses retain their dedicated sheet layout and actions.
+    if (![self.nibName isEqualToString:@"ActiveCallView"]) {
+        return;
+    }
+    NSButton *mute = [NSButton buttonWithTitle:@"" target:self action:@selector(toggleMicrophoneMute:)];
+    NSButton *hold = [NSButton buttonWithTitle:@"" target:self action:@selector(toggleCallHold:)];
+    NSButton *transfer = [NSButton buttonWithTitle:@"" target:self action:@selector(showCallTransferSheet:)];
+    AKStyleCallButton(mute, NSLocalizedString(@"Mute", @"Mute. Call menu item."), @"mic.slash", NO);
+    AKStyleCallButton(hold, NSLocalizedString(@"Hold", @"Hold. Call menu item."), @"pause", NO);
+    AKStyleCallButton(transfer, NSLocalizedString(@"Transfer", @"Call transfer button."), @"arrow.right", NO);
+    AKStyleCallButton(self.hangUpButton, NSLocalizedString(@"End Call", @"End Call. Call menu item."), @"phone.down", YES);
+    self.visibleCallControls = @[mute, hold, transfer];
+    AKInstallCallPresentation(self.view, self.displayedNameField, self.statusField,
+                              @[mute, hold, transfer, self.hangUpButton],
+                              self.recordingIndicatorField, self.callProgressIndicator);
+    [self refreshVisibleCallControls];
+}
+
+- (void)refreshVisibleCallControls {
+    for (NSButton *button in self.visibleCallControls) {
+        NSMenuItem *validationItem = [[NSMenuItem alloc] initWithTitle:button.title
+                                                             action:button.action
+                                                      keyEquivalent:@""];
+        button.enabled = [self validateMenuItem:validationItem];
+        button.title = validationItem.title;
+        button.toolTip = validationItem.title;
+        button.accessibilityLabel = validationItem.title;
+    }
+}
+
 - (void)removeObservations {
     [[self displayedNameField] unbind:NSValueBinding];
     [[self statusField] unbind:NSValueBinding];
@@ -69,10 +103,12 @@
 
 - (IBAction)toggleCallHold:(id)sender {
     [[self callController] toggleCallHold];
+    [self refreshVisibleCallControls];
 }
 
 - (IBAction)toggleMicrophoneMute:(id)sender {
     [[self callController] toggleMicrophoneMute];
+    [self refreshVisibleCallControls];
 }
 
 - (IBAction)showCallTransferSheet:(id)sender {
@@ -86,6 +122,7 @@
 }
 
 - (void)startCallTimer {
+    [self refreshVisibleCallControls];
     if ([self callTimer] != nil && [[self callTimer] isValid]) {
         return;
     }
@@ -103,9 +140,13 @@
         [[self callTimer] invalidate];
         [self setCallTimer:nil];
     }
+    // Hold and mute suspend the status timer. Refresh here so controls still
+    // reflect native local/remote hold notifications while that timer is idle.
+    [self refreshVisibleCallControls];
 }
 
 - (void)callTimerTick:(NSTimer *)theTimer {
+    [self refreshVisibleCallControls];
     NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
     NSInteger seconds = (NSInteger)(now - ([[self callController] callStartTime]));
     
@@ -126,6 +167,7 @@
         self.showingProgress = YES;
     }
     [self showCallProgressIndicator];
+    [self refreshVisibleCallControls];
 }
 
 - (void)showHangUp {
@@ -135,10 +177,13 @@
         self.showingProgress = NO;
     }
     [self showHangUpButton];
+    [self refreshVisibleCallControls];
 }
 
 - (void)showCallProgressIndicator {
-    self.hangUpButton.hidden = YES;
+    // The cancel action remains discoverable while a call connects. Its
+    // enabled state continues to be controlled by the original call lifecycle.
+    self.hangUpButton.hidden = self.visibleCallControls == nil;
     self.callProgressIndicator.hidden = NO;
 }
 

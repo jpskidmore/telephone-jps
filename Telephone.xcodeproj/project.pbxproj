@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        A61000000000000000000003 /* AKLiquidGlass.m in Sources */ = {isa = PBXBuildFile; fileRef = A61000000000000000000002 /* AKLiquidGlass.m */; };
 		AFA000030000000000000003 /* AKAudioDeviceController.m in Sources */ = {isa = PBXBuildFile; fileRef = AFA000020000000000000002 /* AKAudioDeviceController.m */; };
 		B20000010000000000000001 /* CallControllerLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B20000020000000000000002 /* CallControllerLifecycleTests.m */; };
 		1DDD58160DA1D0A300B32029 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1DDD58140DA1D0A300B32029 /* MainMenu.xib */; };
@@ -845,6 +846,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        A61000000000000000000001 /* AKLiquidGlass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AKLiquidGlass.h; sourceTree = "<group>"; };
+        A61000000000000000000002 /* AKLiquidGlass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AKLiquidGlass.m; sourceTree = "<group>"; };
 		AFA000010000000000000001 /* AKAudioDeviceController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AKAudioDeviceController.h; sourceTree = "<group>"; };
 		AFA000020000000000000002 /* AKAudioDeviceController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AKAudioDeviceController.m; sourceTree = "<group>"; };
 		B20000020000000000000002 /* CallControllerLifecycleTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CallControllerLifecycleTests.m; sourceTree = "<group>"; };
@@ -3088,6 +3091,8 @@
 				AAD92135107A607C00F142A4 /* IncomingCallViewController.m */,
 				AAD92130107A5E9F00F142A4 /* ActiveCallViewController.h */,
 				AAD92131107A5E9F00F142A4 /* ActiveCallViewController.m */,
+                A61000000000000000000001 /* AKLiquidGlass.h */,
+                A61000000000000000000002 /* AKLiquidGlass.m */,
 				AAD92137107A608B00F142A4 /* EndedCallViewController.h */,
 				AAD92138107A608B00F142A4 /* EndedCallViewController.m */,
 				AACD92CE0ED434DD00AF8D17 /* AKActiveCallView.h */,
@@ -3850,6 +3855,7 @@
 				8AFC630E1D8C6F490022470D /* Array+Creating.swift in Sources */,
 				8A6568912180641400DAF0F6 /* PJSUACallInfo.m in Sources */,
 				AAD92132107A5E9F00F142A4 /* ActiveCallViewController.m in Sources */,
+                A61000000000000000000003 /* AKLiquidGlass.m in Sources */,
 				8AA748BC1D704962000587DC /* MusicPlayers.swift in Sources */,
 				8AB5A0C71D084DD300579CE8 /* DefaultStoreViewPresenter.swift in Sources */,
 				8A9D92371D2D0BD300491D59 /* SKPaymentQueueToStoreAdapter.swift in Sources */,
@@ -5252,7 +5258,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 154;
+				CURRENT_PROJECT_VERSION = 155;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -5278,7 +5284,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 2.0.3;
+				MARKETING_VERSION = 2.1.3;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",
@@ -5320,7 +5326,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 154;
+				CURRENT_PROJECT_VERSION = 155;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "PJ_AUTOCONF=1";
@@ -5343,7 +5349,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 2.0.3;
+				MARKETING_VERSION = 2.1.3;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",

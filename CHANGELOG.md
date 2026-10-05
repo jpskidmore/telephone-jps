@@ -1,5 +1,17 @@
 # Changelog
 
+## jps Telephone 2.1.3 (build 155) — local test release
+
+- Add system Liquid Glass to call controls and Settings navigation on macOS 26+, with native macOS 15 fallback
+- Reorganize call presentation with a clearer caller/status hierarchy and larger labeled controls
+- Replace Settings toolbar navigation with a native sidebar for the same four settings sections
+- Fix bounded Foundation/receipt lifetime and malformed-data failures; see the bug review
+- Include the previously unreleased audio recovery and recording-lifetime cleanup below
+- Add a native test-release pipeline that checks four XCTest bundles, signs/verifies the arm64 app, and uploads exact source and checksums
+
+See [release notes](docs/releases/2.1.3.md), [interface guidance](docs/LIQUID_GLASS.md),
+[bug review](docs/BUG_REVIEW_2.1.3.md) and the downloadable build verification report.
+
 ## Unreleased audio-failure recovery after 2.0.3
 
 - Contain repeated audio-device open failures across media, ringback, unmute and recording paths

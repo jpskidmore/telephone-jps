@@ -17,6 +17,7 @@
 //
 
 #import "EndedCallViewController.h"
+#import "AKLiquidGlass.h"
 
 #import "CallController.h"
 
@@ -36,6 +37,16 @@
     NSString *reason = @"Initialize EndedCallViewController with initWithCallController:";
     @throw [NSException exceptionWithName:@"AKBadInitCall" reason:reason userInfo:nil];
     return nil;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    if (![self.nibName isEqualToString:@"EndedCallView"]) {
+        return;
+    }
+    AKStyleCallButton(self.redialButton, NSLocalizedString(@"Call Back", @"Call back button."), @"phone.arrow.up.right", NO);
+    AKInstallCallPresentation(self.view, self.displayedNameField, self.statusField,
+                              @[self.redialButton], nil, nil);
 }
 
 - (void)removeObservations {

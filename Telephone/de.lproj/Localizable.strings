@@ -214,3 +214,13 @@
 "Choose Call Recordings Folder" = "Ordner für Anrufaufzeichnungen auswählen";
 "Choose" = "Auswählen";
 "The recordings folder could not be saved." = "Der Ordner für Anrufaufzeichnungen konnte nicht gespeichert werden.";
+
+/* Liquid Glass call presentation and Settings navigation. */
+"Transfer" = "Weiterleiten";
+"Call Back" = "Zurückrufen";
+"Settings" = "Einstellungen";
+"Settings sections" = "Einstellungsbereiche";
+"Caller" = "Anrufer";
+"Call status" = "Anrufstatus";
+"Recording in progress" = "Aufnahme läuft";
+"Connecting call" = "Anruf wird verbunden";

@@ -27,6 +27,15 @@ public final class RepeatingSound {
         self.interval = interval
         self.factory = factory
     }
+
+    deinit {
+        // The run loop retains a repeating timer after its ringtone owner goes
+        // away. Release its target and prevent further playback on teardown.
+        if timer != nil {
+            timer?.invalidate()
+            sound.stop()
+        }
+    }
 }
 
 extension RepeatingSound: Ringtone {

@@ -1,6 +1,24 @@
 # Validation and release checks
 
-## Current source-cleanup status
+## 2.1.3 local test release
+
+Version 2.1.3 (build 155) adds Liquid Glass and native call/settings presentation
+changes plus bounded bug fixes. `Scripts/build-test-release.sh` requires the
+dependency checks, native audio/recording harnesses, portable regressions, all
+four XCTest suites, Release compilation, ad-hoc signing and bundle verification
+before packaging. `.github/workflows/test-release.yml` publishes the result as a
+GitHub prerelease from the exact main SHA. Its generated `BUILD-VERIFICATION.md`
+and workflow logs record the actual execution; this paragraph describes the
+required pipeline, not a test result.
+
+The local 5 October environment has macOS 27.0.1 and the command-line tools but
+no full Xcode installation. Native standalone harnesses run locally; Xcode builds
+and XCTest use the standard GitHub arm64 macOS runner. User call/audio acceptance
+and visual accessibility checks are separate from compilation and unit tests.
+See [release notes](releases/2.1.3.md), [interface checks](LIQUID_GLASS.md) and
+[bug review](BUG_REVIEW_2.1.3.md).
+
+## Historical source-cleanup status before 2.1.3
 
 The October 2026 changes are an **unreleased source update**. Application metadata
 remains version 2.0.3, build 154. An unsigned Release build now passes the

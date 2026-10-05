@@ -133,3 +133,9 @@ for binary distribution.
 - `Scripts/verify-adhoc-release.sh`: validates the finished app's signatures, version, architecture, and distribution entitlements.
 
 For exact release notes, see [CHANGELOG.md](CHANGELOG.md). For user-facing recording behavior, see [RECORDING.md](RECORDING.md).
+
+## 2.1.3 — native interface and robustness
+
+The call interface separates caller identity, call status and actions, with native labeled controls and a system Liquid Glass surface on macOS 26+. Settings now presents the same four sections through a native sidebar. The calling, recording and settings operations retain their existing targets and bindings. Bounded timer/data/receipt fixes and reviewed cleanup are described in [the bug review](docs/BUG_REVIEW_2.1.3.md).
+
+The [test-release pipeline](docs/releases/2.1.3.md) runs native verification before uploading a signed arm64 test application, exact source snapshot, build report and checksums. Manual call and accessibility acceptance remain separate.

@@ -17,13 +17,23 @@
 //
 
 #import "PreferencesController.h"
-
-#import "AKNSWindow+Resizing.h"
+#import "AKLiquidGlass.h"
 
 #import "AccountPreferencesViewController.h"
 #import "GeneralPreferencesViewController.h"
 #import "NetworkPreferencesViewController.h"
 #import "SoundPreferencesViewController.h"
+
+@interface PreferencesController () <NSTableViewDelegate, NSTableViewDataSource>
+@property(nonatomic) NSViewController *settingsContainerController;
+@property(nonatomic) NSViewController *selectedSettingsController;
+@property(nonatomic) NSView *settingsDetailView;
+@property(nonatomic) NSTableView *settingsSidebar;
+@property(nonatomic) NSToolbar *navigationToolbar;
+@property(nonatomic) NSArray<NSToolbarItem *> *settingsItems;
+@property(nonatomic) NSArray<NSLayoutConstraint *> *settingsPaneConstraints;
+@property(nonatomic) BOOL updatingSidebarSelection;
+@end
 
 @implementation PreferencesController
 
@@ -135,16 +145,170 @@
 }
 
 - (void)windowDidLoad {
-    self.toolbar.selectedItemIdentifier = self.generalToolbarItem.itemIdentifier;
-    [self.window ak_resizeForContentViewSize:self.generalPreferencesViewController.view.frame.size animate:NO];
-    self.contentViewController = self.generalPreferencesViewController;
-    self.window.title = self.generalPreferencesViewController.title;
+    [super windowDidLoad];
+    // Retain the nib's action items so deep links and unsaved-network prompts
+    // continue to use exactly the same section-selection path.
+    self.navigationToolbar = self.toolbar;
+    self.settingsItems = @[self.generalToolbarItem, self.accountsToolbarItem,
+                           self.soundToolbarItem, self.networkToolbarItem];
+    self.window.toolbar = nil;
+    self.window.titlebarAppearsTransparent = YES;
+    self.window.autorecalculatesKeyViewLoop = YES;
+    [self buildSettingsSidebar];
+    [self displaySettingsController:self.generalPreferencesViewController animate:NO];
+    [self selectSidebarItem:self.generalToolbarItem];
+}
+
+- (void)buildSettingsSidebar {
+    self.settingsContainerController = [[NSViewController alloc] init];
+    NSView *container = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 708, 360)];
+    self.settingsContainerController.view = container;
+    self.contentViewController = self.settingsContainerController;
+
+    AKGlassControlContainer *sidebar = [[AKGlassControlContainer alloc] initWithFrame:NSZeroRect sidebar:YES];
+    sidebar.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:sidebar];
+    NSTextField *heading = [NSTextField labelWithString:NSLocalizedString(@"Settings", @"Settings sidebar heading.")];
+    heading.font = [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold];
+    heading.textColor = NSColor.secondaryLabelColor;
+    heading.translatesAutoresizingMaskIntoConstraints = NO;
+    [sidebar.contentView addSubview:heading];
+
+    NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSZeroRect];
+    scroll.drawsBackground = NO;
+    scroll.borderType = NSNoBorder;
+    scroll.hasVerticalScroller = NO;
+    scroll.translatesAutoresizingMaskIntoConstraints = NO;
+    self.settingsSidebar = [[NSTableView alloc] initWithFrame:NSZeroRect];
+    NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"SettingsSection"];
+    column.resizingMask = NSTableColumnAutoresizingMask;
+    [self.settingsSidebar addTableColumn:column];
+    self.settingsSidebar.headerView = nil;
+    self.settingsSidebar.style = NSTableViewStyleSourceList;
+    self.settingsSidebar.rowSizeStyle = NSTableViewRowSizeStyleDefault;
+    self.settingsSidebar.backgroundColor = NSColor.clearColor;
+    self.settingsSidebar.allowsEmptySelection = NO;
+    self.settingsSidebar.allowsMultipleSelection = NO;
+    self.settingsSidebar.columnAutoresizingStyle = NSTableViewLastColumnOnlyAutoresizingStyle;
+    self.settingsSidebar.delegate = self;
+    self.settingsSidebar.dataSource = self;
+    self.settingsSidebar.accessibilityLabel = NSLocalizedString(@"Settings sections", @"Settings navigation accessibility label.");
+    scroll.documentView = self.settingsSidebar;
+    [sidebar.contentView addSubview:scroll];
+
+    self.settingsDetailView = [[NSView alloc] initWithFrame:NSZeroRect];
+    self.settingsDetailView.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:self.settingsDetailView];
+    [NSLayoutConstraint activateConstraints:@[
+        [sidebar.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:12],
+        [sidebar.topAnchor constraintEqualToAnchor:container.topAnchor constant:12],
+        [sidebar.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-12],
+        [sidebar.widthAnchor constraintEqualToConstant:176],
+        [heading.leadingAnchor constraintEqualToAnchor:sidebar.contentView.leadingAnchor constant:16],
+        [heading.topAnchor constraintEqualToAnchor:sidebar.contentView.topAnchor constant:16],
+        [heading.trailingAnchor constraintLessThanOrEqualToAnchor:sidebar.contentView.trailingAnchor constant:-16],
+        [scroll.leadingAnchor constraintEqualToAnchor:sidebar.contentView.leadingAnchor constant:6],
+        [scroll.trailingAnchor constraintEqualToAnchor:sidebar.contentView.trailingAnchor constant:-6],
+        [scroll.topAnchor constraintEqualToAnchor:heading.bottomAnchor constant:10],
+        [scroll.bottomAnchor constraintEqualToAnchor:sidebar.contentView.bottomAnchor constant:-12],
+        [self.settingsDetailView.leadingAnchor constraintEqualToAnchor:sidebar.trailingAnchor constant:12],
+        [self.settingsDetailView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [self.settingsDetailView.topAnchor constraintEqualToAnchor:container.topAnchor],
+        [self.settingsDetailView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor]
+    ]];
+}
+
+- (void)displaySettingsController:(NSViewController *)controller animate:(BOOL)animate {
+    NSSize paneSize = controller.view.frame.size;
+    if (self.selectedSettingsController != controller) {
+        [NSLayoutConstraint deactivateConstraints:self.settingsPaneConstraints ?: @[]];
+        [self.selectedSettingsController.view removeFromSuperview];
+        [self.selectedSettingsController removeFromParentViewController];
+        self.selectedSettingsController = controller;
+        [self.settingsContainerController addChildViewController:controller];
+        [self.settingsDetailView addSubview:controller.view];
+        controller.view.translatesAutoresizingMaskIntoConstraints = NO;
+        self.settingsPaneConstraints = @[
+            [controller.view.leadingAnchor constraintEqualToAnchor:self.settingsDetailView.leadingAnchor],
+            [controller.view.topAnchor constraintEqualToAnchor:self.settingsDetailView.topAnchor],
+            [controller.view.widthAnchor constraintEqualToConstant:paneSize.width],
+            [controller.view.heightAnchor constraintEqualToConstant:paneSize.height]
+        ];
+        [NSLayoutConstraint activateConstraints:self.settingsPaneConstraints];
+    }
+    // Resize without the legacy helper, which replaces window.contentView.
+    NSSize contentSize = NSMakeSize(paneSize.width + 200, MAX(paneSize.height, 360));
+    NSRect frame = self.window.frame;
+    CGFloat heightDelta = contentSize.height - self.window.contentView.frame.size.height;
+    frame.size.width += contentSize.width - self.window.contentView.frame.size.width;
+    frame.size.height += heightDelta;
+    frame.origin.y -= heightDelta;
+    [self.window setFrame:frame display:YES animate:animate && !NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion];
+    self.window.title = controller.title;
+    [self.window recalculateKeyViewLoop];
+}
+
+- (void)selectSidebarItem:(NSToolbarItem *)item {
+    self.updatingSidebarSelection = YES;
+    self.toolbar.selectedItemIdentifier = item.itemIdentifier;
+    NSUInteger index = [self.settingsItems indexOfObject:item];
+    if (index != NSNotFound) {
+        [self.settingsSidebar selectRowIndexes:[NSIndexSet indexSetWithIndex:index] byExtendingSelection:NO];
+    }
+    self.updatingSidebarSelection = NO;
+}
+
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView {
+    return self.settingsItems.count;
+}
+
+- (NSView *)tableView:(NSTableView *)tableView viewForTableColumn:(NSTableColumn *)column row:(NSInteger)row {
+    NSTableCellView *cell = [tableView makeViewWithIdentifier:@"SettingsSection" owner:self];
+    if (cell == nil) {
+        cell = [[NSTableCellView alloc] initWithFrame:NSZeroRect];
+        cell.identifier = @"SettingsSection";
+        NSImageView *image = [[NSImageView alloc] initWithFrame:NSZeroRect];
+        image.translatesAutoresizingMaskIntoConstraints = NO;
+        image.contentTintColor = NSColor.controlAccentColor;
+        image.accessibilityElement = NO;
+        NSTextField *label = [NSTextField labelWithString:@""];
+        label.font = [NSFont systemFontOfSize:NSFont.systemFontSize];
+        label.translatesAutoresizingMaskIntoConstraints = NO;
+        [cell addSubview:image];
+        [cell addSubview:label];
+        cell.imageView = image;
+        cell.textField = label;
+        [NSLayoutConstraint activateConstraints:@[
+            [image.leadingAnchor constraintEqualToAnchor:cell.leadingAnchor constant:8],
+            [image.widthAnchor constraintEqualToConstant:18],
+            [image.heightAnchor constraintEqualToConstant:18],
+            [image.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor],
+            [label.leadingAnchor constraintEqualToAnchor:image.trailingAnchor constant:8],
+            [label.trailingAnchor constraintEqualToAnchor:cell.trailingAnchor constant:-8],
+            [label.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor]
+        ]];
+    }
+    NSToolbarItem *item = self.settingsItems[row];
+    cell.textField.stringValue = item.label;
+    cell.imageView.image = item.image;
+    return cell;
+}
+
+- (void)tableViewSelectionDidChange:(NSNotification *)notification {
+    if (!self.updatingSidebarSelection && self.settingsSidebar.selectedRow >= 0) {
+        BOOL keepSidebarFocus = self.window.firstResponder == self.settingsSidebar;
+        [self changeView:self.settingsItems[self.settingsSidebar.selectedRow]];
+        if (keepSidebarFocus && self.window.attachedSheet == nil) {
+            [self.window makeFirstResponder:self.settingsSidebar];
+        }
+    }
 }
 
 - (IBAction)changeView:(id)sender {
     if ([self isNetworkPreferencesViewCurrent] &&
         ![sender isEqual:self.networkToolbarItem] &&
         [self.networkPreferencesViewController areNetworkSettingsChanged:sender]) {
+        [self selectSidebarItem:self.networkToolbarItem];
         return;
     }
     
@@ -178,8 +342,8 @@
         self.window.title = title;
         return;
     }
-    [self.window ak_resizeForContentViewSize:controller.view.frame.size animate:YES];
-    self.contentViewController = controller;
+    [self displaySettingsController:controller animate:YES];
+    [self selectSidebarItem:sender];
     self.window.title = title;
     if ([firstResponder acceptsFirstResponder]) {
         [self.window makeFirstResponder:firstResponder];
@@ -205,8 +369,7 @@
 }
 
 - (BOOL)isNetworkPreferencesViewCurrent {
-    return self.networkPreferencesViewController.isViewLoaded &&
-    [self.window.contentView isEqual:self.networkPreferencesViewController.view];
+    return self.selectedSettingsController == self.networkPreferencesViewController;
 }
 
 

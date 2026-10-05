@@ -16,10 +16,12 @@
 </p>
 
 > [!IMPORTANT]
-> The unreleased [audio-recovery changes](docs/AUDIO_RECOVERY.md) contain repeated failed audio opens and add explicit recovery. A first hardware timeout can still block; real-device acceptance remains separate.
+> The [audio-recovery changes](docs/AUDIO_RECOVERY.md) contain repeated failed audio opens and add explicit recovery. A first hardware timeout can still block; real-device acceptance remains separate.
 > Call recording is disabled by default. Only enable it when recording is lawful and everyone whose consent is required has consented.
 
 ## Download
+
+The [2.1.3 local test release](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.3) adds Liquid Glass, clearer call controls and native Settings navigation. See the [release notes](docs/releases/2.1.3.md), [Apple interface guidance](docs/LIQUID_GLASS.md) and [bug review](docs/BUG_REVIEW_2.1.3.md). It is a prerelease for local acceptance; the stable download below remains available.
 
 Download the tested application ZIP from the [latest GitHub release](https://github.com/jpskidmore/telephone-jps/releases/latest). The release also contains a complete source ZIP, checksums, and the verification report for the exact build.
 
@@ -50,7 +52,7 @@ The complete history of the custom edition—including why each change exists—
 
 “Source” means lossless decoded call audio. It is not a copy of the original RTP packets or their compressed SIP codec bitstream.
 
-To enable recording, open **jps Telephone → Preferences → General**, choose a folder and format, then tick **Automatically record all calls (ensure everyone consents)**. Connected calls show a red **● REC** indicator. The default destination is `Downloads/jps Telephone Recordings`.
+To enable recording, open **jps Telephone → Settings → General**, choose a folder and format, then tick **Automatically record all calls (ensure everyone consents)**. Connected calls show a red **● REC** indicator. The default destination is `Downloads/jps Telephone Recordings`.
 
 More detail is available in [RECORDING.md](RECORDING.md).
 

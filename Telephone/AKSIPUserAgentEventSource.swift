@@ -67,10 +67,7 @@ final class AKSIPUserAgentEventSource {
     }
 
     private func unsubscribe() {
-        let nc = NotificationCenter.default
-        nc.removeObserver(self, name: NSNotification.Name.AKSIPUserAgentDidFinishStarting, object: agent)
-        nc.removeObserver(self, name: NSNotification.Name.AKSIPUserAgentDidFinishStopping, object: agent)
-        nc.removeObserver(self, name: NSNotification.Name.AKSIPUserAgentDidDetectNAT, object: agent)
+        NotificationCenter.default.removeObserver(self)
     }
 
     @objc private func SIPUserAgentDidFinishStarting(_ notification: Notification) {

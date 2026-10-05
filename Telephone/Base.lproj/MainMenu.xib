@@ -32,7 +32,7 @@
                             <menuItem isSeparatorItem="YES" id="236">
                                 <modifierMask key="keyEquivalentModifierMask" command="YES"/>
                             </menuItem>
-                            <menuItem title="Preferences…" keyEquivalent="," id="129" userLabel="Preferences">
+                            <menuItem title="Settings…" keyEquivalent="," id="129" userLabel="Settings">
                                 <connections>
                                     <action selector="showPreferencePanel:" target="450" id="475"/>
                                 </connections>
