@@ -12,9 +12,11 @@ while native regular Liquid Glass remains reserved for navigation and call
 controls. The background is a standard AppKit material; the settings forms and
 caller text are not wrapped in additional glass.
 
-Settings extends that backdrop under its titlebar and pins the sidebar and forms
-to the window content layout guide, keeping them below the window controls. The
-call backdrop is inserted underneath the existing content and account footer,
+Settings keeps the standard native titlebar with a visible title and close
+control. Its material fills the content area below that titlebar; the sidebar
+and forms stay inside the window content layout guide. Minimize and zoom retain
+the disabled behavior appropriate to a pane-sized Settings window. The call
+backdrop is inserted underneath the existing content and account footer,
 preserving their geometry. Reduce Transparency switches the backdrop and window
 to an opaque semantic background without detaching forms. A material rebuild
 restores keyboard focus and field-editor selection for affected controls.
@@ -48,6 +50,7 @@ The existing DTMF responder, SIP state transitions, call handling, recording and
 - [UnderWindowBackground](https://developer.apple.com/documentation/appkit/nsvisualeffectview/material-swift.enum/underwindowbackground) and [BehindWindow](https://developer.apple.com/documentation/appkit/nsvisualeffectview/blendingmode-swift.enum/behindwindow) — semantic window backdrop and desktop blending.
 - [Build an AppKit app with the new design](https://developer.apple.com/videos/play/wwdc2025/310/) — native content embedding, glass hierarchy and titlebar/sidebar layout.
 - [Materials](https://developer.apple.com/design/human-interface-guidelines/materials) — semantic material choice and legibility.
+- [Windows](https://developer.apple.com/design/human-interface-guidelines/windows) and [Settings](https://developer.apple.com/design/human-interface-guidelines/settings) — recognizable system window controls and disabled minimize/zoom for Settings.
 - [Sidebars](https://developer.apple.com/design/human-interface-guidelines/sidebars) — peer section navigation, familiar symbols and system sidebar sizing.
 - [Buttons](https://developer.apple.com/design/human-interface-guidelines/buttons) — clear action labels, native controls and action hierarchy.
 - [Labels](https://developer.apple.com/design/human-interface-guidelines/labels) — system typography, semantic text colors and selectable useful text.
@@ -63,6 +66,7 @@ After installing the test build, check:
 - English/German/Russian labels, a long caller name, a two-line failure message, and the recording indicator; no clipping or overlap.
 - Incoming Answer/Decline; outgoing Connecting/End Call; active Mute/Unmute, Hold/Resume, Transfer and DTMF; ended Call Back; automatic recording and the existing transfer sheets.
 - Settings with mouse, sidebar arrow keys, Tab and VoiceOver. Verify the selected section, accessible action names, copyable caller/status labels and disabled controls.
+- Settings shows its title and native red close control when active. Click that control, reopen with Command-comma, then verify Command-W closes it as well.
 - Network edit followed by another section or window close: Save, Cancel and Don't Save. Cancel keeps Network selected and its pending edits intact.
 - macOS 15.6 fallback in addition to macOS 26+ native glass; Reduce Motion during Settings section changes.
 

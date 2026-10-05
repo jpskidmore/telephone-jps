@@ -32,6 +32,17 @@ English, German and Russian) retained their geometry and a single shared window
 backdrop. These component results do not prove the visible WindowServer
 composition; the complete compiled app still requires visual inspection.
 
+[Material candidate run 37351331672](https://github.com/jpskidmore/telephone-jps/actions/runs/37351331672)
+passed all four suites, Release compilation, signing and ZIP round-trip checks for
+`e0723260e14460859991e730bc40a982ebea884d`. Its compiled app opened all four settings
+panes locally and passed sidebar keyboard navigation and Command-W close/reopen.
+Visual inspection still found that the custom transparent title-bar treatment
+did not show an obvious close affordance. The final correction restores a
+standard macOS title bar while retaining the glass sidebar and window material.
+The hosted lifecycle regression now checks the native close control and actual
+close/reopen behavior. The replacement candidate must pass the same release
+gates and local window inspection before publication.
+
 The workflow now uploads an app/source candidate after all automatic gates pass.
 Publication requires an explicit workflow run with `publish_release` enabled
 after local interface acceptance. Archive extraction and signature verification

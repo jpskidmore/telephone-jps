@@ -6,6 +6,7 @@
 - Replace the flat white window underlay with a native desktop-blending backdrop in Settings and call windows
 - Preserve an opaque accessibility fallback and keyboard focus when materials change
 - Keep the window title consistently named Settings
+- Restore the standard macOS title bar and visible native close control in Settings
 - Add a complete Settings window initialization regression
 - Preserve a downloadable candidate for local GUI acceptance before release publication
 - Verify the app ZIP after extraction without Finder/resource metadata

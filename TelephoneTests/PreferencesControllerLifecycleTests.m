@@ -44,8 +44,43 @@
     XCTAssertEqual(backdrop.blendingMode, NSVisualEffectBlendingModeBehindWindow);
     XCTAssertEqual(backdrop.material, reduced ? NSVisualEffectMaterialWindowBackground : NSVisualEffectMaterialUnderWindowBackground);
     XCTAssertEqual(window.isOpaque, reduced);
-    XCTAssertTrue((window.styleMask & NSWindowStyleMaskFullSizeContentView) != 0);
-    XCTAssertLessThanOrEqual(NSMaxY([form convertRect:form.bounds toView:window.contentView]), NSMaxY(window.contentLayoutRect));
+    XCTAssertTrue((window.styleMask & NSWindowStyleMaskTitled) != 0);
+    XCTAssertTrue((window.styleMask & NSWindowStyleMaskClosable) != 0);
+    XCTAssertFalse((window.styleMask & NSWindowStyleMaskFullSizeContentView) != 0);
+    XCTAssertEqual(window.titleVisibility, NSWindowTitleVisible);
+    XCTAssertFalse(window.titlebarAppearsTransparent);
+    NSButton *closeButton = [window standardWindowButton:NSWindowCloseButton];
+    XCTAssertNotNil(closeButton);
+    XCTAssertEqual(closeButton.window, window);
+    XCTAssertTrue(closeButton.isEnabled);
+    XCTAssertFalse(closeButton.isHiddenOrHasHiddenAncestor);
+    XCTAssertGreaterThan(closeButton.alphaValue, 0);
+    XCTAssertLessThanOrEqual(NSMaxY([form convertRect:form.bounds toView:nil]), NSMaxY(window.contentLayoutRect));
+    // The form must stay below the actual close control, rather than occupying
+    // the titlebar's clickable area even when the content material is clear.
+    XCTAssertLessThanOrEqual(NSMaxY([form convertRect:form.bounds toView:nil]),
+                             NSMinY([closeButton convertRect:closeButton.bounds toView:nil]));
+}
+
+- (void)testNativeCloseControlClosesAndReopensSettings {
+    PreferencesController *controller = [[PreferencesController alloc] initWithWindowNibName:@"Preferences"];
+    NSWindow *window = controller.window;
+    NSButton *closeButton = [window standardWindowButton:NSWindowCloseButton];
+    XCTAssertNotNil(closeButton);
+    [window setFrameOrigin:NSMakePoint(-20000, -20000)];
+    [controller showWindow:self];
+    XCTAssertTrue(window.isVisible);
+
+    // Exercise the system button's action, including the existing window
+    // delegate close path, rather than calling NSWindow.close directly.
+    [closeButton performClick:self];
+    XCTAssertFalse(window.isVisible);
+
+    [controller showWindow:self];
+    XCTAssertTrue(window.isVisible);
+    XCTAssertEqual(controller.generalPreferencesViewController.view.window, window);
+    XCTAssertEqual(((NSTableView *)[controller valueForKey:@"settingsSidebar"]).selectedRow, 0);
+    [window orderOut:self];
 }
 
 - (void)testMaterialRebuildPreservesFocusedFieldAndSelection {

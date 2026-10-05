@@ -152,9 +152,13 @@
     self.settingsItems = @[self.generalToolbarItem, self.accountsToolbarItem,
                            self.soundToolbarItem, self.networkToolbarItem];
     self.window.toolbar = nil;
-    self.window.styleMask |= NSWindowStyleMaskFullSizeContentView;
-    self.window.titlebarAppearsTransparent = YES;
-    self.window.titlebarSeparatorStyle = NSTitlebarSeparatorStyleNone;
+    // Keep a dedicated native titlebar for the window title and close control.
+    // The material belongs to the content area below the system window chrome.
+    self.window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+    self.window.toolbarStyle = NSWindowToolbarStyleAutomatic;
+    self.window.titleVisibility = NSWindowTitleVisible;
+    self.window.titlebarAppearsTransparent = NO;
+    self.window.titlebarSeparatorStyle = NSTitlebarSeparatorStyleAutomatic;
     self.window.autorecalculatesKeyViewLoop = YES;
     [self buildSettingsSidebar];
     [self displaySettingsController:self.generalPreferencesViewController animate:NO];
@@ -245,8 +249,7 @@
         [NSLayoutConstraint activateConstraints:self.settingsPaneConstraints];
     }
     // Resize without the legacy helper, which replaces window.contentView.
-    CGFloat titlebarHeight = NSHeight(self.window.contentView.bounds) - NSHeight(self.window.contentLayoutRect);
-    NSSize contentSize = NSMakeSize(paneSize.width + 200, MAX(paneSize.height, 360) + titlebarHeight);
+    NSSize contentSize = NSMakeSize(paneSize.width + 200, MAX(paneSize.height, 360));
     NSRect frame = self.window.frame;
     CGFloat heightDelta = contentSize.height - self.window.contentView.frame.size.height;
     frame.size.width += contentSize.width - self.window.contentView.frame.size.width;
