@@ -18,6 +18,19 @@ and visual accessibility checks are separate from compilation and unit tests.
 See [release notes](releases/2.1.3.md), [interface checks](LIQUID_GLASS.md) and
 [bug review](BUG_REVIEW_2.1.3.md).
 
+Release packaging uses Xcode deployment postprocessing with the `debugging`
+strip style, preserving local/global runtime symbols while removing debug-map
+paths. Swift and C source paths are mapped to the project root. These settings
+apply only to the Release packaging command; Debug XCTest symbols remain intact.
+The bundle check still rejects absolute local user paths. See Apple's
+[build settings reference](https://developer.apple.com/documentation/xcode/build-settings-reference).
+
+[Run 37333179439](https://github.com/jpskidmore/telephone-jps/actions/runs/37333179439)
+passed all four test suites, Release compilation, signing and metadata checks
+for `2103ae766cd4502cb29961ce524bc9cae12c19f1`, then stopped because debug-map
+paths remained in the Swift executables. The Release postprocessing correction
+requires a fresh gate run; the generated report records the final outcome.
+
 ## Historical source-cleanup status before 2.1.3
 
 The October 2026 changes are an **unreleased source update**. Application metadata

@@ -31,9 +31,12 @@ for scheme in Domain UseCasesTests TelephoneTests ReceiptValidationTests; do
 done
 xcodebuild -project Telephone.xcodeproj -target Telephone \
     -configuration Release ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+    DEPLOYMENT_POSTPROCESSING=YES STRIP_INSTALLED_PRODUCT=YES \
+    STRIP_STYLE=debugging STRIP_SWIFT_SYMBOLS=NO COPY_PHASE_STRIP=YES \
     CODE_SIGNING_ALLOWED=NO "SYMROOT=$run_dir/Products" "OBJROOT=$run_dir/Intermediates" \
     "CLANG_MODULE_CACHE_PATH=$run_dir/ModuleCache" \
-    'OTHER_CFLAGS=$(inherited) -ffile-prefix-map=$(SRCROOT)=.' build
+    'OTHER_CFLAGS=$(inherited) -ffile-prefix-map=$(SRCROOT)=.' \
+    'OTHER_SWIFT_FLAGS=$(inherited) -file-prefix-map $(SRCROOT)=.' build
 app_path="$run_dir/Products/Release/jps Telephone.app"
 ./Scripts/sign-adhoc-release.sh "$app_path"
 ./Scripts/verify-adhoc-release.sh "$app_path"
