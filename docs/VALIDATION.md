@@ -1,6 +1,6 @@
 # Validation and release checks
 
-## 2.1.4 Settings initialization repair
+## 2.1.4 Settings initialization and material composition
 
 Actual local inspection of 2.1.3 found a blank Settings window. The AppKit
 exception stack showed `NSTableView.setDataSource` synchronously selecting a row
@@ -13,6 +13,24 @@ and complete controller. An independent local native harness reproduces the old
 exception and checks the corrected content hierarchy. The corrected compiled app
 must also pass local General, Accounts, Sound and Network inspection before
 release publication.
+
+[Candidate run 37347314079](https://github.com/jpskidmore/telephone-jps/actions/runs/37347314079)
+passed all four suites, the Settings lifecycle regression, Release compilation,
+signing and ZIP round-trip verification for `989dacb82010b13732c617b8fc0223e70bf955a4`.
+The compiled candidate opened all four real settings forms locally and passed
+sidebar arrow navigation and close/reopen inspection. Further visual inspection
+found that the ordinary white window background made the glass effect too subtle;
+the material composition correction requires its own candidate build and local
+inspection before publication.
+
+Independent native checks of the material correction passed all four actual pane
+nibs and safe-titlebar geometry, desktop-blending material/window configuration,
+live Reduce Transparency adaptation and restored sidebar/field-editor focus.
+Non-General pane behaviors were stubbed in those isolated harnesses to avoid
+account/network writes. Twelve call-layout cases (one to four controls across
+English, German and Russian) retained their geometry and a single shared window
+backdrop. These component results do not prove the visible WindowServer
+composition; the complete compiled app still requires visual inspection.
 
 The workflow now uploads an app/source candidate after all automatic gates pass.
 Publication requires an explicit workflow run with `publish_release` enabled
@@ -47,8 +65,11 @@ The bundle check still rejects absolute local user paths. See Apple's
 [Run 37333179439](https://github.com/jpskidmore/telephone-jps/actions/runs/37333179439)
 passed all four test suites, Release compilation, signing and metadata checks
 for `2103ae766cd4502cb29961ce524bc9cae12c19f1`, then stopped because debug-map
-paths remained in the Swift executables. The Release postprocessing correction
-requires a fresh gate run; the generated report records the final outcome.
+paths remained in the Swift executables. [Run 37334499180](https://github.com/jpskidmore/telephone-jps/actions/runs/37334499180)
+then passed the complete gate for `a3ffaf358773d8d81cff2b53c42ddce0c7594211`,
+including Release postprocessing and bundle path verification, and produced the
+2.1.3 prerelease. The later local Settings startup failure demonstrates why a
+successful automated build must also be inspected in the running application.
 
 ## Historical source-cleanup status before 2.1.3
 

@@ -1,6 +1,28 @@
-# Liquid Glass and macOS interface changes in 2.1.3
+# Liquid Glass and macOS interface changes in 2.1.3–2.1.4
 
 The update uses AppKit's real `NSGlassEffectView` for call controls and Settings navigation on macOS 26 and later. It keeps the caller, call status, settings forms and call history on the content layer. This follows Apple's separation of controls/navigation from content rather than applying glass across an entire window.
+
+## Visible material composition in 2.1.4
+
+Local inspection found that regular glass over an ordinary white window looked
+flat. Settings and the call windows now use the semantic
+`NSVisualEffectMaterialUnderWindowBackground` with `BehindWindow` blending beneath
+their content. This lets background colour visibly diffuse through the window,
+while native regular Liquid Glass remains reserved for navigation and call
+controls. The background is a standard AppKit material; the settings forms and
+caller text are not wrapped in additional glass.
+
+Settings extends that backdrop under its titlebar and pins the sidebar and forms
+to the window content layout guide, keeping them below the window controls. The
+call backdrop is inserted underneath the existing content and account footer,
+preserving their geometry. Reduce Transparency switches the backdrop and window
+to an opaque semantic background without detaching forms. A material rebuild
+restores keyboard focus and field-editor selection for affected controls.
+
+Regular glass is retained because the sidebar contains text and navigation.
+Apple reserves clear glass for media-rich backgrounds; reducing opacity by
+forcing clear glass or a custom alpha would weaken this text-heavy interface.
+No user appearance or accessibility preferences are changed.
 
 ## Two substantial GUI improvements
 
@@ -23,6 +45,8 @@ The existing DTMF responder, SIP state transitions, call handling, recording and
 
 - [Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass) — use standard system components and reserve glass for the navigation/control layer.
 - [NSGlassEffectView](https://developer.apple.com/documentation/appkit/nsglasseffectview) — native AppKit material and content embedding.
+- [UnderWindowBackground](https://developer.apple.com/documentation/appkit/nsvisualeffectview/material-swift.enum/underwindowbackground) and [BehindWindow](https://developer.apple.com/documentation/appkit/nsvisualeffectview/blendingmode-swift.enum/behindwindow) — semantic window backdrop and desktop blending.
+- [Build an AppKit app with the new design](https://developer.apple.com/videos/play/wwdc2025/310/) — native content embedding, glass hierarchy and titlebar/sidebar layout.
 - [Materials](https://developer.apple.com/design/human-interface-guidelines/materials) — semantic material choice and legibility.
 - [Sidebars](https://developer.apple.com/design/human-interface-guidelines/sidebars) — peer section navigation, familiar symbols and system sidebar sizing.
 - [Buttons](https://developer.apple.com/design/human-interface-guidelines/buttons) — clear action labels, native controls and action hierarchy.

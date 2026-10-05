@@ -3,6 +3,12 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/// A semantic, desktop-blending window backdrop beneath the content layer.
+/// It also switches the containing window to an opaque background when Reduce
+/// Transparency is enabled, without changing any controls or their hierarchy.
+@interface AKWindowMaterialView : NSVisualEffectView
+@end
+
 /// A system material reserved for controls and navigation, not primary content.
 @interface AKGlassControlContainer : NSView
 @property(nonatomic, readonly) NSView *contentView;

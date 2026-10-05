@@ -2,7 +2,7 @@
 
 This document records the functional changes made to the original [Telephone](https://github.com/64characters/Telephone) source and explains why each group exists. This clean source snapshot is based on upstream commit [`14067fb1`](https://github.com/64characters/Telephone/commit/14067fb1); the complete earlier history remains available from the upstream repository.
 
-## 2.1.4 — Settings initialization repair
+## 2.1.4 — Settings and material repair
 
 The 2.1.3 sidebar could select its first section before the Settings detail view
 existed, leaving a blank window after an AppKit constraint exception. The content
@@ -10,6 +10,13 @@ hierarchy is now completed before the table is populated, with initial selection
 guarded. A complete-window regression covers that startup path, and candidate
 builds require local inspection before publication. Existing settings actions and
 bindings are preserved; the window title consistently says Settings.
+
+The white window underlay also made regular glass look flat. A semantic native
+backdrop now blends the environment behind Settings and call windows, while the
+sidebar and call controls keep regular Liquid Glass. Settings extends the
+backdrop under its titlebar with safe content geometry. Reduce Transparency
+restores an opaque background without detaching forms; material swaps preserve
+keyboard focus and field selection.
 
 ## Edition identity and macOS compatibility
 

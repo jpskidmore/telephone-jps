@@ -152,7 +152,9 @@
     self.settingsItems = @[self.generalToolbarItem, self.accountsToolbarItem,
                            self.soundToolbarItem, self.networkToolbarItem];
     self.window.toolbar = nil;
+    self.window.styleMask |= NSWindowStyleMaskFullSizeContentView;
     self.window.titlebarAppearsTransparent = YES;
+    self.window.titlebarSeparatorStyle = NSTitlebarSeparatorStyleNone;
     self.window.autorecalculatesKeyViewLoop = YES;
     [self buildSettingsSidebar];
     [self displaySettingsController:self.generalPreferencesViewController animate:NO];
@@ -164,7 +166,7 @@
     // attached. Suppress navigation until the complete detail hierarchy exists.
     self.updatingSidebarSelection = YES;
     self.settingsContainerController = [[NSViewController alloc] init];
-    NSView *container = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 708, 360)];
+    NSView *container = [[AKWindowMaterialView alloc] initWithFrame:NSMakeRect(0, 0, 708, 360)];
     self.settingsContainerController.view = container;
     self.contentViewController = self.settingsContainerController;
 
@@ -200,9 +202,10 @@
     self.settingsDetailView = [[NSView alloc] initWithFrame:NSZeroRect];
     self.settingsDetailView.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:self.settingsDetailView];
+    NSLayoutGuide *contentGuide = self.window.contentLayoutGuide;
     [NSLayoutConstraint activateConstraints:@[
         [sidebar.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:12],
-        [sidebar.topAnchor constraintEqualToAnchor:container.topAnchor constant:12],
+        [sidebar.topAnchor constraintEqualToAnchor:contentGuide.topAnchor constant:12],
         [sidebar.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-12],
         [sidebar.widthAnchor constraintEqualToConstant:176],
         [heading.leadingAnchor constraintEqualToAnchor:sidebar.contentView.leadingAnchor constant:16],
@@ -214,7 +217,7 @@
         [scroll.bottomAnchor constraintEqualToAnchor:sidebar.contentView.bottomAnchor constant:-12],
         [self.settingsDetailView.leadingAnchor constraintEqualToAnchor:sidebar.trailingAnchor constant:12],
         [self.settingsDetailView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [self.settingsDetailView.topAnchor constraintEqualToAnchor:container.topAnchor],
+        [self.settingsDetailView.topAnchor constraintEqualToAnchor:contentGuide.topAnchor],
         [self.settingsDetailView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor]
     ]];
     self.settingsSidebar.dataSource = self;
@@ -242,7 +245,8 @@
         [NSLayoutConstraint activateConstraints:self.settingsPaneConstraints];
     }
     // Resize without the legacy helper, which replaces window.contentView.
-    NSSize contentSize = NSMakeSize(paneSize.width + 200, MAX(paneSize.height, 360));
+    CGFloat titlebarHeight = NSHeight(self.window.contentView.bounds) - NSHeight(self.window.contentLayoutRect);
+    NSSize contentSize = NSMakeSize(paneSize.width + 200, MAX(paneSize.height, 360) + titlebarHeight);
     NSRect frame = self.window.frame;
     CGFloat heightDelta = contentSize.height - self.window.contentView.frame.size.height;
     frame.size.width += contentSize.width - self.window.contentView.frame.size.width;

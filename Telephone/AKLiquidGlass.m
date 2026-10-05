@@ -1,5 +1,51 @@
 #import "AKLiquidGlass.h"
 
+@implementation AKWindowMaterialView
+
+- (instancetype)initWithFrame:(NSRect)frame {
+    if ((self = [super initWithFrame:frame])) {
+        self.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+        self.state = NSVisualEffectStateFollowsWindowActiveState;
+        [NSWorkspace.sharedWorkspace.notificationCenter addObserver:self
+                                                          selector:@selector(accessibilityOptionsChanged:)
+                                                              name:NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification
+                                                            object:nil];
+        [self updateWindowComposition];
+    }
+    return self;
+}
+
+- (void)dealloc {
+    [NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self];
+}
+
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    [self updateWindowComposition];
+}
+
+- (void)accessibilityOptionsChanged:(NSNotification *)notification {
+    if (!NSThread.isMainThread) {
+        dispatch_async(dispatch_get_main_queue(), ^{ [self updateWindowComposition]; });
+        return;
+    }
+    [self updateWindowComposition];
+}
+
+- (void)updateWindowComposition {
+    BOOL reduced = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceTransparency;
+    // Standard material belongs to the app background; Liquid Glass remains
+    // confined to the navigation/control layer above it. WindowBackground is
+    // explicitly opaque, whereas UnderWindowBackground permits desktop blend.
+    self.material = reduced ? NSVisualEffectMaterialWindowBackground : NSVisualEffectMaterialUnderWindowBackground;
+    self.window.opaque = reduced;
+    self.window.backgroundColor = reduced ? NSColor.windowBackgroundColor : NSColor.clearColor;
+    self.needsDisplay = YES;
+    [self.window invalidateShadow];
+}
+
+@end
+
 @interface AKOpaqueMaterialView : NSView
 @end
 
@@ -57,7 +103,37 @@
     [self rebuildSurface];
 }
 
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if (!self.sidebar && self.window != nil) {
+        // Call controllers keep their existing content view and account footer.
+        // Supply the same standard window backdrop beneath all of those views
+        // without changing their frames, titlebar geometry or responder chain.
+        NSView *root = self.window.contentView;
+        BOOL hasBackdrop = [root isKindOfClass:[AKWindowMaterialView class]];
+        for (NSView *view in root.subviews) {
+            hasBackdrop |= [view isKindOfClass:[AKWindowMaterialView class]];
+        }
+        if (!hasBackdrop) {
+            AKWindowMaterialView *backdrop = [[AKWindowMaterialView alloc] initWithFrame:root.bounds];
+            backdrop.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+            [root addSubview:backdrop positioned:NSWindowBelow relativeTo:nil];
+        }
+    }
+}
+
 - (void)rebuildSurface {
+    NSWindow *window = self.window;
+    NSResponder *responder = window.firstResponder;
+    NSView *focusedView = [responder isKindOfClass:[NSView class]] ? (NSView *)responder : nil;
+    NSTextView *editor = [responder isKindOfClass:[NSTextView class]] && [(NSTextView *)responder isFieldEditor]
+                        ? (NSTextView *)responder : nil;
+    if (editor != nil && [editor.delegate isKindOfClass:[NSView class]]) {
+        focusedView = (NSView *)editor.delegate;
+    }
+    BOOL restoreFocus = focusedView != nil && [focusedView isDescendantOf:self.contentView];
+    NSRange selection = editor.selectedRange;
+
     // Keep controls (and any field editor) alive while switching material.
     [self.contentView removeFromSuperview];
     [self.surface removeFromSuperview];
@@ -93,6 +169,15 @@
     self.surface.accessibilityElement = NO;
     self.contentView.frame = self.surface.bounds;
     [self addSubview:self.surface];
+    if (restoreFocus && focusedView.window == window && [window makeFirstResponder:focusedView]) {
+        if (editor != nil && [window.firstResponder isKindOfClass:[NSTextView class]]) {
+            NSTextView *restoredEditor = (NSTextView *)window.firstResponder;
+            NSUInteger length = restoredEditor.string.length;
+            selection.location = MIN(selection.location, length);
+            selection.length = MIN(selection.length, length - selection.location);
+            restoredEditor.selectedRange = selection;
+        }
+    }
 }
 
 @end
