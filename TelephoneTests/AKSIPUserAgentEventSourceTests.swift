@@ -69,6 +69,7 @@ final class AKSIPUserAgentEventSourceTests: XCTestCase {
     }
 
     private func makeCallNotification(name: String) -> Notification {
-        return Notification(name: Notification.Name(rawValue: name), object: nil)
+        // Other observers in the hosted test app require the normal Call payload.
+        return Notification(name: Notification.Name(rawValue: name), object: CallTestFactory().make())
     }
 }

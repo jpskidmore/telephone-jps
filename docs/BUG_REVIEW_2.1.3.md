@@ -133,3 +133,21 @@ regressions. Full suite/build evidence is recorded by the release validation
 runner in [VALIDATION.md](VALIDATION.md) and the release-specific validation
 record. The standalone checks do not substitute for live-device call, audio,
 recording, receipt, or UI acceptance.
+
+### Full-suite fixture correction
+
+The initial full release gate on main commit
+`9a997a97211dd9a9cd5d5d609f0f9cc228196a76` stopped in the hosted Telephone
+tests. `AKSIPUserAgentEventSourceTests.testCallsDidMakeCall` and
+`testCallsUserAgentDidReceiveCall` posted call notifications with `object: nil`.
+The hosted app's existing `AKSIPCallEventSource` also receives those notifications
+and requires the normal `Call` payload, producing a cast failure at its
+`didMake`/`didReceive` handlers. Initial evidence:
+[release validation run 37331757663](https://github.com/jpskidmore/telephone-jps/actions/runs/37331757663).
+
+The shared fixture now uses `CallTestFactory().make()`, the same in-memory
+`SimpleCall` fixture used by other call-event tests. Constructing it does not
+register SIP, make a native call, open audio hardware, or read account settings.
+No production notification fallback was added. This corrects a pre-existing
+test payload; the full gate must be rerun to verify the updated fixture and
+release packaging.
