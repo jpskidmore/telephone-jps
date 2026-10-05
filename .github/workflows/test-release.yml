@@ -1,3 +1,4 @@
+# Verified arm64 test releases from main.
 name: Build local test release
 
 on:
