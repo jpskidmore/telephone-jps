@@ -1,5 +1,15 @@
 # Changelog
 
+## jps Telephone 2.1.6 (build 158) — interface refinements
+
+- Align and space the compact main window controls and recent-call row consistently
+- Rename Delete All to Clear Call History… and remove the duplicate history visibility command from More
+- Keep all Settings panes at the Accounts pane's window size
+- Distinguish app-wide Network settings from an account's Connection tab
+- Preserve the visible history button, call/history actions, account options and network save prompts
+
+See [release notes](docs/releases/2.1.6.md).
+
 ## jps Telephone 2.1.5 (build 157) — compact desktop interface
 
 - Replace the wide Settings sidebar with an edge-to-edge icon rail and size each pane to its contents
