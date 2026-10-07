@@ -30,7 +30,7 @@
     if (self != nil) {
         _preferencesController = preferencesController;
         _userAgent = userAgent;
-        [self setTitle:NSLocalizedString(@"Network", @"Network preferences window title.")];
+        [self setTitle:NSLocalizedString(@"Network — All Accounts", @"App-wide network preferences window title.")];
     }
     
     return self;
