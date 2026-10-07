@@ -5168,7 +5168,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 157;
+				CURRENT_PROJECT_VERSION = 158;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -5194,7 +5194,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 2.1.5;
+				MARKETING_VERSION = 2.1.6;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",
@@ -5236,7 +5236,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 157;
+				CURRENT_PROJECT_VERSION = 158;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "PJ_AUTOCONF=1";
@@ -5259,7 +5259,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 2.1.5;
+				MARKETING_VERSION = 2.1.6;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",
