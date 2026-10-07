@@ -255,3 +255,8 @@
 "Availability" = "Availability";
 "Call history" = "Call history";
 "No recent calls" = "No recent calls";
+
+/* Distinguish account-specific connection options from app-wide networking. */
+"Network — All Accounts" = "Network — All Accounts";
+"Network settings for all accounts." = "Network settings for all accounts.";
+"Connection settings for the selected account." = "Connection settings for the selected account.";
