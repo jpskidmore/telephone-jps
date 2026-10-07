@@ -1,5 +1,26 @@
 # Validation and release checks
 
+## 2.1.6 local interface refinements
+
+Build this update locally using `Scripts/build-test-release.sh` from a clean
+main checkout after Xcode's licence and first-launch setup have been completed
+by the user. The script runs the native suites and standalone harnesses,
+compiles the production application and nibs, signs nested code and verifies
+the extracted distribution. The generated BUILD-VERIFICATION.md records the
+checks that actually completed; these requirements are not a claim of a pass.
+No cloud build is used for this update. Publication commits use `[skip ci]`
+to prevent the existing push workflows from starting a remote build.
+
+Settings regressions check one Accounts-derived window size, an unchanged full
+window frame while navigating all four sections in Light and Dark, native Close,
+field containment and the actual Connection tab/all-accounts Network scope.
+Main-window inspection checks consistent control and recent-call alignment,
+the Clear Call History… menu title, absence of a duplicate visibility menu
+command and retention of the visible history button's actions.
+
+The exact locally packaged app still needs interface inspection before upload.
+Live calls, actual audio devices and VoiceOver remain separate acceptance checks.
+
 ## 2.1.5 compact interface candidate
 
 The selected layouts are Icon rail Settings, Dial bar with one recent call, and
@@ -28,9 +49,9 @@ Light and Dark appearance before those same ZIP bytes are uploaded to the
 prerelease. Live SIP/audio, VoiceOver and full macOS-version coverage remain
 separate manual acceptance tests.
 
-On the local Mac, Xcode is installed but first-run setup is incomplete. Standalone
-source checks can use the command-line tools; full XCTest and packaging use the
-GitHub macOS runner. No system setup or appearance preferences are changed.
+For 2.1.5, Xcode's local first-run setup was incomplete. Standalone source checks
+used the command-line tools; full XCTest and packaging used the GitHub macOS
+runner. No system setup or appearance preferences were changed.
 
 ## 2.1.4 Settings initialization and material composition
 
