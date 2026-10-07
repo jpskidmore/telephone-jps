@@ -138,8 +138,8 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
     bar.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:bar];
     [NSLayoutConstraint activateConstraints:@[
-        [bar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:8],
-        [bar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-8],
+        [bar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:4],
+        [bar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-4],
         [bar.topAnchor constraintEqualToAnchor:self.view.topAnchor constant:6],
         [bar.heightAnchor constraintEqualToConstant:44]
     ]];
@@ -163,8 +163,8 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
     row.translatesAutoresizingMaskIntoConstraints = NO;
     [bar.contentView addSubview:row];
     [NSLayoutConstraint activateConstraints:@[
-        [row.leadingAnchor constraintEqualToAnchor:bar.contentView.leadingAnchor],
-        [row.trailingAnchor constraintEqualToAnchor:bar.contentView.trailingAnchor],
+        [row.leadingAnchor constraintEqualToAnchor:bar.contentView.leadingAnchor constant:4],
+        [row.trailingAnchor constraintEqualToAnchor:bar.contentView.trailingAnchor constant:-4],
         [row.topAnchor constraintEqualToAnchor:bar.contentView.topAnchor],
         [row.bottomAnchor constraintEqualToAnchor:bar.contentView.bottomAnchor],
         [availability.widthAnchor constraintEqualToConstant:44],
