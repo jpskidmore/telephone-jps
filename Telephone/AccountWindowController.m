@@ -158,13 +158,18 @@ static NSMenuItem *MenuItemWithAction(NSMenu *menu, SEL action);
     self.accountStatePopUp.toolTip = title;
     self.accountStatePopUp.accessibilityValue = title;
     NSImage *image = [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:nil];
+    // Rounded popups do not apply NSButton's borderless content tint. Give
+    // the symbol its semantic colour directly and keep native template
+    // rendering from replacing that colour with the control's foreground.
+    image = [image imageWithSymbolConfiguration:[NSImageSymbolConfiguration configurationWithPaletteColors:@[color]]];
+    image.template = NO;
     image.size = NSMakeSize(16, 16);
     // A pull-down draws its first item's image. Using its native image keeps
     // the entire hit region clickable rather than overlaying a separate view.
     self.accountStatePopUp.itemArray.firstObject.image = image;
-    self.accountStatePopUp.contentTintColor = color;
+    self.accountStatePopUp.contentTintColor = nil;
     self.accountStateImageView.image = image;
-    self.accountStateImageView.contentTintColor = color;
+    self.accountStateImageView.contentTintColor = nil;
 }
 
 - (void)resizeForHistoryExpanded:(BOOL)expanded width:(CGFloat)width {
@@ -263,7 +268,7 @@ static NSMenuItem *MenuItemWithAction(NSMenu *menu, SEL action);
 
 - (void)showOfflineStateAnimated:(BOOL)animated {
     [self displayAvailability:NSLocalizedString(@"Offline", @"Account registration Offline menu item.")
-                       symbol:@"xmark.circle.fill" color:NSColor.secondaryLabelColor];
+                       symbol:@"xmark.circle.fill" color:NSColor.systemRedColor];
 
     self.availableStateItem.state = NSControlStateValueOff;
     self.unavailableStateItem.state = NSControlStateValueOff;

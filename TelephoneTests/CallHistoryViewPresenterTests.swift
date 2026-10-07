@@ -351,3 +351,112 @@ final class UKEnglishFormatterTests: XCTestCase {
         XCTAssertTrue(text.contains("sec"), text)
     }
 }
+
+@MainActor
+final class AvailabilityStatusRenderingTests: XCTestCase {
+    func testOnlineAndOfflineRenderSemanticColoursInLightAndDark() throws {
+        let (controller, popup, window) = try makeStatusController()
+        defer { window.close() }
+        for name in [NSAppearance.Name.aqua, .darkAqua] {
+            window.appearance = NSAppearance(named: name)
+            for (action, title, colour) in [
+                ("showAvailableState", "Available", NSColor.systemGreen),
+                ("showOfflineState", "Offline", NSColor.systemRed)
+            ] {
+                controller.perform(NSSelectorFromString(action))
+                let image = try XCTUnwrap(popup.itemArray.first?.image)
+                XCTAssertFalse(image.isTemplate)
+                XCTAssertEqual(image.size, NSSize(width: 16, height: 16))
+                XCTAssertNil(popup.contentTintColor)
+                XCTAssertEqual(popup.toolTip, title)
+                XCTAssertEqual(popup.accessibilityValue() as? String, title)
+                XCTAssertGreaterThan(try pixelCount(matching: colour, in: popup, appearance: window.appearance!), 20,
+                                     "Actual rounded popup must draw \(title) in \(name)")
+                XCTAssertEqual(popup.frame.size, NSSize(width: 44, height: 44))
+            }
+        }
+    }
+
+    func testConnectingStaysNeutralAndControlTintCannotReplaceStatusColour() throws {
+        let (controller, popup, window) = try makeStatusController()
+        defer { window.close() }
+        for name in [NSAppearance.Name.aqua, .darkAqua] {
+            window.appearance = NSAppearance(named: name)
+            controller.perform(NSSelectorFromString("showConnectingState"))
+            XCTAssertEqual(try pixelCount(matching: .systemGreen, in: popup, appearance: window.appearance!), 0)
+            XCTAssertEqual(try pixelCount(matching: .systemRed, in: popup, appearance: window.appearance!), 0)
+            XCTAssertEqual(popup.toolTip, NSLocalizedString("Connecting...", comment: ""))
+            controller.perform(NSSelectorFromString("showAvailableState"))
+            popup.contentTintColor = .systemBlue
+            XCTAssertGreaterThan(try pixelCount(matching: .systemGreen, in: popup, appearance: window.appearance!), 20)
+            XCTAssertEqual(try pixelCount(matching: .systemBlue, in: popup, appearance: window.appearance!), 0)
+        }
+    }
+
+    private func makeStatusController() throws -> (NSWindowController, NSPopUpButton, NSWindow) {
+        // Exercise the hosted production controller and its actual popup setup,
+        // with no account/network model and no account preferences or SIP calls.
+        let type = try XCTUnwrap(NSClassFromString("AccountWindowController") as? NSWindowController.Type)
+        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 44, height: 44),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        let controller = type.init(window: window)
+        let popupType = try XCTUnwrap(NSClassFromString("AKCompactAvailabilityPopUpButton") as? NSPopUpButton.Type)
+        let popup = popupType.init(frame: .zero, pullsDown: true)
+        popup.addItem(withTitle: "")
+        popup.itemArray.first?.isHidden = true
+        let imageView = NSImageView(frame: .zero)
+        let group = try XCTUnwrap(controller.perform(NSSelectorFromString("compactAvailabilityViewWithPopUp:image:"),
+                                                    with: popup, with: imageView)?.takeUnretainedValue() as? NSView)
+        let root = try XCTUnwrap(window.contentView)
+        root.addSubview(group)
+        // Production gives the popup group a required 44-point row. Preserve
+        // that constraint instead of letting a window root use intrinsic size.
+        NSLayoutConstraint.activate([
+            group.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            group.topAnchor.constraint(equalTo: root.topAnchor),
+            group.widthAnchor.constraint(equalToConstant: 44),
+            group.heightAnchor.constraint(equalToConstant: 44)
+        ])
+        controller.setValue(popup, forKey: "accountStatePopUp")
+        controller.setValue(imageView, forKey: "accountStateImageView")
+        window.contentView?.layoutSubtreeIfNeeded()
+        return (controller, popup, window)
+    }
+
+    private func pixelCount(matching colour: NSColor, in popup: NSPopUpButton, appearance: NSAppearance) throws -> Int {
+        let image = try XCTUnwrap(popup.bitmapImageRepForCachingDisplay(in: popup.bounds))
+        var expected: NSColor?
+        appearance.performAsCurrentDrawingAppearance {
+            expected = colour.usingColorSpace(.sRGB)
+            popup.cacheDisplay(in: popup.bounds, to: image)
+        }
+        let target = try XCTUnwrap(expected)
+        var count = 0
+        // Limit inspection to the drawn symbol, excluding native focus/bezel
+        // colours which may follow the user's accent-colour preference.
+        let glyph = try XCTUnwrap(popup.cell).imageRect(forBounds: popup.bounds)
+        let sx = CGFloat(image.pixelsWide) / popup.bounds.width
+        let sy = CGFloat(image.pixelsHigh) / popup.bounds.height
+        let xs = max(0, Int(floor(glyph.minX * sx)))..<min(image.pixelsWide, Int(ceil(glyph.maxX * sx)))
+        let ys = max(0, Int(floor(glyph.minY * sy)))..<min(image.pixelsHigh, Int(ceil(glyph.maxY * sy)))
+        for y in ys {
+            for x in xs {
+                guard let pixel = image.colorAt(x: x, y: y)?.usingColorSpace(.sRGB), pixel.alphaComponent > 0.7 else { continue }
+                // Native material changes brightness/RGB. Require significant
+                // glyph chroma; distinguish red from the existing orange state.
+                let r = pixel.redComponent, g = pixel.greenComponent, b = pixel.blueComponent
+                let matches: Bool
+                if target.greenComponent > target.redComponent && target.greenComponent > target.blueComponent {
+                    matches = g > r + 0.12 && g > b + 0.08
+                } else if target.blueComponent > target.redComponent && target.blueComponent > target.greenComponent {
+                    matches = b > r + 0.12 && b > g + 0.08
+                } else {
+                    matches = r > g + 0.12 && r > b + 0.08 && g - b < r - g
+                }
+                if matches { count += 1 }
+            }
+        }
+        return count
+    }
+}

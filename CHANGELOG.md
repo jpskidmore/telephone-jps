@@ -1,5 +1,13 @@
 # Changelog
 
+## jps Telephone 2.1.7 (build 159) — availability colours
+
+- Show online availability in system green and offline availability in system red
+- Preserve the compact main window, status symbols and availability actions
+- Retain the existing Settings window size and controls
+
+See [release notes](docs/releases/2.1.7.md).
+
 ## jps Telephone 2.1.6 (build 158) — interface refinements
 
 - Align and space the compact main window controls and recent-call row consistently

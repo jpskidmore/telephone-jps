@@ -1,5 +1,21 @@
 # Validation and release checks
 
+## 2.1.7 availability colours
+
+Build and package locally from the exact main revision, preserving the 2.1.6
+artifacts. Check the actual rendered availability symbol in Light and Dark:
+registered online uses system green, while offline uses system red. Keep
+connecting/transient states distinct and retain the status labels and actions.
+Check the existing compact geometry and history menu alongside the colour fix.
+Property assignments alone do not establish that a rounded popup renders its
+symbol in the requested colour.
+
+Run focused controller/rendering checks and the relevant native tests, then
+compile, sign and verify the production Release and extracted ZIP. Record only
+executed checks in BUILD-VERIFICATION.md. Publication commits use `[skip ci]`;
+no cloud build is used. The Settings layout remains unchanged pending selection
+of a proposed alternative.
+
 ## 2.1.6 local interface refinements
 
 Build this update locally using `Scripts/build-test-release.sh` from a clean
