@@ -396,6 +396,17 @@
     XCTAssertEqualWithAccuracy([self.controller.window contentBorderThicknessForEdge:NSMinYEdge], 0, 0.1);
     XCTAssertFalse((self.controller.window.styleMask & NSWindowStyleMaskFullSizeContentView) != 0);
     XCTAssertNotNil([self.controller.window standardWindowButton:NSWindowCloseButton]);
+    NSView *root = self.controller.window.contentView;
+    NSUInteger paneIndex = [root.subviews indexOfObjectIdenticalTo:view];
+    XCTAssertNotEqual(paneIndex, NSNotFound);
+    NSUInteger backdropCount = 0;
+    for (NSView *child in root.subviews) {
+        if (![child isKindOfClass:AKWindowMaterialView.class]) continue;
+        backdropCount++;
+        XCTAssertLessThan([root.subviews indexOfObjectIdenticalTo:child], paneIndex,
+                          @"Window backdrop must remain behind the current call pane");
+    }
+    XCTAssertEqual(backdropCount, 1u);
     AKGlassControlContainer *bar = nil;
     for (NSView *child in view.subviews) if ([child isKindOfClass:AKGlassControlContainer.class]) bar = (id)child;
     XCTAssertNotNil(bar);
@@ -416,8 +427,9 @@
         XCTAssertTrue(NSContainsRect(view.bounds, frame));
         XCTAssertGreaterThanOrEqual(frame.origin.x - previousRight, 11.9);
         previousRight = NSMaxX(frame);
-        // Check the real hit region, including near each edge. Comparing only
-        // anchors would miss legacy AppKit alignment margins and frame overlap.
+        // Start at the window root so an overlaid backdrop cannot pass simply
+        // because the controls still exist below it in the accessibility tree.
+        // Near-edge points also catch native alignment margins and frame overlap.
         NSArray<NSValue *> *points = @[
             [NSValue valueWithPoint:NSMakePoint(22, 22)],
             [NSValue valueWithPoint:NSMakePoint(1, 22)],
@@ -426,11 +438,40 @@
             [NSValue valueWithPoint:NSMakePoint(22, 43)]
         ];
         for (NSValue *point in points) {
-            NSPoint parentPoint = [button convertPoint:point.pointValue toView:view.superview];
-            NSView *hit = [view hitTest:parentPoint];
+            NSPoint parentPoint = [button convertPoint:point.pointValue toView:root.superview];
+            NSView *hit = [root hitTest:parentPoint];
             XCTAssertTrue(hit == button || [hit isDescendantOf:button],
                           @"%@ loses its 44pt hit region at %@ (hit %@)",
                           button.accessibilityLabel, NSStringFromPoint(point.pointValue), hit);
+        }
+    }
+}
+- (void)testWindowRootHitsSurviveCallPaneChangesAndMaterialRebuilds {
+    for (NSString *appearance in @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]) {
+        self.controller.window.appearance = [NSAppearance appearanceNamed:appearance];
+        for (NSNumber *state in @[@(kAKSIPCallCallingState), @(kAKSIPCallConfirmedState),
+                                  @(kAKSIPCallIncomingState), @(kAKSIPCallDisconnectedState),
+                                  @(kAKSIPCallConfirmedState)]) {
+            self.call.state = state.unsignedIntegerValue;
+            NSView *pane;
+            NSUInteger actions;
+            if (self.call.state == kAKSIPCallIncomingState) {
+                [self.controller showIncomingCallView];
+                pane = self.controller.incomingCallViewController.view;
+                actions = 2;
+            } else if (self.call.state == kAKSIPCallDisconnectedState) {
+                [self.controller showEndedCallView];
+                pane = self.controller.endedCallViewController.view;
+                actions = 1;
+            } else {
+                [self.controller showActiveCallView];
+                pane = self.controller.activeCallViewController.view;
+                actions = 5;
+            }
+            [self assertCompactView:pane actionCount:actions];
+            [NSWorkspace.sharedWorkspace.notificationCenter
+                postNotificationName:NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification object:nil];
+            [self assertCompactView:pane actionCount:actions];
         }
     }
 }

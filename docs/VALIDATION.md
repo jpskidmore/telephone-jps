@@ -16,6 +16,11 @@ duration formatting and preservation of saved number-formatting preferences.
 Settings geometry checks include each icon's actual visible bounds within the
 44-point rail. Historical multilingual checks below describe previous releases.
 
+Local window inspection caught a call backdrop above the caller and controls:
+accessibility actions could still reach the covered buttons. Call regressions
+therefore check physical hit routing from the entire window content view after
+each view replacement, in addition to the individual pane geometry.
+
 The candidate is built from an exact main commit. Its BUILD-VERIFICATION.md and
 workflow logs record executed results. The exact packaged binary must then pass
 local inspection of all panes, compact/full history and call presentation in

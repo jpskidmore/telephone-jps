@@ -21,6 +21,7 @@
 @import UseCases;
 
 #import "AKActiveCallView.h"
+#import "AKLiquidGlass.h"
 #import "AKNSWindow+Resizing.h"
 #import "AKSIPURI.h"
 #import "AKSIPURIFormatter.h"
@@ -320,6 +321,16 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         [self.window.contentView replaceSubview:self.callInfoView with:newView];
     }
     self.callInfoView = newView;
+
+    // Installing the controls can add the backdrop during replaceSubview's
+    // viewDidMoveToWindow callbacks. Restore its order after the swap finishes
+    // so it cannot cover the pane or intercept its ordinary mouse clicks.
+    NSView *contentView = self.window.contentView;
+    for (NSView *subview in [contentView.subviews copy]) {
+        if ([subview isKindOfClass:AKWindowMaterialView.class]) {
+            [contentView addSubview:subview positioned:NSWindowBelow relativeTo:newView];
+        }
+    }
 
     [[self window] makeFirstResponder:newView];
 }

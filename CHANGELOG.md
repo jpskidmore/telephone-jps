@@ -11,6 +11,7 @@
 - Use UK English only; remove German and Russian resources and language-specific defaults
 - Use UK date order, 24-hour time and English duration units without changing saved number-formatting choices
 - Keep all four Settings rail icons within the narrow visible strip
+- Keep the call backdrop beneath the caller and controls after switching call views
 
 See [release notes](docs/releases/2.1.5.md).
 
