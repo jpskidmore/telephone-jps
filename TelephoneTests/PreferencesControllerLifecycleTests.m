@@ -78,8 +78,8 @@
 }
 
 - (void)testInitialSettingsWindowLoadsItsSidebarAndGeneralForm {
-    // Use the production window and General nibs. No SIP/audio dependencies are
-    // needed to open General. Attaching a nonempty table data source can select
+    // Use the production window, Accounts sizing form and General nibs. No
+    // SIP/audio dependencies are needed. A nonempty table data source can select
     // its first row immediately, before windowDidLoad returns.
     PreferencesController *controller = [[PreferencesController alloc] initWithWindowNibName:@"Preferences"];
     __block NSWindow *window;
@@ -108,12 +108,16 @@
     XCTAssertGreaterThan(form.frame.size.width, 100);
     XCTAssertGreaterThan(form.frame.size.height, 100);
     XCTAssertEqualObjects(window.title, controller.generalPreferencesViewController.title);
-    // The rail occupies only 44 logical points, and the selected pane controls
-    // the content height. Compare content geometry, allowing native titlebar
-    // height to vary between supported macOS versions.
+    // Accounts determines the shared window dimensions. General retains its
+    // compact controls and sits centred inside that larger detail area.
+    // Compare content geometry so native titlebar height can vary by OS.
     XCTAssertEqualWithAccuracy(sidebar.enclosingScrollView.frame.size.width, 44, 0.5);
-    XCTAssertEqualWithAccuracy(window.contentView.frame.size.width, form.frame.size.width + 44, 0.5);
-    XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, form.frame.size.height, 0.5);
+    NSSize accountsSize = controller.accountPreferencesViewController.view.fittingSize;
+    XCTAssertEqualWithAccuracy(window.contentView.frame.size.width, ceil(accountsSize.width) + 44, 0.5);
+    XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, ceil(accountsSize.height), 0.5);
+    NSView *detail = [controller valueForKey:@"settingsDetailView"];
+    XCTAssertEqualWithAccuracy(NSMidX(form.frame), NSMidX(detail.bounds), 0.5);
+    XCTAssertEqualWithAccuracy(NSMidY(form.frame), NSMidY(detail.bounds), 0.5);
     XCTAssertLessThanOrEqual(form.frame.size.height, 240);
     XCTAssertFalse(form.hasAmbiguousLayout);
     [self assertControlsFitInsideView:form];
@@ -149,7 +153,7 @@
                              NSMinY([closeButton convertRect:closeButton.bounds toView:nil]));
 }
 
-- (void)testEachProductionPaneFitsAndWindowShrinksBackToGeneral {
+- (void)testEachProductionPaneFitsWithoutChangingWindowGeometry {
     // Registration-domain defaults do not write settings to disk. Empty
     // network strings let the production nib initialize without a SIP agent.
     [NSUserDefaults.standardUserDefaults registerDefaults:@{
@@ -159,23 +163,28 @@
     PreferencesController *controller = [[PreferencesController alloc] initWithWindowNibName:@"Preferences"];
     NSWindow *window = controller.window;
     [window setFrameOrigin:NSMakePoint(-20000, -20000)];
-    CGFloat generalHeight = window.contentView.frame.size.height;
+    NSRect fixedFrame = window.frame;
     NSArray<NSToolbarItem *> *sections = @[
         controller.accountsToolbarItem, controller.soundToolbarItem,
         controller.networkToolbarItem, controller.generalToolbarItem
     ];
-    for (NSToolbarItem *section in sections) {
-        XCTAssertNoThrow([controller changeView:section]);
-        [window.contentView layoutSubtreeIfNeeded];
-        NSViewController *pane = [controller valueForKey:@"selectedSettingsController"];
-        XCTAssertEqual(pane.view.window, window);
-        XCTAssertEqualObjects(window.title, pane.title);
-        XCTAssertEqualWithAccuracy(window.contentView.frame.size.width, pane.view.frame.size.width + 44, 0.5);
-        XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, pane.view.frame.size.height, 0.5);
-        [self assertSettingsIconsVisibleInSidebar:[controller valueForKey:@"settingsSidebar"]];
-        [self assertControlsFitInsideView:pane.view];
+    for (NSString *appearance in @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]) {
+        window.appearance = [NSAppearance appearanceNamed:appearance];
+        for (NSToolbarItem *section in sections) {
+            XCTAssertNoThrow([controller changeView:section]);
+            [window.contentView layoutSubtreeIfNeeded];
+            NSViewController *pane = [controller valueForKey:@"selectedSettingsController"];
+            NSView *detail = [controller valueForKey:@"settingsDetailView"];
+            XCTAssertEqual(pane.view.window, window);
+            XCTAssertEqualObjects(window.title, pane.title);
+            XCTAssertTrue(NSEqualRects(window.frame, fixedFrame), @"Switching to%@ moved or resized Settings", pane.title);
+            XCTAssertTrue(NSContainsRect(NSInsetRect(detail.bounds, -0.5, -0.5), pane.view.frame));
+            XCTAssertEqualWithAccuracy(NSMidX(pane.view.frame), NSMidX(detail.bounds), 0.5);
+            XCTAssertEqualWithAccuracy(NSMidY(pane.view.frame), NSMidY(detail.bounds), 0.5);
+            [self assertSettingsIconsVisibleInSidebar:[controller valueForKey:@"settingsSidebar"]];
+            [self assertControlsFitInsideView:pane.view];
+        }
     }
-    XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, generalHeight, 0.5);
     // These controls are easy to lose when compacting the pane: retain the
     // native account tabs/list, four independent audio selectors, recording
     // format/folder controls, and both network host/port pairs.
@@ -190,6 +199,48 @@
     XCTAssertNotNil(controller.networkPreferencesViewController.STUNServerPortField);
     XCTAssertNotNil(controller.networkPreferencesViewController.outboundProxyHostField);
     XCTAssertNotNil(controller.networkPreferencesViewController.outboundProxyPortField);
+}
+
+- (void)testNetworkSectionsExposeTheirDifferentScopes {
+    [NSUserDefaults.standardUserDefaults registerDefaults:@{
+        @"STUNServerHost": @"", @"OutboundProxyHost": @"", @"Accounts": @[]
+    }];
+    PreferencesController *controller = [[PreferencesController alloc] initWithWindowNibName:@"Preferences"];
+    NSWindow *window = controller.window;
+    AccountPreferencesViewController *account = controller.accountPreferencesViewController;
+    NSView *connectionView = account.proxyHostField.superview;
+    NSTabViewItem *connectionItem;
+    for (NSView *view in account.view.subviews) {
+        if ([view isKindOfClass:NSTabView.class]) {
+            for (NSTabViewItem *item in ((NSTabView *)view).tabViewItems) {
+                if (item.view == connectionView) {
+                    connectionItem = item;
+                }
+            }
+        }
+    }
+    // Inspect actual localised native tabs and their original proxy/transport
+    // controls, rather than testing a disconnected string constant.
+    XCTAssertNotNil(connectionItem);
+    XCTAssertEqualObjects(connectionItem.label, @"Connection");
+    NSString *accountScope = NSLocalizedString(@"Connection settings for the selected account.", nil);
+    XCTAssertEqualObjects(connectionItem.toolTip, accountScope);
+    XCTAssertEqualObjects(connectionView.accessibilityLabel, accountScope);
+    XCTAssertNotNil(account.UDPButton);
+    XCTAssertNotNil(account.TCPButton);
+    XCTAssertNotNil(account.TLSButton);
+    XCTAssertNotNil(account.IPv4Button);
+    XCTAssertNotNil(account.IPv6Button);
+
+    [controller changeView:controller.networkToolbarItem];
+    XCTAssertEqualObjects(window.title, NSLocalizedString(@"Network — All Accounts", nil));
+    NSTableView *sidebar = [controller valueForKey:@"settingsSidebar"];
+    NSTableCellView *networkRow = [sidebar viewAtColumn:0 row:3 makeIfNecessary:YES];
+    NSString *globalScope = NSLocalizedString(@"Network settings for all accounts.", nil);
+    XCTAssertEqualObjects(networkRow.toolTip, globalScope);
+    XCTAssertEqualObjects(networkRow.accessibilityHelp, globalScope);
+    XCTAssertNotEqualObjects(connectionItem.label, networkRow.accessibilityLabel);
+    XCTAssertEqualObjects(((NSView *)[controller valueForKey:@"settingsDetailView"]).accessibilityLabel, window.title);
 }
 
 - (void)testNativeCloseControlClosesAndReopensSettings {
