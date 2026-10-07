@@ -21,7 +21,7 @@
 
 ## Download
 
-The [2.1.4 local test release](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.4) corrects a blank Settings window in 2.1.3 and gives Settings/call windows a native translucent backdrop. It retains regular Liquid Glass, clearer call controls and native Settings navigation. See the [release notes](docs/releases/2.1.4.md), [Apple interface guidance](docs/LIQUID_GLASS.md) and [bug review](docs/BUG_REVIEW_2.1.3.md). It is a prerelease for local acceptance; the stable download below remains available.
+The [2.1.5 local test release](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.5) uses compact Icon rail Settings, a Dial bar with one recent call, and original-width Pocket call cards. Native Liquid Glass is reserved for navigation and controls, with semantic colors for Light and Dark appearance. See the [release notes](docs/releases/2.1.5.md), [Apple interface guidance](docs/LIQUID_GLASS.md) and [bug review](docs/BUG_REVIEW_2.1.3.md). It is a prerelease for local acceptance; the stable download below remains available.
 
 Download the tested application ZIP from the [latest GitHub release](https://github.com/jpskidmore/telephone-jps/releases/latest). The release also contains a complete source ZIP, checksums, and the verification report for the exact build.
 

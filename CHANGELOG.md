@@ -1,5 +1,16 @@
 # Changelog
 
+## jps Telephone 2.1.5 (build 157) — compact desktop interface
+
+- Replace the wide Settings sidebar with an edge-to-edge icon rail and size each pane to its contents
+- Use a compact dial bar with one recent call underneath and expandable full history
+- Restore original-width call cards with one row of icon controls and an on-demand keypad
+- Preserve calling, recording, account, history and settings actions, including Network save prompts
+- Retain native close controls, readable titlebars, light/dark colors and accessibility material fallbacks
+- Add native layout and lifecycle regressions for the compact interface
+
+See [release notes](docs/releases/2.1.5.md).
+
 ## jps Telephone 2.1.4 (build 156) — Settings and material repair
 
 - Prevent initial sidebar selection from navigating before the detail hierarchy exists

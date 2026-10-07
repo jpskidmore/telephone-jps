@@ -222,3 +222,18 @@
 "Call status" = "Статус звонка";
 "Recording in progress" = "Идёт запись";
 "Connecting call" = "Соединение";
+
+/* Compact dialer and pocket-call accessibility and tooltips. */
+"Keypad" = "Клавиатура";
+"Phone number" = "Номер телефона";
+"Call duration" = "Длительность звонка";
+"Connected" = "Соединено";
+"DTMF digits" = "Цифры DTMF";
+"Call destination" = "Адресат звонка";
+"Number or contact" = "Номер или контакт";
+"Show full call history" = "Показать всю историю звонков";
+"Hide full call history" = "Скрыть всю историю звонков";
+"More actions" = "Другие действия";
+"Availability" = "Доступность";
+"Call history" = "История звонков";
+"No recent calls" = "Нет недавних звонков";

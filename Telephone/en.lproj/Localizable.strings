@@ -240,3 +240,18 @@
 "Call status" = "Call status";
 "Recording in progress" = "Recording in progress";
 "Connecting call" = "Connecting call";
+
+/* Compact dialer and pocket-call accessibility and tooltips. */
+"Keypad" = "Keypad";
+"Phone number" = "Phone number";
+"Call duration" = "Call duration";
+"Connected" = "Connected";
+"DTMF digits" = "DTMF digits";
+"Call destination" = "Call destination";
+"Number or contact" = "Number or contact";
+"Show full call history" = "Show full call history";
+"Hide full call history" = "Hide full call history";
+"More actions" = "More actions";
+"Availability" = "Availability";
+"Call history" = "Call history";
+"No recent calls" = "No recent calls";

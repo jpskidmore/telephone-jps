@@ -54,6 +54,26 @@ static NSArray<NSLayoutConstraint *> *FullSizeConstraintsForView(NSView *view);
     return self.activeAccountViewController.allowsCallDestinationInput;
 }
 
+- (BOOL)historyExpanded {
+    return self.callHistoryViewController.historyExpanded;
+}
+
+- (NSMenu *)callHistoryActionsMenu {
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@""];
+    for (NSMenuItem *item in self.callHistoryViewController.actionsMenu.itemArray) {
+        if (item.action == @selector(deleteAll:)) {
+            [menu addItem:[item copy]];
+        }
+    }
+    if (!self.showMoreButton.isHidden) {
+        NSMenuItem *more = [[NSMenuItem alloc] initWithTitle:self.showMoreButton.title
+                                                   action:@selector(showStoreWindow:) keyEquivalent:@""];
+        more.target = self;
+        [menu addItem:more];
+    }
+    return menu;
+}
+
 - (instancetype)initWithActiveAccountViewController:(ActiveAccountViewController *)activeAccountViewController
                           callHistoryViewController:(CallHistoryViewController *)callHistoryViewController
                   callHistoryViewEventTargetFactory:(AsyncCallHistoryViewEventTargetFactory *)callHistoryViewEventTargetFactory
@@ -80,21 +100,34 @@ static NSArray<NSLayoutConstraint *> *FullSizeConstraintsForView(NSView *view);
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    self.originalActiveAccountViewHeight = self.activeAccountViewHeightConstraint.constant;
-    self.originalHorizontalLineHeight = self.horizontalLineHeightConstraint.constant;
+    self.originalActiveAccountViewHeight = 56;
+    self.originalHorizontalLineHeight = 1;
+    self.activeAccountViewHeightConstraint.constant = self.originalActiveAccountViewHeight;
+    self.horizontalLineHeightConstraint.constant = self.originalHorizontalLineHeight;
+    // One complete 44-point row and its native two-point table spacing fit in
+    // 47 points. Keep the same history view/presenter for both display modes.
+    for (NSLayoutConstraint *constraint in self.callHistoryView.constraints) {
+        if (constraint.firstAttribute == NSLayoutAttributeHeight && constraint.secondItem == nil) {
+            constraint.constant = 47;
+        }
+    }
 
     [self.activeAccountView addSubview:self.activeAccountViewController.view];
     [self.activeAccountView addConstraints:FullSizeConstraintsForView(self.activeAccountViewController.view)];
 
     [self.callHistoryView addSubview:self.callHistoryViewController.view];
     [self.callHistoryView addConstraints:FullSizeConstraintsForView(self.callHistoryViewController.view)];
+    [self.callHistoryViewController setHistoryExpanded:NO];
 
     [self.activeAccountViewController updateNextKeyView:self.callHistoryViewController.keyView];
     [self.callHistoryViewController updateNextKeyView:self.activeAccountViewController.keyView];
 
+    // The conditional purchase/history action remains available in More. Its
+    // presenter still controls visibility/title without adding a tall footer.
+    self.bottomViewHeightConstraint.constant = 0;
     self.bottomViewPresenter
     = [[AccountViewBottomViewPresenter alloc] initWithConstraint:self.bottomViewHeightConstraint
-                                                          height:self.bottomViewHeightConstraint.constant
+                                                          height:0
                                                           button:self.showMoreButton
                                                       controller:self.callHistoryViewController];
     [self.bottomViewPresenter hideWithoutAnimation];
@@ -123,13 +156,24 @@ static NSArray<NSLayoutConstraint *> *FullSizeConstraintsForView(NSView *view);
 
 - (void)showInactiveStateAnimated:(BOOL)animated {
     [self.activeAccountViewController disallowCallDestinationInput];
-    if (animated) {
-        self.activeAccountViewHeightConstraint.animator.constant = 0;
-        self.horizontalLineHeightConstraint.animator.constant = 0;
-    } else {
-        self.activeAccountViewHeightConstraint.constant = 0;
-        self.horizontalLineHeightConstraint.constant = 0;
-    }
+    // Availability and history remain usable when this account is offline.
+    self.activeAccountViewHeightConstraint.constant = self.originalActiveAccountViewHeight;
+    self.horizontalLineHeightConstraint.constant = self.originalHorizontalLineHeight;
+}
+
+- (void)installCompactDialerWithAvailabilityView:(NSView *)availability
+                                         target:(id)target
+                                  historyAction:(SEL)historyAction
+                                     moreAction:(SEL)moreAction {
+    [self.activeAccountViewController installCompactDialerWithAvailabilityView:availability
+                                                                       target:target
+                                                                historyAction:historyAction
+                                                                   moreAction:moreAction];
+}
+
+- (void)setHistoryExpanded:(BOOL)expanded {
+    [self.callHistoryViewController setHistoryExpanded:expanded];
+    [self.activeAccountViewController updateHistoryExpanded:expanded];
 }
 
 - (void)makeCallToDestination:(NSString *)destination {

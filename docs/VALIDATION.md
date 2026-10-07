@@ -1,5 +1,25 @@
 # Validation and release checks
 
+## 2.1.5 compact interface candidate
+
+The selected layouts are Icon rail Settings, Dial bar with one recent call, and
+Pocket call cards. Hosted regressions load the actual pane and call nibs, check
+compact geometry and native close behavior, and exercise compact/full history
+without replacing its data or actions. The existing four-suite release pipeline
+also covers audio and recording harnesses, Foundation checks, arm64 Release
+compilation, ad-hoc signing and ZIP extraction/signature verification.
+
+The candidate is built from an exact main commit. Its BUILD-VERIFICATION.md and
+workflow logs record executed results. The exact packaged binary must then pass
+local inspection of all panes, compact/full history and call presentation in
+Light and Dark appearance before those same ZIP bytes are uploaded to the
+prerelease. Live SIP/audio, VoiceOver and full macOS-version coverage remain
+separate manual acceptance tests.
+
+On the local Mac, Xcode is installed but first-run setup is incomplete. Standalone
+source checks can use the command-line tools; full XCTest and packaging use the
+GitHub macOS runner. No system setup or appearance preferences are changed.
+
 ## 2.1.4 Settings initialization and material composition
 
 Actual local inspection of 2.1.3 found a blank Settings window. The AppKit
@@ -53,9 +73,10 @@ window backing; the existing field and sidebar materials are preserved. It
 follows the same candidate-build and local-interface publication gate.
 
 The workflow now uploads an app/source candidate after all automatic gates pass.
-Publication requires an explicit workflow run with `publish_release` enabled
-after local interface acceptance. Archive extraction and signature verification
-are included in the packaging gate.
+Publication follows local interface acceptance. The tested candidate files can
+be uploaded directly, or the explicit `publish_release` workflow can build a
+separate candidate. Direct upload preserves the exact locally inspected bytes.
+Archive extraction and signature verification are included in the packaging gate.
 
 ## 2.1.3 local test release
 

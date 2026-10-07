@@ -27,6 +27,8 @@ NS_ASSUME_NONNULL_BEGIN
 @interface AccountViewController : NSViewController
 
 @property(nonatomic, readonly) BOOL allowsCallDestinationInput;
+@property(nonatomic, readonly) BOOL historyExpanded;
+@property(nonatomic, readonly) NSMenu *callHistoryActionsMenu;
 
 - (instancetype)initWithActiveAccountViewController:(ActiveAccountViewController *)activeAccountViewController
                           callHistoryViewController:(CallHistoryViewController *)callHistoryViewController
@@ -39,6 +41,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)showInactiveStateAnimated:(BOOL)animated;
 
 - (void)makeCallToDestination:(NSString *)destination;
+
+- (void)installCompactDialerWithAvailabilityView:(NSView *)availability
+                                         target:(id)target
+                                  historyAction:(SEL)historyAction
+                                     moreAction:(SEL)moreAction;
+- (void)setHistoryExpanded:(BOOL)expanded;
 
 @end
 

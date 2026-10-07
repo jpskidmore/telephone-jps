@@ -19,10 +19,10 @@
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="251" userLabel="Sound">
-            <rect key="frame" x="0.0" y="0.0" width="573" height="209"/>
+            <rect key="frame" x="0.0" y="0.0" width="448" height="184"/>
             <subviews>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="474">
-                    <rect key="frame" x="221" y="113" width="232" height="25"/>
+                    <rect key="frame" x="184" y="93" width="248" height="25"/>
                     <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="475">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -41,7 +41,7 @@
                     </textFieldCell>
                 </textField>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="345">
-                    <rect key="frame" x="222" y="56" width="190" height="14"/>
+                    <rect key="frame" x="185" y="49" width="190" height="14"/>
                     <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Place ringtones in ~/Library/Sounds" id="346">
                         <font key="font" metaFont="smallSystem"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -49,10 +49,7 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="277">
-                    <rect key="frame" x="221" y="74" width="172" height="25"/>
-                    <constraints>
-                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="165" id="ks7-8h-eYP"/>
-                    </constraints>
+                    <rect key="frame" x="184" y="65" width="248" height="25"/>
                     <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="278">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -71,7 +68,7 @@
                     </textFieldCell>
                 </textField>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="220">
-                    <rect key="frame" x="221" y="142" width="232" height="25"/>
+                    <rect key="frame" x="184" y="121" width="248" height="25"/>
                     <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="221">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -82,10 +79,7 @@
                     </connections>
                 </popUpButton>
                 <popUpButton verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="214">
-                    <rect key="frame" x="221" y="171" width="232" height="25"/>
-                    <constraints>
-                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="225" id="Zgs-Ui-Mx4"/>
-                    </constraints>
+                    <rect key="frame" x="184" y="149" width="248" height="25"/>
                     <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="215">
                         <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="menu"/>
@@ -112,7 +106,7 @@
                     </textFieldCell>
                 </textField>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="90O-Fe-Uz3">
-                    <rect key="frame" x="222" y="19" width="156" height="18"/>
+                    <rect key="frame" x="185" y="18" width="156" height="18"/>
                     <buttonCell key="cell" type="check" title="Use only G.711 codec" bezelStyle="regularSquare" imagePosition="left" inset="2" id="2bR-wc-3xa">
                         <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
@@ -124,37 +118,42 @@
                 </button>
             </subviews>
             <constraints>
-                <constraint firstItem="220" firstAttribute="leading" secondItem="214" secondAttribute="leading" id="11d-OD-b1C"/>
-                <constraint firstItem="473" firstAttribute="firstBaseline" secondItem="474" secondAttribute="firstBaseline" id="3he-PM-nv9"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="214" secondAttribute="trailing" constant="90" id="54R-Pw-h6b"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="90O-Fe-Uz3" secondAttribute="trailing" constant="20" symbolic="YES" id="8b3-qZ-xdn"/>
-                <constraint firstItem="210" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="251" secondAttribute="leading" constant="20" symbolic="YES" id="E66-56-9aO"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="345" secondAttribute="trailing" constant="20" symbolic="YES" id="I1z-lz-Ezs"/>
-                <constraint firstItem="90O-Fe-Uz3" firstAttribute="top" secondItem="345" secondAttribute="bottom" constant="20" id="JdT-uG-q4a"/>
-                <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="277" secondAttribute="trailing" constant="20" symbolic="YES" id="KmO-Yc-de5"/>
-                <constraint firstItem="275" firstAttribute="trailing" secondItem="212" secondAttribute="trailing" id="Pe4-1g-U6R"/>
-                <constraint firstItem="212" firstAttribute="firstBaseline" secondItem="220" secondAttribute="firstBaseline" id="QN9-qd-gkU"/>
-                <constraint firstItem="277" firstAttribute="top" secondItem="474" secondAttribute="bottom" constant="19" id="T2n-vO-eaI"/>
-                <constraint firstItem="275" firstAttribute="firstBaseline" secondItem="277" secondAttribute="firstBaseline" id="UMA-sR-tmx"/>
-                <constraint firstItem="90O-Fe-Uz3" firstAttribute="leading" secondItem="214" secondAttribute="leading" id="Wpf-TV-wit"/>
-                <constraint firstItem="220" firstAttribute="top" secondItem="214" secondAttribute="bottom" constant="9" id="bjf-p0-EPP"/>
-                <constraint firstItem="474" firstAttribute="top" secondItem="220" secondAttribute="bottom" constant="9" id="eoS-Ij-gL7"/>
-                <constraint firstItem="220" firstAttribute="trailing" secondItem="214" secondAttribute="trailing" id="fb6-Xt-CxV"/>
-                <constraint firstItem="473" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="251" secondAttribute="leading" constant="20" symbolic="YES" id="g6w-vx-YAM"/>
-                <constraint firstItem="345" firstAttribute="top" secondItem="474" secondAttribute="bottom" constant="47" id="h5P-kA-zMf"/>
-                <constraint firstItem="210" firstAttribute="trailing" secondItem="212" secondAttribute="trailing" id="hva-T1-TjD"/>
-                <constraint firstItem="214" firstAttribute="top" secondItem="251" secondAttribute="top" constant="14" id="iey-Ha-hdW"/>
-                <constraint firstItem="210" firstAttribute="firstBaseline" secondItem="214" secondAttribute="firstBaseline" id="jWW-9y-1JG"/>
-                <constraint firstItem="474" firstAttribute="leading" secondItem="214" secondAttribute="leading" id="jrs-nI-awv"/>
-                <constraint firstItem="277" firstAttribute="leading" secondItem="214" secondAttribute="leading" id="mF5-DZ-fCH"/>
-                <constraint firstItem="214" firstAttribute="leading" secondItem="210" secondAttribute="trailing" constant="6" id="mQN-yz-axN"/>
-                <constraint firstAttribute="bottom" secondItem="90O-Fe-Uz3" secondAttribute="bottom" constant="20" symbolic="YES" id="mQd-aB-RTf"/>
-                <constraint firstItem="212" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="251" secondAttribute="leading" constant="20" symbolic="YES" id="sjZ-Gv-jn9"/>
-                <constraint firstItem="345" firstAttribute="leading" secondItem="214" secondAttribute="leading" id="vHC-aS-Iqp"/>
-                <constraint firstItem="474" firstAttribute="trailing" secondItem="214" secondAttribute="trailing" id="vOm-A3-d18"/>
-                <constraint firstItem="214" firstAttribute="leading" secondItem="251" secondAttribute="leading" constant="224" id="wtB-ea-8DV"/>
-                <constraint firstItem="473" firstAttribute="trailing" secondItem="212" secondAttribute="trailing" id="xQs-a8-NGc"/>
-                <constraint firstItem="275" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="251" secondAttribute="leading" constant="20" symbolic="YES" id="xzk-q5-tVX"/>
+                <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="448" id="cs-1"/>
+                <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="184" id="cs-2"/>
+                <constraint firstAttribute="trailing" firstItem="251" secondItem="214" secondAttribute="trailing" constant="16" id="cs-3"/>
+                <constraint firstAttribute="width" firstItem="214" relation="greaterThanOrEqual" constant="248" id="cs-4"/>
+                <constraint firstAttribute="leading" firstItem="210" relation="greaterThanOrEqual" secondItem="251" secondAttribute="leading" constant="16" id="cs-5"/>
+                <constraint firstAttribute="trailing" firstItem="210" secondItem="214" secondAttribute="leading" constant="-8" id="cs-6"/>
+                <constraint firstAttribute="firstBaseline" firstItem="210" secondItem="214" secondAttribute="firstBaseline" id="cs-7"/>
+                <constraint firstAttribute="top" firstItem="214" secondItem="251" secondAttribute="top" constant="10" id="cs-8"/>
+                <constraint firstAttribute="leading" firstItem="220" secondItem="214" secondAttribute="leading" id="cs-9"/>
+                <constraint firstAttribute="trailing" firstItem="251" secondItem="220" secondAttribute="trailing" constant="16" id="cs-10"/>
+                <constraint firstAttribute="width" firstItem="220" relation="greaterThanOrEqual" constant="248" id="cs-11"/>
+                <constraint firstAttribute="leading" firstItem="212" relation="greaterThanOrEqual" secondItem="251" secondAttribute="leading" constant="16" id="cs-12"/>
+                <constraint firstAttribute="trailing" firstItem="212" secondItem="220" secondAttribute="leading" constant="-8" id="cs-13"/>
+                <constraint firstAttribute="firstBaseline" firstItem="212" secondItem="220" secondAttribute="firstBaseline" id="cs-14"/>
+                <constraint firstAttribute="top" firstItem="220" secondItem="214" secondAttribute="bottom" constant="6" id="cs-15"/>
+                <constraint firstAttribute="leading" firstItem="474" secondItem="214" secondAttribute="leading" id="cs-16"/>
+                <constraint firstAttribute="trailing" firstItem="251" secondItem="474" secondAttribute="trailing" constant="16" id="cs-17"/>
+                <constraint firstAttribute="width" firstItem="474" relation="greaterThanOrEqual" constant="248" id="cs-18"/>
+                <constraint firstAttribute="leading" firstItem="473" relation="greaterThanOrEqual" secondItem="251" secondAttribute="leading" constant="16" id="cs-19"/>
+                <constraint firstAttribute="trailing" firstItem="473" secondItem="474" secondAttribute="leading" constant="-8" id="cs-20"/>
+                <constraint firstAttribute="firstBaseline" firstItem="473" secondItem="474" secondAttribute="firstBaseline" id="cs-21"/>
+                <constraint firstAttribute="top" firstItem="474" secondItem="220" secondAttribute="bottom" constant="6" id="cs-22"/>
+                <constraint firstAttribute="leading" firstItem="277" secondItem="214" secondAttribute="leading" id="cs-23"/>
+                <constraint firstAttribute="trailing" firstItem="251" secondItem="277" secondAttribute="trailing" constant="16" id="cs-24"/>
+                <constraint firstAttribute="width" firstItem="277" relation="greaterThanOrEqual" constant="248" id="cs-25"/>
+                <constraint firstAttribute="leading" firstItem="275" relation="greaterThanOrEqual" secondItem="251" secondAttribute="leading" constant="16" id="cs-26"/>
+                <constraint firstAttribute="trailing" firstItem="275" secondItem="277" secondAttribute="leading" constant="-8" id="cs-27"/>
+                <constraint firstAttribute="firstBaseline" firstItem="275" secondItem="277" secondAttribute="firstBaseline" id="cs-28"/>
+                <constraint firstAttribute="top" firstItem="277" secondItem="474" secondAttribute="bottom" constant="6" id="cs-29"/>
+                <constraint firstAttribute="leading" firstItem="345" secondItem="214" secondAttribute="leading" id="cs-30"/>
+                <constraint firstAttribute="top" firstItem="345" secondItem="277" secondAttribute="bottom" constant="5" id="cs-31"/>
+                <constraint firstAttribute="trailing" firstItem="251" relation="greaterThanOrEqual" secondItem="345" secondAttribute="trailing" constant="16" id="cs-32"/>
+                <constraint firstAttribute="leading" firstItem="90O-Fe-Uz3" secondItem="214" secondAttribute="leading" id="cs-33"/>
+                <constraint firstAttribute="top" firstItem="90O-Fe-Uz3" secondItem="345" secondAttribute="bottom" constant="10" id="cs-34"/>
+                <constraint firstAttribute="trailing" firstItem="251" relation="greaterThanOrEqual" secondItem="90O-Fe-Uz3" secondAttribute="trailing" constant="16" id="cs-35"/>
+                <constraint firstAttribute="bottom" firstItem="251" relation="greaterThanOrEqual" secondItem="90O-Fe-Uz3" secondAttribute="bottom" constant="12" id="cs-36"/>
             </constraints>
             <point key="canvasLocation" x="83" y="128"/>
         </customView>

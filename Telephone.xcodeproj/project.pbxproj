@@ -251,6 +251,7 @@
 		8A778C081E0AE98F004B00B8 /* CallHistoryViewPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A778C071E0AE98F004B00B8 /* CallHistoryViewPresenter.swift */; };
 		8A778C0A1E0AE9C7004B00B8 /* CallHistoryViewPresenterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A778C091E0AE9C7004B00B8 /* CallHistoryViewPresenterTests.swift */; };
 		8A778C0B1E0AE9CB004B00B8 /* CallHistoryViewPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A778C071E0AE98F004B00B8 /* CallHistoryViewPresenter.swift */; };
+		A71500000000000000000001 /* CallHistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A778C011E095B5D004B00B8 /* CallHistoryViewController.swift */; };
 		8A778C0C1E0C116F004B00B8 /* PresentationCallHistoryRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A778C051E0AE5C3004B00B8 /* PresentationCallHistoryRecord.swift */; };
 		8A778C0E1E0C136C004B00B8 /* CallHistoryViewSpy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A778C0D1E0C136C004B00B8 /* CallHistoryViewSpy.swift */; };
 		8A778C101E0C13C5004B00B8 /* CallHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A778C0F1E0C13C5004B00B8 /* CallHistoryView.swift */; };
@@ -4153,6 +4154,7 @@
 				8A5EADB41D35517C00C53415 /* StoreViewPresenterSpy.swift in Sources */,
 				8AD397BD1DC77D5900C6FB62 /* AccountUUIDSettingsMigration.swift in Sources */,
 				8A778C0B1E0AE9CB004B00B8 /* CallHistoryViewPresenter.swift in Sources */,
+				A71500000000000000000001 /* CallHistoryViewController.swift in Sources */,
 				8A0FD63F1C9B168400AB3640 /* SoundIOPreferencesSpy.swift in Sources */,
 				8A1DA8151DF07EEE00F5BA40 /* WorkspaceSleepStatusTests.swift in Sources */,
 				AA1019871C490BE400869D01 /* RepeatingSoundFactoryTests.swift in Sources */,
@@ -5262,7 +5264,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 156;
+				CURRENT_PROJECT_VERSION = 157;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -5288,7 +5290,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 2.1.4;
+				MARKETING_VERSION = 2.1.5;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",
@@ -5330,7 +5332,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 156;
+				CURRENT_PROJECT_VERSION = 157;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "PJ_AUTOCONF=1";
@@ -5353,7 +5355,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 2.1.4;
+				MARKETING_VERSION = 2.1.5;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",

@@ -40,6 +40,7 @@
 - (instancetype)initWithNibName:(NSString *)nibName callController:(CallController *)callController;
 
 - (void)removeObservations;
+- (void)refreshPresentation;
 
 // Hangs up call.
 - (IBAction)hangUpCall:(id)sender;
@@ -52,6 +53,9 @@
 
 // Shows call transfer sheet.
 - (IBAction)showCallTransferSheet:(id)sender;
+// Shows the transient keypad; physical DTMF input retains the same handler.
+- (IBAction)showKeypad:(id)sender;
+- (void)closeKeypad;
 
 // Starts call timer.
 - (void)startCallTimer;

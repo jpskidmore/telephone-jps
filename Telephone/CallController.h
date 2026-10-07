@@ -66,6 +66,11 @@
 // Call status.
 @property(nonatomic, copy) NSString *status;
 
+// Compact card presentation; underlying call status/title retain their values.
+@property(nonatomic, readonly, copy) NSString *compactWindowTitle;
+@property(nonatomic, readonly, copy) NSString *presentationStatus;
+@property(nonatomic, readonly, copy) NSString *presentationDuration;
+
 // Remote party name from the Address Book.
 @property(nonatomic, copy) NSString *nameFromAddressBook;
 

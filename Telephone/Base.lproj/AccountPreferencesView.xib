@@ -37,10 +37,10 @@
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <customView translatesAutoresizingMaskIntoConstraints="NO" id="148" userLabel="Accounts">
-            <rect key="frame" x="0.0" y="0.0" width="573" height="386"/>
+            <rect key="frame" x="0.0" y="0.0" width="548" height="304"/>
             <subviews>
                 <scrollView autohidesScrollers="YES" horizontalLineScroll="19" horizontalPageScroll="10" verticalLineScroll="19" verticalPageScroll="10" hasHorizontalScroller="NO" usesPredominantAxisScrolling="NO" translatesAutoresizingMaskIntoConstraints="NO" id="79" userLabel="Table">
-                    <rect key="frame" x="20" y="49" width="150" height="323"/>
+                    <rect key="frame" x="12" y="41" width="112" height="251"/>
                     <clipView key="contentView" id="1uL-Un-sZt">
                         <rect key="frame" x="1" y="1" width="148" height="321"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -90,11 +90,11 @@
                     </tableHeaderView>
                 </scrollView>
                 <tabView controlSize="small" initialItem="410" translatesAutoresizingMaskIntoConstraints="NO" id="409" userLabel="Tab View">
-                    <rect key="frame" x="177" y="39" width="383" height="336"/>
+                    <rect key="frame" x="136" y="35" width="400" height="259"/>
                     <tabViewItems>
                         <tabViewItem label="Account Information" identifier="1" id="410">
                             <view key="view" id="413" userLabel="Account Information">
-                                <rect key="frame" x="10" y="29" width="363" height="294"/>
+                                <rect key="frame" x="10" y="29" width="380" height="225"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <button translatesAutoresizingMaskIntoConstraints="NO" id="93">
@@ -108,7 +108,7 @@
                                             <outlet property="nextKeyView" destination="534" id="JOq-cE-sFY"/>
                                         </connections>
                                     </button>
-                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="95">
+                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="95" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="144" width="185" height="19"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="114">
                                             <font key="font" metaFont="menu" size="11"/>
@@ -122,7 +122,7 @@
                                             <outlet property="nextKeyView" destination="528" id="532"/>
                                         </connections>
                                     </textField>
-                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="98">
+                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="98" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="86" width="185" height="19"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="111">
                                             <font key="font" metaFont="menu" size="11"/>
@@ -160,7 +160,7 @@
                                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                         </textFieldCell>
                                     </textField>
-                                    <secureTextField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="104">
+                                    <secureTextField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="104" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="57" width="185" height="19"/>
                                         <secureTextFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" id="105">
                                             <font key="font" metaFont="menu" size="11"/>
@@ -174,7 +174,7 @@
                                             <outlet property="nextKeyView" destination="93" id="Owu-jQ-I96"/>
                                         </connections>
                                     </secureTextField>
-                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="528">
+                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="528" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="115" width="185" height="19"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="529">
                                             <font key="font" metaFont="menu" size="11"/>
@@ -196,11 +196,8 @@
                                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                         </textFieldCell>
                                     </textField>
-                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="534">
+                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="534" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="183" width="185" height="19"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="185" id="0P5-QA-beZ"/>
-                                        </constraints>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="535">
                                             <font key="font" metaFont="menu" size="11"/>
                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -220,46 +217,50 @@
                                     </textField>
                                 </subviews>
                                 <constraints>
-                                    <constraint firstItem="530" firstAttribute="trailing" secondItem="102" secondAttribute="trailing" id="0zA-ra-Hpb"/>
-                                    <constraint firstItem="534" firstAttribute="top" secondItem="93" secondAttribute="bottom" constant="42" id="1C0-TX-VdZ"/>
-                                    <constraint firstItem="104" firstAttribute="firstBaseline" secondItem="103" secondAttribute="firstBaseline" id="44B-8S-6lE"/>
-                                    <constraint firstAttribute="trailing" secondItem="534" secondAttribute="trailing" priority="750" constant="32" id="4ag-jj-RsK"/>
-                                    <constraint firstItem="102" firstAttribute="trailing" secondItem="103" secondAttribute="trailing" id="83K-yj-YHs"/>
-                                    <constraint firstItem="93" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="133" id="8in-eP-WoJ"/>
-                                    <constraint firstItem="99" firstAttribute="trailing" secondItem="530" secondAttribute="trailing" id="9Uv-NW-B53"/>
-                                    <constraint firstItem="536" firstAttribute="firstBaseline" secondItem="534" secondAttribute="firstBaseline" id="EDF-kG-izV"/>
-                                    <constraint firstItem="98" firstAttribute="firstBaseline" secondItem="102" secondAttribute="firstBaseline" id="F03-ck-yje"/>
-                                    <constraint firstItem="528" firstAttribute="leading" secondItem="98" secondAttribute="leading" id="GtG-ZP-Jdj"/>
-                                    <constraint firstItem="536" firstAttribute="trailing" secondItem="99" secondAttribute="trailing" id="KRK-Ac-tk7"/>
-                                    <constraint firstItem="536" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="20" symbolic="YES" id="Lkb-YC-DQ2"/>
-                                    <constraint firstItem="99" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="20" symbolic="YES" id="MMv-Ew-G2K"/>
-                                    <constraint firstItem="98" firstAttribute="trailing" secondItem="104" secondAttribute="trailing" id="Ma2-r9-NgI"/>
-                                    <constraint firstItem="528" firstAttribute="top" secondItem="95" secondAttribute="bottom" constant="10" id="OEP-3x-aSB"/>
-                                    <constraint firstItem="103" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="20" symbolic="YES" id="Rs6-0J-VPE"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="93" secondAttribute="trailing" constant="20" symbolic="YES" id="UDC-r0-F21"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="534" secondAttribute="trailing" constant="20" symbolic="YES" id="WAf-X4-LdX"/>
-                                    <constraint firstItem="534" firstAttribute="leading" secondItem="536" secondAttribute="trailing" constant="7" id="ajg-yi-dBJ"/>
-                                    <constraint firstItem="98" firstAttribute="leading" secondItem="104" secondAttribute="leading" id="av8-w1-KMb"/>
-                                    <constraint firstItem="95" firstAttribute="firstBaseline" secondItem="99" secondAttribute="firstBaseline" id="cDS-9v-SZG"/>
-                                    <constraint firstItem="528" firstAttribute="trailing" secondItem="98" secondAttribute="trailing" id="dHa-J4-8XH"/>
-                                    <constraint firstItem="534" firstAttribute="trailing" secondItem="95" secondAttribute="trailing" id="ePv-sQ-PmP"/>
-                                    <constraint firstItem="534" firstAttribute="leading" secondItem="95" secondAttribute="leading" id="fWo-cu-0xd"/>
-                                    <constraint firstItem="102" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="20" symbolic="YES" id="hJR-zT-mUc"/>
-                                    <constraint firstItem="530" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="20" symbolic="YES" id="hoG-Aa-SnS"/>
-                                    <constraint firstItem="95" firstAttribute="trailing" secondItem="528" secondAttribute="trailing" id="kmb-5M-JuA"/>
-                                    <constraint firstItem="95" firstAttribute="top" secondItem="534" secondAttribute="bottom" constant="20" id="lQa-aA-v6D"/>
-                                    <constraint firstItem="528" firstAttribute="firstBaseline" secondItem="530" secondAttribute="firstBaseline" id="lVJ-cB-X5V"/>
-                                    <constraint firstItem="98" firstAttribute="top" secondItem="528" secondAttribute="bottom" constant="10" id="qOe-cA-aI0"/>
-                                    <constraint firstItem="534" firstAttribute="leading" secondItem="93" secondAttribute="leading" id="qVJ-L7-kCD"/>
-                                    <constraint firstItem="93" firstAttribute="top" secondItem="413" secondAttribute="top" constant="36" id="rvX-9Z-2g6"/>
-                                    <constraint firstItem="104" firstAttribute="top" secondItem="98" secondAttribute="bottom" constant="10" id="scl-ka-DzA"/>
-                                    <constraint firstItem="95" firstAttribute="leading" secondItem="528" secondAttribute="leading" id="uVp-M4-l1D"/>
+                                    <constraint firstAttribute="leading" firstItem="534" secondItem="413" secondAttribute="leading" constant="112" priority="750" id="cai-1"/>
+                                    <constraint firstAttribute="top" firstItem="93" secondItem="413" secondAttribute="top" constant="10" id="cai-2"/>
+                                    <constraint firstAttribute="leading" firstItem="93" secondItem="534" secondAttribute="leading" id="cai-3"/>
+                                    <constraint firstAttribute="width" firstItem="534" relation="greaterThanOrEqual" constant="185" id="cai-4"/>
+                                    <constraint firstAttribute="trailing" firstItem="413" secondItem="534" secondAttribute="trailing" constant="12" id="cai-5"/>
+                                    <constraint firstAttribute="leading" firstItem="536" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="12" id="cai-6"/>
+                                    <constraint firstAttribute="trailing" firstItem="536" secondItem="534" secondAttribute="leading" constant="-7" id="cai-7"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="536" secondItem="534" secondAttribute="firstBaseline" id="cai-8"/>
+                                    <constraint firstAttribute="top" firstItem="534" secondItem="93" secondAttribute="bottom" constant="12" id="cai-9"/>
+                                    <constraint firstAttribute="leading" firstItem="95" secondItem="534" secondAttribute="leading" id="cai-10"/>
+                                    <constraint firstAttribute="width" firstItem="95" relation="greaterThanOrEqual" constant="185" id="cai-11"/>
+                                    <constraint firstAttribute="trailing" firstItem="413" secondItem="95" secondAttribute="trailing" constant="12" id="cai-12"/>
+                                    <constraint firstAttribute="leading" firstItem="99" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="12" id="cai-13"/>
+                                    <constraint firstAttribute="trailing" firstItem="99" secondItem="95" secondAttribute="leading" constant="-7" id="cai-14"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="99" secondItem="95" secondAttribute="firstBaseline" id="cai-15"/>
+                                    <constraint firstAttribute="top" firstItem="95" secondItem="534" secondAttribute="bottom" constant="8" id="cai-16"/>
+                                    <constraint firstAttribute="leading" firstItem="528" secondItem="534" secondAttribute="leading" id="cai-17"/>
+                                    <constraint firstAttribute="width" firstItem="528" relation="greaterThanOrEqual" constant="185" id="cai-18"/>
+                                    <constraint firstAttribute="trailing" firstItem="413" secondItem="528" secondAttribute="trailing" constant="12" id="cai-19"/>
+                                    <constraint firstAttribute="leading" firstItem="530" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="12" id="cai-20"/>
+                                    <constraint firstAttribute="trailing" firstItem="530" secondItem="528" secondAttribute="leading" constant="-7" id="cai-21"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="530" secondItem="528" secondAttribute="firstBaseline" id="cai-22"/>
+                                    <constraint firstAttribute="top" firstItem="528" secondItem="95" secondAttribute="bottom" constant="8" id="cai-23"/>
+                                    <constraint firstAttribute="leading" firstItem="98" secondItem="534" secondAttribute="leading" id="cai-24"/>
+                                    <constraint firstAttribute="width" firstItem="98" relation="greaterThanOrEqual" constant="185" id="cai-25"/>
+                                    <constraint firstAttribute="trailing" firstItem="413" secondItem="98" secondAttribute="trailing" constant="12" id="cai-26"/>
+                                    <constraint firstAttribute="leading" firstItem="102" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="12" id="cai-27"/>
+                                    <constraint firstAttribute="trailing" firstItem="102" secondItem="98" secondAttribute="leading" constant="-7" id="cai-28"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="102" secondItem="98" secondAttribute="firstBaseline" id="cai-29"/>
+                                    <constraint firstAttribute="top" firstItem="98" secondItem="528" secondAttribute="bottom" constant="8" id="cai-30"/>
+                                    <constraint firstAttribute="leading" firstItem="104" secondItem="534" secondAttribute="leading" id="cai-31"/>
+                                    <constraint firstAttribute="width" firstItem="104" relation="greaterThanOrEqual" constant="185" id="cai-32"/>
+                                    <constraint firstAttribute="trailing" firstItem="413" secondItem="104" secondAttribute="trailing" constant="12" id="cai-33"/>
+                                    <constraint firstAttribute="leading" firstItem="103" relation="greaterThanOrEqual" secondItem="413" secondAttribute="leading" constant="12" id="cai-34"/>
+                                    <constraint firstAttribute="trailing" firstItem="103" secondItem="104" secondAttribute="leading" constant="-7" id="cai-35"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="103" secondItem="104" secondAttribute="firstBaseline" id="cai-36"/>
+                                    <constraint firstAttribute="top" firstItem="104" secondItem="98" secondAttribute="bottom" constant="8" id="cai-37"/>
+                                    <constraint firstAttribute="bottom" firstItem="413" relation="greaterThanOrEqual" secondItem="104" secondAttribute="bottom" constant="12" id="cai-38"/>
                                 </constraints>
                             </view>
                         </tabViewItem>
                         <tabViewItem label="Network" identifier="" id="4sK-wA-Wvg">
                             <view key="view" id="XxC-OI-tYb">
-                                <rect key="frame" x="10" y="25" width="363" height="298"/>
+                                <rect key="frame" x="10" y="25" width="380" height="225"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <button translatesAutoresizingMaskIntoConstraints="NO" id="ngD-ji-goI">
@@ -273,11 +274,8 @@
                                             <outlet property="nextKeyView" destination="1UL-lr-59v" id="8t9-TA-nhu"/>
                                         </connections>
                                     </button>
-                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1UL-lr-59v">
+                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="1UL-lr-59v" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="115" y="239" width="216" height="19"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="216" id="kD7-Nc-3vL"/>
-                                        </constraints>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="EPB-vy-W5e">
                                             <font key="font" metaFont="menu" size="11"/>
                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -292,9 +290,6 @@
                                     </textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dli-GZ-E5f">
                                         <rect key="frame" x="115" y="212" width="43" height="19"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="43" id="dvy-87-510"/>
-                                        </constraints>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="5060" drawsBackground="YES" id="nF4-3B-Ugx">
                                             <font key="font" metaFont="menu" size="11"/>
                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -417,58 +412,51 @@
                                     </button>
                                 </subviews>
                                 <constraints>
-                                    <constraint firstItem="pfR-7Z-E7H" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XxC-OI-tYb" secondAttribute="leading" constant="20" symbolic="YES" id="02T-AG-a1N"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="xf9-ce-jif" secondAttribute="trailing" constant="20" symbolic="YES" id="6Gv-7k-BhO"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="4L8-E6-lKd" secondAttribute="trailing" constant="20" symbolic="YES" id="8h4-mc-M2g"/>
-                                    <constraint firstItem="gHr-pY-4ah" firstAttribute="leading" secondItem="Ify-XP-VVA" secondAttribute="leading" id="9tf-dO-we4"/>
-                                    <constraint firstItem="pfR-7Z-E7H" firstAttribute="firstBaseline" secondItem="dli-GZ-E5f" secondAttribute="firstBaseline" id="9w1-dt-zjD"/>
-                                    <constraint firstItem="4L8-E6-lKd" firstAttribute="top" secondItem="INe-5P-bRu" secondAttribute="bottom" constant="20" id="AX1-Bk-a9B"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="ngD-ji-goI" secondAttribute="trailing" constant="20" symbolic="YES" id="AXU-bM-Vye"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="1UL-lr-59v" secondAttribute="trailing" constant="20" symbolic="YES" id="B7v-MJ-Nrl"/>
-                                    <constraint firstItem="xf9-ce-jif" firstAttribute="leading" secondItem="gHr-pY-4ah" secondAttribute="leading" id="CL8-ju-cLT"/>
-                                    <constraint firstItem="uyP-rU-EtH" firstAttribute="leading" secondItem="4L8-E6-lKd" secondAttribute="leading" constant="18" id="DCI-55-QpC"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="Ify-XP-VVA" secondAttribute="trailing" constant="20" symbolic="YES" id="F1O-Fc-C9E"/>
-                                    <constraint firstItem="ho6-cH-aLd" firstAttribute="trailing" secondItem="pfR-7Z-E7H" secondAttribute="trailing" id="GG9-PE-wLV"/>
-                                    <constraint firstItem="1UL-lr-59v" firstAttribute="leading" secondItem="dli-GZ-E5f" secondAttribute="leading" id="Ggc-GK-4VZ"/>
-                                    <constraint firstItem="INe-5P-bRu" firstAttribute="top" secondItem="xf9-ce-jif" secondAttribute="bottom" constant="8" id="JaU-NT-A48"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="dli-GZ-E5f" secondAttribute="trailing" constant="20" symbolic="YES" id="JmM-eT-UxV"/>
-                                    <constraint firstItem="Ify-XP-VVA" firstAttribute="leading" secondItem="iBU-Gy-PuJ" secondAttribute="leading" id="K8R-zS-jfP"/>
-                                    <constraint firstItem="ngD-ji-goI" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XxC-OI-tYb" secondAttribute="leading" constant="102" id="KO2-VX-VyP"/>
-                                    <constraint firstItem="iBU-Gy-PuJ" firstAttribute="firstBaseline" secondItem="2I5-wK-O3x" secondAttribute="firstBaseline" id="Kdn-kJ-rrd"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="iBU-Gy-PuJ" secondAttribute="trailing" constant="20" symbolic="YES" id="P6y-3d-Eab"/>
-                                    <constraint firstItem="1UL-lr-59v" firstAttribute="top" secondItem="ngD-ji-goI" secondAttribute="bottom" constant="8" id="Pon-nf-7Fc"/>
-                                    <constraint firstItem="ho6-cH-aLd" firstAttribute="firstBaseline" secondItem="1UL-lr-59v" secondAttribute="firstBaseline" id="RVD-q2-LV8"/>
-                                    <constraint firstItem="uyP-rU-EtH" firstAttribute="top" secondItem="4L8-E6-lKd" secondAttribute="bottom" constant="8" id="UnR-2l-9xZ"/>
-                                    <constraint firstItem="2I5-wK-O3x" firstAttribute="trailing" secondItem="pfR-7Z-E7H" secondAttribute="trailing" id="VQe-X1-tH6"/>
-                                    <constraint firstAttribute="bottom" secondItem="uyP-rU-EtH" secondAttribute="bottom" constant="14" id="VdH-2e-inn"/>
-                                    <constraint firstAttribute="trailing" secondItem="dli-GZ-E5f" secondAttribute="trailing" priority="750" constant="205" id="Vmx-0M-Qf9"/>
-                                    <constraint firstItem="iBU-Gy-PuJ" firstAttribute="top" secondItem="dli-GZ-E5f" secondAttribute="bottom" constant="20" id="WMg-2O-h76"/>
-                                    <constraint firstItem="1UL-lr-59v" firstAttribute="leading" secondItem="ngD-ji-goI" secondAttribute="leading" id="YUr-hW-zyX"/>
-                                    <constraint firstItem="ho6-cH-aLd" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XxC-OI-tYb" secondAttribute="leading" constant="20" symbolic="YES" id="api-KY-u7t"/>
-                                    <constraint firstItem="gHr-pY-4ah" firstAttribute="top" secondItem="Ify-XP-VVA" secondAttribute="bottom" constant="8" id="eS8-Nw-rfd"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="gHr-pY-4ah" secondAttribute="trailing" constant="20" symbolic="YES" id="gX4-w4-uVr"/>
-                                    <constraint firstItem="ngD-ji-goI" firstAttribute="top" secondItem="XxC-OI-tYb" secondAttribute="top" constant="18" id="hdU-K4-604"/>
-                                    <constraint firstItem="1UL-lr-59v" firstAttribute="leading" secondItem="ho6-cH-aLd" secondAttribute="trailing" constant="7" id="hfN-3Q-KyZ"/>
-                                    <constraint firstItem="2I5-wK-O3x" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XxC-OI-tYb" secondAttribute="leading" constant="20" symbolic="YES" id="iDO-kU-TGy"/>
-                                    <constraint firstItem="dli-GZ-E5f" firstAttribute="top" secondItem="1UL-lr-59v" secondAttribute="bottom" constant="8" symbolic="YES" id="lEs-Nb-3kc"/>
-                                    <constraint firstAttribute="trailing" secondItem="1UL-lr-59v" secondAttribute="trailing" priority="750" constant="32" id="mkj-Xm-mgx"/>
-                                    <constraint firstItem="Miv-Fk-KKm" firstAttribute="trailing" secondItem="2I5-wK-O3x" secondAttribute="trailing" id="nMj-sE-qLj"/>
-                                    <constraint firstItem="xf9-ce-jif" firstAttribute="top" secondItem="gHr-pY-4ah" secondAttribute="bottom" constant="20" id="nWV-qh-LVZ"/>
-                                    <constraint firstItem="iBU-Gy-PuJ" firstAttribute="leading" secondItem="dli-GZ-E5f" secondAttribute="leading" id="rC2-2X-nui"/>
-                                    <constraint firstItem="INe-5P-bRu" firstAttribute="leading" secondItem="xf9-ce-jif" secondAttribute="leading" id="urg-AP-1t2"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="uyP-rU-EtH" secondAttribute="trailing" constant="20" symbolic="YES" id="vMz-b8-RHv"/>
-                                    <constraint firstItem="xf9-ce-jif" firstAttribute="firstBaseline" secondItem="Miv-Fk-KKm" secondAttribute="firstBaseline" id="w0h-rF-uHU"/>
-                                    <constraint firstItem="INe-5P-bRu" firstAttribute="leading" secondItem="xf9-ce-jif" secondAttribute="leading" id="w1d-ZW-uta"/>
-                                    <constraint firstItem="Miv-Fk-KKm" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="XxC-OI-tYb" secondAttribute="leading" constant="20" symbolic="YES" id="wGv-bh-Fi5"/>
-                                    <constraint firstItem="Ify-XP-VVA" firstAttribute="top" secondItem="iBU-Gy-PuJ" secondAttribute="bottom" constant="8" id="wSe-Bb-U8x"/>
-                                    <constraint firstItem="4L8-E6-lKd" firstAttribute="leading" secondItem="ngD-ji-goI" secondAttribute="leading" id="xR6-bv-J3n"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="INe-5P-bRu" secondAttribute="trailing" constant="20" symbolic="YES" id="yxc-vS-8ve"/>
+                                    <constraint firstAttribute="top" firstItem="ngD-ji-goI" secondItem="XxC-OI-tYb" secondAttribute="top" constant="10" id="can-1"/>
+                                    <constraint firstAttribute="leading" firstItem="ngD-ji-goI" secondItem="1UL-lr-59v" secondAttribute="leading" id="can-2"/>
+                                    <constraint firstAttribute="top" firstItem="1UL-lr-59v" secondItem="ngD-ji-goI" secondAttribute="bottom" constant="8" id="can-3"/>
+                                    <constraint firstAttribute="width" firstItem="1UL-lr-59v" relation="greaterThanOrEqual" constant="150" id="can-4"/>
+                                    <constraint firstAttribute="leading" firstItem="1UL-lr-59v" secondItem="XxC-OI-tYb" secondAttribute="leading" constant="112" priority="750" id="can-5"/>
+                                    <constraint firstAttribute="leading" firstItem="ho6-cH-aLd" relation="greaterThanOrEqual" secondItem="XxC-OI-tYb" secondAttribute="leading" constant="12" id="can-6"/>
+                                    <constraint firstAttribute="trailing" firstItem="ho6-cH-aLd" secondItem="1UL-lr-59v" secondAttribute="leading" constant="-7" id="can-7"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="ho6-cH-aLd" secondItem="1UL-lr-59v" secondAttribute="firstBaseline" id="can-8"/>
+                                    <constraint firstAttribute="leading" firstItem="pfR-7Z-E7H" secondItem="1UL-lr-59v" secondAttribute="trailing" constant="8" id="can-9"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="pfR-7Z-E7H" secondItem="1UL-lr-59v" secondAttribute="firstBaseline" id="can-10"/>
+                                    <constraint firstAttribute="leading" firstItem="dli-GZ-E5f" secondItem="pfR-7Z-E7H" secondAttribute="trailing" constant="6" id="can-11"/>
+                                    <constraint firstAttribute="centerY" firstItem="dli-GZ-E5f" secondItem="1UL-lr-59v" secondAttribute="centerY" id="can-12"/>
+                                    <constraint firstAttribute="width" firstItem="dli-GZ-E5f" constant="48" id="can-13"/>
+                                    <constraint firstAttribute="trailing" firstItem="XxC-OI-tYb" secondItem="dli-GZ-E5f" secondAttribute="trailing" constant="12" id="can-14"/>
+                                    <constraint firstAttribute="top" firstItem="iBU-Gy-PuJ" secondItem="1UL-lr-59v" secondAttribute="bottom" constant="14" id="can-15"/>
+                                    <constraint firstAttribute="leading" firstItem="iBU-Gy-PuJ" secondItem="1UL-lr-59v" secondAttribute="leading" id="can-16"/>
+                                    <constraint firstAttribute="leading" firstItem="2I5-wK-O3x" relation="greaterThanOrEqual" secondItem="XxC-OI-tYb" secondAttribute="leading" constant="12" id="can-17"/>
+                                    <constraint firstAttribute="trailing" firstItem="2I5-wK-O3x" secondItem="iBU-Gy-PuJ" secondAttribute="leading" constant="-7" id="can-18"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="2I5-wK-O3x" secondItem="iBU-Gy-PuJ" secondAttribute="firstBaseline" id="can-19"/>
+                                    <constraint firstAttribute="leading" firstItem="Ify-XP-VVA" secondItem="iBU-Gy-PuJ" secondAttribute="trailing" constant="12" id="can-20"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="Ify-XP-VVA" secondItem="iBU-Gy-PuJ" secondAttribute="firstBaseline" id="can-21"/>
+                                    <constraint firstAttribute="leading" firstItem="gHr-pY-4ah" secondItem="Ify-XP-VVA" secondAttribute="trailing" constant="12" id="can-22"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="gHr-pY-4ah" secondItem="Ify-XP-VVA" secondAttribute="firstBaseline" id="can-23"/>
+                                    <constraint firstAttribute="trailing" firstItem="XxC-OI-tYb" relation="greaterThanOrEqual" secondItem="gHr-pY-4ah" secondAttribute="trailing" constant="12" id="can-24"/>
+                                    <constraint firstAttribute="top" firstItem="xf9-ce-jif" secondItem="iBU-Gy-PuJ" secondAttribute="bottom" constant="14" id="can-25"/>
+                                    <constraint firstAttribute="leading" firstItem="xf9-ce-jif" secondItem="iBU-Gy-PuJ" secondAttribute="leading" id="can-26"/>
+                                    <constraint firstAttribute="leading" firstItem="Miv-Fk-KKm" relation="greaterThanOrEqual" secondItem="XxC-OI-tYb" secondAttribute="leading" constant="12" id="can-27"/>
+                                    <constraint firstAttribute="trailing" firstItem="Miv-Fk-KKm" secondItem="xf9-ce-jif" secondAttribute="leading" constant="-7" id="can-28"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="Miv-Fk-KKm" secondItem="xf9-ce-jif" secondAttribute="firstBaseline" id="can-29"/>
+                                    <constraint firstAttribute="leading" firstItem="INe-5P-bRu" secondItem="xf9-ce-jif" secondAttribute="trailing" constant="12" id="can-30"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="INe-5P-bRu" secondItem="xf9-ce-jif" secondAttribute="firstBaseline" id="can-31"/>
+                                    <constraint firstAttribute="trailing" firstItem="XxC-OI-tYb" relation="greaterThanOrEqual" secondItem="INe-5P-bRu" secondAttribute="trailing" constant="12" id="can-32"/>
+                                    <constraint firstAttribute="leading" firstItem="4L8-E6-lKd" secondItem="1UL-lr-59v" secondAttribute="leading" id="can-33"/>
+                                    <constraint firstAttribute="top" firstItem="4L8-E6-lKd" secondItem="xf9-ce-jif" secondAttribute="bottom" constant="14" id="can-34"/>
+                                    <constraint firstAttribute="leading" firstItem="uyP-rU-EtH" secondItem="4L8-E6-lKd" secondAttribute="leading" id="can-35"/>
+                                    <constraint firstAttribute="top" firstItem="uyP-rU-EtH" secondItem="4L8-E6-lKd" secondAttribute="bottom" constant="6" id="can-36"/>
+                                    <constraint firstAttribute="trailing" firstItem="XxC-OI-tYb" secondItem="uyP-rU-EtH" secondAttribute="trailing" constant="12" id="can-37"/>
+                                    <constraint firstAttribute="height" firstItem="uyP-rU-EtH" relation="greaterThanOrEqual" constant="28" id="can-38"/>
+                                    <constraint firstAttribute="bottom" firstItem="XxC-OI-tYb" relation="greaterThanOrEqual" secondItem="uyP-rU-EtH" secondAttribute="bottom" constant="12" id="can-39"/>
                                 </constraints>
                             </view>
                         </tabViewItem>
                         <tabViewItem label="Advanced" identifier="2" id="411">
                             <view key="view" id="412" userLabel="Advanced">
-                                <rect key="frame" x="10" y="25" width="363" height="298"/>
+                                <rect key="frame" x="10" y="25" width="380" height="225"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="497">
@@ -481,9 +469,6 @@
                                     </textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="499">
                                         <rect key="frame" x="146" y="198" width="36" height="19"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="36" id="nLU-0K-zla"/>
-                                        </constraints>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="300" drawsBackground="YES" id="500">
                                             <font key="font" metaFont="menu" size="11"/>
                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -501,11 +486,8 @@
                                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                                         </textFieldCell>
                                     </textField>
-                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="96">
+                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="96" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="264" width="185" height="19"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="185" id="O1A-rz-Af5"/>
-                                        </constraints>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="113">
                                             <font key="font" metaFont="menu" size="11"/>
                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -518,7 +500,7 @@
                                             <outlet property="nextKeyView" destination="97" id="306"/>
                                         </connections>
                                     </textField>
-                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="97">
+                                    <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="97" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="225" width="185" height="19"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="112">
                                             <font key="font" metaFont="menu" size="11"/>
@@ -561,9 +543,6 @@
                                     </button>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="418">
                                         <rect key="frame" x="254" y="159" width="29" height="19"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="29" id="36G-Cq-aWp"/>
-                                        </constraints>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="419">
                                             <font key="font" metaFont="menu" size="11"/>
                                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -578,44 +557,43 @@
                                     </textField>
                                 </subviews>
                                 <constraints>
-                                    <constraint firstItem="100" firstAttribute="firstBaseline" secondItem="96" secondAttribute="firstBaseline" id="05d-gK-lgS"/>
-                                    <constraint firstItem="418" firstAttribute="leading" secondItem="416" secondAttribute="trailing" id="4Tg-Wa-cia"/>
-                                    <constraint firstItem="100" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="412" secondAttribute="leading" constant="20" symbolic="YES" id="4mW-34-Ub8"/>
-                                    <constraint firstItem="96" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="412" secondAttribute="leading" constant="133" id="8K0-9D-LSE"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="96" secondAttribute="trailing" constant="20" symbolic="YES" id="CbD-vu-2pv"/>
-                                    <constraint firstItem="96" firstAttribute="leading" secondItem="97" secondAttribute="leading" id="DKL-g2-ELY"/>
-                                    <constraint firstItem="96" firstAttribute="top" secondItem="412" secondAttribute="top" constant="15" id="GRF-zo-43L"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="501" secondAttribute="trailing" constant="20" symbolic="YES" id="H6r-la-wDh"/>
-                                    <constraint firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="418" secondAttribute="trailing" constant="20" symbolic="YES" id="HIo-5I-XpF"/>
-                                    <constraint firstItem="100" firstAttribute="trailing" secondItem="101" secondAttribute="trailing" id="I0z-8G-6f0"/>
-                                    <constraint firstItem="497" firstAttribute="firstBaseline" secondItem="499" secondAttribute="firstBaseline" id="J73-ry-Wam"/>
-                                    <constraint firstItem="497" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="412" secondAttribute="leading" constant="20" symbolic="YES" id="NVO-ft-eEw"/>
-                                    <constraint firstAttribute="trailing" secondItem="96" secondAttribute="trailing" priority="750" constant="32" id="O2G-bd-Wab"/>
-                                    <constraint firstItem="499" firstAttribute="top" secondItem="97" secondAttribute="bottom" constant="8" symbolic="YES" id="R2l-cv-Gfq"/>
-                                    <constraint firstItem="101" firstAttribute="firstBaseline" secondItem="97" secondAttribute="firstBaseline" id="ZEV-Of-3eP"/>
-                                    <constraint firstItem="499" firstAttribute="leading" secondItem="97" secondAttribute="leading" id="ZYr-Xd-9UC"/>
-                                    <constraint firstItem="416" firstAttribute="top" secondItem="499" secondAttribute="bottom" constant="23" id="ay3-Mk-g3H"/>
-                                    <constraint firstItem="497" firstAttribute="firstBaseline" secondItem="501" secondAttribute="firstBaseline" id="b95-3g-uOj"/>
-                                    <constraint firstItem="416" firstAttribute="leading" secondItem="499" secondAttribute="leading" id="d3Q-be-EE4"/>
-                                    <constraint firstItem="418" firstAttribute="firstBaseline" secondItem="416" secondAttribute="firstBaseline" id="e1f-0e-Vv3"/>
-                                    <constraint firstItem="97" firstAttribute="top" secondItem="96" secondAttribute="bottom" constant="20" id="fMx-i2-RyU"/>
-                                    <constraint firstItem="501" firstAttribute="leading" secondItem="499" secondAttribute="trailing" constant="3" id="hGQ-If-5fh"/>
-                                    <constraint firstItem="497" firstAttribute="trailing" secondItem="101" secondAttribute="trailing" id="jxb-Uc-Iro"/>
-                                    <constraint firstItem="96" firstAttribute="leading" secondItem="100" secondAttribute="trailing" constant="7" id="rSf-f6-dqc"/>
-                                    <constraint firstAttribute="trailing" secondItem="499" secondAttribute="trailing" priority="750" constant="181" id="tqf-nn-Uio"/>
-                                    <constraint firstItem="96" firstAttribute="trailing" secondItem="97" secondAttribute="trailing" id="v32-ho-csZ"/>
-                                    <constraint firstItem="101" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="412" secondAttribute="leading" constant="20" symbolic="YES" id="zox-FM-NJq"/>
+                                    <constraint firstAttribute="leading" firstItem="96" secondItem="412" secondAttribute="leading" constant="112" priority="750" id="caa-1"/>
+                                    <constraint firstAttribute="width" firstItem="96" relation="greaterThanOrEqual" constant="185" id="caa-2"/>
+                                    <constraint firstAttribute="trailing" firstItem="412" secondItem="96" secondAttribute="trailing" constant="12" id="caa-3"/>
+                                    <constraint firstAttribute="leading" firstItem="100" relation="greaterThanOrEqual" secondItem="412" secondAttribute="leading" constant="12" id="caa-4"/>
+                                    <constraint firstAttribute="trailing" firstItem="100" secondItem="96" secondAttribute="leading" constant="-7" id="caa-5"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="100" secondItem="96" secondAttribute="firstBaseline" id="caa-6"/>
+                                    <constraint firstAttribute="top" firstItem="96" secondItem="412" secondAttribute="top" constant="12" id="caa-7"/>
+                                    <constraint firstAttribute="leading" firstItem="97" secondItem="96" secondAttribute="leading" id="caa-8"/>
+                                    <constraint firstAttribute="width" firstItem="97" relation="greaterThanOrEqual" constant="185" id="caa-9"/>
+                                    <constraint firstAttribute="trailing" firstItem="412" secondItem="97" secondAttribute="trailing" constant="12" id="caa-10"/>
+                                    <constraint firstAttribute="leading" firstItem="101" relation="greaterThanOrEqual" secondItem="412" secondAttribute="leading" constant="12" id="caa-11"/>
+                                    <constraint firstAttribute="trailing" firstItem="101" secondItem="97" secondAttribute="leading" constant="-7" id="caa-12"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="101" secondItem="97" secondAttribute="firstBaseline" id="caa-13"/>
+                                    <constraint firstAttribute="top" firstItem="97" secondItem="96" secondAttribute="bottom" constant="10" id="caa-14"/>
+                                    <constraint firstAttribute="top" firstItem="499" secondItem="97" secondAttribute="bottom" constant="10" id="caa-15"/>
+                                    <constraint firstAttribute="leading" firstItem="499" secondItem="96" secondAttribute="leading" id="caa-16"/>
+                                    <constraint firstAttribute="width" firstItem="499" constant="60" id="caa-17"/>
+                                    <constraint firstAttribute="leading" firstItem="497" relation="greaterThanOrEqual" secondItem="412" secondAttribute="leading" constant="12" id="caa-18"/>
+                                    <constraint firstAttribute="trailing" firstItem="497" secondItem="499" secondAttribute="leading" constant="-7" id="caa-19"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="497" secondItem="499" secondAttribute="firstBaseline" id="caa-20"/>
+                                    <constraint firstAttribute="leading" firstItem="501" secondItem="499" secondAttribute="trailing" constant="6" id="caa-21"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="501" secondItem="499" secondAttribute="firstBaseline" id="caa-22"/>
+                                    <constraint firstAttribute="trailing" firstItem="412" relation="greaterThanOrEqual" secondItem="501" secondAttribute="trailing" constant="12" id="caa-23"/>
+                                    <constraint firstAttribute="leading" firstItem="416" secondItem="96" secondAttribute="leading" id="caa-24"/>
+                                    <constraint firstAttribute="top" firstItem="416" secondItem="499" secondAttribute="bottom" constant="14" id="caa-25"/>
+                                    <constraint firstAttribute="leading" firstItem="418" secondItem="416" secondAttribute="trailing" constant="8" id="caa-26"/>
+                                    <constraint firstAttribute="firstBaseline" firstItem="418" secondItem="416" secondAttribute="firstBaseline" id="caa-27"/>
+                                    <constraint firstAttribute="width" firstItem="418" constant="52" id="caa-28"/>
+                                    <constraint firstAttribute="trailing" firstItem="412" relation="greaterThanOrEqual" secondItem="418" secondAttribute="trailing" constant="12" id="caa-29"/>
+                                    <constraint firstAttribute="bottom" firstItem="412" relation="greaterThanOrEqual" secondItem="418" secondAttribute="bottom" constant="12" id="caa-30"/>
                                 </constraints>
                             </view>
                         </tabViewItem>
                     </tabViewItems>
                 </tabView>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="118" userLabel="Add Account">
-                    <rect key="frame" x="20" y="19" width="33" height="23"/>
-                    <constraints>
-                        <constraint firstAttribute="height" constant="21" id="DT6-Ue-zlU"/>
-                        <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="33" id="GUZ-fg-6gZ"/>
-                    </constraints>
+                    <rect key="frame" x="12" y="12" width="33" height="23"/>
                     <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" image="NSAddTemplate" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="119">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -625,7 +603,7 @@
                     </connections>
                 </button>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="120" userLabel="Remove Account">
-                    <rect key="frame" x="52" y="19" width="33" height="23"/>
+                    <rect key="frame" x="44" y="12" width="33" height="23"/>
                     <buttonCell key="cell" type="smallSquare" bezelStyle="smallSquare" image="NSRemoveTemplate" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="121">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                         <font key="font" metaFont="system"/>
@@ -635,7 +613,7 @@
                     </connections>
                 </button>
                 <textField verticalHuggingPriority="750" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="548" userLabel="Cant Edit Account">
-                    <rect key="frame" x="182" y="23" width="373" height="14"/>
+                    <rect key="frame" x="136" y="15" width="400" height="14"/>
                     <textFieldCell key="cell" controlSize="small" sendsActionOnEndEditing="YES" alignment="center" title="Disable account to change settings." id="549">
                         <font key="font" metaFont="menu" size="11"/>
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -644,23 +622,29 @@
                 </textField>
             </subviews>
             <constraints>
-                <constraint firstItem="548" firstAttribute="leading" secondItem="409" secondAttribute="leading" id="8hV-Mk-Z83"/>
-                <constraint firstItem="120" firstAttribute="height" secondItem="118" secondAttribute="height" id="AWt-Mn-JaE"/>
-                <constraint firstItem="120" firstAttribute="width" secondItem="118" secondAttribute="width" id="GS7-1t-g4e"/>
-                <constraint firstAttribute="bottom" secondItem="118" secondAttribute="bottom" constant="20" symbolic="YES" id="KpS-7M-Sp2"/>
-                <constraint firstItem="120" firstAttribute="centerY" secondItem="118" secondAttribute="centerY" id="MI1-Y1-88K"/>
-                <constraint firstItem="79" firstAttribute="bottom" secondItem="409" secondAttribute="bottom" id="MM7-SC-6VH"/>
-                <constraint firstItem="79" firstAttribute="top" secondItem="148" secondAttribute="top" constant="14" id="NoA-v2-0YD"/>
-                <constraint firstItem="79" firstAttribute="leading" secondItem="148" secondAttribute="leading" constant="20" symbolic="YES" id="U3e-3b-T5a"/>
-                <constraint firstAttribute="trailing" secondItem="409" secondAttribute="trailing" constant="20" symbolic="YES" id="U42-HA-PsY"/>
-                <constraint firstItem="548" firstAttribute="top" secondItem="409" secondAttribute="bottom" constant="12" id="Yhl-OY-ijT"/>
-                <constraint firstItem="118" firstAttribute="top" secondItem="79" secondAttribute="bottom" constant="8" symbolic="YES" id="axl-k4-as8"/>
-                <constraint firstItem="409" firstAttribute="leading" secondItem="79" secondAttribute="trailing" constant="14" id="cd6-2O-tSr"/>
-                <constraint firstItem="79" firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="120" secondAttribute="trailing" id="jsJ-00-yUX"/>
-                <constraint firstItem="79" firstAttribute="top" secondItem="409" secondAttribute="top" id="l0c-7M-VBV"/>
-                <constraint firstItem="548" firstAttribute="trailing" secondItem="409" secondAttribute="trailing" id="lPt-0q-CcH"/>
-                <constraint firstItem="79" firstAttribute="leading" secondItem="118" secondAttribute="leading" id="qfr-Kc-7Ks"/>
-                <constraint firstItem="120" firstAttribute="leading" secondItem="118" secondAttribute="trailing" constant="-1" id="yfC-lf-5RA"/>
+                <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="548" id="ca-1"/>
+                <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="304" id="ca-2"/>
+                <constraint firstAttribute="leading" firstItem="79" secondItem="148" secondAttribute="leading" constant="12" id="ca-3"/>
+                <constraint firstAttribute="width" firstItem="79" constant="112" id="ca-4"/>
+                <constraint firstAttribute="top" firstItem="79" secondItem="148" secondAttribute="top" constant="12" id="ca-5"/>
+                <constraint firstAttribute="bottom" firstItem="79" secondItem="409" secondAttribute="bottom" id="ca-6"/>
+                <constraint firstAttribute="leading" firstItem="409" secondItem="79" secondAttribute="trailing" constant="12" id="ca-7"/>
+                <constraint firstAttribute="trailing" firstItem="148" secondItem="409" secondAttribute="trailing" constant="12" id="ca-8"/>
+                <constraint firstAttribute="top" firstItem="409" secondItem="148" secondAttribute="top" constant="10" id="ca-9"/>
+                <constraint firstAttribute="height" firstItem="409" relation="greaterThanOrEqual" constant="254" id="ca-10"/>
+                <constraint firstAttribute="leading" firstItem="548" secondItem="409" secondAttribute="leading" id="ca-11"/>
+                <constraint firstAttribute="trailing" firstItem="148" relation="greaterThanOrEqual" secondItem="548" secondAttribute="trailing" constant="12" id="ca-12"/>
+                <constraint firstAttribute="top" firstItem="548" secondItem="409" secondAttribute="bottom" constant="10" id="ca-13"/>
+                <constraint firstAttribute="bottom" firstItem="148" secondItem="548" secondAttribute="bottom" constant="12" id="ca-14"/>
+                <constraint firstAttribute="leading" firstItem="118" secondItem="79" secondAttribute="leading" id="ca-15"/>
+                <constraint firstAttribute="top" firstItem="118" secondItem="79" secondAttribute="bottom" constant="8" id="ca-16"/>
+                <constraint firstAttribute="width" firstItem="118" constant="33" id="ca-17"/>
+                <constraint firstAttribute="height" firstItem="118" constant="21" id="ca-18"/>
+                <constraint firstAttribute="leading" firstItem="120" secondItem="118" secondAttribute="trailing" constant="-1" id="ca-19"/>
+                <constraint firstAttribute="centerY" firstItem="120" secondItem="118" secondAttribute="centerY" id="ca-20"/>
+                <constraint firstAttribute="width" firstItem="120" secondItem="118" secondAttribute="width" id="ca-21"/>
+                <constraint firstAttribute="height" firstItem="120" secondItem="118" secondAttribute="height" id="ca-22"/>
+                <constraint firstAttribute="bottom" firstItem="148" relation="greaterThanOrEqual" secondItem="118" secondAttribute="bottom" constant="12" id="ca-23"/>
             </constraints>
             <point key="canvasLocation" x="139" y="163"/>
         </customView>

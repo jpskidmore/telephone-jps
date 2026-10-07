@@ -60,4 +60,11 @@ extern NSString * const kPhoneLabel;
 
 - (void)updateNextKeyView:(NSView *)view;
 
+// Reuses the contact token field and the account's existing availability menu.
+- (void)installCompactDialerWithAvailabilityView:(NSView *)availability
+                                         target:(id)target
+                                  historyAction:(SEL)historyAction
+                                     moreAction:(SEL)moreAction;
+- (void)updateHistoryExpanded:(BOOL)expanded;
+
 @end

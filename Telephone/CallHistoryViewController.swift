@@ -30,6 +30,14 @@ final class CallHistoryViewController: NSViewController {
     var recordCount: Int {
         return records.count
     }
+    @objc var historyExpanded: Bool { isExpanded }
+    @objc var actionsMenu: NSMenu {
+        _ = view
+        return tableView.menu!
+    }
+    private var isExpanded = true
+    private var expandedSelectionIdentifier: String?
+    private var emptyLabel: NSTextField?
     private var records: [PresentationCallHistoryRecord] = []
     private let pasteboard = NSPasteboard.general
     @IBOutlet private weak var tableView: NSTableView!
@@ -43,7 +51,64 @@ final class CallHistoryViewController: NSViewController {
     }
 
     override func viewDidLoad() {
+        super.viewDidLoad()
+        tableView.setAccessibilityLabel(NSLocalizedString("Call history", comment: "Call history accessibility label."))
+        if let scroll = tableView.enclosingScrollView {
+            scroll.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                scroll.topAnchor.constraint(equalTo: view.topAnchor),
+                scroll.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+            let background = NSVisualEffectView(frame: view.bounds)
+            background.material = .contentBackground
+            background.blendingMode = .withinWindow
+            background.state = .followsWindowActiveState
+            background.autoresizingMask = [.width, .height]
+            background.setAccessibilityElement(false)
+            view.addSubview(background, positioned: .below, relativeTo: scroll)
+            scroll.drawsBackground = false
+            tableView.backgroundColor = .clear
+        }
+        let label = NSTextField(labelWithString: NSLocalizedString("No recent calls", comment: "Empty compact call history."))
+        label.textColor = .secondaryLabelColor
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+        emptyLabel = label
+        updateHistoryPresentation()
         target?.shouldReloadData()
+    }
+
+    @objc func setHistoryExpanded(_ expanded: Bool) {
+        guard expanded != isExpanded else { return }
+        if isViewLoaded, isExpanded, records.indices.contains(tableView.selectedRow) {
+            expandedSelectionIdentifier = records[tableView.selectedRow].identifier
+        }
+        isExpanded = expanded
+        guard isViewLoaded else { return }
+        tableView.reloadData()
+        let index = expanded ? records.firstIndex { $0.identifier == expandedSelectionIdentifier } ?? 0 : 0
+        selectVisibleRecord(at: index)
+        updateHistoryPresentation()
+    }
+
+    private func updateHistoryPresentation() {
+        tableView.enclosingScrollView?.hasVerticalScroller = isExpanded
+        emptyLabel?.isHidden = !records.isEmpty
+    }
+
+    private var visibleRecordCount: Int { isExpanded ? records.count : min(1, records.count) }
+
+    private func selectVisibleRecord(at index: Int) {
+        guard visibleRecordCount > 0 else { return }
+        let visibleIndex = min(max(index, 0), visibleRecordCount - 1)
+        tableView.selectRowIndexes(IndexSet(integer: visibleIndex), byExtendingSelection: false)
+        tableView.scrollRowToVisible(visibleIndex)
     }
 
     override func keyDown(with event: NSEvent) {
@@ -71,7 +136,7 @@ final class CallHistoryViewController: NSViewController {
     }
 
     @IBAction func copy(_ sender: Any) {
-        guard clickedOrSelectedRow() != -1 else { return }
+        guard records.indices.contains(clickedOrSelectedRow()), clickedOrSelectedRow() < visibleRecordCount else { return }
         pasteboard.clearContents()
         pasteboard.writeObjects([records[clickedOrSelectedRow()]])
     }
@@ -88,20 +153,37 @@ final class CallHistoryViewController: NSViewController {
             }
         }
     }
+
+    // Resolve the identity again when an asynchronous confirmation completes.
+    // A new call can prepend rows while the sheet is open.
+    func removeRecord(withIdentifier identifier: String) {
+        guard let row = records.firstIndex(where: { $0.identifier == identifier }) else { return }
+        records.remove(at: row)
+        if isExpanded {
+            tableView.removeRows(at: IndexSet(integer: row), withAnimation: .slideUp)
+        } else {
+            // Removing the only visible row may reveal the next recent record;
+            // an animated row removal would have an inconsistent row count.
+            tableView.reloadData()
+            selectVisibleRecord(at: 0)
+        }
+        updateHistoryPresentation()
+        target?.shouldRemoveRecord(withIdentifier: identifier)
+    }
 }
 
 private extension CallHistoryViewController {
     func pickRecord(at index: Int) {
-        guard !records.isEmpty else { return }
+        guard records.indices.contains(index), index < visibleRecordCount else { return }
         target?.didPickRecord(withIdentifier: records[index].identifier)
     }
 
     func removeRecord(at index: Int) {
-        guard !records.isEmpty else { return }
+        guard records.indices.contains(index), index < visibleRecordCount else { return }
         let record = records[index]
         Task {
             if await makeDeleteRecordAlert(recordName: record.name).beginSheetModal(for: view.window!) == .alertFirstButtonReturn {
-                removeTableViewRow(index, andRecordWithIdentifier: record.identifier)
+                removeRecord(withIdentifier: record.identifier)
             }
         }
     }
@@ -112,12 +194,6 @@ private extension CallHistoryViewController {
 
     func isDeleteKey(_ event: NSEvent) -> Bool {
         return event.keyCode == 0x33 || event.keyCode == 0x75
-    }
-
-    func removeTableViewRow(_ row: Int, andRecordWithIdentifier identifier: String) {
-        tableView.removeRows(at: IndexSet(integer: row), withAnimation: .slideUp)
-        records.remove(at: row)
-        target?.shouldRemoveRecord(withIdentifier: identifier)
     }
 
     func clickedOrSelectedRow() -> Int {
@@ -132,9 +208,14 @@ extension CallHistoryViewController: CallHistoryView {
         self.records = records
         reloadTableView(old: oldRecords, new: records)
         restoreSelection(oldIndex: oldIndex, old: oldRecords, new: records)
+        updateHistoryPresentation()
     }
 
     private func reloadTableView(old: [PresentationCallHistoryRecord], new: [PresentationCallHistoryRecord]) {
+        guard isExpanded else {
+            tableView.reloadData()
+            return
+        }
         let diff = ArrayDifference(before: old, after: new)
         if case .prepended(count: let count) = diff, count <= 2 {
             tableView.insertRows(at: IndexSet(integersIn: 0..<count), withAnimation: .slideDown)
@@ -150,16 +231,13 @@ extension CallHistoryViewController: CallHistoryView {
 
     private func restoreSelection(oldIndex: Int, old: [PresentationCallHistoryRecord], new: [PresentationCallHistoryRecord]) {
         guard !records.isEmpty else { return }
-        tableView.selectRowIndexes(
-            IndexSet(integer: RestoredSelectionIndex(indexBefore: oldIndex, before: old, after: new).value),
-            byExtendingSelection: false
-        )
+        selectVisibleRecord(at: isExpanded ? RestoredSelectionIndex(indexBefore: oldIndex, before: old, after: new).value : 0)
     }
 }
 
 extension CallHistoryViewController: NSTableViewDataSource {
     func numberOfRows(in view: NSTableView) -> Int {
-        return records.count
+        return visibleRecordCount
     }
 
     func tableView(_ view: NSTableView, objectValueFor column: NSTableColumn?, row: Int) -> Any? {
@@ -204,15 +282,18 @@ extension CallHistoryViewController: NSTableViewDelegate {
     }
 
     private func removeRowAndRecord(action: NSTableViewRowAction, row: Int) {
-        removeTableViewRow(row, andRecordWithIdentifier: records[row].identifier)
+        guard records.indices.contains(row), row < visibleRecordCount else { return }
+        removeRecord(withIdentifier: records[row].identifier)
     }
 }
 
 extension CallHistoryViewController: NSMenuItemValidation {
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
-        case #selector(copy(_:)), #selector(makeCall), #selector(delete), #selector(deleteAll):
+        case #selector(deleteAll):
             return !records.isEmpty
+        case #selector(copy(_:)), #selector(makeCall), #selector(delete):
+            return records.indices.contains(clickedOrSelectedRow()) && clickedOrSelectedRow() < visibleRecordCount
         default:
             return false
         }

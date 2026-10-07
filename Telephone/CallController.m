@@ -57,6 +57,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 // Call info view.
 @property(nonatomic, strong) NSView *callInfoView;
+- (void)refreshCompactPresentation;
 
 // Closes call window.
 - (void)closeCallWindow;
@@ -83,6 +84,68 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         _status = NSLocalizedString(@"Audio unavailable", @"Persistent status while call audio has failed.");
     } else {
         _status = [status copy];
+    }
+    [self refreshCompactPresentation];
+}
+
++ (NSSet<NSString *> *)keyPathsForValuesAffectingCompactWindowTitle {
+    return [NSSet setWithArray:@[@"title", @"accountController.accountDescription",
+                                @"accountController.callsShouldDisplayAccountInfo"]];
+}
+
+- (NSString *)compactWindowTitle {
+    if (self.accountController.callsShouldDisplayAccountInfo && self.accountController.accountDescription.length > 0) {
+        return self.accountController.accountDescription;
+    }
+    return self.title.length > 0 ? self.title : NSLocalizedString(@"Call", @"Window title.");
+}
+
++ (NSSet<NSString *> *)keyPathsForValuesAffectingPresentationStatus {
+    return [NSSet setWithObject:@"status"];
+}
+
+- (NSString *)presentationStatus {
+    // The timer's original status remains intact for other consumers. The card
+    // shows its duration separately so a running clock also has a named state.
+    NSArray<NSString *> *parts = [self.status componentsSeparatedByString:@":"];
+    BOOL clock = parts.count == 2 || parts.count == 3;
+    NSCharacterSet *notDigits = NSCharacterSet.decimalDigitCharacterSet.invertedSet;
+    for (NSString *part in parts) {
+        clock &= part.length == 2 && [part rangeOfCharacterFromSet:notDigits].location == NSNotFound;
+    }
+    return clock ? NSLocalizedString(@"Connected", @"Connected call status.") : (self.status ?: @"");
+}
+
++ (NSSet<NSString *> *)keyPathsForValuesAffectingPresentationDuration {
+    return [NSSet setWithArray:@[@"status", @"callStartTime", @"call.state"]];
+}
+
+- (NSString *)presentationDuration {
+    if (self.callStartTime <= 0) return @"";
+    NSInteger seconds = MAX(0, (NSInteger)(NSDate.timeIntervalSinceReferenceDate - self.callStartTime));
+    if (self.call.state == kAKSIPCallDisconnectedState) seconds = MAX(0, self.call.duration);
+    if (seconds < 3600) return [NSString stringWithFormat:@"%02ld:%02ld", (seconds / 60) % 60, seconds % 60];
+    return [NSString stringWithFormat:@"%02ld:%02ld:%02ld", (seconds / 3600) % 24, (seconds / 60) % 60, seconds % 60];
+}
+
+- (void)refreshCompactPresentation {
+    if (!self.isWindowLoaded || ![self.windowNibName isEqualToString:@"Call"]) return;
+    NSArray *controllers = @[(id)_activeCallViewController ?: NSNull.null,
+                              (id)_incomingCallViewController ?: NSNull.null,
+                              (id)_endedCallViewController ?: NSNull.null];
+    for (id controller in controllers) {
+        if ([controller isKindOfClass:NSViewController.class] && [(NSViewController *)controller isViewLoaded]) {
+            [controller refreshPresentation];
+        }
+    }
+    if (self.callInfoView != nil) {
+        CGFloat delta = self.callInfoView.frame.size.height - self.window.contentView.frame.size.height;
+        if (fabs(delta) > 0.1) {
+            NSRect frame = self.window.frame;
+            frame.size.height += delta;
+            frame.origin.y -= delta;
+            [self.window setFrame:frame display:YES];
+        }
     }
 }
 
@@ -207,6 +270,12 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     [self updateWindowFloating];
     [self subscribeToWindowFloatingChanges];
     [self updateWindowTitle];
+    if ([self.windowNibName isEqualToString:@"Call"]) {
+        // Preserve the former footer's conditional account binding in native
+        // chrome while the remote number is now always present in the body.
+        [self.window bind:NSTitleBinding toObject:self withKeyPath:@"compactWindowTitle" options:nil];
+        self.window.autorecalculatesKeyViewLoop = YES;
+    }
     NSRect frame = [[[self window] contentView] frame];
     frame.origin.x = 0.0;
     CGFloat minYBorderThickness = [[self window] contentBorderThicknessForEdge:NSMinYEdge];
@@ -218,6 +287,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)setCallInfoViewResizingWindow:(NSView *)newView {
+    if ([self.windowNibName isEqualToString:@"Call"]) newView.autoresizingMask = NSViewNotSizable;
     // Compute view size delta.
     NSSize currentCallInfoViewSize = [[self callInfoView] frame].size;
     NSSize newViewSize = [newView frame].size;
@@ -563,6 +633,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 - (void)showViewController:(NSViewController *)viewController {
     if ([self shouldShowViewController:viewController]) {
+        if (viewController != _activeCallViewController) [_activeCallViewController closeKeypad];
         [self setCallInfoViewResizingWindow:viewController.view];
     }
 }
@@ -619,7 +690,8 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)updateWindowTitle {
-    self.window.title = self.title.length > 0 ? self.title : NSLocalizedString(@"Call", @"Window title.");
+    self.window.title = [self.windowNibName isEqualToString:@"Call"] ? self.compactWindowTitle
+                          : (self.title.length > 0 ? self.title : NSLocalizedString(@"Call", @"Window title."));
 }
 
 
@@ -644,6 +716,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     [_incomingCallViewController removeObservations];
     [_activeCallViewController removeObservations];
     [_endedCallViewController removeObservations];
+    if ([self.windowNibName isEqualToString:@"Call"]) [self.window unbind:NSTitleBinding];
 }
 
 - (NSRect)window:(NSWindow *)window willPositionSheet:(NSWindow *)sheet usingRect:(NSRect)rect {

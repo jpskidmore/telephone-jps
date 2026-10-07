@@ -224,3 +224,18 @@
 "Call status" = "Anrufstatus";
 "Recording in progress" = "Aufnahme läuft";
 "Connecting call" = "Anruf wird verbunden";
+
+/* Compact dialer and pocket-call accessibility and tooltips. */
+"Keypad" = "Tastenfeld";
+"Phone number" = "Rufnummer";
+"Call duration" = "Gesprächsdauer";
+"Connected" = "Verbunden";
+"DTMF digits" = "DTMF-Ziffern";
+"Call destination" = "Anrufziel";
+"Number or contact" = "Nummer oder Kontakt";
+"Show full call history" = "Anrufliste anzeigen";
+"Hide full call history" = "Anrufliste ausblenden";
+"More actions" = "Weitere Aktionen";
+"Availability" = "Verfügbarkeit";
+"Call history" = "Anrufliste";
+"No recent calls" = "Keine letzten Anrufe";

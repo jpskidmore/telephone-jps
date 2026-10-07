@@ -21,6 +21,9 @@
 
 #import "CallController.h"
 
+@interface EndedCallViewController ()
+@property(nonatomic) NSTextField *numberField;
+@end
 
 @implementation EndedCallViewController
 
@@ -45,11 +48,23 @@
         return;
     }
     AKStyleCallButton(self.redialButton, NSLocalizedString(@"Call Back", @"Call back button."), @"phone.arrow.up.right", NO);
-    AKInstallCallPresentation(self.view, self.displayedNameField, self.statusField,
-                              @[self.redialButton], nil, nil);
+    self.numberField = [NSTextField labelWithString:@""];
+    [self.numberField bind:NSValueBinding toObject:self withKeyPath:@"callController.title" options:nil];
+    AKInstallCallPresentation(self.view, self.displayedNameField, self.numberField, self.statusField,
+                              @[self.redialButton], nil, nil, nil);
+    [self refreshPresentation];
+}
+
+- (void)refreshPresentation {
+    if (![self.nibName isEqualToString:@"EndedCallView"]) return;
+    self.statusField.stringValue = self.callController.presentationStatus;
+    self.numberField.toolTip = self.callController.title;
+    self.displayedNameField.toolTip = self.callController.displayedName;
+    AKUpdateCallPresentation(self.view, self.statusField);
 }
 
 - (void)removeObservations {
+    [self.numberField unbind:NSValueBinding];
     [[self displayedNameField] unbind:NSValueBinding];
     [[self statusField] unbind:NSValueBinding];
 }

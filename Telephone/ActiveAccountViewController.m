@@ -30,10 +30,12 @@
 #import "AccountController.h"
 
 #import "Telephone-Swift.h"
+#import "AKLiquidGlass.h"
 
 
 NSString * const kURI = @"URI";
 NSString * const kPhoneLabel = @"PhoneLabel";
+static void *CompactDialerValueObservation = &CompactDialerValueObservation;
 
 // On macOS 26, NSTokenField can invalidate its own intrinsic content size while
 // AppKit is already calculating that size. This creates an endless constraints
@@ -50,7 +52,21 @@ NSString * const kPhoneLabel = @"PhoneLabel";
 
 @end
 
+@interface ActiveAccountViewController ()
+@property(nonatomic) NSButton *dialButton;
+@property(nonatomic) NSButton *historyButton;
+@property(nonatomic) NSTextField *offlineLabel;
+@property(nonatomic) BOOL observesDestinationValues;
+@end
+
 @implementation ActiveAccountViewController
+
+- (void)dealloc {
+    if (self.observesDestinationValues) {
+        [self.callDestinationField removeObserver:self forKeyPath:@"stringValue" context:CompactDialerValueObservation];
+        [self.callDestinationField removeObserver:self forKeyPath:@"objectValue" context:CompactDialerValueObservation];
+    }
+}
 
 - (AKSIPURI *)callDestinationURI {
     NSDictionary *callDestinationDict = [[self callDestinationField] objectValue][0][[self callDestinationURIIndex]];
@@ -96,6 +112,129 @@ NSString * const kPhoneLabel = @"PhoneLabel";
     [[self callDestinationField] setCompletionDelay:0.4];
 }
 
+- (void)installCompactDialerWithAvailabilityView:(NSView *)availability
+                                         target:(id)target
+                                  historyAction:(SEL)historyAction
+                                     moreAction:(SEL)moreAction {
+    NSTokenField *field = self.callDestinationField;
+    NSView *historyKeyView = field.nextKeyView;
+    [self.view removeConstraints:self.view.constraints];
+    [field removeFromSuperview];
+    field.accessibilityLabel = NSLocalizedString(@"Call destination", @"Dialer destination accessibility label.");
+    field.placeholderString = NSLocalizedString(@"Number or contact", @"Compact dialer destination placeholder.");
+
+    AKGlassControlContainer *bar = [[AKGlassControlContainer alloc] initWithFrame:NSZeroRect sidebar:NO];
+    bar.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:bar];
+    [NSLayoutConstraint activateConstraints:@[
+        [bar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:8],
+        [bar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-8],
+        [bar.topAnchor constraintEqualToAnchor:self.view.topAnchor constant:6],
+        [bar.heightAnchor constraintEqualToConstant:44]
+    ]];
+
+    self.dialButton = [self compactButtonWithSymbol:@"phone.fill"
+                                            title:NSLocalizedString(@"Call", @"Call button.")
+                                           target:self action:@selector(dialFromButton:)];
+    self.dialButton.contentTintColor = NSColor.controlAccentColor;
+    self.historyButton = [self compactButtonWithSymbol:@"clock.arrow.circlepath"
+                                                title:NSLocalizedString(@"Show full call history", @"Expand compact dialer history.")
+                                               target:target action:historyAction];
+    [self.historyButton setButtonType:NSButtonTypePushOnPushOff];
+    NSButton *more = [self compactButtonWithSymbol:@"ellipsis"
+                                             title:NSLocalizedString(@"More actions", @"Compact dialer actions menu.")
+                                            target:target action:moreAction];
+    NSStackView *row = [NSStackView stackViewWithViews:@[availability, field, self.dialButton, self.historyButton, more]];
+    row.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    row.alignment = NSLayoutAttributeCenterY;
+    row.spacing = 4;
+    row.detachesHiddenViews = NO;
+    row.translatesAutoresizingMaskIntoConstraints = NO;
+    [bar.contentView addSubview:row];
+    [NSLayoutConstraint activateConstraints:@[
+        [row.leadingAnchor constraintEqualToAnchor:bar.contentView.leadingAnchor],
+        [row.trailingAnchor constraintEqualToAnchor:bar.contentView.trailingAnchor],
+        [row.topAnchor constraintEqualToAnchor:bar.contentView.topAnchor],
+        [row.bottomAnchor constraintEqualToAnchor:bar.contentView.bottomAnchor],
+        [availability.widthAnchor constraintEqualToConstant:44],
+        [availability.heightAnchor constraintEqualToConstant:44],
+        [field.widthAnchor constraintGreaterThanOrEqualToConstant:160]
+    ]];
+    [field setContentHuggingPriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+
+    self.offlineLabel = [NSTextField labelWithString:NSLocalizedString(@"Offline", @"Account registration Offline menu item.")];
+    self.offlineLabel.textColor = NSColor.secondaryLabelColor;
+    self.offlineLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.offlineLabel.accessibilityElement = NO;
+    [bar.contentView addSubview:self.offlineLabel];
+    [NSLayoutConstraint activateConstraints:@[
+        [self.offlineLabel.leadingAnchor constraintEqualToAnchor:field.leadingAnchor constant:4],
+        [self.offlineLabel.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+        [self.offlineLabel.trailingAnchor constraintLessThanOrEqualToAnchor:field.trailingAnchor]
+    ]];
+    self.offlineLabel.hidden = !field.isHidden;
+    self.dialButton.enabled = !field.isHidden && field.stringValue.length > 0;
+    if (!self.observesDestinationValues) {
+        [field addObserver:self forKeyPath:@"stringValue" options:0 context:CompactDialerValueObservation];
+        [field addObserver:self forKeyPath:@"objectValue" options:0 context:CompactDialerValueObservation];
+        self.observesDestinationValues = YES;
+    }
+    field.nextKeyView = self.dialButton;
+    self.dialButton.nextKeyView = self.historyButton;
+    self.historyButton.nextKeyView = more;
+    for (NSView *control in availability.subviews) {
+        if ([control isKindOfClass:[NSPopUpButton class]]) {
+            more.nextKeyView = control;
+            control.nextKeyView = historyKeyView;
+        }
+    }
+}
+
+- (NSButton *)compactButtonWithSymbol:(NSString *)symbol title:(NSString *)title target:(id)target action:(SEL)action {
+    NSButton *button = [NSButton buttonWithTitle:@"" target:target action:action];
+    button.bezelStyle = NSBezelStyleRounded;
+    button.image = [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:nil];
+    button.imagePosition = NSImageOnly;
+    button.imageScaling = NSImageScaleProportionallyDown;
+    button.toolTip = title;
+    button.accessibilityLabel = title;
+    button.translatesAutoresizingMaskIntoConstraints = NO;
+    [NSLayoutConstraint activateConstraints:@[
+        [button.widthAnchor constraintEqualToConstant:44],
+        [button.heightAnchor constraintEqualToConstant:44]
+    ]];
+    return button;
+}
+
+- (void)updateHistoryExpanded:(BOOL)expanded {
+    self.historyButton.state = expanded ? NSControlStateValueOn : NSControlStateValueOff;
+    NSString *title = expanded
+        ? NSLocalizedString(@"Hide full call history", @"Collapse compact dialer history.")
+        : NSLocalizedString(@"Show full call history", @"Expand compact dialer history.");
+    self.historyButton.toolTip = title;
+    self.historyButton.accessibilityLabel = title;
+}
+
+- (void)controlTextDidChange:(NSNotification *)notification {
+    self.dialButton.enabled = self.allowsCallDestinationInput && self.callDestinationField.stringValue.length > 0;
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
+    if (context == CompactDialerValueObservation) {
+        self.dialButton.enabled = self.allowsCallDestinationInput && self.callDestinationField.stringValue.length > 0;
+        return;
+    }
+    [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+}
+
+- (IBAction)dialFromButton:(NSButton *)sender {
+    // Commit the field editor so the existing token delegate resolves Contacts
+    // and SIP destinations before invoking precisely the same action as Return.
+    if (self.allowsCallDestinationInput && [self.view.window makeFirstResponder:sender]) {
+        [self makeCall:sender];
+    }
+}
+
 - (IBAction)makeCall:(id)sender {
     if (![self canMakeCall]) {
         return;
@@ -111,10 +250,14 @@ NSString * const kPhoneLabel = @"PhoneLabel";
 }
 
 - (BOOL)canMakeCall {
-    return [self.callDestinationField.objectValue count] > 0 &&
-    [self.callDestinationField.objectValue isKindOfClass:[NSArray class]] &&
-    [self.callDestinationField.objectValue[0] isKindOfClass:[NSArray class]] &&
-    [self.callDestinationField.objectValue[0][self.callDestinationURIIndex] isKindOfClass:[NSDictionary class]];
+    id value = self.callDestinationField.objectValue;
+    if (![value isKindOfClass:[NSArray class]] || [value count] == 0) {
+        return NO;
+    }
+    id destinations = value[0];
+    return [destinations isKindOfClass:[NSArray class]] &&
+           self.callDestinationURIIndex < [destinations count] &&
+           [destinations[self.callDestinationURIIndex] isKindOfClass:[NSDictionary class]];
 }
 
 - (IBAction)changeCallDestinationURIIndex:(id)sender {
@@ -122,6 +265,8 @@ NSString * const kPhoneLabel = @"PhoneLabel";
 }
 
 - (void)allowCallDestinationInput {
+    self.offlineLabel.hidden = YES;
+    self.dialButton.enabled = self.callDestinationField.stringValue.length > 0;
     [NSAnimationContext runAnimationGroup:^(NSAnimationContext * _Nonnull context) {
         self.callDestinationField.animator.hidden = NO;
     } completionHandler:^{
@@ -133,6 +278,8 @@ NSString * const kPhoneLabel = @"PhoneLabel";
 
 - (void)disallowCallDestinationInput {
     self.callDestinationField.hidden = YES;
+    self.offlineLabel.hidden = NO;
+    self.dialButton.enabled = NO;
 }
 
 - (void)updateNextKeyView:(NSView *)view {

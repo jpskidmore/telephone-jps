@@ -27,7 +27,7 @@
 #import "EndedCallViewController.h"
 
 
-@interface ActiveCallViewController () <NSMenuItemValidation>
+@interface ActiveCallViewController () <NSMenuItemValidation, NSPopoverDelegate>
 
 @property(nonatomic, getter=isShowingProgress) BOOL showingProgress;
 @property(nonatomic) NSTrackingArea *trackingArea;
@@ -39,6 +39,10 @@
 @property(nonatomic) IBOutlet NSProgressIndicator *callProgressIndicator;
 @property(nonatomic) IBOutlet NSButton *hangUpButton;
 @property(nonatomic) NSArray<NSButton *> *visibleCallControls;
+@property(nonatomic) NSTextField *numberField;
+@property(nonatomic) NSTextField *durationField;
+@property(nonatomic) NSPopover *keypadPopover;
+@property(nonatomic) NSTextField *keypadDigitsField;
 
 @end
 
@@ -69,15 +73,26 @@
     NSButton *mute = [NSButton buttonWithTitle:@"" target:self action:@selector(toggleMicrophoneMute:)];
     NSButton *hold = [NSButton buttonWithTitle:@"" target:self action:@selector(toggleCallHold:)];
     NSButton *transfer = [NSButton buttonWithTitle:@"" target:self action:@selector(showCallTransferSheet:)];
-    AKStyleCallButton(mute, NSLocalizedString(@"Mute", @"Mute. Call menu item."), @"mic.slash", NO);
-    AKStyleCallButton(hold, NSLocalizedString(@"Hold", @"Hold. Call menu item."), @"pause", NO);
-    AKStyleCallButton(transfer, NSLocalizedString(@"Transfer", @"Call transfer button."), @"arrow.right", NO);
-    AKStyleCallButton(self.hangUpButton, NSLocalizedString(@"End Call", @"End Call. Call menu item."), @"phone.down", YES);
-    self.visibleCallControls = @[mute, hold, transfer];
-    AKInstallCallPresentation(self.view, self.displayedNameField, self.statusField,
-                              @[mute, hold, transfer, self.hangUpButton],
-                              self.recordingIndicatorField, self.callProgressIndicator);
+    NSButton *keypad = [NSButton buttonWithTitle:@"" target:self action:@selector(showKeypad:)];
+    AKStyleCallButton(mute, NSLocalizedString(@"Mute", @"Mute. Call menu item."), @"mic", NO);
+    AKStyleCallButton(hold, NSLocalizedString(@"Hold", @"Hold. Call menu item."), @"pause.fill", NO);
+    AKStyleCallButton(transfer, NSLocalizedString(@"Transfer", @"Call transfer button."), @"phone.arrow.right", NO);
+    AKStyleCallButton(keypad, NSLocalizedString(@"Keypad", @"Call keypad button."), @"circle.grid.3x3.fill", NO);
+    AKStyleCallButton(self.hangUpButton, NSLocalizedString(@"End Call", @"End Call. Call menu item."), @"phone.down.fill", YES);
+    [mute setButtonType:NSButtonTypePushOnPushOff];
+    [hold setButtonType:NSButtonTypePushOnPushOff];
+    [keypad setButtonType:NSButtonTypePushOnPushOff];
+    mute.imagePosition = hold.imagePosition = keypad.imagePosition = NSImageOnly;
+    self.visibleCallControls = @[mute, hold, transfer, keypad];
+    self.numberField = [NSTextField labelWithString:@""];
+    [self.numberField bind:NSValueBinding toObject:self withKeyPath:@"callController.title" options:nil];
+    self.durationField = [NSTextField labelWithString:@""];
+    [self.durationField bind:NSValueBinding toObject:self withKeyPath:@"callController.presentationDuration" options:nil];
+    AKInstallCallPresentation(self.view, self.displayedNameField, self.numberField, self.statusField,
+                              @[mute, hold, transfer, keypad, self.hangUpButton],
+                              self.recordingIndicatorField, self.callProgressIndicator, self.durationField);
     [self refreshVisibleCallControls];
+    [self refreshPresentation];
 }
 
 - (void)refreshVisibleCallControls {
@@ -87,15 +102,105 @@
                                                       keyEquivalent:@""];
         button.enabled = [self validateMenuItem:validationItem];
         button.title = validationItem.title;
+        button.imagePosition = NSImageOnly;
         button.toolTip = validationItem.title;
         button.accessibilityLabel = validationItem.title;
+        if (button.action == @selector(toggleMicrophoneMute:)) {
+            BOOL selected = self.callController.call.isMicrophoneMuted;
+            button.state = selected ? NSControlStateValueOn : NSControlStateValueOff;
+            button.image = [NSImage imageWithSystemSymbolName:selected ? @"mic.slash" : @"mic" accessibilityDescription:nil];
+            button.accessibilityValue = @(selected);
+        } else if (button.action == @selector(toggleCallHold:)) {
+            BOOL selected = self.callController.call.isOnLocalHold;
+            button.state = selected ? NSControlStateValueOn : NSControlStateValueOff;
+            button.image = [NSImage imageWithSystemSymbolName:selected ? @"play.fill" : @"pause.fill" accessibilityDescription:nil];
+            button.accessibilityValue = @(selected);
+        }
     }
 }
 
 - (void)removeObservations {
+    [self.keypadPopover close];
+    [self.numberField unbind:NSValueBinding];
+    [self.durationField unbind:NSValueBinding];
     [[self displayedNameField] unbind:NSValueBinding];
     [[self statusField] unbind:NSValueBinding];
  }
+
+- (void)refreshPresentation {
+    if (![self.nibName isEqualToString:@"ActiveCallView"]) return;
+    self.statusField.stringValue = self.callController.presentationStatus;
+    self.numberField.toolTip = self.callController.title;
+    self.displayedNameField.toolTip = self.callController.displayedName;
+    AKUpdateCallPresentation(self.view, self.statusField);
+}
+
+- (void)viewWillDisappear {
+    [super viewWillDisappear];
+    [self closeKeypad];
+}
+
+- (void)closeKeypad {
+    [self.keypadPopover close];
+}
+
+- (IBAction)showKeypad:(NSButton *)sender {
+    if (self.callController.call.state != kAKSIPCallConfirmedState) return;
+    if (self.keypadPopover.isShown) {
+        [self.keypadPopover close];
+        return;
+    }
+    [self prepareKeypad];
+    self.keypadDigitsField.stringValue = self.enteredDTMF;
+    [self.keypadPopover showRelativeToRect:sender.bounds ofView:sender preferredEdge:NSMinYEdge];
+    [self.keypadPopover.contentViewController.view.window makeFirstResponder:self.keypadPopover.contentViewController.view];
+    sender.accessibilityValue = @YES;
+    sender.state = NSControlStateValueOn;
+}
+
+- (void)prepareKeypad {
+    if (self.keypadPopover == nil) {
+        NSViewController *controller = [NSViewController new];
+        AKActiveCallView *view = [[AKActiveCallView alloc] initWithFrame:NSMakeRect(0, 0, 180, 264)];
+        view.delegate = self;
+        controller.view = view;
+        self.keypadDigitsField = [NSTextField labelWithString:self.enteredDTMF];
+        self.keypadDigitsField.font = [NSFont monospacedDigitSystemFontOfSize:13 weight:NSFontWeightRegular];
+        self.keypadDigitsField.lineBreakMode = NSLineBreakByTruncatingHead;
+        self.keypadDigitsField.selectable = YES;
+        self.keypadDigitsField.accessibilityLabel = NSLocalizedString(@"DTMF digits", @"Entered call keypad digits accessibility label.");
+        self.keypadDigitsField.frame = NSMakeRect(12, 236, 156, 16);
+        [view addSubview:self.keypadDigitsField];
+        NSArray<NSString *> *digits = @[@"1", @"2", @"3", @"4", @"5", @"6", @"7", @"8", @"9", @"*", @"0", @"#"];
+        for (NSUInteger i = 0; i < digits.count; i++) {
+            NSButton *digit = [NSButton buttonWithTitle:digits[i] target:self action:@selector(sendKeypadDigit:)];
+            digit.frame = NSMakeRect(12 + (i % 3) * 56, 180 - (i / 3) * 56, 44, 44);
+            digit.bezelStyle = NSBezelStyleRounded;
+            digit.font = [NSFont systemFontOfSize:17];
+            digit.accessibilityLabel = digits[i];
+            [view addSubview:digit];
+        }
+        self.keypadPopover = [NSPopover new];
+        self.keypadPopover.behavior = NSPopoverBehaviorTransient;
+        self.keypadPopover.delegate = self;
+        self.keypadPopover.contentViewController = controller;
+    }
+}
+
+- (void)popoverDidClose:(NSNotification *)notification {
+    for (NSButton *button in self.visibleCallControls) {
+        if (button.action == @selector(showKeypad:)) {
+            button.accessibilityValue = @NO;
+            button.state = NSControlStateValueOff;
+        }
+    }
+}
+
+- (IBAction)sendKeypadDigit:(NSButton *)sender {
+    if (self.callController.call.state == kAKSIPCallConfirmedState) {
+        [self activeCallView:(AKActiveCallView *)self.view didReceiveText:sender.title];
+    }
+}
 
 - (IBAction)hangUpCall:(id)sender {
     [[self callController] hangUpCall];
@@ -248,7 +353,9 @@
     if (isDTMFValid) {
         if ([[self enteredDTMF] length] == 0) {
             [[self enteredDTMF] appendString:aString];
-            [[[self view] window] setTitle:[[self callController] displayedName]];
+            if (![self.nibName isEqualToString:@"ActiveCallView"]) {
+                [[[self view] window] setTitle:[[self callController] displayedName]];
+            }
             
             if ([[self displayedNameField] lineBreakMode]!= NSLineBreakByTruncatingHead) {
                 [[self displayedNameField] setLineBreakMode:NSLineBreakByTruncatingHead];
@@ -263,6 +370,7 @@
         }
         
         [[[self callController] call] sendDTMFDigits:aString];
+        self.keypadDigitsField.stringValue = self.enteredDTMF;
     }
 }
 
@@ -315,6 +423,8 @@
         [menuItem setTitle:NSLocalizedString(@"End Call", @"End Call. Call menu item.")];
 
         return self.hangUpButton.isEnabled;
+    } else if ([menuItem action] == @selector(showKeypad:)) {
+        return self.callController.call.state == kAKSIPCallConfirmedState;
     }
     
     return YES;

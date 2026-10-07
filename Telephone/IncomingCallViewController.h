@@ -37,6 +37,7 @@
 - (instancetype)initWithCallController:(CallController *)callController;
 
 - (void)removeObservations;
+- (void)refreshPresentation;
 
 // Accepts an incoming call.
 - (IBAction)acceptCall:(id)sender;

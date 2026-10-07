@@ -1,4 +1,5 @@
 #import "AKLiquidGlass.h"
+#import <objc/runtime.h>
 
 @implementation AKWindowMaterialView
 
@@ -55,16 +56,17 @@
 @end
 
 @interface AKOpaqueMaterialView : NSView
+@property(nonatomic) CGFloat cornerRadius;
 @end
 
 @implementation AKOpaqueMaterialView
 - (void)drawRect:(NSRect)dirtyRect {
     [NSColor.windowBackgroundColor setFill];
-    [[NSBezierPath bezierPathWithRoundedRect:self.bounds xRadius:16 yRadius:16] fill];
+    [[NSBezierPath bezierPathWithRoundedRect:self.bounds xRadius:self.cornerRadius yRadius:self.cornerRadius] fill];
     if (NSWorkspace.sharedWorkspace.accessibilityDisplayShouldIncreaseContrast) {
         [NSColor.separatorColor setStroke];
         NSBezierPath *outline = [NSBezierPath bezierPathWithRoundedRect:NSInsetRect(self.bounds, 0.5, 0.5)
-                                                             xRadius:16 yRadius:16];
+                                                             xRadius:self.cornerRadius yRadius:self.cornerRadius];
         outline.lineWidth = 1;
         [outline stroke];
     }
@@ -114,9 +116,8 @@
 - (void)viewDidMoveToWindow {
     [super viewDidMoveToWindow];
     if (!self.sidebar && self.window != nil) {
-        // Call controllers keep their existing content view and account footer.
-        // Supply the same standard window backdrop beneath all of those views
-        // without changing their frames, titlebar geometry or responder chain.
+        // Supply the shared standard window backdrop beneath call content
+        // without changing frames, titlebar geometry or the responder chain.
         NSView *root = self.window.contentView;
         BOOL hasBackdrop = [root isKindOfClass:[AKWindowMaterialView class]];
         for (NSView *view in root.subviews) {
@@ -148,14 +149,16 @@
     self.surface = nil;
 
     if (NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceTransparency) {
-        self.surface = [[AKOpaqueMaterialView alloc] initWithFrame:self.bounds];
+        AKOpaqueMaterialView *opaque = [[AKOpaqueMaterialView alloc] initWithFrame:self.bounds];
+        opaque.cornerRadius = self.sidebar ? 0 : 16;
+        self.surface = opaque;
         [self.surface addSubview:self.contentView];
     } else {
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 260000
         if (@available(macOS 26.0, *)) {
             NSGlassEffectView *glass = [[NSGlassEffectView alloc] initWithFrame:self.bounds];
             glass.style = NSGlassEffectViewStyleRegular;
-            glass.cornerRadius = 16;
+            glass.cornerRadius = self.sidebar ? 0 : 16;
             // AppKit only guarantees proper glass composition through contentView.
             glass.contentView = self.contentView;
             self.surface = glass;
@@ -167,7 +170,7 @@
             material.blendingMode = NSVisualEffectBlendingModeWithinWindow;
             material.state = NSVisualEffectStateFollowsWindowActiveState;
             material.wantsLayer = YES;
-            material.layer.cornerRadius = 16;
+            material.layer.cornerRadius = self.sidebar ? 0 : 16;
             material.layer.masksToBounds = YES;
             [material addSubview:self.contentView];
             self.surface = material;
@@ -190,97 +193,104 @@
 
 @end
 
+static const void *AKCallStatusHeightKey = &AKCallStatusHeightKey;
+
 void AKStyleCallButton(NSButton *button, NSString *title, NSString *symbol, BOOL destructive) {
+    // The label remains available to VoiceOver and tooltips; icon width never
+    // depends on a translated action name.
     button.title = title;
     button.bezelStyle = NSBezelStyleRounded;
     [button setButtonType:NSButtonTypeMomentaryPushIn];
     button.bordered = YES;
-    button.image = [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:nil];
-    button.imagePosition = NSImageLeft;
+    button.image = [[NSImage imageWithSystemSymbolName:symbol accessibilityDescription:nil]
+                    imageWithSymbolConfiguration:[NSImageSymbolConfiguration configurationWithPointSize:16
+                                                                                                 weight:NSFontWeightMedium]];
+    button.imagePosition = NSImageOnly;
     button.imageScaling = NSImageScaleProportionallyDown;
-    button.font = [NSFont systemFontOfSize:NSFont.systemFontSize];
+    button.font = [NSFont systemFontOfSize:13];
     button.contentTintColor = destructive ? NSColor.systemRedColor : nil;
     button.toolTip = title;
     button.accessibilityLabel = title;
 }
 
-void AKInstallCallPresentation(NSView *view, NSTextField *caller, NSTextField *status,
-                               NSArray<NSButton *> *buttons, NSTextField *recording,
-                               NSProgressIndicator *progress) {
-    [NSLayoutConstraint deactivateConstraints:view.constraints];
-    for (NSView *control in buttons) {
-        [NSLayoutConstraint deactivateConstraints:control.constraints];
-    }
-    [NSLayoutConstraint deactivateConstraints:status.constraints];
-    CGFloat widestButton = 0;
-    for (NSButton *button in buttons) {
-        widestButton = MAX(widestButton, button.fittingSize.width + 8);
-    }
-    // Two columns keep long translated labels readable without creating a
-    // disproportionately wide call window. Secondary controls occupy row one.
-    BOOL twoRows = buttons.count > 2;
-    NSUInteger columns = twoRows ? 2 : MAX(buttons.count, 1);
-    CGFloat width = MAX(480, 72 + 12 * (columns - 1) + widestButton * columns);
-    view.frame = NSMakeRect(0, 0, width, twoRows ? 244 : 200);
+void AKUpdateCallPresentation(NSView *view, NSTextField *status) {
+    NSLayoutConstraint *height = objc_getAssociatedObject(view, AKCallStatusHeightKey);
+    if (height == nil) return; // Dedicated transfer sheets retain their layout.
+    CGFloat availableWidth = MAX(180, status.bounds.size.width);
+    NSRect textBounds = [status.stringValue boundingRectWithSize:NSMakeSize(availableWidth, CGFLOAT_MAX)
+                                                       options:NSStringDrawingUsesLineFragmentOrigin
+                                                    attributes:@{NSFontAttributeName:status.font}];
+    CGFloat statusHeight = MAX(14, MIN(42, ceil(textBounds.size.height)));
+    height.constant = statusHeight;
+    NSRect frame = view.frame;
+    frame.size = NSMakeSize(300, 112 + statusHeight - 14);
+    view.frame = frame;
+    status.toolTip = status.stringValue;
+}
 
-    caller.font = [NSFont systemFontOfSize:22 weight:NSFontWeightSemibold];
+void AKInstallCallPresentation(NSView *view, NSTextField *caller, NSTextField *number, NSTextField *status,
+                               NSArray<NSButton *> *buttons, NSTextField *recording,
+                               NSProgressIndicator *progress, NSTextField *duration) {
+    [NSLayoutConstraint deactivateConstraints:view.constraints];
+    for (NSView *control in buttons) [NSLayoutConstraint deactivateConstraints:control.constraints];
+    [NSLayoutConstraint deactivateConstraints:status.constraints];
+    view.frame = NSMakeRect(0, 0, 300, 112);
+
+    caller.font = [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold];
     caller.textColor = NSColor.labelColor;
     caller.lineBreakMode = NSLineBreakByTruncatingTail;
     caller.selectable = YES;
     caller.accessibilityLabel = NSLocalizedString(@"Caller", @"Call window caller label.");
-    status.font = [NSFont systemFontOfSize:13];
+    number.font = [NSFont systemFontOfSize:11];
+    number.textColor = NSColor.secondaryLabelColor;
+    number.lineBreakMode = NSLineBreakByTruncatingMiddle;
+    number.selectable = YES;
+    number.accessibilityLabel = NSLocalizedString(@"Phone number", @"Remote call number accessibility label.");
+    number.translatesAutoresizingMaskIntoConstraints = NO;
+    [view addSubview:number];
+    status.font = [NSFont systemFontOfSize:11];
     status.textColor = NSColor.secondaryLabelColor;
     status.lineBreakMode = NSLineBreakByWordWrapping;
     status.cell.wraps = YES;
     status.cell.scrollable = NO;
-    status.maximumNumberOfLines = 2;
+    status.maximumNumberOfLines = 3;
     status.selectable = YES;
     status.accessibilityLabel = NSLocalizedString(@"Call status", @"Call status accessibility label.");
 
     AKGlassControlContainer *bar = [[AKGlassControlContainer alloc] initWithFrame:NSZeroRect sidebar:NO];
     bar.translatesAutoresizingMaskIntoConstraints = NO;
+    bar.identifier = @"CallActions";
     [view addSubview:bar];
-    NSStackView *actions;
-    if (twoRows) {
-        NSStackView *firstRow = [NSStackView stackViewWithViews:[buttons subarrayWithRange:NSMakeRange(0, 2)]];
-        NSStackView *secondRow = [NSStackView stackViewWithViews:[buttons subarrayWithRange:NSMakeRange(2, buttons.count - 2)]];
-        for (NSStackView *row in @[firstRow, secondRow]) {
-            row.orientation = NSUserInterfaceLayoutOrientationHorizontal;
-            row.distribution = NSStackViewDistributionFillEqually;
-            row.spacing = 12;
-        }
-        actions = [NSStackView stackViewWithViews:@[firstRow, secondRow]];
-        actions.orientation = NSUserInterfaceLayoutOrientationVertical;
-        actions.spacing = 12;
-        [firstRow.widthAnchor constraintEqualToAnchor:actions.widthAnchor].active = YES;
-        [secondRow.widthAnchor constraintEqualToAnchor:actions.widthAnchor].active = YES;
-    } else {
-        actions = [NSStackView stackViewWithViews:buttons];
-        actions.orientation = NSUserInterfaceLayoutOrientationHorizontal;
-        actions.distribution = NSStackViewDistributionFillEqually;
-        actions.spacing = 12;
-    }
+    NSStackView *actions = [NSStackView stackViewWithViews:buttons];
+    actions.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    actions.spacing = 12;
     actions.translatesAutoresizingMaskIntoConstraints = NO;
     [bar.contentView addSubview:actions];
     for (NSButton *button in buttons) {
         button.translatesAutoresizingMaskIntoConstraints = NO;
-        [button.heightAnchor constraintEqualToConstant:32].active = YES;
+        [button.widthAnchor constraintEqualToConstant:44].active = YES;
+        [button.heightAnchor constraintEqualToConstant:44].active = YES;
     }
-
+    NSLayoutConstraint *statusHeight = [status.heightAnchor constraintEqualToConstant:14];
+    objc_setAssociatedObject(view, AKCallStatusHeightKey, statusHeight, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     NSMutableArray<NSLayoutConstraint *> *constraints = [@[
-        [caller.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:24],
-        [caller.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:-24],
-        [caller.topAnchor constraintEqualToAnchor:view.topAnchor constant:24],
+        [caller.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:16],
+        [caller.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:progress ? -40 : -16],
+        [caller.topAnchor constraintEqualToAnchor:view.topAnchor constant:8],
+        [caller.heightAnchor constraintEqualToConstant:16],
+        [number.leadingAnchor constraintEqualToAnchor:caller.leadingAnchor],
+        [number.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:recording ? -76 : -16],
+        [number.topAnchor constraintEqualToAnchor:caller.bottomAnchor constant:2],
+        [number.heightAnchor constraintEqualToConstant:14],
         [status.leadingAnchor constraintEqualToAnchor:caller.leadingAnchor],
-        [status.trailingAnchor constraintEqualToAnchor:caller.trailingAnchor],
-        [status.topAnchor constraintEqualToAnchor:caller.bottomAnchor constant:8],
-        [status.heightAnchor constraintEqualToConstant:36],
-        [bar.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:24],
-        [bar.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:-24],
-        [bar.bottomAnchor constraintEqualToAnchor:view.bottomAnchor constant:-20],
-        [bar.heightAnchor constraintEqualToConstant:twoRows ? 100 : 56],
-        [actions.leadingAnchor constraintEqualToAnchor:bar.contentView.leadingAnchor constant:12],
-        [actions.trailingAnchor constraintEqualToAnchor:bar.contentView.trailingAnchor constant:-12],
+        [status.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:duration ? -80 : -16],
+        [status.topAnchor constraintEqualToAnchor:number.bottomAnchor constant:2],
+        statusHeight,
+        [bar.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:16],
+        [bar.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:-16],
+        [bar.bottomAnchor constraintEqualToAnchor:view.bottomAnchor constant:-8],
+        [bar.heightAnchor constraintEqualToConstant:44],
+        [actions.centerXAnchor constraintEqualToAnchor:bar.contentView.centerXAnchor],
         [actions.centerYAnchor constraintEqualToAnchor:bar.contentView.centerYAnchor]
     ] mutableCopy];
     if (recording != nil) {
@@ -288,18 +298,36 @@ void AKInstallCallPresentation(NSView *view, NSTextField *caller, NSTextField *s
         recording.textColor = NSColor.systemRedColor;
         recording.accessibilityLabel = NSLocalizedString(@"Recording in progress", @"Call recording accessibility label.");
         [constraints addObjectsFromArray:@[
-            [recording.leadingAnchor constraintEqualToAnchor:caller.leadingAnchor],
-            [recording.topAnchor constraintEqualToAnchor:status.bottomAnchor constant:6]
+            [recording.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:-16],
+            [recording.centerYAnchor constraintEqualToAnchor:number.centerYAnchor],
+            [recording.widthAnchor constraintEqualToConstant:52],
+            [recording.heightAnchor constraintEqualToConstant:14]
         ]];
     }
     if (progress != nil) {
         [constraints addObjectsFromArray:@[
-            [progress.trailingAnchor constraintEqualToAnchor:caller.trailingAnchor],
-            [progress.topAnchor constraintEqualToAnchor:status.bottomAnchor constant:6],
+            [progress.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:-16],
+            [progress.centerYAnchor constraintEqualToAnchor:caller.centerYAnchor],
             [progress.widthAnchor constraintEqualToConstant:16],
             [progress.heightAnchor constraintEqualToConstant:16]
         ]];
         progress.accessibilityLabel = NSLocalizedString(@"Connecting call", @"Call progress indicator accessibility label.");
     }
+    if (duration != nil) {
+        duration.font = [NSFont monospacedDigitSystemFontOfSize:11 weight:NSFontWeightRegular];
+        duration.textColor = NSColor.secondaryLabelColor;
+        duration.alignment = NSTextAlignmentRight;
+        duration.accessibilityLabel = NSLocalizedString(@"Call duration", @"Call duration accessibility label.");
+        duration.translatesAutoresizingMaskIntoConstraints = NO;
+        [view addSubview:duration];
+        [constraints addObjectsFromArray:@[
+            [duration.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:-16],
+            [duration.topAnchor constraintEqualToAnchor:status.topAnchor],
+            [duration.widthAnchor constraintEqualToConstant:60],
+            [duration.heightAnchor constraintEqualToConstant:14]
+        ]];
+    }
     [NSLayoutConstraint activateConstraints:constraints];
+    [view layoutSubtreeIfNeeded];
+    AKUpdateCallPresentation(view, status);
 }

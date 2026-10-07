@@ -285,3 +285,266 @@
     XCTAssertEqual(call.refreshes, 0u);
 }
 @end
+
+// Load the production Call and state nibs and invoke their real actions. The
+// fixture replaces SIP, notification delivery and defaults only; layout, native
+// window chrome, bindings, controller transitions and keypad code are real.
+#import "ActiveCallViewController.h"
+#import "IncomingCallViewController.h"
+#import "EndedCallViewController.h"
+#import "AKLiquidGlass.h"
+
+@interface AKCompactAccountFixture : NSObject
+@property(nonatomic, copy) NSString *accountDescription;
+@property(nonatomic) BOOL callsShouldDisplayAccountInfo;
+@end
+@implementation AKCompactAccountFixture
+@end
+
+@interface AKCompactCallFixture : AKSIPCall
+@property(nonatomic) BOOL muted;
+@property(nonatomic) BOOL localHeld;
+@property(nonatomic) BOOL remoteHeld;
+@property(nonatomic) NSUInteger answers;
+@property(nonatomic) NSUInteger hangups;
+@property(nonatomic) NSUInteger recordingStops;
+@property(nonatomic, strong) NSMutableString *sentDigits;
+@end
+@implementation AKCompactCallFixture
+- (instancetype)init { if ((self = [super init])) _sentDigits = [NSMutableString new]; return self; }
+- (BOOL)isActive { return self.state == kAKSIPCallConfirmedState; }
+- (BOOL)isRecording { return NO; }
+- (BOOL)isMissed { return NO; }
+- (BOOL)isIncoming { return self.state == kAKSIPCallIncomingState; }
+- (BOOL)isMicrophoneMuted { return self.muted; }
+- (BOOL)isOnLocalHold { return self.localHeld; }
+- (BOOL)isOnRemoteHold { return self.remoteHeld; }
+- (void)answer { self.answers++; }
+- (void)hangUp { self.hangups++; }
+- (void)stopRecording { self.recordingStops++; }
+- (void)toggleMicrophoneMute { self.muted = !self.muted; }
+- (void)toggleHold { self.localHeld = !self.localHeld; }
+- (void)sendDTMFDigits:(NSString *)digits { [self.sentDigits appendString:digits]; }
+@end
+
+@interface AKCompactCallController : CallController
+@end
+@implementation AKCompactCallController
+- (void)removeUserNotification {}
+- (void)removeOrShowUserNotificationOnDisconnectIfNeeded {}
+@end
+
+@interface ActiveCallViewController (CompactCardTests)
+- (void)prepareKeypad;
+- (void)refreshVisibleCallControls;
+@end
+
+@interface CallController (CompactCardTests)
+- (void)showActiveCallView;
+@end
+
+@interface CompactCallCardTests : XCTestCase
+@property(nonatomic) AKCompactCallController *controller;
+@property(nonatomic) AKCompactCallFixture *call;
+@property(nonatomic) AKCompactAccountFixture *account;
+@property(nonatomic) NSUserDefaults *defaults;
+@property(nonatomic) NSString *defaultsSuite;
+@end
+
+@implementation CompactCallCardTests
+- (void)setUp {
+    [super setUp];
+    self.defaultsSuite = [@"test.telephone.compact-call." stringByAppendingString:NSUUID.UUID.UUIDString];
+    self.defaults = [[NSUserDefaults alloc] initWithSuiteName:self.defaultsSuite];
+    self.account = [AKCompactAccountFixture new];
+    self.account.accountDescription = @"Personal";
+    self.account.callsShouldDisplayAccountInfo = YES;
+    self.controller = [[AKCompactCallController alloc] initWithWindowNibName:@"Call"
+        accountController:(AccountController *)self.account userAgent:nil delegate:nil];
+    [self.controller setValue:self.defaults forKey:@"defaults"];
+    self.controller.title = @"020 7946 0123";
+    self.controller.displayedName = @"Alex Morgan";
+    self.call = [AKCompactCallFixture new];
+    self.call.state = kAKSIPCallConfirmedState;
+    self.controller.call = self.call;
+    self.controller.window.releasedWhenClosed = NO;
+}
+- (void)tearDown {
+    self.controller.callActive = NO;
+    [self.controller.activeCallViewController stopCallTimer];
+    [self.controller.window close];
+    self.controller = nil;
+    self.call = nil;
+    [self.defaults removePersistentDomainForName:self.defaultsSuite];
+    [super tearDown];
+}
+- (NSButton *)buttonWithAction:(SEL)action inView:(NSView *)view {
+    if ([view isKindOfClass:NSButton.class] && [(NSButton *)view action] == action) return (NSButton *)view;
+    for (NSView *child in view.subviews) {
+        NSButton *button = [self buttonWithAction:action inView:child];
+        if (button != nil) return button;
+    }
+    return nil;
+}
+- (void)assertCompactView:(NSView *)view actionCount:(NSUInteger)count {
+    [self.controller.window.contentView layoutSubtreeIfNeeded];
+    XCTAssertEqualWithAccuracy(view.frame.size.width, 300, 0.1);
+    XCTAssertEqualWithAccuracy(view.frame.size.height, 112, 0.1);
+    XCTAssertEqualWithAccuracy(self.controller.window.contentView.frame.size.height, 112, 0.1);
+    NSRect expected = [self.controller.window frameRectForContentRect:NSMakeRect(0, 0, 300, 112)];
+    XCTAssertEqualWithAccuracy(self.controller.window.frame.size.height, expected.size.height, 0.1);
+    XCTAssertEqualWithAccuracy([self.controller.window contentBorderThicknessForEdge:NSMinYEdge], 0, 0.1);
+    XCTAssertFalse((self.controller.window.styleMask & NSWindowStyleMaskFullSizeContentView) != 0);
+    XCTAssertNotNil([self.controller.window standardWindowButton:NSWindowCloseButton]);
+    AKGlassControlContainer *bar = nil;
+    for (NSView *child in view.subviews) if ([child isKindOfClass:AKGlassControlContainer.class]) bar = (id)child;
+    XCTAssertNotNil(bar);
+    NSStackView *stack = (id)bar.contentView.subviews.firstObject;
+    XCTAssertEqual(stack.arrangedSubviews.count, count);
+    CGFloat previousRight = -CGFLOAT_MAX;
+    for (NSButton *button in stack.arrangedSubviews) {
+        XCTAssertEqualWithAccuracy(button.frame.size.width, 44, 0.1);
+        XCTAssertEqualWithAccuracy(button.frame.size.height, 44, 0.1);
+        XCTAssertEqual(button.imagePosition, NSImageOnly);
+        XCTAssertNotNil(button.image);
+        XCTAssertGreaterThan(button.toolTip.length, 0u);
+        XCTAssertEqualObjects(button.toolTip, button.accessibilityLabel);
+        NSRect frame = [button convertRect:button.bounds toView:view];
+        XCTAssertTrue(NSContainsRect(view.bounds, frame));
+        XCTAssertGreaterThanOrEqual(frame.origin.x - previousRight, 11.9);
+        previousRight = NSMaxX(frame);
+    }
+}
+- (void)testActualStateNibsKeepCompactGeometryAndAccountBinding {
+    self.controller.status = @"00:12";
+    [self.controller showActiveCallView];
+    [self.controller.activeCallViewController showHangUp];
+    [self assertCompactView:self.controller.activeCallViewController.view actionCount:5];
+    XCTAssertEqualObjects(self.controller.window.title, @"Personal");
+    XCTAssertEqualObjects([[self.controller.activeCallViewController valueForKey:@"numberField"] stringValue], @"020 7946 0123");
+    XCTAssertEqualObjects([[self.controller.activeCallViewController valueForKey:@"statusField"] stringValue], NSLocalizedString(@"Connected", nil));
+    self.account.accountDescription = @"Work";
+    XCTAssertEqualObjects(self.controller.window.title, @"Work");
+    self.account.callsShouldDisplayAccountInfo = NO;
+    XCTAssertEqualObjects(self.controller.window.title, @"020 7946 0123");
+    self.controller.status = @"incoming call";
+    [self.controller showIncomingCallView];
+    [self assertCompactView:self.controller.incomingCallViewController.view actionCount:2];
+    self.controller.status = @"call ended";
+    [self.controller showEndedCallView];
+    [self assertCompactView:self.controller.endedCallViewController.view actionCount:1];
+}
+- (void)testLongErrorExpandsThenOrdinaryStatusRestoresSmallBody {
+    [self.controller showActiveCallView];
+    self.controller.status = @"The remote telephone could not be reached. Please check the number and try the call again.";
+    [self.controller.window.contentView layoutSubtreeIfNeeded];
+    NSView *view = self.controller.activeCallViewController.view;
+    NSTextField *status = [self.controller.activeCallViewController valueForKey:@"statusField"];
+    XCTAssertGreaterThan(view.frame.size.height, 112);
+    XCTAssertLessThanOrEqual(view.frame.size.height, 140);
+    XCTAssertEqualWithAccuracy(self.controller.window.contentView.frame.size.height, view.frame.size.height, 0.1);
+    XCTAssertEqualWithAccuracy(view.frame.origin.y, 0, 0.1);
+    XCTAssertTrue(NSContainsRect(view.bounds, status.frame));
+    XCTAssertEqualObjects(status.toolTip, self.controller.status);
+    self.controller.status = @"00:12";
+    [self assertCompactView:view actionCount:5];
+}
+- (void)testConnectingAndConfirmedControlsUseExistingCallValidation {
+    [self.controller prepareForCall];
+    self.call.state = kAKSIPCallCallingState;
+    [self.controller.activeCallViewController refreshVisibleCallControls];
+    NSView *view = self.controller.activeCallViewController.view;
+    for (NSString *action in @[@"toggleMicrophoneMute:", @"toggleCallHold:", @"showCallTransferSheet:", @"showKeypad:"]) {
+        XCTAssertFalse([self buttonWithAction:NSSelectorFromString(action) inView:view].enabled);
+    }
+    NSButton *end = [self buttonWithAction:@selector(hangUpCall:) inView:view];
+    XCTAssertFalse(end.hidden);
+    XCTAssertFalse(end.enabled);
+    XCTAssertFalse([[self.controller.activeCallViewController valueForKey:@"callProgressIndicator"] isHidden]);
+    self.call.state = kAKSIPCallConfirmedState;
+    [self.controller.activeCallViewController allowHangUp];
+    [self.controller.activeCallViewController showHangUp];
+    [self.controller.activeCallViewController refreshVisibleCallControls];
+    XCTAssertTrue(end.enabled);
+    NSButton *mute = [self buttonWithAction:@selector(toggleMicrophoneMute:) inView:view];
+    [mute performClick:nil];
+    XCTAssertTrue(self.call.muted);
+    XCTAssertEqualObjects(mute.accessibilityLabel, NSLocalizedString(@"Unmute", nil));
+    XCTAssertEqualObjects(mute.accessibilityValue, @YES);
+    NSButton *hold = [self buttonWithAction:@selector(toggleCallHold:) inView:view];
+    [hold performClick:nil];
+    XCTAssertTrue(self.call.localHeld);
+    XCTAssertEqualObjects(hold.accessibilityLabel, NSLocalizedString(@"Resume", nil));
+    self.call.remoteHeld = YES;
+    [self.controller.activeCallViewController refreshVisibleCallControls];
+    XCTAssertFalse(hold.enabled);
+    XCTAssertFalse([self buttonWithAction:@selector(showCallTransferSheet:) inView:view].enabled);
+}
+- (void)testKeypadAndPhysicalExtendedDTMFUseSameRealHandler {
+    [self.controller showActiveCallView];
+    ActiveCallViewController *active = self.controller.activeCallViewController;
+    [active prepareKeypad];
+    NSPopover *popover = [active valueForKey:@"keypadPopover"];
+    XCTAssertEqual(popover.behavior, NSPopoverBehaviorTransient);
+    XCTAssertEqualWithAccuracy(popover.contentViewController.view.frame.size.width, 180, 0.1);
+    NSUInteger digits = 0;
+    for (NSView *child in popover.contentViewController.view.subviews) {
+        if (![child isKindOfClass:NSButton.class]) continue;
+        NSButton *button = (id)child;
+        XCTAssertEqualWithAccuracy(button.frame.size.width, 44, 0.1);
+        XCTAssertEqualWithAccuracy(button.frame.size.height, 44, 0.1);
+        [button performClick:nil];
+        digits++;
+    }
+    XCTAssertEqual(digits, 12u);
+    XCTAssertEqualObjects(self.call.sentDigits, @"123456789*0#");
+    [active activeCallView:(AKActiveCallView *)active.view didReceiveText:@"ABCDRabcdr"];
+    XCTAssertEqualObjects(self.call.sentDigits, @"123456789*0#ABCDRabcdr");
+    XCTAssertEqualObjects(self.controller.displayedName, self.call.sentDigits);
+    XCTAssertEqualObjects([[active valueForKey:@"keypadDigitsField"] stringValue], self.call.sentDigits);
+    XCTAssertEqualObjects(self.controller.window.title, @"Personal");
+    [active activeCallView:(AKActiveCallView *)active.view didReceiveText:@"invalid!"];
+    XCTAssertEqualObjects(self.controller.displayedName, self.call.sentDigits);
+    self.call.state = kAKSIPCallDisconnectedState;
+    for (NSView *child in popover.contentViewController.view.subviews) {
+        if ([child isKindOfClass:NSButton.class]) [(NSButton *)child performClick:nil];
+    }
+    XCTAssertEqualObjects(self.call.sentDigits, @"123456789*0#ABCDRabcdr");
+}
+- (void)testIncomingButtonsAndNativeCloseRetainSIPActions {
+    self.call.state = kAKSIPCallIncomingState;
+    [self.controller showIncomingCallView];
+    [self.controller.incomingCallViewController.acceptCallButton performClick:nil];
+    XCTAssertEqual(self.call.answers, 1u);
+    [self.controller.incomingCallViewController.declineCallButton performClick:nil];
+    XCTAssertEqual(self.call.hangups, 1u);
+    [self assertCompactView:self.controller.endedCallViewController.view actionCount:1];
+    self.call.state = kAKSIPCallConfirmedState;
+    self.controller.callActive = YES;
+    [self.controller showActiveCallView];
+    self.controller.window.styleMask |= NSWindowStyleMaskClosable;
+    [self.controller.window setFrameOrigin:NSMakePoint(-10000, -10000)];
+    [self.controller.window orderFront:nil];
+    [[self.controller.window standardWindowButton:NSWindowCloseButton] performClick:nil];
+    XCTAssertFalse(self.controller.window.visible);
+    XCTAssertFalse(self.controller.isCallActive);
+    XCTAssertEqual(self.call.hangups, 2u);
+    XCTAssertNil(self.call.delegate);
+    XCTAssertNil(self.controller.activeCallViewController.callTimer);
+}
+- (void)testDisconnectRetainsOneSecondCallBackGuard {
+    [self.controller showActiveCallView];
+    self.controller.callActive = YES;
+    self.call.state = kAKSIPCallDisconnectedState;
+    self.call.lastStatus = PJSIP_SC_OK;
+    [self.controller SIPCallDidDisconnect:[NSNotification notificationWithName:@"test" object:self.call]];
+    XCTAssertFalse(self.controller.endedCallViewController.redialButton.enabled);
+    [self assertCompactView:self.controller.endedCallViewController.view actionCount:1];
+    XCTestExpectation *reenabled = [self expectationWithDescription:@"original redial delay"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        XCTAssertTrue(self.controller.endedCallViewController.redialButton.enabled);
+        [reenabled fulfill];
+    });
+    [self waitForExpectations:@[reenabled] timeout:3];
+}
+@end

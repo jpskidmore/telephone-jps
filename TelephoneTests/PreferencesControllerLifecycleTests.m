@@ -1,6 +1,9 @@
 #import <XCTest/XCTest.h>
 
 #import "GeneralPreferencesViewController.h"
+#import "AccountPreferencesViewController.h"
+#import "NetworkPreferencesViewController.h"
+#import "SoundPreferencesViewController.h"
 #import "AKLiquidGlass.h"
 #import "PreferencesController.h"
 
@@ -12,6 +15,30 @@
 @end
 
 @implementation PreferencesControllerLifecycleTests
+
+- (void)assertControlsFitInsideView:(NSView *)view {
+    XCTAssertFalse(view.hasAmbiguousLayout);
+    for (NSView *subview in view.subviews) {
+        if ([subview isKindOfClass:NSControl.class] ||
+            [subview isKindOfClass:NSScrollView.class] ||
+            [subview isKindOfClass:NSTabView.class]) {
+            // AppKit control frames can extend beyond their alignment rect by
+            // a few points for native borders and focus rings.
+            XCTAssertTrue(NSContainsRect(NSInsetRect(view.bounds, -3, -3), subview.frame),
+                          @"%@ exceeds pane bounds: %@", subview.class, NSStringFromRect(subview.frame));
+        }
+        if ([subview isKindOfClass:NSTabView.class]) {
+            NSTabView *tabs = (NSTabView *)subview;
+            NSTabViewItem *selected = tabs.selectedTabViewItem;
+            for (NSTabViewItem *item in tabs.tabViewItems) {
+                [tabs selectTabViewItem:item];
+                [item.view layoutSubtreeIfNeeded];
+                [self assertControlsFitInsideView:item.view];
+            }
+            [tabs selectTabViewItem:selected];
+        }
+    }
+}
 
 - (void)testInitialSettingsWindowLoadsItsSidebarAndGeneralForm {
     // Use the production window and General nibs. No SIP/audio dependencies are
@@ -30,14 +57,28 @@
     XCTAssertEqual(sidebar.numberOfRows, 4);
     XCTAssertEqual(sidebar.selectedRow, 0);
     NSTableCellView *generalRow = [sidebar viewAtColumn:0 row:0 makeIfNecessary:YES];
-    XCTAssertEqualObjects(generalRow.textField.stringValue, controller.generalToolbarItem.label);
+    // Icon-only navigation still exposes each section's native name to
+    // VoiceOver and pointer users, without consuming a text column.
+    XCTAssertNil(generalRow.textField);
+    XCTAssertNotNil(generalRow.imageView.image);
+    XCTAssertEqualObjects(generalRow.accessibilityLabel, controller.generalToolbarItem.label);
+    XCTAssertEqualObjects(generalRow.toolTip, controller.generalToolbarItem.label);
 
     NSView *form = controller.generalPreferencesViewController.view;
     XCTAssertEqual(form.window, window);
     XCTAssertGreaterThan(form.subviews.count, 5);
     XCTAssertGreaterThan(form.frame.size.width, 100);
     XCTAssertGreaterThan(form.frame.size.height, 100);
-    XCTAssertEqualObjects(window.title, NSLocalizedString(@"Settings", @"Settings window title."));
+    XCTAssertEqualObjects(window.title, controller.generalPreferencesViewController.title);
+    // The rail occupies only 44 logical points, and the selected pane controls
+    // the content height. Compare content geometry, allowing native titlebar
+    // height to vary between supported macOS versions.
+    XCTAssertEqualWithAccuracy(sidebar.enclosingScrollView.frame.size.width, 44, 0.5);
+    XCTAssertEqualWithAccuracy(window.contentView.frame.size.width, form.frame.size.width + 44, 0.5);
+    XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, form.frame.size.height, 0.5);
+    XCTAssertLessThanOrEqual(form.frame.size.height, 240);
+    XCTAssertFalse(form.hasAmbiguousLayout);
+    [self assertControlsFitInsideView:form];
     XCTAssertTrue([window.contentView isKindOfClass:[AKWindowMaterialView class]]);
     AKWindowMaterialView *backdrop = (AKWindowMaterialView *)window.contentView;
     BOOL reduced = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceTransparency;
@@ -68,6 +109,48 @@
     // the titlebar's clickable area even when the content material is clear.
     XCTAssertLessThanOrEqual(NSMaxY([form convertRect:form.bounds toView:nil]),
                              NSMinY([closeButton convertRect:closeButton.bounds toView:nil]));
+}
+
+- (void)testEachProductionPaneFitsAndWindowShrinksBackToGeneral {
+    // Registration-domain defaults do not write settings to disk. Empty
+    // network strings let the production nib initialize without a SIP agent.
+    [NSUserDefaults.standardUserDefaults registerDefaults:@{
+        @"STUNServerHost": @"", @"OutboundProxyHost": @"",
+        @"RingingSound": @"", @"Accounts": @[]
+    }];
+    PreferencesController *controller = [[PreferencesController alloc] initWithWindowNibName:@"Preferences"];
+    NSWindow *window = controller.window;
+    [window setFrameOrigin:NSMakePoint(-20000, -20000)];
+    CGFloat generalHeight = window.contentView.frame.size.height;
+    NSArray<NSToolbarItem *> *sections = @[
+        controller.accountsToolbarItem, controller.soundToolbarItem,
+        controller.networkToolbarItem, controller.generalToolbarItem
+    ];
+    for (NSToolbarItem *section in sections) {
+        XCTAssertNoThrow([controller changeView:section]);
+        [window.contentView layoutSubtreeIfNeeded];
+        NSViewController *pane = [controller valueForKey:@"selectedSettingsController"];
+        XCTAssertEqual(pane.view.window, window);
+        XCTAssertEqualObjects(window.title, pane.title);
+        XCTAssertEqualWithAccuracy(window.contentView.frame.size.width, pane.view.frame.size.width + 44, 0.5);
+        XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, pane.view.frame.size.height, 0.5);
+        [self assertControlsFitInsideView:pane.view];
+    }
+    XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, generalHeight, 0.5);
+    // These controls are easy to lose when compacting the pane: retain the
+    // native account tabs/list, four independent audio selectors, recording
+    // format/folder controls, and both network host/port pairs.
+    XCTAssertNotNil(controller.accountPreferencesViewController.accountsTable);
+    NSPopUpButton *format = [controller.generalPreferencesViewController valueForKey:@"recordingFormatPopUpButton"];
+    XCTAssertEqual(format.numberOfItems, 3);
+    XCTAssertNotNil([controller.generalPreferencesViewController valueForKey:@"recordingFolderPathField"]);
+    for (NSString *key in @[@"soundInputPopUp", @"soundOutputPopUp", @"ringtoneOutputPopUp", @"ringtonePopUp"]) {
+        XCTAssertNotNil([controller.soundPreferencesViewController valueForKey:key]);
+    }
+    XCTAssertNotNil(controller.networkPreferencesViewController.STUNServerHostField);
+    XCTAssertNotNil(controller.networkPreferencesViewController.STUNServerPortField);
+    XCTAssertNotNil(controller.networkPreferencesViewController.outboundProxyHostField);
+    XCTAssertNotNil(controller.networkPreferencesViewController.outboundProxyPortField);
 }
 
 - (void)testNativeCloseControlClosesAndReopensSettings {

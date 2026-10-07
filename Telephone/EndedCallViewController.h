@@ -42,6 +42,7 @@
 - (instancetype)initWithNibName:(NSString *)nibName callController:(CallController *)callController;
 
 - (void)removeObservations;
+- (void)refreshPresentation;
 
 // Redials a call.
 - (IBAction)redial:(id)sender;

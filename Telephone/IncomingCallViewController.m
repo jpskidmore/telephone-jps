@@ -27,6 +27,7 @@
 
 @property(nonatomic, weak) IBOutlet NSTextField *displayedNameField;
 @property(nonatomic, weak) IBOutlet NSTextField *statusField;
+@property(nonatomic) NSTextField *numberField;
 
 @end
 
@@ -51,14 +52,25 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    AKStyleCallButton(self.declineCallButton, NSLocalizedString(@"Decline", @"Decline. Call menu item."), @"phone.down", YES);
-    AKStyleCallButton(self.acceptCallButton, NSLocalizedString(@"Answer", @"Answer call button."), @"phone", NO);
+    AKStyleCallButton(self.declineCallButton, NSLocalizedString(@"Decline", @"Decline. Call menu item."), @"phone.down.fill", YES);
+    AKStyleCallButton(self.acceptCallButton, NSLocalizedString(@"Answer", @"Answer call button."), @"phone.fill", NO);
     self.acceptCallButton.bezelColor = NSColor.controlAccentColor;
-    AKInstallCallPresentation(self.view, self.displayedNameField, self.statusField,
-                              @[self.declineCallButton, self.acceptCallButton], nil, nil);
+    self.numberField = [NSTextField labelWithString:@""];
+    [self.numberField bind:NSValueBinding toObject:self withKeyPath:@"callController.title" options:nil];
+    AKInstallCallPresentation(self.view, self.displayedNameField, self.numberField, self.statusField,
+                              @[self.declineCallButton, self.acceptCallButton], nil, nil, nil);
+    [self refreshPresentation];
+}
+
+- (void)refreshPresentation {
+    self.statusField.stringValue = self.callController.presentationStatus;
+    self.numberField.toolTip = self.callController.title;
+    self.displayedNameField.toolTip = self.callController.displayedName;
+    AKUpdateCallPresentation(self.view, self.statusField);
 }
 
 - (void)removeObservations {
+    [self.numberField unbind:NSValueBinding];
     [[self displayedNameField] unbind:NSValueBinding];
     [[self statusField] unbind:NSValueBinding];
 }

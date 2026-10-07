@@ -170,7 +170,7 @@
     // attached. Suppress navigation until the complete detail hierarchy exists.
     self.updatingSidebarSelection = YES;
     self.settingsContainerController = [[NSViewController alloc] init];
-    AKWindowMaterialView *container = [[AKWindowMaterialView alloc] initWithFrame:NSMakeRect(0, 0, 708, 360)];
+    AKWindowMaterialView *container = [[AKWindowMaterialView alloc] initWithFrame:NSMakeRect(0, 0, 492, 206)];
     container.usesOpaqueTitlebarBackground = YES;
     self.settingsContainerController.view = container;
     self.contentViewController = self.settingsContainerController;
@@ -178,12 +178,6 @@
     AKGlassControlContainer *sidebar = [[AKGlassControlContainer alloc] initWithFrame:NSZeroRect sidebar:YES];
     sidebar.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:sidebar];
-    NSTextField *heading = [NSTextField labelWithString:NSLocalizedString(@"Settings", @"Settings sidebar heading.")];
-    heading.font = [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold];
-    heading.textColor = NSColor.secondaryLabelColor;
-    heading.translatesAutoresizingMaskIntoConstraints = NO;
-    [sidebar.contentView addSubview:heading];
-
     NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSZeroRect];
     scroll.drawsBackground = NO;
     scroll.borderType = NSNoBorder;
@@ -195,7 +189,9 @@
     [self.settingsSidebar addTableColumn:column];
     self.settingsSidebar.headerView = nil;
     self.settingsSidebar.style = NSTableViewStyleSourceList;
-    self.settingsSidebar.rowSizeStyle = NSTableViewRowSizeStyleDefault;
+    self.settingsSidebar.rowSizeStyle = NSTableViewRowSizeStyleCustom;
+    self.settingsSidebar.rowHeight = 36;
+    self.settingsSidebar.intercellSpacing = NSMakeSize(0, 4);
     self.settingsSidebar.backgroundColor = NSColor.clearColor;
     self.settingsSidebar.allowsEmptySelection = NO;
     self.settingsSidebar.allowsMultipleSelection = NO;
@@ -209,18 +205,15 @@
     [container addSubview:self.settingsDetailView];
     NSLayoutGuide *contentGuide = self.window.contentLayoutGuide;
     [NSLayoutConstraint activateConstraints:@[
-        [sidebar.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:12],
-        [sidebar.topAnchor constraintEqualToAnchor:contentGuide.topAnchor constant:12],
-        [sidebar.bottomAnchor constraintEqualToAnchor:container.bottomAnchor constant:-12],
-        [sidebar.widthAnchor constraintEqualToConstant:176],
-        [heading.leadingAnchor constraintEqualToAnchor:sidebar.contentView.leadingAnchor constant:16],
-        [heading.topAnchor constraintEqualToAnchor:sidebar.contentView.topAnchor constant:16],
-        [heading.trailingAnchor constraintLessThanOrEqualToAnchor:sidebar.contentView.trailingAnchor constant:-16],
-        [scroll.leadingAnchor constraintEqualToAnchor:sidebar.contentView.leadingAnchor constant:6],
-        [scroll.trailingAnchor constraintEqualToAnchor:sidebar.contentView.trailingAnchor constant:-6],
-        [scroll.topAnchor constraintEqualToAnchor:heading.bottomAnchor constant:10],
-        [scroll.bottomAnchor constraintEqualToAnchor:sidebar.contentView.bottomAnchor constant:-12],
-        [self.settingsDetailView.leadingAnchor constraintEqualToAnchor:sidebar.trailingAnchor constant:12],
+        [sidebar.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [sidebar.topAnchor constraintEqualToAnchor:contentGuide.topAnchor],
+        [sidebar.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
+        [sidebar.widthAnchor constraintEqualToConstant:44],
+        [scroll.leadingAnchor constraintEqualToAnchor:sidebar.contentView.leadingAnchor],
+        [scroll.trailingAnchor constraintEqualToAnchor:sidebar.contentView.trailingAnchor],
+        [scroll.topAnchor constraintEqualToAnchor:sidebar.contentView.topAnchor constant:8],
+        [scroll.bottomAnchor constraintEqualToAnchor:sidebar.contentView.bottomAnchor constant:-8],
+        [self.settingsDetailView.leadingAnchor constraintEqualToAnchor:sidebar.trailingAnchor],
         [self.settingsDetailView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
         [self.settingsDetailView.topAnchor constraintEqualToAnchor:contentGuide.topAnchor],
         [self.settingsDetailView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor]
@@ -232,7 +225,11 @@
 }
 
 - (void)displaySettingsController:(NSViewController *)controller animate:(BOOL)animate {
-    NSSize paneSize = controller.view.frame.size;
+    // The nib specifies a compact minimum, while intrinsic label sizes allow
+    // translated text to widen the pane without clipping native controls.
+    NSSize paneSize = controller.view.fittingSize;
+    paneSize.width = ceil(paneSize.width);
+    paneSize.height = MAX(176, ceil(paneSize.height));
     if (self.selectedSettingsController != controller) {
         [NSLayoutConstraint deactivateConstraints:self.settingsPaneConstraints ?: @[]];
         [self.selectedSettingsController.view removeFromSuperview];
@@ -250,14 +247,14 @@
         [NSLayoutConstraint activateConstraints:self.settingsPaneConstraints];
     }
     // Resize without the legacy helper, which replaces window.contentView.
-    NSSize contentSize = NSMakeSize(paneSize.width + 200, MAX(paneSize.height, 360));
+    NSSize contentSize = NSMakeSize(paneSize.width + 44, paneSize.height);
     NSRect frame = self.window.frame;
     CGFloat heightDelta = contentSize.height - self.window.contentView.frame.size.height;
     frame.size.width += contentSize.width - self.window.contentView.frame.size.width;
     frame.size.height += heightDelta;
     frame.origin.y -= heightDelta;
     [self.window setFrame:frame display:YES animate:animate && !NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion];
-    self.window.title = NSLocalizedString(@"Settings", @"Settings window title.");
+    self.window.title = controller.title ?: NSLocalizedString(@"Settings", @"Settings window title.");
     [self.window recalculateKeyViewLoop];
 }
 
@@ -284,26 +281,21 @@
         image.translatesAutoresizingMaskIntoConstraints = NO;
         image.contentTintColor = NSColor.controlAccentColor;
         image.accessibilityElement = NO;
-        NSTextField *label = [NSTextField labelWithString:@""];
-        label.font = [NSFont systemFontOfSize:NSFont.systemFontSize];
-        label.translatesAutoresizingMaskIntoConstraints = NO;
         [cell addSubview:image];
-        [cell addSubview:label];
         cell.imageView = image;
-        cell.textField = label;
         [NSLayoutConstraint activateConstraints:@[
-            [image.leadingAnchor constraintEqualToAnchor:cell.leadingAnchor constant:8],
+            [image.centerXAnchor constraintEqualToAnchor:cell.centerXAnchor],
             [image.widthAnchor constraintEqualToConstant:18],
             [image.heightAnchor constraintEqualToConstant:18],
-            [image.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor],
-            [label.leadingAnchor constraintEqualToAnchor:image.trailingAnchor constant:8],
-            [label.trailingAnchor constraintEqualToAnchor:cell.trailingAnchor constant:-8],
-            [label.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor]
+            [image.centerYAnchor constraintEqualToAnchor:cell.centerYAnchor]
         ]];
     }
     NSToolbarItem *item = self.settingsItems[row];
-    cell.textField.stringValue = item.label;
     cell.imageView.image = item.image;
+    cell.toolTip = item.label;
+    cell.accessibilityElement = YES;
+    cell.accessibilityRole = NSAccessibilityCellRole;
+    cell.accessibilityLabel = item.label;
     return cell;
 }
 
