@@ -161,7 +161,10 @@ static NSMenuItem *MenuItemWithAction(NSMenu *menu, SEL action);
     // Rounded popups do not apply NSButton's borderless content tint. Give
     // the symbol its semantic colour directly and keep native template
     // rendering from replacing that colour with the control's foreground.
-    image = [image imageWithSymbolConfiguration:[NSImageSymbolConfiguration configurationWithPaletteColors:@[color]]];
+    // Filled status symbols use a white foreground mark over the semantic
+    // circle colour. A single palette colour also fills the check/cross.
+    NSArray<NSColor *> *palette = [symbol hasSuffix:@".circle.fill"] ? @[NSColor.whiteColor, color] : @[color];
+    image = [image imageWithSymbolConfiguration:[NSImageSymbolConfiguration configurationWithPaletteColors:palette]];
     image.template = NO;
     image.size = NSMakeSize(16, 16);
     // A pull-down draws its first item's image. Using its native image keeps

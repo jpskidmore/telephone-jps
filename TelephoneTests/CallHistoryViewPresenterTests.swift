@@ -359,6 +359,7 @@ final class AvailabilityStatusRenderingTests: XCTestCase {
         defer { window.close() }
         for name in [NSAppearance.Name.aqua, .darkAqua] {
             window.appearance = NSAppearance(named: name)
+            var marks = [Set<Int>]()
             for (action, title, colour) in [
                 ("showAvailableState", "Available", NSColor.systemGreen),
                 ("showOfflineState", "Offline", NSColor.systemRed)
@@ -373,7 +374,12 @@ final class AvailabilityStatusRenderingTests: XCTestCase {
                 XCTAssertGreaterThan(try pixelCount(matching: colour, in: popup, appearance: window.appearance!), 20,
                                      "Actual rounded popup must draw \(title) in \(name)")
                 XCTAssertEqual(popup.frame.size, NSSize(width: 44, height: 44))
+                let mark = try foregroundMark(in: popup, appearance: window.appearance!)
+                XCTAssertGreaterThan(mark.count, 4, "\(title) must retain its contrasting mark inside the coloured circle in \(name)")
+                marks.append(mark)
             }
+            XCTAssertGreaterThan(marks[0].symmetricDifference(marks[1]).count, 8,
+                                 "Online checkmark and offline cross must remain distinguishable in \(name)")
         }
     }
 
@@ -458,5 +464,28 @@ final class AvailabilityStatusRenderingTests: XCTestCase {
             }
         }
         return count
+    }
+
+    private func foregroundMark(in popup: NSPopUpButton, appearance: NSAppearance) throws -> Set<Int> {
+        let image = try XCTUnwrap(popup.bitmapImageRepForCachingDisplay(in: popup.bounds))
+        appearance.performAsCurrentDrawingAppearance { popup.cacheDisplay(in: popup.bounds, to: image) }
+        let glyph = try XCTUnwrap(popup.cell).imageRect(forBounds: popup.bounds)
+        // Inspect only the inner circle: the bezel and the light background
+        // beyond the circle cannot masquerade as the contrasting check/cross.
+        let inner = glyph.insetBy(dx: glyph.width * 0.25, dy: glyph.height * 0.25)
+        let sx = CGFloat(image.pixelsWide) / popup.bounds.width
+        let sy = CGFloat(image.pixelsHigh) / popup.bounds.height
+        let xs = max(0, Int(floor(inner.minX * sx)))..<min(image.pixelsWide, Int(ceil(inner.maxX * sx)))
+        let ys = max(0, Int(floor(inner.minY * sy)))..<min(image.pixelsHigh, Int(ceil(inner.maxY * sy)))
+        var mark = Set<Int>()
+        for y in ys {
+            for x in xs {
+                guard let pixel = image.colorAt(x: x, y: y)?.usingColorSpace(.sRGB), pixel.alphaComponent > 0.7 else { continue }
+                if min(pixel.redComponent, pixel.greenComponent, pixel.blueComponent) > 0.85 {
+                    mark.insert(y * image.pixelsWide + x)
+                }
+            }
+        }
+        return mark
     }
 }
