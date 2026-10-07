@@ -45,7 +45,7 @@
                         <binding destination="-2" name="value" keyPath="callController.displayedName" id="133"/>
                     </connections>
                 </textField>
-                <button toolTip="Call Back" translatesAutoresizingMaskIntoConstraints="NO" id="128">
+                <button toolTip="Call Back" translatesAutoresizingMaskIntoConstraints="NO" customClass="AKCallActionButton" id="128">
                     <rect key="frame" x="265" y="44" width="15" height="21"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="15" id="EY1-Q3-fIf"/>

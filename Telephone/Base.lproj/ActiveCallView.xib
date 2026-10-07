@@ -47,7 +47,7 @@
                 <progressIndicator horizontalHuggingPriority="750" verticalHuggingPriority="750" minValue="16" maxValue="100" doubleValue="16" displayedWhenStopped="NO" bezeled="NO" indeterminate="YES" controlSize="small" style="spinning" translatesAutoresizingMaskIntoConstraints="NO" id="57">
                     <rect key="frame" x="264" y="47" width="16" height="16"/>
                 </progressIndicator>
-                <button hidden="YES" toolTip="End Call" translatesAutoresizingMaskIntoConstraints="NO" id="122" userLabel="Hang Up Button">
+                <button hidden="YES" toolTip="End Call" translatesAutoresizingMaskIntoConstraints="NO" customClass="AKCallActionButton" id="122" userLabel="Hang Up Button">
                     <rect key="frame" x="265" y="44" width="15" height="21"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="15" id="Kcw-oG-dKT"/>

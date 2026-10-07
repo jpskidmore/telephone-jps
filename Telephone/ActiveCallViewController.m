@@ -70,15 +70,18 @@
     if (![self.nibName isEqualToString:@"ActiveCallView"]) {
         return;
     }
-    NSButton *mute = [NSButton buttonWithTitle:@"" target:self action:@selector(toggleMicrophoneMute:)];
-    NSButton *hold = [NSButton buttonWithTitle:@"" target:self action:@selector(toggleCallHold:)];
-    NSButton *transfer = [NSButton buttonWithTitle:@"" target:self action:@selector(showCallTransferSheet:)];
-    NSButton *keypad = [NSButton buttonWithTitle:@"" target:self action:@selector(showKeypad:)];
+    NSButton *mute = [AKCallActionButton buttonWithTitle:@"" target:self action:@selector(toggleMicrophoneMute:)];
+    NSButton *hold = [AKCallActionButton buttonWithTitle:@"" target:self action:@selector(toggleCallHold:)];
+    NSButton *transfer = [AKCallActionButton buttonWithTitle:@"" target:self action:@selector(showCallTransferSheet:)];
+    NSButton *keypad = [AKCallActionButton buttonWithTitle:@"" target:self action:@selector(showKeypad:)];
     AKStyleCallButton(mute, NSLocalizedString(@"Mute", @"Mute. Call menu item."), @"mic", NO);
     AKStyleCallButton(hold, NSLocalizedString(@"Hold", @"Hold. Call menu item."), @"pause.fill", NO);
     AKStyleCallButton(transfer, NSLocalizedString(@"Transfer", @"Call transfer button."), @"phone.arrow.right", NO);
     AKStyleCallButton(keypad, NSLocalizedString(@"Keypad", @"Call keypad button."), @"circle.grid.3x3.fill", NO);
     AKStyleCallButton(self.hangUpButton, NSLocalizedString(@"End Call", @"End Call. Call menu item."), @"phone.down.fill", YES);
+    // The End icon has its own stable slot even while connecting; only its
+    // existing enabled lifecycle changes. It no longer shares the spinner slot.
+    self.hangUpButton.hidden = NO;
     [mute setButtonType:NSButtonTypePushOnPushOff];
     [hold setButtonType:NSButtonTypePushOnPushOff];
     [keypad setButtonType:NSButtonTypePushOnPushOff];

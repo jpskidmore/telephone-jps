@@ -36,6 +36,7 @@ final class CallHistoryViewController: NSViewController {
         return tableView.menu!
     }
     private var isExpanded = true
+    private var expandedTableStyle = NSTableView.Style.automatic
     private var expandedSelectionIdentifier: String?
     private var emptyLabel: NSTextField?
     private var records: [PresentationCallHistoryRecord] = []
@@ -52,6 +53,7 @@ final class CallHistoryViewController: NSViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        expandedTableStyle = tableView.style
         tableView.setAccessibilityLabel(NSLocalizedString("Call history", comment: "Call history accessibility label."))
         if let scroll = tableView.enclosingScrollView {
             scroll.translatesAutoresizingMaskIntoConstraints = false
@@ -98,6 +100,9 @@ final class CallHistoryViewController: NSViewController {
     }
 
     private func updateHistoryPresentation() {
+        // Automatic style adds native top/bottom padding. A plain compact row
+        // fits the one-row host; expanded history retains the original style.
+        tableView.style = isExpanded ? expandedTableStyle : .plain
         tableView.enclosingScrollView?.hasVerticalScroller = isExpanded
         emptyLabel?.isHidden = !records.isEmpty
     }

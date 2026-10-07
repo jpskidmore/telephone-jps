@@ -18,6 +18,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithFrame:(NSRect)frame sidebar:(BOOL)sidebar;
 @end
 
+/// Native call buttons whose layout rectangle matches their actual hit frame.
+/// Older AppKit rounded buttons otherwise add legacy bezel alignment margins.
+@interface AKCallActionButton : NSButton
+@end
+
 /// Reuses the nib's bound labels and actions in a 300pt compact call card.
 FOUNDATION_EXPORT void AKInstallCallPresentation(NSView *view,
                                                 NSTextField *caller,

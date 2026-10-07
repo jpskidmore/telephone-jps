@@ -401,8 +401,11 @@
     XCTAssertNotNil(bar);
     NSStackView *stack = (id)bar.contentView.subviews.firstObject;
     XCTAssertEqual(stack.arrangedSubviews.count, count);
+    XCTAssertFalse(stack.detachesHiddenViews);
     CGFloat previousRight = -CGFLOAT_MAX;
     for (NSButton *button in stack.arrangedSubviews) {
+        XCTAssertTrue([button isKindOfClass:AKCallActionButton.class]);
+        XCTAssertFalse(button.hidden);
         XCTAssertEqualWithAccuracy(button.frame.size.width, 44, 0.1);
         XCTAssertEqualWithAccuracy(button.frame.size.height, 44, 0.1);
         XCTAssertEqual(button.imagePosition, NSImageOnly);
@@ -413,6 +416,22 @@
         XCTAssertTrue(NSContainsRect(view.bounds, frame));
         XCTAssertGreaterThanOrEqual(frame.origin.x - previousRight, 11.9);
         previousRight = NSMaxX(frame);
+        // Check the real hit region, including near each edge. Comparing only
+        // anchors would miss legacy AppKit alignment margins and frame overlap.
+        NSArray<NSValue *> *points = @[
+            [NSValue valueWithPoint:NSMakePoint(22, 22)],
+            [NSValue valueWithPoint:NSMakePoint(1, 22)],
+            [NSValue valueWithPoint:NSMakePoint(43, 22)],
+            [NSValue valueWithPoint:NSMakePoint(22, 1)],
+            [NSValue valueWithPoint:NSMakePoint(22, 43)]
+        ];
+        for (NSValue *point in points) {
+            NSPoint parentPoint = [button convertPoint:point.pointValue toView:view.superview];
+            NSView *hit = [view hitTest:parentPoint];
+            XCTAssertTrue(hit == button || [hit isDescendantOf:button],
+                          @"%@ loses its 44pt hit region at %@ (hit %@)",
+                          button.accessibilityLabel, NSStringFromPoint(point.pointValue), hit);
+        }
     }
 }
 - (void)testActualStateNibsKeepCompactGeometryAndAccountBinding {

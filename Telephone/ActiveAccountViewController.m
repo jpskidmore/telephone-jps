@@ -52,6 +52,17 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
 
 @end
 
+// Icon controls use their full 44-point frame as their layout and hit region.
+// Older linked SDKs otherwise add native rounded-button alignment insets.
+@interface AKCompactDialerButton : NSButton
+@end
+
+@implementation AKCompactDialerButton
+- (NSEdgeInsets)alignmentRectInsets {
+    return NSEdgeInsetsMake(0, 0, 0, 0);
+}
+@end
+
 @interface ActiveAccountViewController ()
 @property(nonatomic) NSButton *dialButton;
 @property(nonatomic) NSButton *historyButton;
@@ -191,7 +202,7 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
 }
 
 - (NSButton *)compactButtonWithSymbol:(NSString *)symbol title:(NSString *)title target:(id)target action:(SEL)action {
-    NSButton *button = [NSButton buttonWithTitle:@"" target:target action:action];
+    NSButton *button = [AKCompactDialerButton buttonWithTitle:@"" target:target action:action];
     button.bezelStyle = NSBezelStyleRounded;
     button.image = [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:nil];
     button.imagePosition = NSImageOnly;

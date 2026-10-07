@@ -73,9 +73,6 @@
                             </tableView>
                         </subviews>
                     </clipView>
-                    <constraints>
-                        <constraint firstAttribute="width" constant="150" id="lXX-oj-Nel"/>
-                    </constraints>
                     <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="81">
                         <rect key="frame" x="-100" y="-100" width="127" height="15"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -390,9 +387,6 @@
                                     </button>
                                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" setsMaxLayoutWidthAtFirstLayout="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uyP-rU-EtH">
                                         <rect key="frame" x="131" y="14" width="214" height="22"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="210" id="koT-w4-DG8"/>
-                                        </constraints>
                                         <textFieldCell key="cell" controlSize="mini" title="Enabling this option may solve some audio problems." id="b3l-l7-0RV">
                                             <font key="font" metaFont="label" size="9"/>
                                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>

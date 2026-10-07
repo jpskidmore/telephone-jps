@@ -151,6 +151,7 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
 
         XCTAssertEqual(sut.recordCount, 3)
         XCTAssertEqual(table.numberOfRows, 1)
+        XCTAssertEqual(table.style, .plain)
         XCTAssertEqual(table.enclosingScrollView?.frame.size, NSSize(width: 368, height: 47))
         XCTAssertLessThanOrEqual(table.rect(ofRow: 0).maxY, 47)
         let cell = try XCTUnwrap(table.view(atColumn: 1, row: 0, makeIfNecessary: true) as? NSTableCellView)
@@ -173,6 +174,7 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         sut.setHistoryExpanded(true)
         XCTAssertEqual(table.numberOfRows, 3)
         XCTAssertEqual(table.selectedRow, 2)
+        XCTAssertEqual(table.style, .automatic)
         XCTAssertTrue(table.enclosingScrollView!.hasVerticalScroller)
     }
 

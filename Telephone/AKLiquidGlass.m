@@ -193,6 +193,15 @@
 
 @end
 
+@implementation AKCallActionButton
+- (NSEdgeInsets)alignmentRectInsets {
+    // The compact row allocates 44pt to the actual button, including its native
+    // bezel. macOS 15's visual alignment margins would otherwise enlarge each
+    // frame to 58x56 and make adjacent hit regions overlap.
+    return NSEdgeInsetsMake(0, 0, 0, 0);
+}
+@end
+
 static const void *AKCallStatusHeightKey = &AKCallStatusHeightKey;
 
 void AKStyleCallButton(NSButton *button, NSString *title, NSString *symbol, BOOL destructive) {
@@ -264,6 +273,7 @@ void AKInstallCallPresentation(NSView *view, NSTextField *caller, NSTextField *n
     NSStackView *actions = [NSStackView stackViewWithViews:buttons];
     actions.orientation = NSUserInterfaceLayoutOrientationHorizontal;
     actions.spacing = 12;
+    actions.detachesHiddenViews = NO;
     actions.translatesAutoresizingMaskIntoConstraints = NO;
     [bar.contentView addSubview:actions];
     for (NSButton *button in buttons) {

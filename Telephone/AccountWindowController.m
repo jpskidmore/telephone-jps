@@ -23,6 +23,16 @@
 #import "Telephone-Swift.h"
 #import "AKLiquidGlass.h"
 
+// Match Availability's native control frame to its 44-point compact hit region.
+@interface AKCompactAvailabilityPopUpButton : NSPopUpButton
+@end
+
+@implementation AKCompactAvailabilityPopUpButton
+- (NSEdgeInsets)alignmentRectInsets {
+    return NSEdgeInsetsMake(0, 0, 0, 0);
+}
+@end
+
 static NSMenuItem *MenuItemWithAction(NSMenu *menu, SEL action);
 
 @interface AccountWindowController ()
