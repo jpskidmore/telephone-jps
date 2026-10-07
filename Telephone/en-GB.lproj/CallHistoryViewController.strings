@@ -20,8 +20,8 @@
 /* Class = "NSTextFieldCell"; title = "Home"; ObjectID = "fDT-3a-1hx"; */
 "fDT-3a-1hx.title" = "Home";
 
-/* Class = "NSMenuItem"; title = "Delete All…"; ObjectID = "hyi-9B-WJ1"; */
-"hyi-9B-WJ1.title" = "Delete All…";
+/* Class = "NSMenuItem"; title = "Clear Call History…"; ObjectID = "hyi-9B-WJ1"; */
+"hyi-9B-WJ1.title" = "Clear Call History…";
 
 /* Class = "NSMenuItem"; title = "Copy Number"; ObjectID = "kns-jm-dHu"; */
 "kns-jm-dHu.title" = "Copy Number";
