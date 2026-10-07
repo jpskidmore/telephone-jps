@@ -21,11 +21,14 @@
     for (NSView *subview in view.subviews) {
         // A pane can appear to fit even after Auto Layout breaks an obsolete
         // required width. Verify the native alignment size fulfills every
-        // active required fixed-size constraint, including ancestor-owned ones.
+        // explicit required fixed-size constraint, including ancestor-owned
+        // ones. AppKit's intrinsic-content subclasses encode hugging and
+        // compression separately, despite reporting a required outer priority.
         NSSize alignmentSize = [subview alignmentRectForFrame:subview.frame].size;
         for (NSView *owner = subview; owner != nil; owner = owner.superview) {
             for (NSLayoutConstraint *constraint in owner.constraints) {
-                if (constraint.active && constraint.firstItem == subview && constraint.secondItem == nil &&
+                if ([constraint isMemberOfClass:NSLayoutConstraint.class] &&
+                    constraint.active && constraint.firstItem == subview && constraint.secondItem == nil &&
                     constraint.relation == NSLayoutRelationEqual && constraint.priority == NSLayoutPriorityRequired) {
                     if (constraint.firstAttribute == NSLayoutAttributeWidth) {
                         XCTAssertEqualWithAccuracy(alignmentSize.width, constraint.constant, 0.5, @"%@", constraint);
