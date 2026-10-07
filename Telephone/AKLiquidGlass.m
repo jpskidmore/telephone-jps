@@ -125,6 +125,7 @@
         }
         if (!hasBackdrop) {
             AKWindowMaterialView *backdrop = [[AKWindowMaterialView alloc] initWithFrame:root.bounds];
+            backdrop.usesOpaqueTitlebarBackground = YES;
             backdrop.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
             [root addSubview:backdrop positioned:NSWindowBelow relativeTo:nil];
         }

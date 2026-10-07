@@ -403,10 +403,17 @@
     for (NSView *child in root.subviews) {
         if (![child isKindOfClass:AKWindowMaterialView.class]) continue;
         backdropCount++;
+        XCTAssertTrue([(AKWindowMaterialView *)child usesOpaqueTitlebarBackground]);
         XCTAssertLessThan([root.subviews indexOfObjectIdenticalTo:child], paneIndex,
                           @"Window backdrop must remain behind the current call pane");
     }
     XCTAssertEqual(backdropCount, 1u);
+    XCTAssertFalse(self.controller.window.titlebarAppearsTransparent);
+    XCTAssertEqual(self.controller.window.titleVisibility, NSWindowTitleVisible);
+    XCTAssertEqualWithAccuracy(self.controller.window.backgroundColor.alphaComponent, 1, 0.01);
+    XCTAssertEqualObjects(self.controller.window.backgroundColor, NSColor.windowBackgroundColor);
+    XCTAssertEqual(self.controller.window.isOpaque,
+                   NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceTransparency);
     AKGlassControlContainer *bar = nil;
     for (NSView *child in view.subviews) if ([child isKindOfClass:AKGlassControlContainer.class]) bar = (id)child;
     XCTAssertNotNil(bar);

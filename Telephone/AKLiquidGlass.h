@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Transparency is enabled, without changing any controls or their hierarchy.
 @interface AKWindowMaterialView : NSVisualEffectView
 /// Keeps the native titlebar's semantic background while the content backdrop
-/// remains nonopaque. Settings opts in; call-window composition is unchanged.
+/// remains nonopaque. Settings and call windows opt in for native titlebar contrast.
 @property(nonatomic) BOOL usesOpaqueTitlebarBackground;
 @end
 
