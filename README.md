@@ -9,23 +9,34 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/jpskidmore/telephone-jps"></a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained release: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
   <a href="LICENSE"><img alt="GPL version 3" src="https://img.shields.io/badge/license-GPLv3-blue"></a>
 </p>
 
 > [!IMPORTANT]
+> **Private maintenance: fix and verify all 50 audit findings (#2–51) before any new Release/distributable build.** Read [AGENTS.md](AGENTS.md), the [repair handover](docs/BUG_FIX_HANDOVER.md), [complete issue snapshot](docs/audit-2.1.8/issues.json) and [tracked checklist](docs/audit-2.1.8/repair-progress.json). Local development compilation and isolated tests for fixes are allowed; cloud builds, packaging and publication are paused.
+>
 > The [audio-recovery changes](docs/AUDIO_RECOVERY.md) contain repeated failed audio opens and add explicit recovery. A first hardware timeout can still block; real-device acceptance remains separate.
 > Call recording is disabled by default. Only enable it when recording is lawful and everyone whose consent is required has consented.
 
-## Download
+## Retained release and private access
 
-The [2.1.5 local test release](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.5) uses compact Icon rail Settings, a Dial bar with one recent call, and original-width Pocket call cards. Native Liquid Glass is reserved for navigation and controls, with semantic colors for Light and Dark appearance. See the [release notes](docs/releases/2.1.5.md), [Apple interface guidance](docs/LIQUID_GLASS.md) and [bug review](docs/BUG_REVIEW_2.1.3.md). It is a prerelease for local acceptance; the stable download below remains available.
+The retained [2.1.8 release](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8)
+is build 160 from `9a32ae8`. It uses the accepted Icon rail/Titled sections
+Settings, Dial bar with one recent call, and Pocket call cards. See its
+[historical release notes](docs/releases/2.1.8.md) and
+[interface guidance](docs/LIQUID_GLASS.md).
 
-Download the tested application ZIP from the [latest GitHub release](https://github.com/jpskidmore/telephone-jps/releases/latest). The release also contains a complete source ZIP, checksums, and the verification report for the exact build.
+Repository contents, issues and release downloads now require authorised GitHub
+access. The existing app/source ZIPs, checksums and build-verification files are
+retained as the audit baseline. A later documentation-only main commit carries
+the 50-item repair handover; it does not rebuild or replace 2.1.8.
 
-This build targets Apple silicon and macOS 15.6 or later. It is ad-hoc signed but not Apple-notarized. After unzipping and moving the app to **Applications**, macOS may require you to Control-click the app and choose **Open** the first time.
+Apple silicon and macOS 15.6+; the retained package is ad-hoc signed and
+unnotarised. Read its verification limits before using it. Do not create or
+publish another package until the [repair gate](docs/BUG_FIX_HANDOVER.md) passes.
 
 ## What it does
 
@@ -60,6 +71,13 @@ To enable recording, open **jps Telephone → Settings → General**, choose a f
 More detail is available in [RECORDING.md](RECORDING.md).
 
 ## Build from source
+
+**Paused for Release/distributable builds until all 50 fixes are verified.**
+The commands below are post-repair instructions; they are not permission to
+bypass [the current gate](docs/BUG_FIX_HANDOVER.md). Targeted local Debug/test
+compilation remains available for implementation. Do not dispatch GitHub build
+workflows; use main and include `[skip ci]` in pushed commits.
+
 
 The repository contains the application source, tests, blue artwork, the exact prebuilt arm64 dependency libraries used for the 2.0 releases, and unmodified upstream dependency archives under `ThirdParty Sources/`.
 

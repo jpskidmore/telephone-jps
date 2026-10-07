@@ -1,9 +1,31 @@
-# Unreleased source cleanup after 2.0.3
+# Unreleased — 50-item repair gate after 2.1.8
+
+The retained binary is **2.1.8/build 160**, tag v2.1.8 at `9a32ae8`.
+This handover changes documentation only; it makes no application fix, new build,
+version bump or replacement release. Repository access is now private.
+
+The next task is to **fix and verify all 50 audit items #2–51 before another
+Release/distributable build, signing, packaging, tag, upload or publication**.
+Read [the repair handover](../BUG_FIX_HANDOVER.md),
+[full issue snapshot](../audit-2.1.8/issues.json) and
+[tracked repair progress](../audit-2.1.8/repair-progress.json).
+Targeted local development compilation and isolated tests remain allowed.
+
+Work on main, with `[skip ci]` in every pushed commit and no cloud workflow
+dispatch. Preserve the accepted compact UK-English interface, existing
+functionality, user data, v2.1.8 tag and its historical assets. Do not select or
+bump the next release version until the gate passes.
+
+## Historical cleanup notes after 2.0.3
+
+The notes below record an earlier source-only cleanup. Their 2.0.3 metadata,
+multilingual history, Linux validation and old branch-based rollback discussion
+are historical and do not describe or authorise the current repair workflow.
 
 Application metadata stays at **2.0.3 (build 154)**. This is a source-only update;
 no new application release, signature or deployment is implied.
 
-## Audio failure containment
+### Audio failure containment
 
 The later audio-recovery update adds a shared failure gate, explicit Retry Audio,
 checked conference connections, privacy-safe diagnostics, stale-media protection
@@ -11,7 +33,7 @@ and a headless native policy harness. See [audio recovery](../AUDIO_RECOVERY.md)
 It prevents repeated failed attempts; it does not claim to remove the first
 CoreAudio timeout or establish live-device acceptance. No application was installed.
 
-## Recording ownership and shutdown
+### Recording ownership and shutdown
 
 - Recording destination access belongs to the recording's call/session and is
   transferred to that session's asynchronous finalization completion. A prior
@@ -29,7 +51,7 @@ These fixes address source-reviewed failure paths. Their native runtime behavior
 has not been validated by this Linux cleanup. The WAV-readiness retry, private
 output/recovery files and microphone-left/remote-right channel layout remain.
 
-## Focused maintenance
+### Focused maintenance
 
 - Remove reviewed unused store helpers, stale SIP-response code and ringback
   fields, and unused stored dependencies; preserve active feature paths
@@ -42,7 +64,7 @@ output/recovery files and microphone-left/remote-right channel layout remain.
   archive, and fail explicitly when native tools or valid plist data are missing
 - Add a complete macOS validation entry point and recording-library credit notices
 
-## Preserved behavior and data
+### Preserved behavior and data
 
 The saved-credential Keychain namespace, existing trust bundle, SIP/account and
 recording preferences, recording consent default, private file modes, collision
@@ -51,7 +73,7 @@ are unchanged. Existing localization keys and nib object IDs, source archives,
 PJSIP patches, inherited licences and original notices are retained. No security
 permissions were changed, and no real calls or recordings were used.
 
-## Validation and rollback
+### Validation and rollback
 
 Six portable recording-lifecycle model tests passed on Linux, alongside dependency
 manifest/inventory, localization structure, shell syntax and patch dry-run checks.
@@ -63,7 +85,7 @@ The review baseline was `ea2769e430c8db3f90e88cc71a8fa7509420bb4b`. While this
 cleanup was being prepared, README link-only PR #1 was merged as
 `d68c372c5465d78f843bc807690c9edb09807c7b`; that concurrent change is preserved as
 the publication parent. If rollback is needed after publication,
-revert the published cleanup commit(s), newest first, on a clean working branch;
+revert the published cleanup commit(s), newest first, on main with a clean working tree;
 inspect the resulting diff and rerun the appropriate validation. Use the exact
 published commit IDs from the publication summary, rather than resetting or
 force-pushing `main`. Existing binary releases were not replaced by this cleanup.

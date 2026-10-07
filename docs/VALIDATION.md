@@ -1,5 +1,28 @@
 # Validation and release checks
 
+## Current repair gate — all 50 issues before another Release build
+
+The repository is private and the current task is to fix and verify baseline
+issues #2–51. Read [the handover](BUG_FIX_HANDOVER.md), root [AGENTS.md](../AGENTS.md)
+and [repair progress](audit-2.1.8/repair-progress.json) first. No new Release app,
+downloadable candidate, signing, packaging, version bump, tag or publication is
+allowed until every item has recorded verified repair. Local development
+compilation and isolated Debug/regression tests needed for fixes are allowed.
+Ad-hoc re-signing of a modified isolated Debug test host for test execution is
+allowed; signing a Release/distributable candidate remains blocked.
+
+The complete `build-test-release.sh`, `run-macos-validation.sh` and
+`run-isolated-audio-validation.sh` scripts also build Release, so do not run
+them as tests-only entrypoints before the gate passes. Follow the handover's
+concrete Debug-host isolation guidance; normal hosted TelephoneTests startup
+can load real accounts/defaults. Preserve production Release metadata.
+
+Use main, local tools only, `[skip ci]` on pushed commits, and no manual cloud
+workflow dispatch. Existing workflow files do not override this instruction.
+The sections below are historical release checks and post-repair requirements;
+their earlier passes do not verify the 50 audited defects or changed future code.
+
+
 ## 2.1.8 titled Settings sections
 
 Build and package locally from the exact main revision, preserving earlier
