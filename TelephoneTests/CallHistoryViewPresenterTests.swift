@@ -152,7 +152,7 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         XCTAssertEqual(sut.recordCount, 3)
         XCTAssertEqual(table.numberOfRows, 1)
         XCTAssertEqual(table.style, .plain)
-        XCTAssertEqual(table.enclosingScrollView?.frame.size, NSSize(width: 368, height: 47))
+        XCTAssertEqual(table.enclosingScrollView?.frame, NSRect(x: 8, y: 0, width: 352, height: 47))
         XCTAssertLessThanOrEqual(table.rect(ofRow: 0).maxY, 47)
         let cell = try XCTUnwrap(table.view(atColumn: 1, row: 0, makeIfNecessary: true) as? NSTableCellView)
         XCTAssertEqual(cell.textField?.stringValue, records[0].contact.title)
@@ -174,7 +174,7 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         sut.setHistoryExpanded(true)
         XCTAssertEqual(table.numberOfRows, 3)
         XCTAssertEqual(table.selectedRow, 2)
-        XCTAssertEqual(table.style, .automatic)
+        XCTAssertEqual(table.style, .plain)
         XCTAssertTrue(table.enclosingScrollView!.hasVerticalScroller)
     }
 
@@ -248,7 +248,7 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         XCTAssertNil(call.invokedIdentifier)
         XCTAssertNil(remove.invokedIdentifier)
         XCTAssertFalse(sut.validateMenuItem(NSMenuItem(title: "Call", action: #selector(CallHistoryViewController.makeCall(_:)), keyEquivalent: "")))
-        XCTAssertTrue(sut.validateMenuItem(NSMenuItem(title: "Delete All", action: #selector(CallHistoryViewController.deleteAll(_:)), keyEquivalent: "")))
+        XCTAssertTrue(sut.validateMenuItem(NSMenuItem(title: "Clear Call History…", action: #selector(CallHistoryViewController.deleteAll(_:)), keyEquivalent: "")))
         table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
         sut.makeCall(table)
         XCTAssertEqual(call.invokedIdentifier, records[0].identifier)
@@ -267,6 +267,36 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
             XCTAssertNotNil(table.view(atColumn: 2, row: 0, makeIfNecessary: true))
             XCTAssertFalse(sut.view.hasAmbiguousLayout)
         }
+    }
+
+    func testHistoryKeepsTheSameInsetAndIconGridWhenExpanded() throws {
+        let (sut, table, window) = try makeHistoryController()
+        defer { window.close() }
+        sut.show(makeRecords([1, 2]))
+        for expanded in [false, true] {
+            sut.setHistoryExpanded(expanded)
+            window.contentView?.layoutSubtreeIfNeeded()
+            XCTAssertEqual(table.style, .plain)
+            XCTAssertEqual(table.enclosingScrollView?.frame.minX, 8)
+            XCTAssertEqual(table.enclosingScrollView?.frame.maxX, 360)
+            XCTAssertEqual(table.tableColumns[0].width, 44)
+            let direction = try XCTUnwrap(table.view(atColumn: 0, row: 0, makeIfNecessary: true) as? NSTableCellView)
+            direction.layoutSubtreeIfNeeded()
+            let image = try XCTUnwrap(direction.subviews.compactMap { $0 as? NSImageView }.first)
+            XCTAssertEqual(image.frame.midX, direction.bounds.midX, accuracy: 0.5)
+            XCTAssertEqual(table.numberOfRows, expanded ? 2 : 1)
+        }
+    }
+
+    func testClearCallHistoryKeepsTheExistingValidatedRemovalAction() throws {
+        let (sut, _, window) = try makeHistoryController()
+        defer { window.close() }
+        let item = try XCTUnwrap(sut.actionsMenu.items.first { $0.action == #selector(CallHistoryViewController.deleteAll(_:)) })
+        XCTAssertEqual(item.title, "Clear Call History…")
+        XCTAssertFalse(sut.validateMenuItem(item))
+        sut.show(makeRecords([1, 2]))
+        XCTAssertTrue(sut.validateMenuItem(item))
+        XCTAssertTrue((item.target as? NSObject) === sut)
     }
 
     private func makeHistoryController() throws -> (CallHistoryViewController, NSTableView, NSWindow) {
