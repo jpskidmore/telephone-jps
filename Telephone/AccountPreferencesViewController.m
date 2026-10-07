@@ -54,6 +54,24 @@ static const NSUInteger kAccountsMax = 32;
     return self;
 }
 
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    NSString *connectionScope = NSLocalizedString(@"Connection settings for the selected account.", @"Account Connection tab scope.");
+    NSView *connectionView = self.proxyHostField.superview;
+    connectionView.accessibilityElement = YES;
+    connectionView.accessibilityRole = NSAccessibilityGroupRole;
+    connectionView.accessibilityLabel = connectionScope;
+    for (NSView *view in self.view.subviews) {
+        if ([view isKindOfClass:NSTabView.class]) {
+            for (NSTabViewItem *item in ((NSTabView *)view).tabViewItems) {
+                if (item.view == connectionView) {
+                    item.toolTip = connectionScope;
+                }
+            }
+        }
+    }
+}
+
 - (void)awakeFromNib {
     // Register a pasteboard type to rearrange accounts with drag and drop.
     [[self accountsTable] registerForDraggedTypes:@[kAKSIPAccountPboardType]];
