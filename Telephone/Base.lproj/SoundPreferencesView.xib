@@ -116,6 +116,28 @@
                         <binding destination="RNC-FV-rD9" name="value" keyPath="values.UseG711Only" id="so7-14-4CG"/>
                     </connections>
                 </button>
+                <textField identifier="SettingsSectionHeading" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="section-devices-heading">
+                    <rect key="frame" x="16" y="10" width="130" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Devices &amp; ringtone" id="section-devices-cell">
+                        <font key="font" metaFont="systemBold" size="13"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box identifier="SettingsSectionSeparator" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="section-devices-line">
+                    <rect key="frame" x="156" y="18" width="276" height="1"/>
+                </box>
+                <textField identifier="SettingsSectionHeading" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="section-audio-heading">
+                    <rect key="frame" x="16" y="10" width="130" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Call audio" id="section-audio-cell">
+                        <font key="font" metaFont="systemBold" size="13"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box identifier="SettingsSectionSeparator" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="section-audio-line">
+                    <rect key="frame" x="156" y="18" width="276" height="1"/>
+                </box>
             </subviews>
             <constraints>
                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="448" id="cs-1"/>
@@ -125,7 +147,7 @@
                 <constraint firstAttribute="leading" firstItem="210" relation="greaterThanOrEqual" secondItem="251" secondAttribute="leading" constant="16" id="cs-5"/>
                 <constraint firstAttribute="trailing" firstItem="210" secondItem="214" secondAttribute="leading" constant="-8" id="cs-6"/>
                 <constraint firstAttribute="firstBaseline" firstItem="210" secondItem="214" secondAttribute="firstBaseline" id="cs-7"/>
-                <constraint firstAttribute="top" firstItem="214" secondItem="251" secondAttribute="top" constant="10" id="cs-8"/>
+                <constraint firstAttribute="top" firstItem="214" secondItem="251" secondAttribute="top" constant="32" id="cs-8"/>
                 <constraint firstAttribute="leading" firstItem="220" secondItem="214" secondAttribute="leading" id="cs-9"/>
                 <constraint firstAttribute="trailing" firstItem="251" secondItem="220" secondAttribute="trailing" constant="16" id="cs-10"/>
                 <constraint firstAttribute="width" firstItem="220" relation="greaterThanOrEqual" constant="248" id="cs-11"/>
@@ -151,9 +173,24 @@
                 <constraint firstAttribute="top" firstItem="345" secondItem="277" secondAttribute="bottom" constant="5" id="cs-31"/>
                 <constraint firstAttribute="trailing" firstItem="251" relation="greaterThanOrEqual" secondItem="345" secondAttribute="trailing" constant="16" id="cs-32"/>
                 <constraint firstAttribute="leading" firstItem="90O-Fe-Uz3" secondItem="214" secondAttribute="leading" id="cs-33"/>
-                <constraint firstAttribute="top" firstItem="90O-Fe-Uz3" secondItem="345" secondAttribute="bottom" constant="10" id="cs-34"/>
+                <constraint firstAttribute="top" firstItem="90O-Fe-Uz3" secondItem="345" secondAttribute="bottom" constant="38" id="cs-34"/>
                 <constraint firstAttribute="trailing" firstItem="251" relation="greaterThanOrEqual" secondItem="90O-Fe-Uz3" secondAttribute="trailing" constant="16" id="cs-35"/>
                 <constraint firstAttribute="bottom" firstItem="251" relation="greaterThanOrEqual" secondItem="90O-Fe-Uz3" secondAttribute="bottom" constant="12" id="cs-36"/>
+                <constraint firstItem="section-devices-heading" firstAttribute="leading" secondItem="251" secondAttribute="leading" constant="16" id="section-devices-constraint-1"/>
+                <constraint firstItem="section-devices-heading" firstAttribute="height" constant="16" id="section-devices-constraint-2"/>
+                <constraint firstItem="section-devices-line" firstAttribute="leading" secondItem="section-devices-heading" secondAttribute="trailing" constant="10" id="section-devices-constraint-3"/>
+                <constraint firstItem="section-devices-line" firstAttribute="trailing" secondItem="251" secondAttribute="trailing" constant="-16" id="section-devices-constraint-4"/>
+                <constraint firstItem="section-devices-line" firstAttribute="centerY" secondItem="section-devices-heading" secondAttribute="centerY" id="section-devices-constraint-5"/>
+                <constraint firstItem="section-devices-line" firstAttribute="height" constant="1" id="section-devices-constraint-6"/>
+                <constraint firstItem="section-devices-heading" firstAttribute="top" secondItem="251" secondAttribute="top" constant="10" id="section-devices-constraint-7"/>
+                <constraint firstItem="section-audio-heading" firstAttribute="leading" secondItem="251" secondAttribute="leading" constant="16" id="section-audio-constraint-1"/>
+                <constraint firstItem="section-audio-heading" firstAttribute="height" constant="16" id="section-audio-constraint-2"/>
+                <constraint firstItem="section-audio-line" firstAttribute="leading" secondItem="section-audio-heading" secondAttribute="trailing" constant="10" id="section-audio-constraint-3"/>
+                <constraint firstItem="section-audio-line" firstAttribute="trailing" secondItem="251" secondAttribute="trailing" constant="-16" id="section-audio-constraint-4"/>
+                <constraint firstItem="section-audio-line" firstAttribute="centerY" secondItem="section-audio-heading" secondAttribute="centerY" id="section-audio-constraint-5"/>
+                <constraint firstItem="section-audio-line" firstAttribute="height" constant="1" id="section-audio-constraint-6"/>
+                <constraint firstItem="section-audio-heading" firstAttribute="bottom" secondItem="90O-Fe-Uz3" secondAttribute="top" constant="-8" id="section-audio-constraint-7"/>
+                <constraint firstItem="214" firstAttribute="leading" secondItem="251" secondAttribute="leading" constant="160" id="section-field-column"/>
             </constraints>
             <point key="canvasLocation" x="83" y="128"/>
         </customView>

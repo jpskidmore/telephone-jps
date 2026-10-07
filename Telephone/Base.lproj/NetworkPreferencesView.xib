@@ -165,11 +165,33 @@
                         <outlet property="nextKeyView" destination="482" id="D2e-oc-z9l"/>
                     </connections>
                 </button>
+                <textField identifier="SettingsSectionHeading" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="section-discovery-heading">
+                    <rect key="frame" x="16" y="10" width="130" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="SIP &amp; discovery" id="section-discovery-cell">
+                        <font key="font" metaFont="systemBold" size="13"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box identifier="SettingsSectionSeparator" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="section-discovery-line">
+                    <rect key="frame" x="156" y="18" width="276" height="1"/>
+                </box>
+                <textField identifier="SettingsSectionHeading" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="section-proxy-heading">
+                    <rect key="frame" x="16" y="10" width="130" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Outbound proxy" id="section-proxy-cell">
+                        <font key="font" metaFont="systemBold" size="13"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box identifier="SettingsSectionSeparator" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="section-proxy-line">
+                    <rect key="frame" x="156" y="18" width="276" height="1"/>
+                </box>
             </subviews>
             <constraints>
                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="448" id="cn-1"/>
                 <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="192" id="cn-2"/>
-                <constraint firstAttribute="top" firstItem="482" secondItem="260" secondAttribute="top" constant="12" id="cn-3"/>
+                <constraint firstAttribute="top" firstItem="482" secondItem="260" secondAttribute="top" constant="34" id="cn-3"/>
                 <constraint firstAttribute="leading" firstItem="484" relation="greaterThanOrEqual" secondItem="260" secondAttribute="leading" constant="16" id="cn-4"/>
                 <constraint firstAttribute="trailing" firstItem="484" secondItem="482" secondAttribute="leading" constant="-8" id="cn-5"/>
                 <constraint firstAttribute="firstBaseline" firstItem="484" secondItem="482" secondAttribute="firstBaseline" id="cn-6"/>
@@ -194,7 +216,7 @@
                 <constraint firstAttribute="leading" firstItem="549" secondItem="466" secondAttribute="trailing" constant="16" id="cn-25"/>
                 <constraint firstAttribute="firstBaseline" firstItem="549" secondItem="466" secondAttribute="firstBaseline" id="cn-26"/>
                 <constraint firstAttribute="trailing" firstItem="260" relation="greaterThanOrEqual" secondItem="549" secondAttribute="trailing" constant="16" id="cn-27"/>
-                <constraint firstAttribute="top" firstItem="315" secondItem="466" secondAttribute="bottom" constant="12" id="cn-28"/>
+                <constraint firstAttribute="top" firstItem="315" secondItem="466" secondAttribute="bottom" constant="40" id="cn-28"/>
                 <constraint firstAttribute="leading" firstItem="315" secondItem="192" secondAttribute="leading" id="cn-29"/>
                 <constraint firstAttribute="leading" firstItem="317" relation="greaterThanOrEqual" secondItem="260" secondAttribute="leading" constant="16" id="cn-30"/>
                 <constraint firstAttribute="trailing" firstItem="317" secondItem="315" secondAttribute="leading" constant="-8" id="cn-31"/>
@@ -214,6 +236,21 @@
                 <constraint firstAttribute="top" firstItem="Zlz-tb-psa" secondItem="315" secondAttribute="bottom" constant="8" id="cn-45"/>
                 <constraint firstAttribute="trailing" firstItem="260" relation="greaterThanOrEqual" secondItem="Zlz-tb-psa" secondAttribute="trailing" constant="16" id="cn-46"/>
                 <constraint firstAttribute="bottom" firstItem="260" relation="greaterThanOrEqual" secondItem="Zlz-tb-psa" secondAttribute="bottom" constant="12" id="cn-47"/>
+                <constraint firstItem="section-discovery-heading" firstAttribute="leading" secondItem="260" secondAttribute="leading" constant="16" id="section-discovery-constraint-1"/>
+                <constraint firstItem="section-discovery-heading" firstAttribute="height" constant="16" id="section-discovery-constraint-2"/>
+                <constraint firstItem="section-discovery-line" firstAttribute="leading" secondItem="section-discovery-heading" secondAttribute="trailing" constant="10" id="section-discovery-constraint-3"/>
+                <constraint firstItem="section-discovery-line" firstAttribute="trailing" secondItem="260" secondAttribute="trailing" constant="-16" id="section-discovery-constraint-4"/>
+                <constraint firstItem="section-discovery-line" firstAttribute="centerY" secondItem="section-discovery-heading" secondAttribute="centerY" id="section-discovery-constraint-5"/>
+                <constraint firstItem="section-discovery-line" firstAttribute="height" constant="1" id="section-discovery-constraint-6"/>
+                <constraint firstItem="section-discovery-heading" firstAttribute="top" secondItem="260" secondAttribute="top" constant="10" id="section-discovery-constraint-7"/>
+                <constraint firstItem="section-proxy-heading" firstAttribute="leading" secondItem="260" secondAttribute="leading" constant="16" id="section-proxy-constraint-1"/>
+                <constraint firstItem="section-proxy-heading" firstAttribute="height" constant="16" id="section-proxy-constraint-2"/>
+                <constraint firstItem="section-proxy-line" firstAttribute="leading" secondItem="section-proxy-heading" secondAttribute="trailing" constant="10" id="section-proxy-constraint-3"/>
+                <constraint firstItem="section-proxy-line" firstAttribute="trailing" secondItem="260" secondAttribute="trailing" constant="-16" id="section-proxy-constraint-4"/>
+                <constraint firstItem="section-proxy-line" firstAttribute="centerY" secondItem="section-proxy-heading" secondAttribute="centerY" id="section-proxy-constraint-5"/>
+                <constraint firstItem="section-proxy-line" firstAttribute="height" constant="1" id="section-proxy-constraint-6"/>
+                <constraint firstItem="section-proxy-heading" firstAttribute="bottom" secondItem="315" secondAttribute="top" constant="-8" id="section-proxy-constraint-7"/>
+                <constraint firstItem="192" firstAttribute="leading" secondItem="260" secondAttribute="leading" constant="144" id="section-field-column"/>
             </constraints>
             <point key="canvasLocation" x="139" y="164.5"/>
         </customView>

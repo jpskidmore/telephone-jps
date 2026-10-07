@@ -1,5 +1,13 @@
 # Changelog
 
+## jps Telephone 2.1.8 (build 160) — titled Settings sections
+
+- Align General, Sound and app-wide Network settings at the top of their panes
+- Group related options under compact native headings and separators
+- Keep the same Accounts-sized window across every pane and retain all existing controls and actions
+
+See [release notes](docs/releases/2.1.8.md).
+
 ## jps Telephone 2.1.7 (build 159) — availability colours
 
 - Show online availability in system green and offline availability in system red

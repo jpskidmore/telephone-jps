@@ -17,6 +17,13 @@ setting reliably.
 
 Since 2.1.6, every pane uses the Accounts pane's window size, keeping the frame
 stable during navigation. The other forms are aligned within that shared size.
+The selected Titled sections layout places General, Sound and Network 12 points
+below the detail area's top edge and uses its full 548-point width. Native,
+noneditable headings and separators group Calling / Recording, Devices &
+ringtone / Call audio, and SIP & discovery / Outbound proxy. Their 16-point
+leading inset and stable field columns keep related options aligned. Accounts
+continues to fill the detail area. The frame remains 592 × 305 content points
+(592 × 337 including the native titlebar on macOS 27).
 Accounts retains the account list, detail tabs,
 enabled-account editing restrictions and reordering. Sound retains its four
 device/ringtone menus and codec setting. Leaving Network or closing its window
@@ -25,6 +32,13 @@ retains the existing Save, Cancel and Don't Save prompt.
 The top-level Network section applies to all accounts. Accounts uses the name
 Connection for its account-specific network options, with scope described in
 help and accessible labels.
+
+This placement follows Apple's [Layout guidance](https://developer.apple.com/design/human-interface-guidelines/layout)
+for important content near the top and leading edge, alignment and grouping
+related items with space and separators. The exact spacing and fixed frame are
+design choices for this app. The headings use the system font and label color,
+expose native heading roles on macOS 26 and later (static text on older macOS),
+and add no keyboard focus stops or glass surfaces.
 
 Settings has a normal titled macOS window with its red Close button and
 Command-W. Minimize and zoom remain disabled. The titlebar uses the opaque

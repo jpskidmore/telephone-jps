@@ -28,3 +28,9 @@
 
 /* Class = "NSTextFieldCell"; title = "Use the account proxy instead."; ObjectID = "VJj-dK-qaq"; */
 "VJj-dK-qaq.title" = "Use the account proxy instead.";
+
+/* Class = "NSTextFieldCell"; title = "SIP & discovery"; ObjectID = "section-discovery-cell"; */
+"section-discovery-cell.title" = "SIP & discovery";
+
+/* Class = "NSTextFieldCell"; title = "Outbound proxy"; ObjectID = "section-proxy-cell"; */
+"section-proxy-cell.title" = "Outbound proxy";

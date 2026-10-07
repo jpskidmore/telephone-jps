@@ -239,24 +239,43 @@
 }
 
 - (void)displaySettingsController:(NSViewController *)controller {
-    // Retain each form's native compact layout and centre it in the common
-    // Accounts-sized detail area, rather than stretching fields or controls.
-    NSSize paneSize = controller.view.fittingSize;
-    paneSize.width = ceil(paneSize.width);
-    paneSize.height = MAX(176, ceil(paneSize.height));
     if (self.selectedSettingsController != controller) {
         [NSLayoutConstraint deactivateConstraints:self.settingsPaneConstraints ?: @[]];
         [self.selectedSettingsController.view removeFromSuperview];
         [self.selectedSettingsController removeFromParentViewController];
+        // Native labels separate related options without adding another glass
+        // surface or another stop in the keyboard focus loop.
+        for (NSView *view in controller.view.subviews) {
+            if ([view.identifier isEqualToString:@"SettingsSectionHeading"] &&
+                [view isKindOfClass:NSTextField.class]) {
+                NSTextField *heading = (NSTextField *)view;
+                heading.font = [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold];
+                heading.accessibilityLabel = heading.stringValue;
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 260000
+                if (@available(macOS 26.0, *)) {
+                    heading.accessibilityRole = NSAccessibilityHeadingRole;
+                } else {
+                    heading.accessibilityRole = NSAccessibilityStaticTextRole;
+                }
+#else
+                heading.accessibilityRole = NSAccessibilityStaticTextRole;
+#endif
+            }
+        }
+        CGFloat paneHeight = ceil(controller.view.fittingSize.height);
+        BOOL accountsPane = controller == self.accountPreferencesViewController;
         self.selectedSettingsController = controller;
         [self.settingsContainerController addChildViewController:controller];
         [self.settingsDetailView addSubview:controller.view];
         controller.view.translatesAutoresizingMaskIntoConstraints = NO;
+        // Accounts occupies the complete detail area. Other forms share its
+        // width, with their titled sections anchored near the top and leading
+        // edge, while the window itself keeps the same Accounts-sized frame.
         self.settingsPaneConstraints = @[
-            [controller.view.centerXAnchor constraintEqualToAnchor:self.settingsDetailView.centerXAnchor],
-            [controller.view.centerYAnchor constraintEqualToAnchor:self.settingsDetailView.centerYAnchor],
-            [controller.view.widthAnchor constraintEqualToConstant:paneSize.width],
-            [controller.view.heightAnchor constraintEqualToConstant:paneSize.height]
+            [controller.view.leadingAnchor constraintEqualToAnchor:self.settingsDetailView.leadingAnchor],
+            [controller.view.topAnchor constraintEqualToAnchor:self.settingsDetailView.topAnchor constant:accountsPane ? 0 : 12],
+            [controller.view.widthAnchor constraintEqualToAnchor:self.settingsDetailView.widthAnchor],
+            [controller.view.heightAnchor constraintEqualToConstant:paneHeight]
         ];
         [NSLayoutConstraint activateConstraints:self.settingsPaneConstraints];
     }

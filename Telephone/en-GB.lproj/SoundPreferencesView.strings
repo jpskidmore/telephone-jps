@@ -28,3 +28,9 @@
 
 /* Class = "NSButtonCell"; title = "Use only G.711 codec"; ObjectID = "2bR-wc-3xa"; */
 "2bR-wc-3xa.title" = "Use only G.711 codec";
+
+/* Class = "NSTextFieldCell"; title = "Devices & ringtone"; ObjectID = "section-devices-cell"; */
+"section-devices-cell.title" = "Devices & ringtone";
+
+/* Class = "NSTextFieldCell"; title = "Call audio"; ObjectID = "section-audio-cell"; */
+"section-audio-cell.title" = "Call audio";

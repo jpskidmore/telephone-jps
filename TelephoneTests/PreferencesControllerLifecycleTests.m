@@ -16,6 +16,55 @@
 
 @implementation PreferencesControllerLifecycleTests
 
+- (void)assertSectionHeadings:(NSArray<NSString *> *)titles inView:(NSView *)view {
+    NSMutableArray<NSTextField *> *headings = [NSMutableArray array];
+    NSMutableArray<NSBox *> *separators = [NSMutableArray array];
+    for (NSView *subview in view.subviews) {
+        if ([subview.identifier isEqualToString:@"SettingsSectionHeading"]) {
+            XCTAssertTrue([subview isKindOfClass:NSTextField.class]);
+            [headings addObject:(NSTextField *)subview];
+        } else if ([subview.identifier isEqualToString:@"SettingsSectionSeparator"]) {
+            XCTAssertTrue([subview isKindOfClass:NSBox.class]);
+            [separators addObject:(NSBox *)subview];
+        }
+    }
+    XCTAssertEqual(headings.count, titles.count);
+    XCTAssertEqual(separators.count, titles.count);
+    for (NSUInteger index = 0; index < headings.count && index < titles.count; index++) {
+        NSTextField *heading = headings[index];
+        XCTAssertEqualObjects(heading.stringValue, titles[index]);
+        XCTAssertEqualObjects(heading.accessibilityLabel, titles[index]);
+        XCTAssertFalse(heading.isEditable);
+        XCTAssertFalse(heading.isSelectable);
+        XCTAssertFalse(heading.acceptsFirstResponder);
+        NSRect headingAlignment = [heading alignmentRectForFrame:heading.frame];
+        XCTAssertEqualWithAccuracy(NSMinX(headingAlignment), 16, 0.5);
+        XCTAssertGreaterThanOrEqual(heading.frame.size.width + 0.5, heading.intrinsicContentSize.width);
+        XCTAssertTrue(NSContainsRect(view.bounds, heading.frame));
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 260000
+        if (@available(macOS 26.0, *)) {
+            XCTAssertEqualObjects(heading.accessibilityRole, NSAccessibilityHeadingRole);
+        } else {
+            XCTAssertEqualObjects(heading.accessibilityRole, NSAccessibilityStaticTextRole);
+        }
+#else
+        XCTAssertEqualObjects(heading.accessibilityRole, NSAccessibilityStaticTextRole);
+#endif
+        if (index < separators.count) {
+            NSBox *line = separators[index];
+            NSRect lineAlignment = [line alignmentRectForFrame:line.frame];
+            XCTAssertEqual(line.boxType, NSBoxSeparator);
+            XCTAssertGreaterThan(line.frame.size.width, 100);
+            XCTAssertEqualWithAccuracy(NSMinX(lineAlignment), NSMaxX(headingAlignment) + 10, 0.5);
+            XCTAssertEqualWithAccuracy(NSMaxX(lineAlignment), NSMaxX(view.bounds) - 16, 0.5);
+        }
+    }
+    if (headings.count == 2) {
+        XCTAssertEqualWithAccuracy(NSMaxY(view.bounds) - NSMaxY(headings[0].frame), 10, 0.5);
+        XCTAssertGreaterThan(NSMinY(headings[0].frame), NSMaxY(headings[1].frame));
+    }
+}
+
 - (void)assertSettingsIconsVisibleInSidebar:(NSTableView *)sidebar {
     NSClipView *clip = sidebar.enclosingScrollView.contentView;
     // A44pt clip alone is insufficient: a wider document can centre every
@@ -108,17 +157,19 @@
     XCTAssertGreaterThan(form.frame.size.width, 100);
     XCTAssertGreaterThan(form.frame.size.height, 100);
     XCTAssertEqualObjects(window.title, controller.generalPreferencesViewController.title);
-    // Accounts determines the shared window dimensions. General retains its
-    // compact controls and sits centred inside that larger detail area.
+    // Accounts determines the shared window dimensions. General's titled
+    // sections occupy the detail width near the top and leading edge.
     // Compare content geometry so native titlebar height can vary by OS.
     XCTAssertEqualWithAccuracy(sidebar.enclosingScrollView.frame.size.width, 44, 0.5);
     NSSize accountsSize = controller.accountPreferencesViewController.view.fittingSize;
     XCTAssertEqualWithAccuracy(window.contentView.frame.size.width, ceil(accountsSize.width) + 44, 0.5);
     XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, ceil(accountsSize.height), 0.5);
     NSView *detail = [controller valueForKey:@"settingsDetailView"];
-    XCTAssertEqualWithAccuracy(NSMidX(form.frame), NSMidX(detail.bounds), 0.5);
-    XCTAssertEqualWithAccuracy(NSMidY(form.frame), NSMidY(detail.bounds), 0.5);
-    XCTAssertLessThanOrEqual(form.frame.size.height, 240);
+    XCTAssertEqualWithAccuracy(NSMinX(form.frame), NSMinX(detail.bounds), 0.5);
+    XCTAssertEqualWithAccuracy(form.frame.size.width, detail.bounds.size.width, 0.5);
+    XCTAssertEqualWithAccuracy(NSMaxY(detail.bounds) - NSMaxY(form.frame), 12, 0.5);
+    XCTAssertLessThanOrEqual(form.frame.size.height, detail.bounds.size.height - 12);
+    [self assertSectionHeadings:@[@"Calling", @"Recording"] inView:form];
     XCTAssertFalse(form.hasAmbiguousLayout);
     [self assertControlsFitInsideView:form];
     XCTAssertTrue([window.contentView isKindOfClass:[AKWindowMaterialView class]]);
@@ -179,8 +230,24 @@
             XCTAssertEqualObjects(window.title, pane.title);
             XCTAssertTrue(NSEqualRects(window.frame, fixedFrame), @"Switching to%@ moved or resized Settings", pane.title);
             XCTAssertTrue(NSContainsRect(NSInsetRect(detail.bounds, -0.5, -0.5), pane.view.frame));
-            XCTAssertEqualWithAccuracy(NSMidX(pane.view.frame), NSMidX(detail.bounds), 0.5);
-            XCTAssertEqualWithAccuracy(NSMidY(pane.view.frame), NSMidY(detail.bounds), 0.5);
+            XCTAssertEqualWithAccuracy(NSMinX(pane.view.frame), NSMinX(detail.bounds), 0.5);
+            XCTAssertEqualWithAccuracy(pane.view.frame.size.width, detail.bounds.size.width, 0.5);
+            BOOL accounts = pane == controller.accountPreferencesViewController;
+            XCTAssertEqualWithAccuracy(NSMaxY(detail.bounds) - NSMaxY(pane.view.frame), accounts ? 0 : 12, 0.5);
+            if (accounts) {
+                XCTAssertEqualWithAccuracy(pane.view.frame.size.height, detail.bounds.size.height, 0.5);
+                [self assertSectionHeadings:@[] inView:pane.view];
+            } else if (pane == controller.generalPreferencesViewController) {
+                [self assertSectionHeadings:@[@"Calling", @"Recording"] inView:pane.view];
+            } else if (pane == controller.soundPreferencesViewController) {
+                [self assertSectionHeadings:@[@"Devices & ringtone", @"Call audio"] inView:pane.view];
+                NSPopUpButton *input = [pane valueForKey:@"soundInputPopUp"];
+                XCTAssertEqualWithAccuracy(NSMinX([input alignmentRectForFrame:input.frame]), 160, 0.5);
+            } else if (pane == controller.networkPreferencesViewController) {
+                [self assertSectionHeadings:@[@"SIP & discovery", @"Outbound proxy"] inView:pane.view];
+                NSTextField *host = controller.networkPreferencesViewController.STUNServerHostField;
+                XCTAssertEqualWithAccuracy(NSMinX([host alignmentRectForFrame:host.frame]), 144, 0.5);
+            }
             [self assertSettingsIconsVisibleInSidebar:[controller valueForKey:@"settingsSidebar"]];
             [self assertControlsFitInsideView:pane.view];
         }

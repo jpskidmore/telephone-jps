@@ -1,5 +1,22 @@
 # Validation and release checks
 
+## 2.1.8 titled Settings sections
+
+Build and package locally from the exact main revision, preserving earlier
+release artifacts. Inspect all four Settings panes and all Accounts tabs in
+Light and Dark appearance. Every pane must retain the same 592 × 337-point outer
+window and 592 × 305-point content area, native Close control and 44-point rail.
+General, Sound and app-wide Network must align at the top and leading edge with
+their selected native section headings, separators and consistent field columns.
+Check containment, focus, outlets, actions and the Network save prompt; Accounts
+keeps its existing controls and geometry.
+
+Run the relevant native Settings geometry and lifecycle checks along with status
+rendering and compact history regressions. Verify the normal arm64 Release,
+UK English resources, nested signatures, extracted ZIP and source parity.
+Record only executed checks in BUILD-VERIFICATION.md, including any limit on
+visible inspection. Publication commits use `[skip ci]`; no cloud build is used.
+
 ## 2.1.7 availability colours
 
 Build and package locally from the exact main revision, preserving the 2.1.6

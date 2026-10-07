@@ -22,3 +22,9 @@
 
 /* Class = "NSButtonCell"; title = "Choose…"; ObjectID = "rec-folder-button-cell"; */
 "rec-folder-button-cell.title" = "Choose…";
+
+/* Class = "NSTextFieldCell"; title = "Calling"; ObjectID = "section-calling-cell"; */
+"section-calling-cell.title" = "Calling";
+
+/* Class = "NSTextFieldCell"; title = "Recording"; ObjectID = "section-recording-cell"; */
+"section-recording-cell.title" = "Recording";

@@ -118,13 +118,35 @@
                         <action selector="chooseRecordingFolder:" target="-2" id="rec-folder-action"/>
                     </connections>
                 </button>
+                <textField identifier="SettingsSectionHeading" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="section-calling-heading">
+                    <rect key="frame" x="16" y="10" width="130" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Calling" id="section-calling-cell">
+                        <font key="font" metaFont="systemBold" size="13"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box identifier="SettingsSectionSeparator" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="section-calling-line">
+                    <rect key="frame" x="156" y="18" width="276" height="1"/>
+                </box>
+                <textField identifier="SettingsSectionHeading" horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="section-recording-heading">
+                    <rect key="frame" x="16" y="10" width="130" height="16"/>
+                    <textFieldCell key="cell" lineBreakMode="clipping" title="Recording" id="section-recording-cell">
+                        <font key="font" metaFont="systemBold" size="13"/>
+                        <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                        <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                    </textFieldCell>
+                </textField>
+                <box identifier="SettingsSectionSeparator" boxType="separator" translatesAutoresizingMaskIntoConstraints="NO" id="section-recording-line">
+                    <rect key="frame" x="156" y="18" width="276" height="1"/>
+                </box>
             </subviews>
             <constraints>
                 <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="448" id="cg-1"/>
                 <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="206" id="cg-2"/>
                 <constraint firstAttribute="leading" firstItem="255" secondItem="150" secondAttribute="leading" constant="16" id="cg-3"/>
                 <constraint firstAttribute="trailing" firstItem="150" relation="greaterThanOrEqual" secondItem="255" secondAttribute="trailing" constant="16" id="cg-4"/>
-                <constraint firstAttribute="top" firstItem="255" secondItem="150" secondAttribute="top" constant="10" id="cg-5"/>
+                <constraint firstAttribute="top" firstItem="255" secondItem="150" secondAttribute="top" constant="32" id="cg-5"/>
                 <constraint firstAttribute="leading" firstItem="520" secondItem="150" secondAttribute="leading" constant="16" id="cg-6"/>
                 <constraint firstAttribute="trailing" firstItem="150" relation="greaterThanOrEqual" secondItem="520" secondAttribute="trailing" constant="16" id="cg-7"/>
                 <constraint firstAttribute="top" firstItem="520" secondItem="255" secondAttribute="bottom" constant="6" id="cg-8"/>
@@ -136,7 +158,7 @@
                 <constraint firstAttribute="top" firstItem="529" secondItem="524" secondAttribute="bottom" constant="6" id="cg-14"/>
                 <constraint firstAttribute="leading" firstItem="rec-pref-1" secondItem="150" secondAttribute="leading" constant="16" id="cg-15"/>
                 <constraint firstAttribute="trailing" firstItem="150" relation="greaterThanOrEqual" secondItem="rec-pref-1" secondAttribute="trailing" constant="16" id="cg-16"/>
-                <constraint firstAttribute="top" firstItem="rec-pref-1" secondItem="529" secondAttribute="bottom" constant="6" id="cg-17"/>
+                <constraint firstAttribute="top" firstItem="rec-pref-1" secondItem="529" secondAttribute="bottom" constant="34" id="cg-17"/>
                 <constraint firstAttribute="top" firstItem="rec-format-label" secondItem="rec-pref-1" secondAttribute="bottom" constant="10" id="cg-18"/>
                 <constraint firstAttribute="leading" firstItem="rec-format-label" secondItem="150" secondAttribute="leading" constant="16" id="cg-19"/>
                 <constraint firstAttribute="leading" firstItem="rec-format-popup" secondItem="rec-format-label" secondAttribute="trailing" constant="8" id="cg-20"/>
@@ -152,6 +174,20 @@
                 <constraint firstAttribute="centerY" firstItem="rec-folder-button" secondItem="rec-folder-label" secondAttribute="centerY" id="cg-30"/>
                 <constraint firstAttribute="trailing" firstItem="150" secondItem="rec-folder-button" secondAttribute="trailing" constant="16" id="cg-31"/>
                 <constraint firstAttribute="bottom" firstItem="150" secondItem="rec-folder-button" secondAttribute="bottom" constant="18" id="cg-32"/>
+                <constraint firstItem="section-calling-heading" firstAttribute="leading" secondItem="150" secondAttribute="leading" constant="16" id="section-calling-constraint-1"/>
+                <constraint firstItem="section-calling-heading" firstAttribute="height" constant="16" id="section-calling-constraint-2"/>
+                <constraint firstItem="section-calling-line" firstAttribute="leading" secondItem="section-calling-heading" secondAttribute="trailing" constant="10" id="section-calling-constraint-3"/>
+                <constraint firstItem="section-calling-line" firstAttribute="trailing" secondItem="150" secondAttribute="trailing" constant="-16" id="section-calling-constraint-4"/>
+                <constraint firstItem="section-calling-line" firstAttribute="centerY" secondItem="section-calling-heading" secondAttribute="centerY" id="section-calling-constraint-5"/>
+                <constraint firstItem="section-calling-line" firstAttribute="height" constant="1" id="section-calling-constraint-6"/>
+                <constraint firstItem="section-calling-heading" firstAttribute="top" secondItem="150" secondAttribute="top" constant="10" id="section-calling-constraint-7"/>
+                <constraint firstItem="section-recording-heading" firstAttribute="leading" secondItem="150" secondAttribute="leading" constant="16" id="section-recording-constraint-1"/>
+                <constraint firstItem="section-recording-heading" firstAttribute="height" constant="16" id="section-recording-constraint-2"/>
+                <constraint firstItem="section-recording-line" firstAttribute="leading" secondItem="section-recording-heading" secondAttribute="trailing" constant="10" id="section-recording-constraint-3"/>
+                <constraint firstItem="section-recording-line" firstAttribute="trailing" secondItem="150" secondAttribute="trailing" constant="-16" id="section-recording-constraint-4"/>
+                <constraint firstItem="section-recording-line" firstAttribute="centerY" secondItem="section-recording-heading" secondAttribute="centerY" id="section-recording-constraint-5"/>
+                <constraint firstItem="section-recording-line" firstAttribute="height" constant="1" id="section-recording-constraint-6"/>
+                <constraint firstItem="section-recording-heading" firstAttribute="bottom" secondItem="rec-pref-1" secondAttribute="top" constant="-8" id="section-recording-constraint-7"/>
             </constraints>
             <point key="canvasLocation" x="332.5" y="454.5"/>
         </customView>
