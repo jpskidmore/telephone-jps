@@ -8,6 +8,9 @@
 - Preserve calling, recording, account, history and settings actions, including Network save prompts
 - Retain native close controls, readable titlebars, light/dark colors and accessibility material fallbacks
 - Add native layout and lifecycle regressions for the compact interface
+- Use UK English only; remove German and Russian resources and language-specific defaults
+- Use UK date order, 24-hour time and English duration units without changing saved number-formatting choices
+- Keep all four Settings rail icons within the narrow visible strip
 
 See [release notes](docs/releases/2.1.5.md).
 

@@ -23,7 +23,7 @@ import UseCasesTestDoubles
 struct DefaultAppSettingsTests {
     @Test func registersDefaultSettingsOnRegister() {
         let settings = SettingsFake()
-        let sut = DefaultAppSettings(settings: settings, localization: "any")
+        let sut = DefaultAppSettings(settings: settings)
 
         sut.register()
 
@@ -32,7 +32,7 @@ struct DefaultAppSettingsTests {
 
     @Test func automaticCallRecordingIsOffByDefault() {
         let settings = SettingsFake()
-        let sut = DefaultAppSettings(settings: settings, localization: "any")
+        let sut = DefaultAppSettings(settings: settings)
 
         sut.register()
 
@@ -41,28 +41,42 @@ struct DefaultAppSettingsTests {
 
     @Test func automaticCallRecordingDefaultsToOgg() {
         let settings = SettingsFake()
-        let sut = DefaultAppSettings(settings: settings, localization: "any")
+        let sut = DefaultAppSettings(settings: settings)
 
         sut.register()
 
         #expect(settings.registeredDefaults[UserDefaultsKeys.recordingFormat] as? String == "ogg")
     }
 
-    @Test func formatTelephoneNumbersIsFalseForGermanLocalization() {
+    @Test func telephoneNumberFormattingIsOnByDefault() {
         let settings = SettingsFake()
-        let sut = DefaultAppSettings(settings: settings, localization: "de")
+        let sut = DefaultAppSettings(settings: settings)
 
         sut.register()
 
-        #expect(!(settings.registeredDefaults[UserDefaultsKeys.formatTelephoneNumbers] as! Bool))
+        #expect(settings.registeredDefaults[UserDefaultsKeys.formatTelephoneNumbers] as! Bool)
     }
 
-    @Test func telephoneNumberFormatterSplitsLastFourDigitsIsTrueForRussian() {
+    @Test func lastFourDigitsAreNotSplitByDefault() {
         let settings = SettingsFake()
-        let sut = DefaultAppSettings(settings: settings, localization: "ru")
+        let sut = DefaultAppSettings(settings: settings)
 
         sut.register()
 
-        #expect(settings.registeredDefaults[UserDefaultsKeys.telephoneNumberFormatterSplitsLastFourDigits] as! Bool)
+        #expect(!(settings.registeredDefaults[UserDefaultsKeys.telephoneNumberFormatterSplitsLastFourDigits] as! Bool))
+    }
+
+    @Test func registeringDefaultsPreservesSavedNumberFormattingChoices() {
+        let settings = SettingsFake()
+        settings.set(false, forKey: UserDefaultsKeys.formatTelephoneNumbers)
+        settings.set(true, forKey: UserDefaultsKeys.telephoneNumberFormatterSplitsLastFourDigits)
+        let sut = DefaultAppSettings(settings: settings)
+
+        sut.register()
+
+        #expect(!settings.bool(forKey: UserDefaultsKeys.formatTelephoneNumbers))
+        #expect(settings.bool(forKey: UserDefaultsKeys.telephoneNumberFormatterSplitsLastFourDigits))
+        #expect(settings.registeredDefaults[UserDefaultsKeys.formatTelephoneNumbers] as? Bool == true)
+        #expect(settings.registeredDefaults[UserDefaultsKeys.telephoneNumberFormatterSplitsLastFourDigits] as? Bool == false)
     }
 }

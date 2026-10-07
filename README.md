@@ -29,6 +29,9 @@ This build targets Apple silicon and macOS 15.6 or later. It is ad-hoc signed bu
 
 ## What it does
 
+The interface is UK English only, with UK dates and 24-hour time. International
+phone numbers and contact names remain supported.
+
 jps Telephone retains the original Telephone SIP calling experience and adds:
 
 - a distinct blue icon, app name, and bundle identity;

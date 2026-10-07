@@ -25,9 +25,9 @@ final class DefaultAppSettings: NSObject {
 
     private let settings: KeyValueSettings
 
-    init(settings: KeyValueSettings, localization: String) {
+    init(settings: KeyValueSettings) {
         self.settings = settings
-        self.defaults = makeDefaults(for: localization)
+        self.defaults = makeDefaults()
     }
 
     @objc(registerDefaults)
@@ -54,8 +54,8 @@ final class DefaultAppSettings: NSObject {
     ]
 }
 
-private func makeDefaults(for localization: String) -> [String: Any] {
-    var result: [String: Any] = [
+private func makeDefaults() -> [String: Any] {
+    return [
         UserDefaultsKeys.autoCloseCallWindow: true,
         UserDefaultsKeys.autoCloseMissedCallWindow: true,
         UserDefaultsKeys.automaticallyRecordCalls: false,
@@ -82,11 +82,4 @@ private func makeDefaults(for localization: String) -> [String: Any] {
         SettingsKeys.pauseITunes: true,
         SettingsKeys.significantPhoneNumberLength: 9,
     ]
-    if localization == "de" {
-        result[UserDefaultsKeys.formatTelephoneNumbers] = false
-    }
-    if localization == "ru" {
-        result[UserDefaultsKeys.telephoneNumberFormatterSplitsLastFourDigits] = true
-    }
-    return result
 }

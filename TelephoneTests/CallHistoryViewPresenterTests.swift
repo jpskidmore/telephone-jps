@@ -297,3 +297,27 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
                                      charactersIgnoringModifiers: characters, isARepeat: false, keyCode: code))
     }
 }
+
+@MainActor
+final class UKEnglishFormatterTests: XCTestCase {
+    func testHistoryDateUsesUKDayMonthOrderAnd24HourTime() throws {
+        let formatter = ShortRelativeDateTimeFormatter()
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let date = try XCTUnwrap(calendar.date(from: DateComponents(year: 2024, month: 12, day: 25, hour: 13, minute: 34)))
+
+        let text = formatter.string(from: date)
+
+        XCTAssertTrue(text.hasPrefix("25/12/2024"), text)
+        XCTAssertTrue(text.contains("13:34"), text)
+    }
+
+    func testCallDurationUsesEnglishUnitNames() throws {
+        let text = try XCTUnwrap(DurationFormatter().string(from: 3661))
+
+        XCTAssertTrue(text.contains("hr"), text)
+        XCTAssertTrue(text.contains("min"), text)
+        XCTAssertTrue(text.contains("sec"), text)
+    }
+}

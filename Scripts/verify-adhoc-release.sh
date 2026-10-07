@@ -58,9 +58,26 @@ def read_dictionary(path):
 
 info = read_dictionary(app / "Contents/Info.plist")
 for key, value in {"CFBundleShortVersionString": version, "CFBundleVersion": build,
-                   "CFBundleIdentifier": "uk.jpsit.telephone"}.items():
+                   "CFBundleIdentifier": "uk.jpsit.telephone",
+                   "CFBundleDevelopmentRegion": "en-GB"}.items():
     if info.get(key) != value:
         raise SystemExit(f"App {key} differs from expected value {value}")
+localizations = list(app.rglob("*.lproj"))
+unexpected = [path for path in localizations if path.name not in {"Base.lproj", "en-GB.lproj"}]
+if unexpected:
+    raise SystemExit("Unexpected localization resources: " + ", ".join(str(p.relative_to(app)) for p in unexpected))
+for framework in ("Domain", "UseCases"):
+    framework_path = app / "Contents/Frameworks" / f"{framework}.framework"
+    framework_info = read_dictionary(framework_path / "Resources/Info.plist")
+    if framework_info.get("CFBundleDevelopmentRegion") != "en-GB":
+        raise SystemExit(f"{framework} framework development language is not UK English")
+receipt_info = read_dictionary(app / "Contents/XPCServices/ReceiptValidation.xpc/Contents/Info.plist")
+if receipt_info.get("CFBundleDevelopmentRegion") != "en-GB":
+    raise SystemExit("ReceiptValidation service development language is not UK English")
+if not (app / "Contents/Resources/en-GB.lproj").is_dir():
+    raise SystemExit("Missing UK English application resources")
+if not (app / "Contents/Frameworks/UseCases.framework/Resources/en-GB.lproj").is_dir():
+    raise SystemExit("Missing UK English UseCases resources")
 normal = read_dictionary(root / "Telephone/Telephone.entitlements")
 if "com.apple.security.cs.disable-library-validation" in normal:
     raise SystemExit("Ad-hoc exception leaked into normal project entitlements")
@@ -71,6 +88,7 @@ for key in ("com.apple.security.app-sandbox", "com.apple.security.cs.disable-lib
     if signed.get(key) is not True:
         raise SystemExit(f"Ad-hoc signature is missing true entitlement: {key}")
 print(f"Application metadata matches project: {version} ({build})")
+print("UK English bundle resources and development languages verified")
 PY
 
 set +e

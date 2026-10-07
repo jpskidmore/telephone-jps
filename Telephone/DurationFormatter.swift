@@ -21,6 +21,9 @@ import Foundation
 final class DurationFormatter: DateComponentsFormatter, @unchecked Sendable {
     override init() {
         super.init()
+        var englishCalendar = Calendar.current
+        englishCalendar.locale = Locale(identifier: "en_GB")
+        calendar = englishCalendar
         unitsStyle = .short
         allowedUnits = [.hour, .minute, .second]
     }

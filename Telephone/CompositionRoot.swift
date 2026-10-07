@@ -275,9 +275,7 @@ final class CompositionRoot: NSObject {
 
         logFileURL = LogFileURL(locations: applicationDataLocations, filename: "Telephone.log")
 
-        defaultAppSettings = DefaultAppSettings(
-            settings: defaults, localization: Bundle.main.preferredLocalizations.first ?? ""
-        )
+        defaultAppSettings = DefaultAppSettings(settings: defaults)
 
         helpMenuActionTarget = HelpMenuActionTarget(
             logFileURL: logFileURL,

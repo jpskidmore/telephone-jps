@@ -21,6 +21,7 @@ import Foundation
 final class ShortRelativeDateTimeFormatter: DateFormatter, @unchecked Sendable {
     override init() {
         super.init()
+        locale = Locale(identifier: "en_GB")
         dateStyle = .short
         timeStyle = .short
         doesRelativeDateFormatting = true

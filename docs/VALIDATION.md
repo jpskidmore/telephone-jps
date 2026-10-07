@@ -9,6 +9,13 @@ without replacing its data or actions. The existing four-suite release pipeline
 also covers audio and recording harnesses, Foundation checks, arm64 Release
 compilation, ad-hoc signing and ZIP extraction/signature verification.
 
+The current interface supports UK English only. Packaging rejects localization
+directories other than the neutral Base resources and en-GB, and checks the
+app/framework development languages. Hosted regressions cover UK date and
+duration formatting and preservation of saved number-formatting preferences.
+Settings geometry checks include each icon's actual visible bounds within the
+44-point rail. Historical multilingual checks below describe previous releases.
+
 The candidate is built from an exact main commit. Its BUILD-VERIFICATION.md and
 workflow logs record executed results. The exact packaged binary must then pass
 local inspection of all panes, compact/full history and call presentation in

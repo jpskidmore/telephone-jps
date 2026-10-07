@@ -80,13 +80,8 @@ NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNo
             
             [[self accountController] showUnavailableState];
             
-            NSString *statusText;
-            NSString *preferredLocalization = [[NSBundle mainBundle] preferredLocalizations][0];
-            if ([preferredLocalization isEqualToString:@"ru"]) {
-                statusText = LocalizedStringForSIPResponseCode([[[self accountController] account] registrationStatus]);
-            } else {
-                statusText = [[[self accountController] account] registrationStatusText];
-            }
+            NSString *statusText = LocalizedStringForSIPResponseCode([[[self accountController] account] registrationStatus])
+                ?: [[[self accountController] account] registrationStatusText];
             
             NSString *error;
             if (statusText == nil) {

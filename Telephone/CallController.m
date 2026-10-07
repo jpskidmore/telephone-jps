@@ -783,8 +783,6 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     [self stopRecording];
     [[self activeCallViewController] stopCallTimer];
     
-    NSString *preferredLocalization = [[NSBundle mainBundle] preferredLocalizations][0];
-    
     switch ([[self call] lastStatus]) {
         case PJSIP_SC_OK:
             [self setStatus:NSLocalizedString(@"call ended", @"Call ended.")];
@@ -808,17 +806,9 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
             break;
             
         default:
-            if ([preferredLocalization isEqualToString:@"ru"]) {
-                NSString *statusText = LocalizedStringForSIPResponseCode([[self call] lastStatus]);
-                if (statusText == nil) {
-                    [self setStatus:[NSString stringWithFormat:NSLocalizedString(@"Error %ld", @"Error #."),
-                                     [[self call] lastStatus]]];
-                } else {
-                    [self setStatus:statusText];
-                }
-            } else {
-                [self setStatus:[[self call] lastStatusText]];
-            }
+            // Preserve provider diagnostic text for non-standard response codes.
+            [self setStatus:LocalizedStringForSIPResponseCode([[self call] lastStatus])
+                ?: [[self call] lastStatusText]];
             break;
     }
 

@@ -16,6 +16,24 @@
 
 @implementation PreferencesControllerLifecycleTests
 
+- (void)assertSettingsIconsVisibleInSidebar:(NSTableView *)sidebar {
+    NSClipView *clip = sidebar.enclosingScrollView.contentView;
+    // A44pt clip alone is insufficient: a wider document can centre every
+    // otherwise valid icon completely outside the visible navigation rail.
+    XCTAssertEqualWithAccuracy(sidebar.frame.size.width, clip.bounds.size.width, 0.5);
+    for (NSInteger row = 0; row < sidebar.numberOfRows; row++) {
+        NSTableCellView *cell = [sidebar viewAtColumn:0 row:row makeIfNecessary:YES];
+        [cell layoutSubtreeIfNeeded];
+        XCTAssertNotNil(cell.imageView.image);
+        NSRect icon = [cell.imageView convertRect:cell.imageView.bounds toView:clip];
+        XCTAssertTrue(NSContainsRect(NSInsetRect(clip.bounds, -0.5, -0.5), icon),
+                      @"Section icon%ld is clipped: %@", (long)row, NSStringFromRect(icon));
+        XCTAssertEqualWithAccuracy(NSMidX(icon), NSMidX(clip.bounds), 0.5);
+        NSRect iconInTable = [cell.imageView convertRect:cell.imageView.bounds toView:sidebar];
+        XCTAssertEqual([sidebar rowAtPoint:NSMakePoint(NSMidX(iconInTable), NSMidY(iconInTable))], row);
+    }
+}
+
 - (void)assertControlsFitInsideView:(NSView *)view {
     XCTAssertFalse(view.hasAmbiguousLayout);
     for (NSView *subview in view.subviews) {
@@ -82,6 +100,7 @@
     XCTAssertNotNil(generalRow.imageView.image);
     XCTAssertEqualObjects(generalRow.accessibilityLabel, controller.generalToolbarItem.label);
     XCTAssertEqualObjects(generalRow.toolTip, controller.generalToolbarItem.label);
+    [self assertSettingsIconsVisibleInSidebar:sidebar];
 
     NSView *form = controller.generalPreferencesViewController.view;
     XCTAssertEqual(form.window, window);
@@ -153,6 +172,7 @@
         XCTAssertEqualObjects(window.title, pane.title);
         XCTAssertEqualWithAccuracy(window.contentView.frame.size.width, pane.view.frame.size.width + 44, 0.5);
         XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, pane.view.frame.size.height, 0.5);
+        [self assertSettingsIconsVisibleInSidebar:[controller valueForKey:@"settingsSidebar"]];
         [self assertControlsFitInsideView:pane.view];
     }
     XCTAssertEqualWithAccuracy(window.contentView.frame.size.height, generalHeight, 0.5);

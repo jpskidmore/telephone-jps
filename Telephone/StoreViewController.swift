@@ -25,6 +25,7 @@ final class StoreViewController: NSViewController {
     @objc private dynamic var products: [PresentationProduct] = []
     private let formatter: DateFormatter = {
         let f = DateFormatter()
+        f.locale = Locale(identifier: "en_GB")
         f.dateStyle = .short
         return f
     }()

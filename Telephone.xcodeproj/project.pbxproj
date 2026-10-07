@@ -140,7 +140,6 @@
 		8A32D19E1E8E816500903796 /* CallHistoriesHistoryRemoveUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A32D19D1E8E816500903796 /* CallHistoriesHistoryRemoveUseCaseTests.swift */; };
 		8A32D1A01E8E81E700903796 /* CallHistoriesHistoryRemoveUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A32D19F1E8E81E700903796 /* CallHistoriesHistoryRemoveUseCase.swift */; };
 		8A3961E91F7EA28B00209266 /* WeakStoreEventTarget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A3961E81F7EA28B00209266 /* WeakStoreEventTarget.swift */; };
-		8A3961EC1F7EEE7500209266 /* Localizable.stringsdict in Resources */ = {isa = PBXBuildFile; fileRef = 8A3961EE1F7EEE7500209266 /* Localizable.stringsdict */; };
 		8A39A1AD1D5BE42100D703AD /* PKCS7Container.m in Sources */ = {isa = PBXBuildFile; fileRef = 8A39A1AC1D5BE42100D703AD /* PKCS7Container.m */; };
 		8A39A1B01D5BE70000D703AD /* ASN1Payload.m in Sources */ = {isa = PBXBuildFile; fileRef = 8A39A1AF1D5BE70000D703AD /* ASN1Payload.m */; };
 		8A39A1B51D5C7C2700D703AD /* ASN1PayloadAttribute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A39A1B41D5C7C2700D703AD /* ASN1PayloadAttribute.swift */; };
@@ -854,21 +853,19 @@
 		AFA000010000000000000001 /* AKAudioDeviceController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AKAudioDeviceController.h; sourceTree = "<group>"; };
 		AFA000020000000000000002 /* AKAudioDeviceController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AKAudioDeviceController.m; sourceTree = "<group>"; };
 		B20000020000000000000002 /* CallControllerLifecycleTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CallControllerLifecycleTests.m; sourceTree = "<group>"; };
-		089C165DFE840E0CC02AAC07 /* en */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		089C165DFE840E0CC02AAC07 /* en-GB */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		8A00076423F733AB00963069 /* SIPAddressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SIPAddressTests.swift; path = UseCasesTests/SIPAddressTests.swift; sourceTree = SOURCE_ROOT; };
 		8A00076623F733EC00963069 /* SIPAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPAddress.swift; sourceTree = "<group>"; };
 		8A0058F12F606A510020F9D2 /* ContactsActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsActor.swift; sourceTree = "<group>"; };
 		8A01163520D2A8B500DA68A5 /* SystemAudioDevices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioDevices.swift; sourceTree = "<group>"; };
 		8A01163820D2E99B00DA68A5 /* SystemAudioDevicesFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioDevicesFactory.swift; sourceTree = "<group>"; };
-		8A0191291DAC472B00B35A8E /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Account.strings; sourceTree = "<group>"; };
-		8A01912B1DAC472C00B35A8E /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Account.strings; sourceTree = "<group>"; };
 		8A042ADD2109F9AF00306472 /* SystemDefaultingSoundIOTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SystemDefaultingSoundIOTests.swift; path = UseCasesTests/SystemDefaultingSoundIOTests.swift; sourceTree = SOURCE_ROOT; };
 		8A042ADF2109FA2C00306472 /* SystemDefaultingSoundIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemDefaultingSoundIO.swift; sourceTree = "<group>"; };
 		8A042AE1210A1FF800306472 /* SystemDefaultSoundIO+Equatable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SystemDefaultSoundIO+Equatable.swift"; sourceTree = "<group>"; };
 		8A042AE5210A26B600306472 /* NullSoundIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NullSoundIO.swift; sourceTree = "<group>"; };
 		8A0451E51C93308000A08012 /* SoundPlaybackUseCaseSpy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SoundPlaybackUseCaseSpy.swift; sourceTree = "<group>"; };
-		8A073BA11DAC445700301E58 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Account.strings; sourceTree = "<group>"; };
+		8A073BA11DAC445700301E58 /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/Account.strings; sourceTree = "<group>"; };
 		8A09E0F71E79A2560027A25E /* ReversedCallHistoryTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ReversedCallHistoryTests.swift; path = UseCasesTests/ReversedCallHistoryTests.swift; sourceTree = SOURCE_ROOT; };
 		8A09E0F91E79A29D0027A25E /* ReversedCallHistory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReversedCallHistory.swift; sourceTree = "<group>"; };
 		8A0ABBC91EFD70D10062D3CC /* ContactMatchingIndex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContactMatchingIndex.swift; sourceTree = "<group>"; };
@@ -936,7 +933,6 @@
 		8A1DA8121DF07EA700F5BA40 /* WorkspaceSleepStatus.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkspaceSleepStatus.swift; sourceTree = "<group>"; };
 		8A1DA8141DF07EEE00F5BA40 /* WorkspaceSleepStatusTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WorkspaceSleepStatusTests.swift; path = TelephoneTests/WorkspaceSleepStatusTests.swift; sourceTree = SOURCE_ROOT; };
 		8A22E43C2D04EB990083D38D /* CallHistoryActor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallHistoryActor.swift; sourceTree = "<group>"; };
-		8A23299425A7AFAF00B8CC49 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/AccountPreferencesView.strings; sourceTree = "<group>"; };
 		8A25C2791F00F83A00C91D55 /* ContactMatchingSettingsSpy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContactMatchingSettingsSpy.swift; sourceTree = "<group>"; };
 		8A273C7F1E8964F500B42A82 /* CallHistoryCallMakeUseCaseFactorySpy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CallHistoryCallMakeUseCaseFactorySpy.swift; sourceTree = "<group>"; };
 		8A273C831E8967E200B42A82 /* CallHistoryCallMakeUseCaseFactory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CallHistoryCallMakeUseCaseFactory.swift; sourceTree = "<group>"; };
@@ -1012,11 +1008,8 @@
 		8A32D1991E8BE7D500903796 /* MusicPlayer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MusicPlayer.swift; sourceTree = "<group>"; };
 		8A32D19D1E8E816500903796 /* CallHistoriesHistoryRemoveUseCaseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CallHistoriesHistoryRemoveUseCaseTests.swift; path = UseCasesTests/CallHistoriesHistoryRemoveUseCaseTests.swift; sourceTree = SOURCE_ROOT; };
 		8A32D19F1E8E81E700903796 /* CallHistoriesHistoryRemoveUseCase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CallHistoriesHistoryRemoveUseCase.swift; sourceTree = "<group>"; };
-		8A3829C2212D9B870006C09C /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/SoundPreferencesView.strings; sourceTree = "<group>"; };
-		8A3829C3212D9BA30006C09C /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/SoundPreferencesView.strings; sourceTree = "<group>"; };
-		8A3829C4212D9BB80006C09C /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/SoundPreferencesView.strings; sourceTree = "<group>"; };
+		8A3829C2212D9B870006C09C /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/SoundPreferencesView.strings; sourceTree = "<group>"; };
 		8A3961E81F7EA28B00209266 /* WeakStoreEventTarget.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WeakStoreEventTarget.swift; sourceTree = "<group>"; };
-		8A3961ED1F7EEE7500209266 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = de; path = de.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
 		8A39A1AB1D5BE42100D703AD /* PKCS7Container.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PKCS7Container.h; sourceTree = "<group>"; };
 		8A39A1AC1D5BE42100D703AD /* PKCS7Container.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PKCS7Container.m; sourceTree = "<group>"; };
 		8A39A1AE1D5BE70000D703AD /* ASN1Payload.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ASN1Payload.h; path = ReceiptValidation/ASN1Payload.h; sourceTree = SOURCE_ROOT; };
@@ -1044,9 +1037,7 @@
 		8A45ABF420E2866800099031 /* NullSystemSoundIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NullSystemSoundIO.swift; sourceTree = "<group>"; };
 		8A46FDBA1DD375B50022A822 /* CallHistoryRecordAddUseCaseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CallHistoryRecordAddUseCaseTests.swift; path = UseCasesTests/CallHistoryRecordAddUseCaseTests.swift; sourceTree = SOURCE_ROOT; };
 		8A46FDBC1DD4A8100022A822 /* NSString+Analyzing.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "NSString+Analyzing.swift"; sourceTree = "<group>"; };
-		8A495CAA261E37C400CEF101 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/IncomingCallView.strings; sourceTree = "<group>"; };
-		8A495CAB261E37DB00CEF101 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/IncomingCallView.strings; sourceTree = "<group>"; };
-		8A495CAC261E37E800CEF101 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/IncomingCallView.strings; sourceTree = "<group>"; };
+		8A495CAA261E37C400CEF101 /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/IncomingCallView.strings; sourceTree = "<group>"; };
 		8A4B60092125DA3300B67357 /* CoreAudioChangeEventSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioChangeEventSource.swift; sourceTree = "<group>"; };
 		8A4B65A51EAF9F8900F13654 /* URI+AKSIPURI.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "URI+AKSIPURI.swift"; sourceTree = "<group>"; };
 		8A4B65A71EB0CB7B00F13654 /* ContactMatchingStub.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContactMatchingStub.swift; sourceTree = "<group>"; };
@@ -1058,9 +1049,7 @@
 		8A4B65BE1EB23B6300F13654 /* Contact.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Contact.swift; sourceTree = "<group>"; };
 		8A4C2760213058E700ABE34B /* AccountControllers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AccountControllers.h; sourceTree = "<group>"; };
 		8A4C2761213058E700ABE34B /* AccountControllers.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AccountControllers.m; sourceTree = "<group>"; };
-		8A4CA6BB25926E9A0011566F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Preferences.strings; sourceTree = "<group>"; };
-		8A4CA6C825926F6D0011566F /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Preferences.strings; sourceTree = "<group>"; };
-		8A4CA6C925926F890011566F /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Preferences.strings; sourceTree = "<group>"; };
+		8A4CA6BB25926E9A0011566F /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/Preferences.strings; sourceTree = "<group>"; };
 		8A4D0AFD1C96D6A0005543A2 /* RingtoneOutputUpdateUseCaseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = RingtoneOutputUpdateUseCaseTests.swift; path = UseCasesTests/RingtoneOutputUpdateUseCaseTests.swift; sourceTree = SOURCE_ROOT; };
 		8A4D0AFF1C96D6F8005543A2 /* RingtoneOutputUpdateUseCase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RingtoneOutputUpdateUseCase.swift; sourceTree = "<group>"; };
 		8A4E382F1C5BB20100816F38 /* SettingsRingtoneSoundNameSaveUseCaseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SettingsRingtoneSoundNameSaveUseCaseTests.swift; path = UseCasesTests/SettingsRingtoneSoundNameSaveUseCaseTests.swift; sourceTree = SOURCE_ROOT; };
@@ -1073,9 +1062,7 @@
 		8A5D17501EBCD32700A95FB8 /* ExtractedPhoneNumberTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ExtractedPhoneNumberTests.swift; path = UseCasesTests/ExtractedPhoneNumberTests.swift; sourceTree = SOURCE_ROOT; };
 		8A5D17521EBCD40300A95FB8 /* ExtractedPhoneNumber.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExtractedPhoneNumber.swift; sourceTree = "<group>"; };
 		8A5DE3E4218B73F9002A4213 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/CallHistoryViewController.xib; sourceTree = "<group>"; };
-		8A5DE3E7218B7403002A4213 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/CallHistoryViewController.strings; sourceTree = "<group>"; };
-		8A5DE3E9218B7409002A4213 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/CallHistoryViewController.strings; sourceTree = "<group>"; };
-		8A5DE3EB218B740E002A4213 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/CallHistoryViewController.strings; sourceTree = "<group>"; };
+		8A5DE3E7218B7403002A4213 /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/CallHistoryViewController.strings; sourceTree = "<group>"; };
 		8A5EAAB52191F81D00426B7C /* ObjCStoreEventTarget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjCStoreEventTarget.swift; sourceTree = "<group>"; };
 		8A5EAAB82191F90100426B7C /* ObjCStoreEventTargetAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ObjCStoreEventTargetAdapterTests.swift; path = TelephoneTests/ObjCStoreEventTargetAdapterTests.swift; sourceTree = SOURCE_ROOT; };
 		8A5EAABA2191F94F00426B7C /* ObjCStoreEventTargetAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjCStoreEventTargetAdapter.swift; sourceTree = "<group>"; };
@@ -1087,9 +1074,7 @@
 		8A62B08A20D866C500716688 /* CoreAudioSystemAudioDevicesFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioSystemAudioDevicesFactory.swift; sourceTree = "<group>"; };
 		8A635DD61D8C211300E2DBD0 /* MusicPlayerFactory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MusicPlayerFactory.h; sourceTree = "<group>"; };
 		8A635DD71D8C211300E2DBD0 /* MusicPlayerFactory.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MusicPlayerFactory.m; sourceTree = "<group>"; };
-		8A63742F25E03F40006B306B /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/GeneralPreferencesView.strings; sourceTree = "<group>"; };
-		8A63743125E03F52006B306B /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/GeneralPreferencesView.strings; sourceTree = "<group>"; };
-		8A63743325E03FB1006B306B /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/GeneralPreferencesView.strings; sourceTree = "<group>"; };
+		8A63742F25E03F40006B306B /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/GeneralPreferencesView.strings; sourceTree = "<group>"; };
 		8A63ECD31CCFBEC400AEC485 /* SKProductsRequestToProductsAdapter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SKProductsRequestToProductsAdapter.swift; sourceTree = "<group>"; };
 		8A645FEE1E12AA6300515151 /* MatchedContact.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MatchedContact.swift; sourceTree = "<group>"; };
 		8A645FF41E12C98400515151 /* ContactCallHistoryRecord.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContactCallHistoryRecord.swift; sourceTree = "<group>"; };
@@ -1149,9 +1134,7 @@
 		8A7DE9BB26A0B89D0011C510 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		8A7E21511CC3F6A5000D02C3 /* ServiceAddressTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ServiceAddressTests.swift; path = UseCasesTests/ServiceAddressTests.swift; sourceTree = SOURCE_ROOT; };
 		8A7E21531CC411F3000D02C3 /* ServiceAddress.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ServiceAddress.swift; sourceTree = "<group>"; };
-		8A80624324C0C55200F2D71F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/NetworkPreferencesView.strings; sourceTree = "<group>"; };
-		8A80624424C0C55E00F2D71F /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/NetworkPreferencesView.strings; sourceTree = "<group>"; };
-		8A80624524C0C56200F2D71F /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/NetworkPreferencesView.strings; sourceTree = "<group>"; };
+		8A80624324C0C55200F2D71F /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/NetworkPreferencesView.strings; sourceTree = "<group>"; };
 		8A837FCD24A5277300DFA3F3 /* AKSIPURIParser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AKSIPURIParser.h; sourceTree = "<group>"; };
 		8A837FCE24A5277300DFA3F3 /* AKSIPURIParser.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AKSIPURIParser.m; sourceTree = "<group>"; };
 		8A8495F02433CF2D000A3A90 /* KeyValueSettings+UserDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KeyValueSettings+UserDefaults.swift"; sourceTree = "<group>"; };
@@ -1269,20 +1252,12 @@
 		8AA748D11D744FAB000587DC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/NetworkPreferencesView.xib; sourceTree = "<group>"; };
 		8AA748D21D744FAB000587DC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/AuthenticationFailure.xib; sourceTree = "<group>"; };
 		8AA748D31D744FAB000587DC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/AccountSetup.xib; sourceTree = "<group>"; };
-		8AA748F81D74986A000587DC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
-		8AA748FA1D74987E000587DC /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
-		8AA748FD1D749B00000587DC /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/MainMenu.strings; sourceTree = "<group>"; };
+		8AA748F81D74986A000587DC /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/Localizable.strings; sourceTree = "<group>"; };
 		8AA748FF1D749E05000587DC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/StoreWindowController.xib; sourceTree = "<group>"; };
-		8AA749021D749E15000587DC /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/StoreWindowController.strings; sourceTree = "<group>"; };
 		8AA749041D749E4D000587DC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/StoreViewController.xib; sourceTree = "<group>"; };
-		8AA749071D749E54000587DC /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/StoreViewController.strings; sourceTree = "<group>"; };
-		8AA749081D75A7A6000587DC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
-		8AA7490A1D75A90D000587DC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/StoreWindowController.strings; sourceTree = "<group>"; };
-		8AA7490D1D75A9C1000587DC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/MainMenu.strings; sourceTree = "<group>"; };
-		8AA749281D75B1BA000587DC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/StoreViewController.strings; sourceTree = "<group>"; };
-		8AA7492C1D75E5D5000587DC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/StoreViewController.strings; sourceTree = "<group>"; };
-		8AA7492E1D75E5DF000587DC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/StoreWindowController.strings; sourceTree = "<group>"; };
-		8AA749301D75E5E7000587DC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/MainMenu.strings; sourceTree = "<group>"; };
+		8AA7492C1D75E5D5000587DC /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/StoreViewController.strings; sourceTree = "<group>"; };
+		8AA7492E1D75E5DF000587DC /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/StoreWindowController.strings; sourceTree = "<group>"; };
+		8AA749301D75E5E7000587DC /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/MainMenu.strings; sourceTree = "<group>"; };
 		8AA749311D75FF18000587DC /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		8AA891DB1F83F69F0064B2EA /* SanitizedCallDestinationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SanitizedCallDestinationTests.swift; path = TelephoneTests/SanitizedCallDestinationTests.swift; sourceTree = SOURCE_ROOT; };
 		8AA891DD1F83F6EA0064B2EA /* SanitizedCallDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SanitizedCallDestination.swift; sourceTree = "<group>"; };
@@ -1319,8 +1294,7 @@
 		8AC1A4401C67BFA8007778A2 /* SoundEventTarget.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SoundEventTarget.swift; sourceTree = "<group>"; };
 		8AC1A4421C67C35D007778A2 /* DefaultSoundPlaybackUseCaseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DefaultSoundPlaybackUseCaseTests.swift; path = UseCasesTests/DefaultSoundPlaybackUseCaseTests.swift; sourceTree = SOURCE_ROOT; };
 		8AC1A4441C67C390007778A2 /* DefaultSoundPlaybackUseCase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DefaultSoundPlaybackUseCase.swift; sourceTree = "<group>"; };
-		8AC1B8D625A6802A00AB7930 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/AccountPreferencesView.strings; sourceTree = "<group>"; };
-		8AC1B8E625A6820400AB7930 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/AccountPreferencesView.strings; sourceTree = "<group>"; };
+		8AC1B8D625A6802A00AB7930 /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/AccountPreferencesView.strings; sourceTree = "<group>"; };
 		8AC24A5C1ED490F60094B01C /* Contact+CNContact.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Contact+CNContact.swift"; sourceTree = "<group>"; };
 		8AC443BE1F90E21E00ECE463 /* OrphanLogFileRemoval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrphanLogFileRemoval.swift; sourceTree = "<group>"; };
 		8AC66C9323A0159400FB64BA /* MusicApp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MusicApp.h; sourceTree = "<group>"; };
@@ -1407,9 +1381,7 @@
 		8ADED1E01EFD7F85009558E0 /* ContactMatchingIndexStub.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContactMatchingIndexStub.swift; sourceTree = "<group>"; };
 		8ADEDBF41ECF49AA00987B77 /* SimpleContactMatchingSettingsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SimpleContactMatchingSettingsTests.swift; path = UseCasesTests/SimpleContactMatchingSettingsTests.swift; sourceTree = SOURCE_ROOT; };
 		8ADEDBF61ECF49FA00987B77 /* SimpleContactMatchingSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimpleContactMatchingSettings.swift; sourceTree = "<group>"; };
-		8AE0D52B2620DB8300E129C3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/AccountSetup.strings; sourceTree = "<group>"; };
-		8AE0D52C2620DB8F00E129C3 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/AccountSetup.strings; sourceTree = "<group>"; };
-		8AE0D52D2620DB9300E129C3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/AccountSetup.strings; sourceTree = "<group>"; };
+		8AE0D52B2620DB8300E129C3 /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/AccountSetup.strings; sourceTree = "<group>"; };
 		8AE348571D3FC5E0005F9981 /* NoActivePurchasesReceipt.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NoActivePurchasesReceipt.swift; sourceTree = "<group>"; };
 		8AE396CB1D6B2F3800DCFB9E /* ExpectedProducts.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExpectedProducts.swift; sourceTree = "<group>"; };
 		8AE396EB1D6C86E000DCFB9E /* PurchaseReminderUseCaseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PurchaseReminderUseCaseTests.swift; path = UseCasesTests/PurchaseReminderUseCaseTests.swift; sourceTree = SOURCE_ROOT; };
@@ -1469,8 +1441,7 @@
 		AA10198F1C49486500869D01 /* SimpleSoundFactory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimpleSoundFactory.swift; sourceTree = "<group>"; };
 		AA1019921C4949E600869D01 /* FoundationToUseCasesTimerAdapter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FoundationToUseCasesTimerAdapter.swift; sourceTree = "<group>"; };
 		AA1019941C494B5700869D01 /* FoundationToUseCasesTimerAdapterFactory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FoundationToUseCasesTimerAdapterFactory.swift; sourceTree = "<group>"; };
-		AA167A1D0F07BF9E00AF8B71 /* en */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/SIPResponses.strings; sourceTree = "<group>"; };
-		AA167A480F0805B700AF8B71 /* ru */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/SIPResponses.strings; sourceTree = "<group>"; };
+		AA167A1D0F07BF9E00AF8B71 /* en-GB */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/SIPResponses.strings; sourceTree = "<group>"; };
 		AA16CBE40F856ACD000CAFD1 /* AKNSString+PJSUA.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = "AKNSString+PJSUA.h"; sourceTree = "<group>"; tabWidth = 4; };
 		AA16CBE50F856ACD000CAFD1 /* AKNSString+PJSUA.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = "AKNSString+PJSUA.m"; sourceTree = "<group>"; tabWidth = 4; };
 		AA16CC9C0F857009000CAFD1 /* AKNSString+Escaping.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = "AKNSString+Escaping.h"; sourceTree = "<group>"; tabWidth = 4; };
@@ -1495,8 +1466,6 @@
 		AA2CCC830E2E4EEB00871057 /* AKSIPCall.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = AKSIPCall.m; sourceTree = "<group>"; tabWidth = 4; };
 		1F8A00010000000000000001 /* AKStereoRecording.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = AKStereoRecording.h; sourceTree = "<group>"; tabWidth = 4; };
 		1F8A00020000000000000002 /* AKStereoRecording.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = AKStereoRecording.m; sourceTree = "<group>"; tabWidth = 4; };
-		AA2ED9B30F05BB64004A13C6 /* ru */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = ru; path = ru.lproj/AuthenticationFailure.xib; sourceTree = "<group>"; };
-		AA2ED9DF0F05C1E3004A13C6 /* ru */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		AA30D8451BF60672002F343A /* FirstSystemSoundIOTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FirstSystemSoundIOTests.swift; path = DomainTests/FirstSystemSoundIOTests.swift; sourceTree = SOURCE_ROOT; };
 		AA30D8471BF606C1002F343A /* FirstSystemSoundIO.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FirstSystemSoundIO.swift; sourceTree = "<group>"; };
 		AA30D84A1BF60DDB002F343A /* FirstSystemAudioDeviceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FirstSystemAudioDeviceTests.swift; path = DomainTests/FirstSystemAudioDeviceTests.swift; sourceTree = SOURCE_ROOT; };
@@ -1526,9 +1495,7 @@
 		AA3905491BFFE125005A8AA3 /* DomainUserAgentAudioDeviceExtension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DomainUserAgentAudioDeviceExtension.swift; sourceTree = "<group>"; };
 		AA3A14F90F309C7C00C45739 /* AKABAddressBook+Localizing.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = "AKABAddressBook+Localizing.h"; sourceTree = "<group>"; tabWidth = 4; };
 		AA3A14FA0F309C7C00C45739 /* AKABAddressBook+Localizing.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = "AKABAddressBook+Localizing.m"; sourceTree = "<group>"; tabWidth = 4; };
-		AA3A153F0F30A49C00C45739 /* en */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/AddressBookLabels.strings; sourceTree = "<group>"; };
-		AA3A15470F30A4C200C45739 /* ru */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/AddressBookLabels.strings; sourceTree = "<group>"; };
-		AA3A15480F30A4C700C45739 /* de */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/AddressBookLabels.strings; sourceTree = "<group>"; };
+		AA3A153F0F30A49C00C45739 /* en-GB */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/AddressBookLabels.strings; sourceTree = "<group>"; };
 		AA3B6E7F1C46B40C0030D410 /* Sound.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Sound.swift; sourceTree = "<group>"; };
 		AA3B6E811C46B55C0030D410 /* RepeatingSound.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RepeatingSound.swift; sourceTree = "<group>"; };
 		AA3B6E861C47AD0B0030D410 /* Timer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Timer.swift; sourceTree = "<group>"; };
@@ -1560,19 +1527,9 @@
 		AA4C2E781BBFEEAB00C3D096 /* CoreAudioObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreAudioObject.swift; sourceTree = "<group>"; };
 		AA4D49061BB99DBF004D1D4B /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		AA4D49081BB99DCC004D1D4B /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
-		AA5100010F1FE302003CE94C /* de */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		AA5100020F1FE32F003CE94C /* de */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AA51005C0F20117F003CE94C /* de */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = de; path = de.lproj/AuthenticationFailure.xib; sourceTree = "<group>"; };
-		AA584A690F06CFD2003C4992 /* en */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AA584A6B0F06D007003C4992 /* ru */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AA584A690F06CFD2003C4992 /* en-GB */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AA6989A21C19AF150067BFB1 /* SoundPreferencesViewEventTarget.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SoundPreferencesViewEventTarget.swift; sourceTree = "<group>"; };
 		AA6989A51C19AF2E0067BFB1 /* SoundPreferencesViewEventTargetTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SoundPreferencesViewEventTargetTests.swift; path = TelephoneTests/SoundPreferencesViewEventTargetTests.swift; sourceTree = SOURCE_ROOT; };
-		AA7CB52211442300004D79DA /* ru */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = ru; path = ru.lproj/ActiveAccountTransferView.xib; sourceTree = "<group>"; };
-		AA7CB52311442304004D79DA /* de */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = de; path = de.lproj/ActiveAccountTransferView.xib; sourceTree = "<group>"; };
-		AA7CB529114423AA004D79DA /* ru */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = ru; path = ru.lproj/ActiveCallTransferView.xib; sourceTree = "<group>"; };
-		AA7CB52A114423AE004D79DA /* de */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = de; path = de.lproj/ActiveCallTransferView.xib; sourceTree = "<group>"; };
-		AA7CB53111442434004D79DA /* ru */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = ru; path = ru.lproj/EndedCallTransferView.xib; sourceTree = "<group>"; };
-		AA7CB53211442437004D79DA /* de */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = de; path = de.lproj/EndedCallTransferView.xib; sourceTree = "<group>"; };
 		AA7F6D441C0381650064DA3A /* SettingsSoundIOLoadUseCaseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SettingsSoundIOLoadUseCaseTests.swift; path = UseCasesTests/SettingsSoundIOLoadUseCaseTests.swift; sourceTree = SOURCE_ROOT; };
 		AA7F6D461C0381C00064DA3A /* SettingsSoundIOLoadUseCase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsSoundIOLoadUseCase.swift; sourceTree = "<group>"; };
 		AA7F6D481C0382550064DA3A /* SettingsSoundIOLoadUseCaseOutputSpy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsSoundIOLoadUseCaseOutputSpy.swift; sourceTree = "<group>"; };
@@ -1870,7 +1827,6 @@
 				AAA7CFFC1825BE1900D53FB9 /* Telephone.entitlements */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
 				AA584A680F06CFD2003C4992 /* Localizable.strings */,
-				8A3961EE1F7EEE7500209266 /* Localizable.stringsdict */,
 				AA167A1C0F07BF9E00AF8B71 /* SIPResponses.strings */,
 				AA3A153E0F30A49C00C45739 /* AddressBookLabels.strings */,
 				1DDD58140DA1D0A300B32029 /* MainMenu.xib */,
@@ -3519,12 +3475,10 @@
 				};
 			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Telephone" */;
-			developmentRegion = en;
+			developmentRegion = "en-GB";
 			hasScannedForEncodings = 1;
 			knownRegions = (
-				en,
-				de,
-				ru,
+				"en-GB",
 				Base,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* Telephone */;
@@ -3590,7 +3544,6 @@
 				AADAA2CD107E56FD00789F2D /* ActiveCallView.xib in Resources */,
 				AADAA2D1107E572300789F2D /* EndedCallView.xib in Resources */,
 				8A5DE3E3218B73F9002A4213 /* CallHistoryViewController.xib in Resources */,
-				8A3961EC1F7EEE7500209266 /* Localizable.stringsdict in Resources */,
 				AA7CB51F11442249004D79DA /* ActiveAccountTransferView.xib in Resources */,
 				AA7CB51D11442241004D79DA /* CallTransfer.xib in Resources */,
 				AA7CB528114423A4004D79DA /* ActiveCallTransferView.xib in Resources */,
@@ -4470,9 +4423,7 @@
 		089C165CFE840E0CC02AAC07 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				089C165DFE840E0CC02AAC07 /* en */,
-				AA2ED9DF0F05C1E3004A13C6 /* ru */,
-				AA5100010F1FE302003CE94C /* de */,
+				089C165DFE840E0CC02AAC07 /* en-GB */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -4481,28 +4432,16 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748C21D744FAA000587DC /* Base */,
-				8AA748FD1D749B00000587DC /* ru */,
-				8AA7490D1D75A9C1000587DC /* de */,
-				8AA749301D75E5E7000587DC /* en */,
+				8AA749301D75E5E7000587DC /* en-GB */,
 			);
 			name = MainMenu.xib;
-			sourceTree = "<group>";
-		};
-		8A3961EE1F7EEE7500209266 /* Localizable.stringsdict */ = {
-			isa = PBXVariantGroup;
-			children = (
-				8A3961ED1F7EEE7500209266 /* de */,
-			);
-			name = Localizable.stringsdict;
 			sourceTree = "<group>";
 		};
 		8A5DE3E5218B73F9002A4213 /* CallHistoryViewController.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
 				8A5DE3E4218B73F9002A4213 /* Base */,
-				8A5DE3E7218B7403002A4213 /* en */,
-				8A5DE3E9218B7409002A4213 /* de */,
-				8A5DE3EB218B740E002A4213 /* ru */,
+				8A5DE3E7218B7403002A4213 /* en-GB */,
 			);
 			name = CallHistoryViewController.xib;
 			sourceTree = "<group>";
@@ -4510,9 +4449,7 @@
 		8AA748F91D74986A000587DC /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				8AA748F81D74986A000587DC /* en */,
-				8AA748FA1D74987E000587DC /* ru */,
-				8AA749081D75A7A6000587DC /* de */,
+				8AA748F81D74986A000587DC /* en-GB */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -4521,9 +4458,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748FF1D749E05000587DC /* Base */,
-				8AA749021D749E15000587DC /* ru */,
-				8AA7490A1D75A90D000587DC /* de */,
-				8AA7492E1D75E5DF000587DC /* en */,
+				8AA7492E1D75E5DF000587DC /* en-GB */,
 			);
 			name = StoreWindowController.xib;
 			sourceTree = "<group>";
@@ -4532,9 +4467,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA749041D749E4D000587DC /* Base */,
-				8AA749071D749E54000587DC /* ru */,
-				8AA749281D75B1BA000587DC /* de */,
-				8AA7492C1D75E5D5000587DC /* en */,
+				8AA7492C1D75E5D5000587DC /* en-GB */,
 			);
 			name = StoreViewController.xib;
 			sourceTree = "<group>";
@@ -4542,8 +4475,7 @@
 		AA167A1C0F07BF9E00AF8B71 /* SIPResponses.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AA167A1D0F07BF9E00AF8B71 /* en */,
-				AA167A480F0805B700AF8B71 /* ru */,
+				AA167A1D0F07BF9E00AF8B71 /* en-GB */,
 			);
 			name = SIPResponses.strings;
 			sourceTree = "<group>";
@@ -4552,9 +4484,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748C31D744FAA000587DC /* Base */,
-				8A073BA11DAC445700301E58 /* en */,
-				8A0191291DAC472B00B35A8E /* de */,
-				8A01912B1DAC472C00B35A8E /* ru */,
+				8A073BA11DAC445700301E58 /* en-GB */,
 			);
 			name = Account.xib;
 			sourceTree = "<group>";
@@ -4571,9 +4501,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748CD1D744FAA000587DC /* Base */,
-				8A4CA6BB25926E9A0011566F /* en */,
-				8A4CA6C825926F6D0011566F /* de */,
-				8A4CA6C925926F890011566F /* ru */,
+				8A4CA6BB25926E9A0011566F /* en-GB */,
 			);
 			name = Preferences.xib;
 			sourceTree = "<group>";
@@ -4582,9 +4510,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748D31D744FAB000587DC /* Base */,
-				8AE0D52B2620DB8300E129C3 /* en */,
-				8AE0D52C2620DB8F00E129C3 /* de */,
-				8AE0D52D2620DB9300E129C3 /* ru */,
+				8AE0D52B2620DB8300E129C3 /* en-GB */,
 			);
 			name = AccountSetup.xib;
 			sourceTree = "<group>";
@@ -4592,8 +4518,6 @@
 		AA2ED9B10F05BB5D004A13C6 /* AuthenticationFailure.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AA2ED9B30F05BB64004A13C6 /* ru */,
-				AA51005C0F20117F003CE94C /* de */,
 				8AA748D21D744FAB000587DC /* Base */,
 			);
 			name = AuthenticationFailure.xib;
@@ -4610,9 +4534,7 @@
 		AA3A153E0F30A49C00C45739 /* AddressBookLabels.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AA3A153F0F30A49C00C45739 /* en */,
-				AA3A15470F30A4C200C45739 /* ru */,
-				AA3A15480F30A4C700C45739 /* de */,
+				AA3A153F0F30A49C00C45739 /* en-GB */,
 			);
 			name = AddressBookLabels.strings;
 			sourceTree = "<group>";
@@ -4620,9 +4542,7 @@
 		AA584A680F06CFD2003C4992 /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AA584A690F06CFD2003C4992 /* en */,
-				AA584A6B0F06D007003C4992 /* ru */,
-				AA5100020F1FE32F003CE94C /* de */,
+				AA584A690F06CFD2003C4992 /* en-GB */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -4638,8 +4558,6 @@
 		AA7CB51E11442249004D79DA /* ActiveAccountTransferView.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AA7CB52211442300004D79DA /* ru */,
-				AA7CB52311442304004D79DA /* de */,
 				8AA748CA1D744FAA000587DC /* Base */,
 			);
 			name = ActiveAccountTransferView.xib;
@@ -4648,8 +4566,6 @@
 		AA7CB527114423A4004D79DA /* ActiveCallTransferView.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AA7CB529114423AA004D79DA /* ru */,
-				AA7CB52A114423AE004D79DA /* de */,
 				8AA748CB1D744FAA000587DC /* Base */,
 			);
 			name = ActiveCallTransferView.xib;
@@ -4658,8 +4574,6 @@
 		AA7CB52F1144242F004D79DA /* EndedCallTransferView.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				AA7CB53111442434004D79DA /* ru */,
-				AA7CB53211442437004D79DA /* de */,
 				8AA748CC1D744FAA000587DC /* Base */,
 			);
 			name = EndedCallTransferView.xib;
@@ -4669,9 +4583,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748C61D744FAA000587DC /* Base */,
-				8A495CAA261E37C400CEF101 /* en */,
-				8A495CAB261E37DB00CEF101 /* de */,
-				8A495CAC261E37E800CEF101 /* ru */,
+				8A495CAA261E37C400CEF101 /* en-GB */,
 			);
 			name = IncomingCallView.xib;
 			sourceTree = "<group>";
@@ -4696,9 +4608,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748D11D744FAB000587DC /* Base */,
-				8A80624324C0C55200F2D71F /* en */,
-				8A80624424C0C55E00F2D71F /* de */,
-				8A80624524C0C56200F2D71F /* ru */,
+				8A80624324C0C55200F2D71F /* en-GB */,
 			);
 			name = NetworkPreferencesView.xib;
 			sourceTree = "<group>";
@@ -4707,9 +4617,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748CF1D744FAB000587DC /* Base */,
-				8AC1B8D625A6802A00AB7930 /* en */,
-				8AC1B8E625A6820400AB7930 /* de */,
-				8A23299425A7AFAF00B8CC49 /* ru */,
+				8AC1B8D625A6802A00AB7930 /* en-GB */,
 			);
 			name = AccountPreferencesView.xib;
 			sourceTree = "<group>";
@@ -4718,9 +4626,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748D01D744FAB000587DC /* Base */,
-				8A3829C2212D9B870006C09C /* en */,
-				8A3829C3212D9BA30006C09C /* de */,
-				8A3829C4212D9BB80006C09C /* ru */,
+				8A3829C2212D9B870006C09C /* en-GB */,
 			);
 			name = SoundPreferencesView.xib;
 			sourceTree = "<group>";
@@ -4729,9 +4635,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				8AA748CE1D744FAB000587DC /* Base */,
-				8A63742F25E03F40006B306B /* en */,
-				8A63743125E03F52006B306B /* de */,
-				8A63743325E03FB1006B306B /* ru */,
+				8A63742F25E03F40006B306B /* en-GB */,
 			);
 			name = GeneralPreferencesView.xib;
 			sourceTree = "<group>";

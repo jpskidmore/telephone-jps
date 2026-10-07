@@ -185,10 +185,15 @@
     scroll.translatesAutoresizingMaskIntoConstraints = NO;
     self.settingsSidebar = [[NSTableView alloc] initWithFrame:NSZeroRect];
     NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"SettingsSection"];
+    column.minWidth = 44;
+    column.maxWidth = 44;
+    column.width = 44;
     column.resizingMask = NSTableColumnAutoresizingMask;
     [self.settingsSidebar addTableColumn:column];
     self.settingsSidebar.headerView = nil;
-    self.settingsSidebar.style = NSTableViewStyleSourceList;
+    // Plain native rows have no source-list side insets. The document must
+    // match this narrow icon rail so its centred symbols stay inside the clip.
+    self.settingsSidebar.style = NSTableViewStylePlain;
     self.settingsSidebar.rowSizeStyle = NSTableViewRowSizeStyleCustom;
     self.settingsSidebar.rowHeight = 36;
     self.settingsSidebar.intercellSpacing = NSMakeSize(0, 4);
@@ -254,6 +259,8 @@
     frame.size.height += heightDelta;
     frame.origin.y -= heightDelta;
     [self.window setFrame:frame display:YES animate:animate && !NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion];
+    [self.window.contentView layoutSubtreeIfNeeded];
+    [self.settingsSidebar sizeToFit];
     self.window.title = controller.title ?: NSLocalizedString(@"Settings", @"Settings window title.");
     [self.window recalculateKeyViewLoop];
 }

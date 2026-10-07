@@ -39,7 +39,6 @@
 #import "Telephone-Swift.h"
 
 NSString * const kEmailSIPLabel = @"sip";
-static NSString * const kRussian = @"ru";
 
 @interface AccountController () <AccountWindowControllerDelegate>
 
@@ -131,13 +130,8 @@ static NSString * const kRussian = @"ru";
             }
             
             if ([self shouldPresentRegistrationError]) {
-                NSString *statusText;
-                NSString *preferredLocalization = [[NSBundle mainBundle] preferredLocalizations][0];
-                if ([preferredLocalization isEqualToString:kRussian]) {
-                    statusText = LocalizedStringForSIPResponseCode([[self account] registrationStatus]);
-                } else {
-                    statusText = [[self account] registrationStatusText];
-                }
+                NSString *statusText = LocalizedStringForSIPResponseCode([[self account] registrationStatus])
+                    ?: [[self account] registrationStatusText];
                 
                 NSString *error;
                 if (statusText == nil) {
@@ -552,13 +546,8 @@ static NSString * const kRussian = @"ru";
             
             if ([[self userAgent] isStarted]) {
                 if ([self shouldPresentRegistrationError]) {
-                    NSString *statusText;
-                    NSString *preferredLocalization = [[NSBundle mainBundle] preferredLocalizations][0];
-                    if ([preferredLocalization isEqualToString:kRussian]) {
-                        statusText = LocalizedStringForSIPResponseCode([[self account] registrationStatus]);
-                    } else {
-                        statusText = [[self account] registrationStatusText];
-                    }
+                    NSString *statusText = LocalizedStringForSIPResponseCode([[self account] registrationStatus])
+                        ?: [[self account] registrationStatusText];
                     
                     NSString *error;
                     if (statusText == nil) {
