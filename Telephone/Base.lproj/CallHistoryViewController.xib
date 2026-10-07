@@ -32,7 +32,7 @@
                                 <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                 <tableColumns>
-                                    <tableColumn width="22" minWidth="22" maxWidth="22" id="Ls2-oY-D5N">
+                                    <tableColumn width="44" minWidth="44" maxWidth="44" id="Ls2-oY-D5N">
                                         <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border">
                                             <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                             <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
@@ -44,11 +44,11 @@
                                         </textFieldCell>
                                         <prototypeCellViews>
                                             <tableCellView id="GQL-B4-dJ7">
-                                                <rect key="frame" x="11" y="1" width="27" height="44"/>
+                                                <rect key="frame" x="0" y="1" width="44" height="44"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <subviews>
                                                     <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="cdt-zC-WCA">
-                                                        <rect key="frame" x="8" y="25" width="12" height="12"/>
+                                                        <rect key="frame" x="16" y="25" width="12" height="12"/>
                                                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" id="7Bf-tN-avV">
                                                             <imageReference key="image" image="phone.arrow.up.right.fill" catalog="system" symbolScale="small"/>
                                                         </imageCell>
@@ -60,7 +60,7 @@
                                                 </subviews>
                                                 <constraints>
                                                     <constraint firstItem="cdt-zC-WCA" firstAttribute="top" secondItem="GQL-B4-dJ7" secondAttribute="top" constant="9" id="EDn-ph-8EJ"/>
-                                                    <constraint firstItem="cdt-zC-WCA" firstAttribute="leading" secondItem="GQL-B4-dJ7" secondAttribute="leading" constant="8" id="SMW-Jo-2mY"/>
+                                                    <constraint firstItem="cdt-zC-WCA" firstAttribute="centerX" secondItem="GQL-B4-dJ7" secondAttribute="centerX" id="SMW-Jo-2mY"/>
                                                 </constraints>
                                             </tableCellView>
                                         </prototypeCellViews>
@@ -222,7 +222,7 @@
                     </connections>
                 </menuItem>
                 <menuItem isSeparatorItem="YES" id="3J9-q8-EmO"/>
-                <menuItem title="Delete All…" id="hyi-9B-WJ1">
+                <menuItem title="Clear Call History…" id="hyi-9B-WJ1">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
                         <action selector="deleteAll:" target="-2" id="I8N-l3-IOk"/>
