@@ -53,8 +53,8 @@
 /* Class = "NSButtonCell"; title = "IPv6"; ObjectID = "1o3-z9-WKa"; */
 "1o3-z9-WKa.title" = "IPv6";
 
-/* Class = "NSTabViewItem"; label = "Network"; ObjectID = "4sK-wA-Wvg"; */
-"4sK-wA-Wvg.label" = "Network";
+/* Class = "NSTabViewItem"; label = "Connection"; ObjectID = "4sK-wA-Wvg"; */
+"4sK-wA-Wvg.label" = "Connection";
 
 /* Class = "NSButtonCell"; title = "TLS"; ObjectID = "IzX-Uj-vdk"; */
 "IzX-Uj-vdk.title" = "TLS";
