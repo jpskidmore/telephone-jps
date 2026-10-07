@@ -279,7 +279,7 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
 
     private func findTable(in view: NSView) -> NSTableView? {
         if let table = view as? NSTableView { return table }
-        return view.subviews.lazy.compactMap { findTable(in: $0) }.first
+        return view.subviews.lazy.compactMap { self.findTable(in: $0) }.first
     }
 
     private func makeRecords(_ numbers: [Int]) -> [PresentationCallHistoryRecord] {
