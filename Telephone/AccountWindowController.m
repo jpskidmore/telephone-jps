@@ -129,6 +129,10 @@ static NSMenuItem *MenuItemWithAction(NSMenu *menu, SEL action);
     popUp.translatesAutoresizingMaskIntoConstraints = NO;
     popUp.imagePosition = NSImageOnly;
     popUp.imageScaling = NSImageScaleProportionallyDown;
+    popUp.bezelStyle = NSBezelStyleRounded;
+    popUp.controlSize = NSControlSizeRegular;
+    popUp.alignment = NSTextAlignmentCenter;
+    ((NSPopUpButtonCell *)popUp.cell).arrowPosition = NSPopUpNoArrow;
     popUp.title = @"";
     popUp.accessibilityLabel = NSLocalizedString(@"Availability", @"Account availability accessibility label.");
     image.translatesAutoresizingMaskIntoConstraints = NO;
@@ -201,13 +205,12 @@ static NSMenuItem *MenuItemWithAction(NSMenu *menu, SEL action);
 }
 
 - (IBAction)showDialerActions:(NSButton *)sender {
+    NSMenu *menu = [self dialerActionsMenu];
+    [menu popUpMenuPositioningItem:nil atLocation:NSMakePoint(0, NSHeight(sender.bounds)) inView:sender];
+}
+
+- (NSMenu *)dialerActionsMenu {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"More actions", @"Compact dialer actions menu.")];
-    NSString *historyTitle = self.accountViewController.historyExpanded
-        ? NSLocalizedString(@"Hide full call history", @"Collapse compact dialer history.")
-        : NSLocalizedString(@"Show full call history", @"Expand compact dialer history.");
-    NSMenuItem *history = [[NSMenuItem alloc] initWithTitle:historyTitle action:@selector(toggleCallHistory:) keyEquivalent:@""];
-    history.target = self;
-    [menu addItem:history];
     for (NSMenuItem *item in self.accountViewController.callHistoryActionsMenu.itemArray) {
         [menu addItem:[item copy]];
     }
@@ -231,7 +234,7 @@ static NSMenuItem *MenuItemWithAction(NSMenu *menu, SEL action);
         [menu addItem:NSMenuItem.separatorItem];
         [menu addItem:[settings copy]];
     }
-    [menu popUpMenuPositioningItem:nil atLocation:NSMakePoint(0, NSHeight(sender.bounds)) inView:sender];
+    return menu;
 }
 
 #pragma mark -
