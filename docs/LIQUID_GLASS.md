@@ -1,4 +1,4 @@
-# Compact macOS interface in 2.1.5
+# Compact macOS interface
 
 Telephone is intended to stay open beside other desktop work. The 2.1.5 layout
 uses the original Telephone window sizes as its starting point and the three
@@ -15,11 +15,16 @@ visible without depending on color alone. Arrow keys navigate sections and Tab
 moves into the form. Fields retain labels because an icon alone cannot explain a
 setting reliably.
 
-The window fits each pane instead of adding a 200-point sidebar and a common
-360-point minimum content height. Accounts retains the account list, detail tabs,
+Since 2.1.6, every pane uses the Accounts pane's window size, keeping the frame
+stable during navigation. The other forms are aligned within that shared size.
+Accounts retains the account list, detail tabs,
 enabled-account editing restrictions and reordering. Sound retains its four
 device/ringtone menus and codec setting. Leaving Network or closing its window
 retains the existing Save, Cancel and Don't Save prompt.
+
+The top-level Network section applies to all accounts. Accounts uses the name
+Connection for its account-specific network options, with scope described in
+help and accessible labels.
 
 Settings has a normal titled macOS window with its red Close button and
 Command-W. Minimize and zoom remain disabled. The titlebar uses the opaque
@@ -38,7 +43,8 @@ remain separate; Availability continues to control registration status.
 The compact window uses its own frame restoration identity so an old tall
 history window does not defeat the new compact default. Expanded history remains
 resizable. Secondary commands remain available through menus instead of taking
-permanent space in the dial bar.
+permanent space in the dial bar. The visible history button is the single
+visibility control; More offers Clear Call History… without a duplicate toggle.
 
 ## Calls: Pocket card
 
@@ -79,8 +85,8 @@ native glass; earlier systems use semantic visual-effect materials. Reduce
 Transparency uses an opaque semantic background, and Increase Contrast outlines
 that fallback. Runtime material rebuilds retain keyboard focus and field-editor
 selection. Light and Dark appearance use system fonts and semantic colors.
-Settings resize transitions respect Reduce Motion. New action/accessibility
-strings are supplied in English, German and Russian.
+Settings uses a stable frame across sections. Action/accessibility strings are
+supplied in UK English.
 
 ## Apple references
 
