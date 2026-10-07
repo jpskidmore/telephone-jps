@@ -32,6 +32,7 @@
 @property(nonatomic) NSToolbar *navigationToolbar;
 @property(nonatomic) NSArray<NSToolbarItem *> *settingsItems;
 @property(nonatomic) NSArray<NSLayoutConstraint *> *settingsPaneConstraints;
+@property(nonatomic) NSSize settingsContentSize;
 @property(nonatomic) BOOL updatingSidebarSelection;
 @end
 
@@ -142,6 +143,7 @@
     self.accountsToolbarItem.image = [NSImage imageWithSystemSymbolName:@"at" accessibilityDescription:nil];
     self.soundToolbarItem.image = [NSImage imageWithSystemSymbolName:@"speaker.wave.2" accessibilityDescription:nil];
     self.networkToolbarItem.image = [NSImage imageWithSystemSymbolName:@"network" accessibilityDescription:nil];
+    self.networkToolbarItem.toolTip = NSLocalizedString(@"Network settings for all accounts.", @"App-wide Network section scope.");
 }
 
 - (void)windowDidLoad {
@@ -160,8 +162,13 @@
     self.window.titlebarAppearsTransparent = NO;
     self.window.titlebarSeparatorStyle = NSTitlebarSeparatorStyleAutomatic;
     self.window.autorecalculatesKeyViewLoop = YES;
+    // The Accounts form is the largest pane. Determine the shared content
+    // size once so navigating Settings never moves or resizes the window.
+    NSSize accountsSize = self.accountPreferencesViewController.view.fittingSize;
+    self.settingsContentSize = NSMakeSize(ceil(accountsSize.width) + 44, ceil(accountsSize.height));
     [self buildSettingsSidebar];
-    [self displaySettingsController:self.generalPreferencesViewController animate:NO];
+    [self.window setContentSize:self.settingsContentSize];
+    [self displaySettingsController:self.generalPreferencesViewController];
     [self selectSidebarItem:self.generalToolbarItem];
 }
 
@@ -170,7 +177,7 @@
     // attached. Suppress navigation until the complete detail hierarchy exists.
     self.updatingSidebarSelection = YES;
     self.settingsContainerController = [[NSViewController alloc] init];
-    AKWindowMaterialView *container = [[AKWindowMaterialView alloc] initWithFrame:NSMakeRect(0, 0, 492, 206)];
+    AKWindowMaterialView *container = [[AKWindowMaterialView alloc] initWithFrame:NSMakeRect(0, 0, self.settingsContentSize.width, self.settingsContentSize.height)];
     container.usesOpaqueTitlebarBackground = YES;
     self.settingsContainerController.view = container;
     self.contentViewController = self.settingsContainerController;
@@ -207,6 +214,8 @@
 
     self.settingsDetailView = [[NSView alloc] initWithFrame:NSZeroRect];
     self.settingsDetailView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.settingsDetailView.accessibilityElement = YES;
+    self.settingsDetailView.accessibilityRole = NSAccessibilityGroupRole;
     [container addSubview:self.settingsDetailView];
     NSLayoutGuide *contentGuide = self.window.contentLayoutGuide;
     [NSLayoutConstraint activateConstraints:@[
@@ -229,9 +238,9 @@
     self.updatingSidebarSelection = NO;
 }
 
-- (void)displaySettingsController:(NSViewController *)controller animate:(BOOL)animate {
-    // The nib specifies a compact minimum, while intrinsic label sizes allow
-    // translated text to widen the pane without clipping native controls.
+- (void)displaySettingsController:(NSViewController *)controller {
+    // Retain each form's native compact layout and centre it in the common
+    // Accounts-sized detail area, rather than stretching fields or controls.
     NSSize paneSize = controller.view.fittingSize;
     paneSize.width = ceil(paneSize.width);
     paneSize.height = MAX(176, ceil(paneSize.height));
@@ -244,24 +253,17 @@
         [self.settingsDetailView addSubview:controller.view];
         controller.view.translatesAutoresizingMaskIntoConstraints = NO;
         self.settingsPaneConstraints = @[
-            [controller.view.leadingAnchor constraintEqualToAnchor:self.settingsDetailView.leadingAnchor],
-            [controller.view.topAnchor constraintEqualToAnchor:self.settingsDetailView.topAnchor],
+            [controller.view.centerXAnchor constraintEqualToAnchor:self.settingsDetailView.centerXAnchor],
+            [controller.view.centerYAnchor constraintEqualToAnchor:self.settingsDetailView.centerYAnchor],
             [controller.view.widthAnchor constraintEqualToConstant:paneSize.width],
             [controller.view.heightAnchor constraintEqualToConstant:paneSize.height]
         ];
         [NSLayoutConstraint activateConstraints:self.settingsPaneConstraints];
     }
-    // Resize without the legacy helper, which replaces window.contentView.
-    NSSize contentSize = NSMakeSize(paneSize.width + 44, paneSize.height);
-    NSRect frame = self.window.frame;
-    CGFloat heightDelta = contentSize.height - self.window.contentView.frame.size.height;
-    frame.size.width += contentSize.width - self.window.contentView.frame.size.width;
-    frame.size.height += heightDelta;
-    frame.origin.y -= heightDelta;
-    [self.window setFrame:frame display:YES animate:animate && !NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion];
     [self.window.contentView layoutSubtreeIfNeeded];
     [self.settingsSidebar sizeToFit];
     self.window.title = controller.title ?: NSLocalizedString(@"Settings", @"Settings window title.");
+    self.settingsDetailView.accessibilityLabel = self.window.title;
     [self.window recalculateKeyViewLoop];
 }
 
@@ -299,10 +301,11 @@
     }
     NSToolbarItem *item = self.settingsItems[row];
     cell.imageView.image = item.image;
-    cell.toolTip = item.label;
+    cell.toolTip = item.toolTip ?: item.label;
     cell.accessibilityElement = YES;
     cell.accessibilityRole = NSAccessibilityCellRole;
     cell.accessibilityLabel = item.label;
+    cell.accessibilityHelp = item.toolTip;
     return cell;
 }
 
@@ -354,7 +357,7 @@
         self.window.title = title;
         return;
     }
-    [self displaySettingsController:controller animate:YES];
+    [self displaySettingsController:controller];
     [self selectSidebarItem:sender];
     if ([firstResponder acceptsFirstResponder]) {
         [self.window makeFirstResponder:firstResponder];
