@@ -1124,7 +1124,12 @@
   "completedAtUTC": "2026-10-08T00:17:18Z",
   "repairSourceCommit": "01ae5734bfd933c9048f00ef4c3ebe035fabeb0b",
   "validationDocumentation": "../REPAIR_VERIFICATION.md",
-  "nextReleaseVersion": "3.0",
-  "nextReleaseBuild": 161,
-  "githubIssuesDocumentedAndClosedAtUTC": "2026-10-08T00:19:45Z"
+  "githubIssuesDocumentedAndClosedAtUTC": "2026-10-08T00:19:45Z",
+  "releasedVersion": "3.0",
+  "releasedBuild": 161,
+  "releaseSourceCommit": "6363412d56e2bc142a54058321b7873a69068c62",
+  "releaseURL": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0",
+  "releasedAtUTC": "2026-10-08T00:33:00Z",
+  "releaseVerificationDocumentation": "docs/releases/3.0-verification.md",
+  "releaseVerificationRecordedAtUTC": "2026-10-08T00:34:00Z"
 }

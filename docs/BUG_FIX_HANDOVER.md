@@ -1,19 +1,24 @@
-# Maintenance handover — verified 3.0 repairs
+# Maintenance handover — published 3.0 release
 
 The owner's 7 October privacy/repair gate is complete. All 50 baseline findings
 #2–51 are recorded **fixed_verified**, documented and closed on GitHub; current
 verification found **zero open issues** and the repository is **private**. The
-owner authorised **3.0/build 161** to be built and released locally on main. At this
-update, Release build/signing/packaging, installation and publication are being
-prepared; a source commit is not a published application.
+owner's **3.0/build 161** is built, ad-hoc signed, packaged and installed locally
+at `/Applications/jps Telephone.app`, and published as
+[GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0).
+The [publication/package record](releases/3.0-verification.md) and
+[JSON proof](releases/3.0-verification.json) bind the exact release revision,
+installed payloads and seven uploaded assets. This closes the finite baseline;
+it does not establish that every possible future bug is eliminated.
 
 ## Current state and preserved baseline
 
 - Source repair commit: [`01ae573`](https://github.com/jpskidmore/telephone-jps/commit/01ae5734bfd933c9048f00ef4c3ebe035fabeb0b),
   published on main. Documentation issue #39 was fixed earlier at
   `a7cd66478dd7079bfd9ca89d13ce8cbe7dcd73cd`. The progress record marks the repair
-  gate passed on 8 October 2026 at 00:17 UTC. The release build must record its own
-  exact version/documentation commit, package hashes and verified download.
+  gate passed on 8 October 2026 at 00:17 UTC. The release/source revision is
+  `6363412d56e2bc142a54058321b7873a69068c62`, tree
+  `1c87680f6751a0c4a513c8705ea2e3f8fb2232b6`.
 - All four local suites passed **617 automated cases, zero failures**:
   Domain 28 XCTest; UseCases 195 XCTest plus 124 Swift Testing; Receipt 5 XCTest;
   isolated TelephoneTests 217 XCTest plus 48 Swift Testing. Component assertions
@@ -25,9 +30,13 @@ prepared; a source commit is not a published application.
   checksums and verification files remain
   [unchanged](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8).
   Do not move that tag or replace its assets with 3.0 content.
-- Next release location: [v3.0](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0),
-  **publication pending**. The source, app ZIP, checksums and final
-  BUILD-VERIFICATION must match the locally tested release revision.
+- Published Latest: [v3.0](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0),
+  release ID `406277128`, published 8 October 2026 at 00:33 UTC. All seven asset
+  sizes/SHA-256 digests match the verified local files. The installed app matches
+  all 59 extracted app payloads; the source ZIP matches all 1,400 release-commit
+  file payloads. Preserve this tag and its assets unchanged too. Its immutable
+  source ZIP/tag retain the preparation-time documentation snapshot; current main
+  documentation records completed publication without rewriting that snapshot.
 - Preserve the accepted compact UK-English design: Icon rail/Titled sections
   Settings at one Accounts-sized window, Dial bar with one recent call, Pocket
   call cards, native close controls, Light/Dark, green Online and red Offline.
@@ -41,9 +50,10 @@ prepared; a source commit is not a published application.
    [original audit context](audit-2.1.8/README.md) preserve the baseline, not 50
    outstanding repairs to repeat.
 2. Confirm private GitHub visibility, current main/working-tree state, live issue
-   states, installed app and published/downloadable release. Preserve unrelated
-   user changes. Verify whether 3.0 publication/install completed after this
-   preparation record; do not infer it from a planned URL or a draft release.
+   states, installed app and published/downloadable release against the recorded
+   3.0 proof. Preserve unrelated user changes. The publication/install steps are
+   complete; verify current state before later work rather than rebuilding or
+   replacing immutable release assets to repeat those steps.
 3. Work on main locally, with `[skip ci]` pushed commits and no workflow dispatch.
    Delegate independent GUI/SIP/backend work when useful. Review async ownership
    across groups, especially main admission, worker generation guards and final
@@ -52,10 +62,11 @@ prepared; a source commit is not a published application.
    boundary, regression and remaining limits. Update issue evidence after a
    verified fix. Do not treat closure, compilation alone or historical tests as
    proof that new code is correct; do not rewrite the original issue snapshot.
-5. If finishing this release, complete the local Release/sign/package/ZIP checks,
-   install and inspect the exact packaged app, upload those exact bytes plus
-   source/docs/checksums, then verify GitHub publication and downloads. The 50
-   baseline gate has passed; there is no remaining blanket ban on those steps.
+5. For a later authorised release, rerun affected and required complete checks,
+   build/sign/package locally, install and inspect the exact packaged app, upload
+   those same bytes plus source/docs/checksums, then verify publication and
+   uploaded asset hashes/sizes. Preserve v2.1.8 and v3.0 unchanged. Their historical
+   passes do not certify changed code.
 
 ## Local tests and user-data safeguards
 

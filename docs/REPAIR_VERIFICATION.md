@@ -4,8 +4,14 @@ This maps all 50 baseline issues #2–51 to the implemented repair and its named
 regression boundary. All four local native suites passed: **617 automated test
 cases, zero failures**. Controlled component/native fixtures also passed at their
 stated boundaries. Final fix commits and remaining limits are recorded in
-[repair-progress.json](audit-2.1.8/repair-progress.json). Packaging, installation
-and release publication remain pending until the release verification record confirms them.
+[repair-progress.json](audit-2.1.8/repair-progress.json). Release 3.0/build 161 was
+built, ad-hoc signed, packaged and installed locally, then
+[published as Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0)
+from `6363412d56e2bc142a54058321b7873a69068c62`. Completed package/install checks
+and all seven uploaded asset size/SHA-256 matches are in the
+[release verification record](releases/3.0-verification.md) and
+[JSON proof](releases/3.0-verification.json). All 50 baseline issues are closed
+as completed; this finite repair map does not claim zero possible future bugs.
 The audit baseline remains 2.1.8/build 160 at
 `9a32ae825e4d3bb380cb52b8452ddf7526764a25`.
 
@@ -27,7 +33,7 @@ remains unchanged in scope.
 | [#11](https://github.com/jpskidmore/telephone-jps/issues/11) Preserve non-default SIP ports through redial and history conversions | Preserve the explicit port through native/Swift bridges and history conversions. | 15 production-parser assertions; full UseCases195XCTest+124SwiftTesting passes including URI roundtrips. |
 | [#12](https://github.com/jpskidmore/telephone-jps/issues/12) Preserve IPv6 brackets when parsing a SIP address with a port | Parse bracketed IPv6 hosts before optional port suffix; use ServiceAddress parser and retain transport. | 15 production-parser assertions; full UseCases URI bracket/port/transport regressions pass. |
 | [#34](https://github.com/jpskidmore/telephone-jps/issues/34) Recognise documented CoreAudio errors from implicit SDK sound opens | Recognise the exact documented CoreAudio error set using overflow-safe inverse mapping; retain failure state until explicit recovery. | AudioDeviceControllerHarness:309 production controller checks passed. |
-| [#39](https://github.com/jpskidmore/telephone-jps/issues/39) Update the README local-test download entry for the published release | Link the published2.1.8 baseline then update latest download to3.0 after publication. | Authenticated GitHub API verified publishedv2.1.8/build160 assets and README retained-release links. |
+| [#39](https://github.com/jpskidmore/telephone-jps/issues/39) Update the README local-test download entry for the published release | Link the published 3.0/build 161 Latest release and retain the immutable 2.1.8 baseline link. | Authenticated GitHub API publication proof verifies Latest v3.0, all seven uploaded asset size/SHA-256 matches, private visibility and retained v2.1.8 assets; README now links the completed release. |
 
 ## History, recovery and resource lifetime
 
@@ -100,6 +106,9 @@ host and inert objects rather than the user's profile. See
 [recording/history recovery](RECORDING_RECOVERY.md), [audio recovery](AUDIO_RECOVERY.md)
 and [native driver provenance](DEPENDENCY_BUILDS.md) for their practical limits.
 
-Final publication evidence must bind these repairs to the exact main commit and
-locally installed/downloadable bytes. Do not mark the repair gate passed from
-issue closure, documentation, compilation alone or an earlier candidate run.
+The completed publication proof binds these repairs to the immutable v3.0
+release/source commit and locally installed/uploaded bytes. Preserve v2.1.8 and
+v3.0 tags/assets unchanged; the v3.0 source ZIP retains its preparation-time
+documentation while later main records publication. For later fixes, issue
+closure, documentation, compilation alone or an earlier release pass do not
+replace fresh regression and package evidence.

@@ -10,11 +10,16 @@ failures; all 50 issue records are documented and closed. The baseline repair
 gate has passed. Read [the handover](BUG_FIX_HANDOVER.md) and root
 [AGENTS.md](../AGENTS.md) before continuing.
 
-The owner authorised **3.0/build 161**. Release compilation, signing, packaging,
-installation and publication may now proceed locally from the exact repaired
-main revision. These release steps remain pending until their actual outcomes
-are recorded. Use main, `[skip ci]` pushed commits and no cloud workflow dispatch.
-Preserve the historical v2.1.8 tag/assets and the user's data.
+**3.0/build 161** completed local Release compilation, ad-hoc signing, packaging
+and installation at `/Applications/jps Telephone.app`, then was published as
+[GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0)
+from `6363412d56e2bc142a54058321b7873a69068c62`. The
+[release verification record](releases/3.0-verification.md) and
+[JSON proof](releases/3.0-verification.json) record the completed checks and seven
+uploaded asset size/SHA-256 matches. Use main, `[skip ci]` pushed commits and no
+cloud workflow dispatch. Preserve both v2.1.8 and v3.0 tags/assets and the user's
+data. The v3.0 tag/source ZIP retain their preparation-time documentation;
+publication is recorded on later main without rewriting that snapshot.
 
 `build-test-release.sh`, `run-macos-validation.sh` and
 `run-isolated-audio-validation.sh` include Release builds; the former closed
@@ -27,13 +32,16 @@ accounts/defaults, so follow the nib-free unique-identity host guidance.
 Historical sections below describe earlier releases. Their earlier passes do
 not certify changed code or replace the current 617-case/component evidence.
 
-## 3.0 repair validation — controlled suites passed, publication pending
+## 3.0 repair validation and completed publication
 
 The 3.0 repair fixes the finite 50-issue baseline. All four native suites passed
 locally on 8 October 2026: **617 automated test cases, zero failures**. This records
-controlled regression evidence; it does not declare a published release or certify
-live SIP/audio. Release packaging, installation and downloadable artifact checks
-remain pending until the release verification record confirms them.
+controlled regression evidence; it does not certify every possible defect or
+live SIP/audio. Separate completed Release checks verify the signed app,
+extracted ZIP and installed copy, all 59 installed app payloads, all 1,400 source
+ZIP payloads against the release commit, and the size/SHA-256 match of every
+uploaded asset. Release ID `406277128` is published, non-draft, non-prerelease
+and Latest; the [publication proof](releases/3.0-verification.md) records it.
 The authoritative per-issue state is
 [repair-progress.json](audit-2.1.8/repair-progress.json); the
 [50-issue verification map](REPAIR_VERIFICATION.md) links each repair to its
@@ -131,11 +139,12 @@ SDK/compiler versions, source/object hashes and `.xcresult` bundles with final
 release evidence. See [dependency rebuild provenance](DEPENDENCY_BUILDS.md),
 [audio recovery](AUDIO_RECOVERY.md) and [recording recovery](RECORDING_RECOVERY.md).
 
-After every baseline issue is recorded verified, run all four native suites on
-the exact revision, build and package locally, verify nested signatures and the
-extracted ZIP, install the exact tested app and verify source/documentation
-parity. Keep the historical v2.1.8 assets. Push to main with `[skip ci]`; upload the
-same locally validated bytes. No cloud workflow is part of the 3.0 process.
+These repair/release gates completed for 3.0. For future authorised changes, run
+the required suites on the exact revision, build and package locally, verify
+nested signatures and the extracted ZIP, install the exact tested app and verify
+source/documentation parity. Keep both historical v2.1.8 and v3.0 tags/assets.
+Push to main with `[skip ci]`; upload the same locally validated bytes. No cloud
+workflow is part of this project's build/release process.
 
 Manual acceptance remains separate: real SIP registration and provider routing,
 incoming/outgoing/hold/transfer/DTMF, actual audio devices and hotplug, sleep/wake,

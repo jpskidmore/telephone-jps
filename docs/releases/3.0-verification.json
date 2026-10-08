@@ -1,0 +1,517 @@
+{
+  "repository": "jpskidmore/telephone-jps",
+  "verifiedAtUTC": "2026-10-08T00:34:00Z",
+  "release": {
+    "id": 406277128,
+    "version": "3.0",
+    "build": 161,
+    "tag": "v3.0",
+    "url": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0",
+    "publishedAtUTC": "2026-10-08T00:33:00Z",
+    "draft": false,
+    "prerelease": false,
+    "latest": true,
+    "sourceCommit": "6363412d56e2bc142a54058321b7873a69068c62",
+    "sourceTree": "1c87680f6751a0c4a513c8705ea2e3f8fb2232b6"
+  },
+  "repositoryState": {
+    "private": true,
+    "defaultBranch": "main",
+    "openIssues": 0
+  },
+  "baselineIssues": {
+    "range": "#2–51",
+    "count": 50,
+    "state": "closed",
+    "stateReason": "completed",
+    "items": [
+      {
+        "number": 51,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:25Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/51"
+      },
+      {
+        "number": 50,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:26Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/50"
+      },
+      {
+        "number": 49,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:23Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/49"
+      },
+      {
+        "number": 48,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:27Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/48"
+      },
+      {
+        "number": 47,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:25Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/47"
+      },
+      {
+        "number": 46,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:17Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/46"
+      },
+      {
+        "number": 45,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:20Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/45"
+      },
+      {
+        "number": 44,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:19Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/44"
+      },
+      {
+        "number": 43,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:16Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/43"
+      },
+      {
+        "number": 42,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:15Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/42"
+      },
+      {
+        "number": 41,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:10Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/41"
+      },
+      {
+        "number": 40,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:06Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/40"
+      },
+      {
+        "number": 39,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:08Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/39"
+      },
+      {
+        "number": 38,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:07Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/38"
+      },
+      {
+        "number": 37,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:19:05Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/37"
+      },
+      {
+        "number": 36,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:59Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/36"
+      },
+      {
+        "number": 35,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:58Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/35"
+      },
+      {
+        "number": 34,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:57Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/34"
+      },
+      {
+        "number": 33,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:55Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/33"
+      },
+      {
+        "number": 32,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:54Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/32"
+      },
+      {
+        "number": 31,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:48Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/31"
+      },
+      {
+        "number": 30,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:47Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/30"
+      },
+      {
+        "number": 29,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:46Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/29"
+      },
+      {
+        "number": 28,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:45Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/28"
+      },
+      {
+        "number": 27,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:43Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/27"
+      },
+      {
+        "number": 26,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:37Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/26"
+      },
+      {
+        "number": 25,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:36Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/25"
+      },
+      {
+        "number": 24,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:35Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/24"
+      },
+      {
+        "number": 23,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:34Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/23"
+      },
+      {
+        "number": 22,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:33Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/22"
+      },
+      {
+        "number": 21,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:27Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/21"
+      },
+      {
+        "number": 20,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:26Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/20"
+      },
+      {
+        "number": 19,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:25Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/19"
+      },
+      {
+        "number": 18,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:23Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/18"
+      },
+      {
+        "number": 17,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:22Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/17"
+      },
+      {
+        "number": 16,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:20Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/16"
+      },
+      {
+        "number": 15,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:19Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/15"
+      },
+      {
+        "number": 14,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:18Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/14"
+      },
+      {
+        "number": 13,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:17Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/13"
+      },
+      {
+        "number": 12,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:16Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/12"
+      },
+      {
+        "number": 11,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:10Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/11"
+      },
+      {
+        "number": 10,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:09Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/10"
+      },
+      {
+        "number": 9,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:08Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/9"
+      },
+      {
+        "number": 8,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:07Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/8"
+      },
+      {
+        "number": 7,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:06Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/7"
+      },
+      {
+        "number": 6,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:18:00Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/6"
+      },
+      {
+        "number": 5,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:17:59Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/5"
+      },
+      {
+        "number": 4,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:17:58Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/4"
+      },
+      {
+        "number": 3,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:17:56Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/3"
+      },
+      {
+        "number": 2,
+        "state": "closed",
+        "reason": "completed",
+        "closedAt": "2026-10-08T00:17:55Z",
+        "url": "https://github.com/jpskidmore/telephone-jps/issues/2"
+      }
+    ]
+  },
+  "validation": {
+    "localOnly": true,
+    "cloudWorkflowRunsForReleaseSource": 0,
+    "automatedCases": 617,
+    "failedCases": 0,
+    "domainXCTest": 28,
+    "useCasesXCTest": 195,
+    "useCasesSwiftTesting": 124,
+    "receiptXCTest": 5,
+    "telephoneXCTest": 217,
+    "telephoneSwiftTesting": 48,
+    "scope": "Controlled suites and the per-issue native/component checks documented in ../VALIDATION.md and ../REPAIR_VERIFICATION.md.",
+    "manualAcceptanceOutstanding": [
+      "Live SIP/provider interoperability",
+      "Physical audio devices and hotplug",
+      "Actual recording capture",
+      "Sandbox Save As permission grants",
+      "Proficient VoiceOver session"
+    ]
+  },
+  "installation": {
+    "version": "3.0",
+    "build": "161",
+    "bundleIdentifier": "uk.jpsit.telephone",
+    "installedPath": "/Applications/jps Telephone.app",
+    "payloadsMatched": 59,
+    "mainExecutableSHA256": "79092f0b179716bf9a58845ccf37f02a4b9e0e0c2f1fe4b4b4af0cbdab262dac"
+  },
+  "sourceArchive": {
+    "commit": "6363412d56e2bc142a54058321b7873a69068c62",
+    "tree": "1c87680f6751a0c4a513c8705ea2e3f8fb2232b6",
+    "trackedFilePayloadsMatched": 1400,
+    "zipSHA256": "e3b4e202da2d100c0094abce00d211bbc849ef6d2adde52eed4946f4159e60cc"
+  },
+  "assets": [
+    {
+      "id": 620222128,
+      "name": "BUILD-VERIFICATION.md",
+      "size": 3794,
+      "sha256": "7f877d24b897640bce14d2b3a19ea6f905a8c6417824632854420d3634c27bed",
+      "state": "uploaded",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.0/BUILD-VERIFICATION.md",
+      "matchesLocalPayload": true
+    },
+    {
+      "id": 620221939,
+      "name": "jps-Telephone-3.0-arm64.zip",
+      "size": 3255491,
+      "sha256": "31d965ec457a83ef9d8573e15945361f2402252b102dc96efb326b0c73e3de0c",
+      "state": "uploaded",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.0/jps-Telephone-3.0-arm64.zip",
+      "matchesLocalPayload": true
+    },
+    {
+      "id": 620221963,
+      "name": "jps-Telephone-3.0-source.zip",
+      "size": 39852753,
+      "sha256": "e3b4e202da2d100c0094abce00d211bbc849ef6d2adde52eed4946f4159e60cc",
+      "state": "uploaded",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.0/jps-Telephone-3.0-source.zip",
+      "matchesLocalPayload": true
+    },
+    {
+      "id": 620222142,
+      "name": "RELEASE-NOTES.md",
+      "size": 4951,
+      "sha256": "9ff1bf0e58c24b174ece12864fd9d15e30e80a77500c42ba90d4a5c26c2cff7c",
+      "state": "uploaded",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.0/RELEASE-NOTES.md",
+      "matchesLocalPayload": true
+    },
+    {
+      "id": 620222169,
+      "name": "REPAIR-PROGRESS.json",
+      "size": 77963,
+      "sha256": "de900e1126dbf2ed53a811b749ec97b634e5dfd4e0a56a15954b620e72919ca1",
+      "state": "uploaded",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.0/REPAIR-PROGRESS.json",
+      "matchesLocalPayload": true
+    },
+    {
+      "id": 620222152,
+      "name": "REPAIR-VERIFICATION.md",
+      "size": 30864,
+      "sha256": "6b19b61d37e3b03f8b975811de96096b5947b4c0cee72d957e220d31475ea5bf",
+      "state": "uploaded",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.0/REPAIR-VERIFICATION.md",
+      "matchesLocalPayload": true
+    },
+    {
+      "id": 620222188,
+      "name": "SHA256SUMS.txt",
+      "size": 536,
+      "sha256": "72d7e9610f94b2306956cf87e5214781d7efe454a6f93aa9e3b4e6a7b99fac60",
+      "state": "uploaded",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.0/SHA256SUMS.txt",
+      "matchesLocalPayload": true
+    }
+  ],
+  "retainedRelease": {
+    "id": 405986007,
+    "tag": "v2.1.8",
+    "sourceCommit": "9a32ae825e4d3bb380cb52b8452ddf7526764a25",
+    "assetsUnchanged": true,
+    "assets": [
+      {
+        "id": 619289262,
+        "name": "BUILD-VERIFICATION.md",
+        "size": 4365,
+        "digest": "sha256:1c8834ce3f5f8ab387648f191bcb0d86c8b7515603c98fb3838dd670500baf7d"
+      },
+      {
+        "id": 619288990,
+        "name": "jps-Telephone-2.1.8-arm64.zip",
+        "size": 3184132,
+        "digest": "sha256:91195ed59780f1d4c657476ca50bd61e78eb187fd817458240ddd610ad245741"
+      },
+      {
+        "id": 619289048,
+        "name": "jps-Telephone-2.1.8-source.zip",
+        "size": 39660870,
+        "digest": "sha256:d82fce8f93455f0d026ed24120cb597af4e16975bcd086877ecaeea7b649c067"
+      },
+      {
+        "id": 619289272,
+        "name": "RELEASE-NOTES.md",
+        "size": 1300,
+        "digest": "sha256:e715f10d7948c3ca0e3e7b12f946a17edd20dbd3683c3f329bb8feeb030e06f2"
+      },
+      {
+        "id": 619289280,
+        "name": "SHA256SUMS.txt",
+        "size": 364,
+        "digest": "sha256:6621fb30d55a58121e62eb7ede4b7596f9c8053a9a1337291e8fab437d4fc37d"
+      }
+    ]
+  }
+}

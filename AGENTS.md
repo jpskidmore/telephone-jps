@@ -6,18 +6,21 @@ Read [the maintenance handover](docs/BUG_FIX_HANDOVER.md),
 The repository remains private. The owner authorised 3.0/build 161 after fixing
 all 50 baseline findings and requires main, local builds and no cloud workflows.
 
-## Current verified baseline and authorised release
+## Current verified baseline and published release
 
 - Baseline issues **#2–51**, all 50 items, are recorded **fixed_verified**.
   The repair gate passed on 8 October 2026 with 617 local automated cases, zero
   failures. Source fixes are on main at `01ae5734bfd933c9048f00ef4c3ebe035fabeb0b`;
   documentation issue #39 was fixed at `a7cd66478dd7079bfd9ca89d13ce8cbe7dcd73cd`.
   Read each item's root cause, regression and practical limit in the progress file.
-- The authorised next version is **3.0/build 161**. Local Release compilation,
-  signing, packaging, installation and publication may proceed from the exact
-  repaired main revision. At this documentation update, those release steps are
-  pending. Verify actual installed/package/release state rather than assuming a
-  source commit or planned download link is a published app.
+- **3.0/build 161** was built, ad-hoc signed, packaged and installed locally at
+  `/Applications/jps Telephone.app`, then published as
+  [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0)
+  on 8 October 2026. The immutable release/source revision is
+  `6363412d56e2bc142a54058321b7873a69068c62`; all seven uploaded assets have
+  verified sizes and SHA-256 matches. Read the
+  [publication/package proof](docs/releases/3.0-verification.md) and its
+  [machine-readable record](docs/releases/3.0-verification.json).
 - After a new change, verify its affected paths and update actual evidence. Do not
   reuse old test results to certify changed code, or treat issue closure alone as
   a verified fix. Record new findings honestly; the original snapshot is history.
@@ -27,6 +30,9 @@ all 50 baseline findings and requires main, local builds and no cloud workflows.
   these instructions.
 - Keep the repository private. Preserve **v2.1.8/build 160** and all its uploaded
   assets unchanged as the historical audit baseline at `9a32ae8`.
+  Also preserve **v3.0/build 161**, its tag at `6363412` and all seven assets
+  unchanged. The tag/source ZIP retain the preparation-time documentation
+  snapshot; later main documentation records publication without rewriting it.
 - Preserve the accepted compact design and functionality: UK English, Icon rail
   Settings with Titled sections and one Accounts-sized window, Dial bar with one
   recent call, Pocket call cards, native close controls, Light/Dark, green Online

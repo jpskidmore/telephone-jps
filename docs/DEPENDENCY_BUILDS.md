@@ -220,9 +220,15 @@ assertions using real private factory/device table structures from that same
 translation unit; only the subsystem getter and CoreAudio property query are
 substituted. It does not initialise PJSUA, query physical devices, open audio or
 register SIP. Domain/mapping tests separately cover duplicate names, UID selection
-and legacy-name fallback. Final controlled hosted validation passed. Local 3.0 packaging/installation and
-publication remain pending [the release checks](VALIDATION.md); the native fixture is not hardware or
-complete source-to-binary reproducibility evidence.
+and legacy-name fallback. Final controlled hosted validation passed. The reviewed
+archive is included in the locally built, signed, packaged and installed
+**3.0/build 161**, published as GitHub Latest from
+`6363412d56e2bc142a54058321b7873a69068c62`. The
+[completed release verification](releases/3.0-verification.md) links the pinned
+archive to the exact source/app packages and seven uploaded asset hash/size
+matches. Preserve v2.1.8 and v3.0 tags/assets unchanged. The native fixture remains
+bounded synthetic evidence, not physical-device testing or complete
+source-to-binary reproducibility evidence.
 
 ## 8. Inspect staged outputs before replacing bundled files
 

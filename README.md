@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0">3.0 (161): publication pending</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0">Latest release: 3.0 (161)</a>
   <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained baseline: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
@@ -17,23 +17,25 @@
 </p>
 
 > [!IMPORTANT]
-> **3.0 preparation: all 50 baseline audit findings are fixed and verified.** The repair gate passed with 617 local automated test cases and zero failures. Source fixes are on main at [`01ae573`](https://github.com/jpskidmore/telephone-jps/commit/01ae5734bfd933c9048f00ef4c3ebe035fabeb0b); issue #39 was fixed earlier. Local Release build/signing, installation and publication are being prepared. The link above is the planned v3.0 release location, not a claim that a downloadable build is available yet.
+> **3.0 is published and installed locally.** All 50 baseline audit findings are fixed, verified, documented and closed; 617 complete-suite cases passed locally with zero failures. Release/build 3.0 (161) was built, signed and packaged locally from [`6363412`](https://github.com/jpskidmore/telephone-jps/commit/6363412d56e2bc142a54058321b7873a69068c62), installed at `/Applications/jps Telephone.app` and published as GitHub Latest. All seven uploaded assets match their verified local sizes and SHA-256 digests. Read [the release verification record](docs/releases/3.0-verification.md).
 >
 > Read [the verified repair map](docs/REPAIR_VERIFICATION.md), [tracked evidence](docs/audit-2.1.8/repair-progress.json), [3.0 notes](docs/releases/3.0.md) and [maintenance handover](docs/BUG_FIX_HANDOVER.md). The repository stays private, work stays on main, and all builds remain local with `[skip ci]` commits and no cloud dispatch.
 >
 > [Audio recovery](docs/AUDIO_RECOVERY.md) keeps repeated failures gated and moves native work off the interface thread. One native driver operation can still stall its worker; real SIP/audio and VoiceOver remain manual acceptance limits. [Recording recovery](docs/RECORDING_RECOVERY.md) retains captured audio after export failure.
 > Call recording is disabled by default. Only enable it when recording is lawful and everyone whose consent is required has consented.
 
-## 3.0 preparation and private access
+## 3.0 release and private access
 
-Version **3.0/build 161** is the authorised next local release. All 50 baseline
+Version **3.0/build 161** is the published Latest release. All 50 baseline
 findings #2–51 have recorded verified repairs; the full four-suite local run passed
 **617 automated test cases, zero failures**. Component assertion counts and
 manual limits are recorded separately in [VALIDATION.md](docs/VALIDATION.md).
-The [planned 3.0 download page](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0)
-remains pending until the exact locally built, signed and verified package is
-installed and published. Do not interpret a planned link or source commit as a
-published binary.
+The [3.0 download page](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0)
+contains the verified app/source ZIPs, release notes, repair records,
+BUILD-VERIFICATION and checksums. The installed app matches all 59 extracted app
+file payloads; all 1,400 source ZIP file payloads match the release commit.
+See [publication and package proof](docs/releases/3.0-verification.md) and its
+[JSON record](docs/releases/3.0-verification.json).
 
 Repository contents, issues and downloads require authorised GitHub access.
 The historical [2.1.8 release](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8)
@@ -43,8 +45,13 @@ Settings with Titled sections and one Accounts-sized window, Dial bar with one
 recent call, Pocket call cards, native close controls, UK English, Light/Dark,
 green Online and red Offline.
 
-Apple silicon and macOS 15.6+. The intended local 3.0 package is ad-hoc signed and
-unnotarised. Read its final build-verification record before testing it.
+Both release tags and their uploaded assets are immutable. The v3.0 source ZIP
+retains the preparation-time documentation snapshot at `6363412`; current main
+documentation records completed publication without replacing that archive.
+
+Apple silicon and macOS 15.6+. The published local 3.0 package is ad-hoc signed and
+unnotarised. Its verification records retain the limits of the controlled tests;
+they do not establish that every possible bug or live-device issue is eliminated.
 
 ## What it does
 
@@ -80,10 +87,10 @@ More detail is available in [RECORDING.md](RECORDING.md).
 
 ## Build from source
 
-The 50-issue repair gate has passed. Build, sign, package and test the authorised
-3.0/build 161 candidate locally from the exact repaired main revision. Do not
+The 50-issue repair gate and 3.0 publication are complete. Build future changes
+locally from their exact main revision and record new verification evidence. Do not
 launch cloud workflows; include `[skip ci]` in pushed commits. Preserve the
-historical v2.1.8 assets and the user's settings, credentials and call data.
+historical v2.1.8 and v3.0 tags/assets and the user's settings, credentials and call data.
 
 The repository contains application source, tests, blue artwork, pinned arm64
 dependency libraries and the unmodified upstream archives under
@@ -99,18 +106,22 @@ Requirements:
 Build the release configuration:
 
 ```sh
+jpsReleaseDerivedData=$(mktemp -d /private/tmp/jps-telephone-release.XXXXXX)
 xcodebuild \
   -project Telephone.xcodeproj \
   -scheme Telephone \
   -configuration Release \
-  -derivedDataPath build/DerivedData \
+  -derivedDataPath "$jpsReleaseDerivedData" \
   ARCHS=arm64 \
   ONLY_ACTIVE_ARCH=YES \
   CODE_SIGNING_ALLOWED=NO \
-  CLANG_MODULE_CACHE_PATH=build/ModuleCache \
+  CLANG_MODULE_CACHE_PATH="$jpsReleaseDerivedData/ModuleCache" \
   'OTHER_CFLAGS=$(inherited) -ffile-prefix-map=$(SRCROOT)=.' \
   build
 ```
+
+Keep executable build products outside FileProvider/iCloud-managed storage;
+generated FinderInfo and coordinated file opens interrupted an earlier local run.
 
 Run the ordinary (unsanitized) focused recording tests and dependency checks:
 
@@ -124,16 +135,16 @@ build, the combined entrypoint is `./Scripts/run-macos-validation.sh`. Keep its
 hosted test environment isolated; normal app startup can load real user data.
 The current four-suite run passed locally using a synthetic nib-free Debug host.
 See [VALIDATION.md](docs/VALIDATION.md) for exact reproduction, observed checks and
-remaining binary/manual acceptance.
+completed package/publication checks and remaining manual acceptance.
 
 For a local or downloadable ad-hoc build, sign nested code and apply the
 documented ad-hoc-only library-validation exception:
 
 ```sh
 ./Scripts/sign-adhoc-release.sh \
-  "build/DerivedData/Build/Products/Release/jps Telephone.app"
+  "$jpsReleaseDerivedData/Build/Products/Release/jps Telephone.app"
 ./Scripts/verify-adhoc-release.sh \
-  "build/DerivedData/Build/Products/Release/jps Telephone.app"
+  "$jpsReleaseDerivedData/Build/Products/Release/jps Telephone.app"
 ```
 
 Do not use the ad-hoc signing script for a Developer ID release. A Developer ID
