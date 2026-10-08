@@ -1,46 +1,49 @@
 # jps Telephone maintenance instructions
 
-Read [the repair handover](docs/BUG_FIX_HANDOVER.md) and the tracked
-[50-issue snapshot](docs/audit-2.1.8/issues.json) before implementation.
-The owner's 7 October 2026 instruction is to keep this repository private and
-fix all 50 audited findings before making a new application build.
+Read [the maintenance handover](docs/BUG_FIX_HANDOVER.md),
+[verified repair map](docs/REPAIR_VERIFICATION.md) and
+[tracked issue evidence](docs/audit-2.1.8/repair-progress.json) before implementation.
+The repository remains private. The owner authorised 3.0/build 161 after fixing
+all 50 baseline findings and requires main, local builds and no cloud workflows.
 
-## Required repair and build gate
+## Current verified baseline and authorised release
 
-- The finite baseline is GitHub issues **#2–51**, all 50 items, audited against
-  **2.1.8/build 160, `9a32ae825e4d3bb380cb52b8452ddf7526764a25`**.
-  No item is fixed merely because it is closed, labelled, duplicated or documented.
-- Fix and verify every baseline finding. Record each fix commit, root cause,
-  regression result and remaining limits in
-  [repair-progress.json](docs/audit-2.1.8/repair-progress.json) and its GitHub issue.
-  A shared fix may cover several findings, but verify each one.
-- Until all 50 are fixed and verified, **do not make a new Release application,
-  test-release/distributable candidate, sign or package one, bump its version,
-  create/move a release tag, upload a build or publish another release**.
-  Incomplete or blocked items keep the gate closed.
-- Targeted **local development compilation and isolated Debug/unit tests**
-  needed to implement and verify fixes are allowed. They are development products,
-  not a new application candidate. Ad-hoc re-signing of an isolated modified
-  Debug test host solely for test isolation is allowed; Release/candidate signing
-  remains forbidden. Do not run complete release/validation scripts
-  that also compile Release while the gate is closed.
-- Use **main**, with no new branch or worktree unless the owner later requests it.
-  Do all compilation and testing locally on the Mac; no cloud builds or workflow
-  dispatch. Include **[skip ci]** in every pushed commit while repairing. Existing
-  workflow/build instructions do not override this policy.
-- Keep the repository private. Preserve the existing **v2.1.8** tag and all its
-  uploaded assets; they are a historical baseline and must not be replaced by
-  unverified fixes or regenerated packages.
-- Preserve the accepted compact design and existing functionality: UK English,
-  Icon rail Settings with Titled sections and one Accounts-sized window, Dial bar
-  with one recent call, Pocket call cards, native close controls, Light/Dark
-  appearance, green Online and red Offline. Avoid broad redesign.
-- Use synthetic data and isolated test environments. Do not exercise hosted tests
-  against the user's real defaults, credentials, Contacts, SIP accounts, call
-  history or recordings. Follow the concrete Debug-host isolation guidance in the
-  handover; preserve production metadata and the user's environment.
-- Historical validation notes are evidence of earlier runs, not permission to build
-  now or a claim that the audited defects are fixed. Report only checks actually run.
+- Baseline issues **#2–51**, all 50 items, are recorded **fixed_verified**.
+  The repair gate passed on 8 October 2026 with 617 local automated cases, zero
+  failures. Source fixes are on main at `01ae5734bfd933c9048f00ef4c3ebe035fabeb0b`;
+  documentation issue #39 was fixed at `a7cd66478dd7079bfd9ca89d13ce8cbe7dcd73cd`.
+  Read each item's root cause, regression and practical limit in the progress file.
+- The authorised next version is **3.0/build 161**. Local Release compilation,
+  signing, packaging, installation and publication may proceed from the exact
+  repaired main revision. At this documentation update, those release steps are
+  pending. Verify actual installed/package/release state rather than assuming a
+  source commit or planned download link is a published app.
+- After a new change, verify its affected paths and update actual evidence. Do not
+  reuse old test results to certify changed code, or treat issue closure alone as
+  a verified fix. Record new findings honestly; the original snapshot is history.
+- Use **main**, with no new branch/worktree unless the owner later requests it.
+  Do all compilation/testing locally on the Mac. Do not dispatch cloud workflows.
+  Include **[skip ci]** in pushed commits. Existing workflow files do not override
+  these instructions.
+- Keep the repository private. Preserve **v2.1.8/build 160** and all its uploaded
+  assets unchanged as the historical audit baseline at `9a32ae8`.
+- Preserve the accepted compact design and functionality: UK English, Icon rail
+  Settings with Titled sections and one Accounts-sized window, Dial bar with one
+  recent call, Pocket call cards, native close controls, Light/Dark, green Online
+  and red Offline. Avoid broad redesign or expanding the interface.
+- Use synthetic data and isolated hosted tests. Do not run regressions against
+  the user's real defaults, credentials, Contacts, SIP accounts, call history or
+  recordings. Follow the nib-free unique-identity Debug-host guidance in the
+  handover and preserve production metadata and the user's environment.
+- Preserve main admission, serial native-worker ownership, lifecycle/selection
+  generations and finalization/persistence drains when changing async code.
+  Recording recovery must retain raw data after failure and remove it only after
+  successful export. Read [audio](docs/AUDIO_RECOVERY.md) and
+  [recording/history recovery](docs/RECORDING_RECOVERY.md).
+- Keep test cases, component assertions and model/source-wiring checks separate.
+  Live provider routing, physical devices, sandbox grants, visual acceptance and
+  proficient VoiceOver remain separately recorded manual boundaries.
 
-After the gate passes, follow the handover's local validation/release sequence.
+Follow [VALIDATION.md](docs/VALIDATION.md) for the local candidate/release sequence,
+JPS_DEBUG_DERIVED_DATA/JPS_DEBUG_BUILD_LOG reproduction and dependency provenance.
 A later explicit owner instruction can change this policy.

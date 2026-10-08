@@ -1,5 +1,25 @@
 # Changelog
 
+## jps Telephone 3.0 (build 161) — verified repairs, publication pending
+
+The 50-issue repair gate passed. The next release is being built, signed,
+installed and packaged locally; no published 3.0 binary is claimed yet.
+
+- Preserve unreadable history, commit Clear History durably, reject stale reloads and deleted-account additions, and drain history before Quit
+- Retain captured recordings in durable recovery jobs and offer Retry, Save Elsewhere, Reveal and Later after failed export
+- Move audited SIP/audio operations to the serial backend worker, retain explicit audio recovery and identify devices by physical UID
+- Correct startup/Offline/restart intent, transfer/callback ownership, delayed account/call completions, ringback reset and codec readiness
+- Correct compact-window placement, keyboard/DTMF/timers, native accessibility purposes, credential failure handling and first-run readiness
+- Prune expired subscribers, balance native resources/PJLIB/background activity and remove unused legacy categories
+- Keep the accepted UK-English compact interface, native close controls, Light/Dark support and availability colours
+
+All four local suites passed 617 automated test cases with zero failures. Native
+component assertions and manual SIP/audio/sandbox/VoiceOver limits are separate.
+The package is intended to be ad-hoc signed and unnotarised.
+
+See [3.0 notes](docs/releases/3.0.md), [50-issue evidence](docs/REPAIR_VERIFICATION.md)
+and [validation](docs/VALIDATION.md). The existing v2.1.8 tag/assets are unchanged.
+
 ## jps Telephone 2.1.8 (build 160) — titled Settings sections
 
 - Align General, Sound and app-wide Network settings at the top of their panes

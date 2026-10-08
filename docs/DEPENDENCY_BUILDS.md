@@ -2,11 +2,13 @@
 
 ## Status and scope
 
-The six archives and options below were inspected in the checked-in upstream
-sources. These are **source-derived build instructions, not an executed macOS
-build log**. The October 2026 cleanup was performed on Linux. No byte-for-byte
-reproduction of the existing `.a` files, compiler compatibility, or resulting
-application runtime behavior has been established by this cleanup.
+The general six-dependency recipe below remains source-derived; the earlier
+October cleanup did not execute it on macOS or establish byte-for-byte
+reproduction of the bundled libraries. The narrow 3.0 CoreAudio UID driver
+rebuild in section 7a was executed locally on 8 October 2026 and has separate
+source/archive provenance and an inert native regression fixture. It does not
+claim that all six libraries were rebuilt, that upstream signatures were
+authenticated, or that physical hardware/provider behaviour was verified.
 
 Use an Apple silicon Mac, macOS 15.6 or newer, a compatible full Xcode installation
 with its command-line tools selected, Python 3, `make`, `patch`, and `pkg-config`.
@@ -148,6 +150,79 @@ host name preserves the archive suffix expected by `Telephone.xcodeproj`;
  make -j "$JOBS" lib
  make install)
 ```
+
+## 7a. 3.0 native CoreAudio UID helper and local archive rebuild
+
+The checked-in `coreaudio_dev.patch` now adds `jps_coreaudio_device_uid` alongside
+the historical CoreAudio volume-capability changes. The helper validates the
+current PJSIP global device index, resolves its real driver-table/local-device
+record, and reads the physical device UID from that record's CoreAudio
+`AudioDeviceID`. It checks driver identity, indices, missing/invalid UID results
+and buffer capacity, balancing the returned CFString reference on every path.
+The caller serialises the query with native enumeration/refresh on the SIP/audio
+control worker. No display-name guess or separately enumerated array position
+is used to identify duplicate devices.
+
+For 3.0, only `coreaudio_dev.o` in
+`ThirdParty/PJSIP/lib/libpjmedia-audiodev-arm-apple-darwin.a` was rebuilt/replaced.
+The other PJSIP and codec/TLS archives were retained. The executed source came
+from the pinned `pjproject-2.17.tar.gz` with the committed patches applied and the
+checked-in configured PJSIP headers. The local compile used Apple clang, the
+macOS 27.0 SDK, arm64 target and macOS 15.6 deployment target:
+
+```sh
+jpsRepoRoot=$(pwd -P)
+jpsSdkPath=$(xcrun --sdk macosx --show-sdk-path)
+xcrun clang -target arm64-apple-macos15.6 -isysroot "$jpsSdkPath" \
+  -Os -DNDEBUG -DPJ_AUTOCONF=1 -DPJ_IS_BIG_ENDIAN=0 -DPJ_IS_LITTLE_ENDIAN=1 \
+  -DPJMEDIA_AUDIO_DEV_HAS_COREAUDIO=1 -I ThirdParty/PJSIP/include \
+  "-ffile-prefix-map=$jpsRepoRoot=." \
+  -c build/v3-pjsip-source/pjproject-2.17/pjmedia/src/pjmedia-audiodev/coreaudio_dev.m \
+  -o build/v3-pjsip-source/coreaudio_dev.o
+xcrun ar -r ThirdParty/PJSIP/lib/libpjmedia-audiodev-arm-apple-darwin.a \
+  build/v3-pjsip-source/coreaudio_dev.o
+xcrun ranlib ThirdParty/PJSIP/lib/libpjmedia-audiodev-arm-apple-darwin.a
+```
+
+This command requires an already extracted/patched source tree at the stated
+path. To prepare a clean tree, extract the pinned tarball into
+`build/v3-pjsip-source`, apply both committed patches from that tree using `-p0`,
+and verify its source hash before replacing an archive member. Preserve the
+original archive first. The explicit `PJMEDIA_AUDIO_DEV_HAS_COREAUDIO=1` flag is
+required: compiling with the driver disabled is not a valid helper rebuild.
+Check the archive contains one `coreaudio_dev.o`, the defined
+`_jps_coreaudio_device_uid` symbol and the defined `_pjmedia_coreaudio_factory`
+symbol, then verify arm64 architecture and the reviewed manifest hash.
+
+The reviewed 8 October snapshot records:
+
+| Artifact | SHA-256 |
+|---|---|
+| Patched `coreaudio_dev.m` | `3800e3342cf5282330701db01676a8fa3b35ea73ce190d61ce1f3c25f3e99e93` |
+| Updated `libpjmedia-audiodev-arm-apple-darwin.a` | `5f748d0db746d208bfd01190441adfaa67d27ec087fec4cffc9c9d2663c172e9` |
+
+`Scripts/vendor-archives.sha256` pins the reviewed archive. Dependency verification
+passes 7 source-manifest files, 24 static archives and 21 project link references;
+these are inventory/hash counts, not test cases or a vulnerability assessment.
+Keep actual compiler commands, SDK versions and provenance when rebuilding with
+a different compiler; do not overwrite expected hashes merely to make checks pass.
+
+The native fixture compiles the exact driver source obtained by extracting the
+tarball and applying the current patch:
+
+```sh
+python3 Tests/run_coreaudio_identity.py --output build/native-uid-fixture
+```
+
+It writes `patch.log`, `compile.log`, `results.log` and `provenance.json` with exact
+compile arguments and source/harness hashes. The current fixture passed 18
+assertions using real private factory/device table structures from that same
+translation unit; only the subsystem getter and CoreAudio property query are
+substituted. It does not initialise PJSUA, query physical devices, open audio or
+register SIP. Domain/mapping tests separately cover duplicate names, UID selection
+and legacy-name fallback. Final controlled hosted validation passed. Local 3.0 packaging/installation and
+publication remain pending [the release checks](VALIDATION.md); the native fixture is not hardware or
+complete source-to-binary reproducibility evidence.
 
 ## 8. Inspect staged outputs before replacing bundled files
 

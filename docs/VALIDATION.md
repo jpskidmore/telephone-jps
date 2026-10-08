@@ -1,26 +1,148 @@
 # Validation and release checks
 
-## Current repair gate — all 50 issues before another Release build
+## Verified repair gate and local release policy
 
-The repository is private and the current task is to fix and verify baseline
-issues #2–51. Read [the handover](BUG_FIX_HANDOVER.md), root [AGENTS.md](../AGENTS.md)
-and [repair progress](audit-2.1.8/repair-progress.json) first. No new Release app,
-downloadable candidate, signing, packaging, version bump, tag or publication is
-allowed until every item has recorded verified repair. Local development
-compilation and isolated Debug/regression tests needed for fixes are allowed.
-Ad-hoc re-signing of a modified isolated Debug test host for test execution is
-allowed; signing a Release/distributable candidate remains blocked.
+The repository is private. All 50 baseline issues #2–51 are recorded
+**fixed_verified** in [repair-progress.json](audit-2.1.8/repair-progress.json), with
+source fixes at `01ae5734bfd933c9048f00ef4c3ebe035fabeb0b` and issue #39's earlier
+`a7cd664` fix. Controlled local validation passed 617 automated cases, zero
+failures; all 50 issue records are documented and closed. The baseline repair
+gate has passed. Read [the handover](BUG_FIX_HANDOVER.md) and root
+[AGENTS.md](../AGENTS.md) before continuing.
 
-The complete `build-test-release.sh`, `run-macos-validation.sh` and
-`run-isolated-audio-validation.sh` scripts also build Release, so do not run
-them as tests-only entrypoints before the gate passes. Follow the handover's
-concrete Debug-host isolation guidance; normal hosted TelephoneTests startup
-can load real accounts/defaults. Preserve production Release metadata.
+The owner authorised **3.0/build 161**. Release compilation, signing, packaging,
+installation and publication may now proceed locally from the exact repaired
+main revision. These release steps remain pending until their actual outcomes
+are recorded. Use main, `[skip ci]` pushed commits and no cloud workflow dispatch.
+Preserve the historical v2.1.8 tag/assets and the user's data.
 
-Use main, local tools only, `[skip ci]` on pushed commits, and no manual cloud
-workflow dispatch. Existing workflow files do not override this instruction.
-The sections below are historical release checks and post-repair requirements;
-their earlier passes do not verify the 50 audited defects or changed future code.
+`build-test-release.sh`, `run-macos-validation.sh` and
+`run-isolated-audio-validation.sh` include Release builds; the former closed
+repair gate no longer blocks their local use. Keep hosted tests isolated and
+retain exact build/signature/extraction/install/download evidence. Ad-hoc signing
+of a modified isolated Debug host serves test isolation; final candidate signing
+has its own documented checks. Normal TelephoneTests startup can load real
+accounts/defaults, so follow the nib-free unique-identity host guidance.
+
+Historical sections below describe earlier releases. Their earlier passes do
+not certify changed code or replace the current 617-case/component evidence.
+
+## 3.0 repair validation — controlled suites passed, publication pending
+
+The 3.0 repair fixes the finite 50-issue baseline. All four native suites passed
+locally on 8 October 2026: **617 automated test cases, zero failures**. This records
+controlled regression evidence; it does not declare a published release or certify
+live SIP/audio. Release packaging, installation and downloadable artifact checks
+remain pending until the release verification record confirms them.
+The authoritative per-issue state is
+[repair-progress.json](audit-2.1.8/repair-progress.json); the
+[50-issue verification map](REPAIR_VERIFICATION.md) links each repair to its
+named regression boundary.
+
+Keep the accepted compact interface: Icon rail Settings with Titled sections,
+one Accounts-sized window, Dial bar with one recent call, Pocket call cards,
+native close controls, UK English, Light/Dark appearance, green Online and red
+Offline. Repairs must not expand the layout or remove calling functions.
+
+Confirmed local development evidence includes:
+
+| Boundary | Result | What the count means |
+|---|---|---|
+| Complete UseCasesTests development run | 195 XCTest tests and 124 Swift Testing tests in 22 suites, zero failures | Test cases; includes concurrently implemented repairs from several components |
+| Complete TelephoneTests isolated local run | 217 XCTest tests and 48 Swift Testing tests in 9 suites, zero failures | Actual compiled hosted suite with a synthetic nib-free app identity |
+| Complete Domain local run | 28 XCTest tests, zero failures | Test cases from the full current suite |
+| Complete ReceiptValidationTests local run | 5 XCTest tests, zero failures | Test cases from the full current suite |
+| Production audio gate with inert backend | 309 checks passed | Assertions in one native harness, not 309 XCTest tests or physical opens |
+| Foundation production-component harness | 25 checks passed | Assertions with synthetic timer/playback/settings objects |
+| Exact patched CoreAudio UID driver source | 18 assertions passed | Synthetic physical UIDs, no hardware query or SDK startup |
+| Resource cleanup | 12 reachability cases and 4 DNS cases passed | Injected C-boundary creation/callback/schedule failures and success |
+| History filesystem and activity lifecycle | Passed | Real scratch permission failures plus inert background-activity/DNS import boundaries |
+| Recording export/recovery | Passed | Synthetic real WAV/MP3/Ogg encoding, forced export failure, durable reload, stereo integrity, cleanup and simulated scope-token lifetime |
+| Native SIP lifecycle and callbacks | 32 lifecycle checks and 11 callback checks passed | Inert SDK boundaries; actual compiled production methods, not provider calls |
+| Native/Swift URI round trip | 8 corpus cases and 15 assertions passed | Private parser/pools and synthetic addresses, no endpoint or transport |
+| App quit ordering | 4 focused hosted cases passed | Controlled recording/history/retry completions and intercepted termination replies |
+| Network saves and hotplug remapping | 5 Network and 3 Hotplug focused hosted cases passed | Actual production transition/mapping/failure-gate boundaries with synthetic workers/settings |
+
+The final Debug15 hosted run passed all 217 XCTest and 48 Swift Testing cases,
+including Network saves, hotplug mapping/failure gate, latest-history presenter,
+actual nib/keyboard/AX metadata, credential failure handling, call ownership and
+callback guards. Domain passed 28 XCTest cases; UseCases passed 195 XCTest plus 124
+Swift Testing cases; ReceiptValidation passed 5 XCTest cases. These sum to 617 test
+cases, separately from the component assertions listed above.
+
+Earlier hosted runs exposed geometry/ringback and native AX getter mismatches;
+those corrections were rerun successfully. Keep earlier failures as diagnostic
+history and bind final passes to the corrected revision. A test-launch timeout
+before a case starts is not a pass. If macOS FileProvider stalls dyld or signing
+under Documents, copy the isolated Debug host and its frameworks to a fresh local
+`/private/tmp` directory, preserve production metadata, and run there serially.
+Do not use the normal host or the user's account data as a workaround.
+
+The local component entrypoints below do not create a Release candidate:
+
+```sh
+xcodebuild -project Telephone.xcodeproj -scheme UseCasesTests \
+  -configuration Debug -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath build/v3-persistence-debug ARCHS=arm64 \
+  ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO test
+./Scripts/run-history-resource-tests.sh \
+  build/v3-persistence-debug/Build/Products/Debug
+./Scripts/run-audio-device-tests.sh
+./Scripts/run-recording-tests.sh
+./Scripts/run-foundation-regression-tests.sh
+python3 Tests/run_coreaudio_identity.py --output build/native-uid-fixture
+python3 Tests/test_audio_recovery_integration.py
+python3 Tests/test_recording_lifecycle_model.py
+python3 Scripts/verify-dependency-manifests.py
+```
+
+For native URI/lifecycle/callback reproduction, select the actual local Debug
+products and retain their successful build log explicitly. This avoids depending
+on a prior chat's output directory:
+
+```sh
+export JPS_DEBUG_DERIVED_DATA=$(mktemp -d /private/tmp/jps-telephone-debug.XXXXXX)
+export JPS_DEBUG_BUILD_LOG="$JPS_DEBUG_DERIVED_DATA/build-for-testing.log"
+xcodebuild -project Telephone.xcodeproj -scheme TelephoneTests \
+  -configuration Debug -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath "$JPS_DEBUG_DERIVED_DATA" ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+  CODE_SIGNING_ALLOWED=NO build-for-testing > "$JPS_DEBUG_BUILD_LOG" 2>&1
+python3 Scripts/run-sip-uri-regression-tests.py /private/tmp/jps-uri-checks
+python3 Scripts/run-sip-lifecycle-regression-tests.py /private/tmp/jps-lifecycle-checks
+python3 Scripts/run-sip-callback-regression-tests.py /private/tmp/jps-callback-checks
+./Scripts/run-history-resource-tests.sh \
+  "$JPS_DEBUG_DERIVED_DATA/Build/Products/Debug"
+```
+
+`JPS_DEBUG_DERIVED_DATA` selects matching object/framework/derived-header products.
+`JPS_DEBUG_BUILD_LOG` must contain their successful Debug application's clang link
+command, including `Telephone.debug.dylib`; the lifecycle runner uses it for the
+matching link flags. `build-for-testing` above compiles but does not launch the
+ordinary app. Use the separately isolated nib-free host for the hosted suite.
+Component runners use scratch outputs and write source/object/command provenance;
+`JPS_RESOURCE_TEST_DIR` optionally selects the history/resource scratch directory.
+Choose fresh output directories when preserving multiple runs.
+
+The history/resource runner requires already-built Debug frameworks. SIP URI,
+callback and lifecycle runners use current Debug objects; read their arguments
+and saved provenance before rerunning. Source-wiring/model checks complement
+native execution and do not substitute for it. Preserve command output, platform,
+SDK/compiler versions, source/object hashes and `.xcresult` bundles with final
+release evidence. See [dependency rebuild provenance](DEPENDENCY_BUILDS.md),
+[audio recovery](AUDIO_RECOVERY.md) and [recording recovery](RECORDING_RECOVERY.md).
+
+After every baseline issue is recorded verified, run all four native suites on
+the exact revision, build and package locally, verify nested signatures and the
+extracted ZIP, install the exact tested app and verify source/documentation
+parity. Keep the historical v2.1.8 assets. Push to main with `[skip ci]`; upload the
+same locally validated bytes. No cloud workflow is part of the 3.0 process.
+
+Manual acceptance remains separate: real SIP registration and provider routing,
+incoming/outgoing/hold/transfer/DTMF, actual audio devices and hotplug, sleep/wake,
+real microphone permission and sandbox folder grants, recording recovery,
+proficient VoiceOver speech/navigation, and visible Light/Dark/Reduce Transparency
+composition. Record only scenarios actually exercised; passing synthetic tests
+does not establish these outcomes or coverage of every supported macOS release.
 
 
 ## 2.1.8 titled Settings sections

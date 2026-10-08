@@ -1,5 +1,10 @@
 # Audio failure containment and recovery
 
+The 3.0 repair passed all controlled local suites: 617 automated cases, zero
+failures. Release packaging, installation and publication remain pending; consult [the repair progress](audit-2.1.8/repair-progress.json)
+and [validation requirements](VALIDATION.md). The accepted compact windows and
+calling functions remain in place. All current build and test work runs locally.
+
 ## What changes
 
 Telephone now keeps a failed local-audio operation from triggering repeated
@@ -35,13 +40,47 @@ queuing multiple SDK-internal audio opens before the first error is classified.
 Queued/completed work is checked against a SIP lifecycle generation. The existing
 SDK preflight before an outgoing INVITE is preserved.
 
+## Worker ordering and current device identity
+
+Main admits SIP/audio work, captures immutable settings, sets pending state and
+then submits native operations to the user-agent's serial control worker. This
+includes startup/shutdown, device refresh and selection, account operations and
+call controls that can enter the SDK lock. CoreAudio device/default-change
+delivery first moves its entire ordered fanout to main: refresh is admitted
+before remapping, and both execute in order on the control worker. System device
+queries, current SDK enumeration and driver opens in the queued selection occur
+off main. The Settings pane's device-list property loading remains a separate
+CoreAudio query path; it does not open an SDK audio driver.
+
+Native completion must still match endpoint generation, current call ownership
+and selection revision before changing UI state or reconnecting routes. An older
+selection cannot release a newer pending command, clear its failure, or reconnect
+audio after the endpoint stops. Retry remains visibly failed/pending until the
+current selection actually succeeds. Saving Network settings during startup or
+shutdown coalesces a restart using the latest saved configuration; failed startup
+and application termination do not trigger restart loops.
+
+Saved audio selections include physical CoreAudio UIDs. The patched native helper
+resolves the exact current PJSIP global index through its driver table to the
+physical CoreAudio device. Duplicate display names and independent enumeration
+positions are not stable identity. Missing/ambiguous mapping fails visibly after
+Null sound and remains gated until explicit recovery. See
+[the pinned driver rebuild](DEPENDENCY_BUILDS.md#7a-30-native-coreaudio-uid-helper-and-local-archive-rebuild).
+
+Recording encoding has its own serial worker and durable recovery jobs. History
+uses a separate actor and synchronously admitted drain barrier. Quit waits for
+native/recording shutdown and queued history persistence before its final reply;
+see [recording recovery](RECORDING_RECOVERY.md).
+
 ## Important limits
 
-This is synchronous **retry containment**, not a rewrite of PJSIP threading or a
-claim that all beachballs are fixed. One CoreAudio/PJSIP operation can still take
-a long time. PJSIP 2.17 tries six sample-rate candidates while holding its global
-lock. Dispatching only the initial open to a worker would leave other UI-side SIP
-calls waiting on that same lock, so this patch does not make that unsafe promise.
+The 3.0 changes move audited SDK-lock/audio-open entrypoints onto the serial
+control worker and prevent repeated attempts after failure. They do not impose a
+safe timeout on native driver calls. One CoreAudio/PJSIP operation can still take
+a long time or stall that worker; PJSIP 2.17 can try six sample-rate candidates
+while holding its global lock. The failure gate bounds repeated attempts, not the
+duration of an individual backend call. New SDK call sites must preserve worker
+ownership and completion-generation checks.
 
 The known `-1936570544` PJSIP status decodes through the bundled macro
 `440000 - OSStatus` to `1937010544`, Apple's `'stop'`
@@ -59,7 +98,7 @@ separate fail-closed reporting path.
 
 ## Diagnostics
 
-At default log level 3, `AKAudio` entries include the operation and phase,
+At default log level 3, `audio-device` entries include the operation and phase,
 main/background context, numeric input/output and conference-port IDs, raw
 status, and monotonic operation duration. The known `'stop'` mapping also includes
 the native number and symbol. No new diagnostic contains SIP addresses,
@@ -75,6 +114,15 @@ reproduces calls or changes device settings for this investigation.
 
 ## Validation
 
+Current local component checks include 309 assertions against the production
+audio gate with fake backend operations, 18 assertions from the exact patched
+CoreAudio UID source with synthetic factory/device records, the real synthetic
+recording encoder/recovery harness, and ordered mapping/worker regression tests.
+Keep assertion counts separate from XCTest/Swift Testing test counts. The full isolated
+hosted suite also passed; [VALIDATION.md](VALIDATION.md) records the current
+boundary and release gate. No physical device or provider outcome is implied.
+
+The following CI result is historical evidence of the earlier synchronous gate:
 Native CI passed on 2 October 2026: [run 37037958671](https://github.com/jpskidmore/telephone-jps/actions/runs/37037958671)
 built commit `fcd45a2f0fc12b5b9c0352091a4859ac6d3bd6fd` on a standard arm64
 runner with macOS 15.7.9, Xcode 26.3, Swift 6.2.4 and macOS SDK 26.2. The log
@@ -84,8 +132,9 @@ build all passing. See [the validation record](validation/audio-recovery-2026-10
 
 This did not run Telephone, the hosted XCTest suite, or physical audio/SIP tests.
 It is not verification of macOS 27 hardware behavior. No application was signed,
-installed or deployed. Subsequent candidate changes must pass the same CI gate
-before publication to main; the first hardware timeout remains a limitation.
+installed or deployed. It does not verify changed 3.0 code. The current process
+requires local validation and `[skip ci]` publication commits; no new cloud run
+is authorised by this historical note. A native hardware stall remains possible.
 
 
 Run the standalone policy harness on a Mac:
@@ -109,19 +158,20 @@ python3 Scripts/verify-dependency-manifests.py
 ```
 
 These checks inspect source or execute explicit models; they do not execute
-Objective-C/PJSIP. For an isolated native compile plus the safe standalone
-harnesses, use:
+Objective-C/PJSIP. The historical combined runner below also compiles Release:
 
 ```sh
 ./Scripts/run-isolated-audio-validation.sh
 ```
 
-This runner does not run the app-hosted `TelephoneTests` bundle. That bundle's
-normal host can read real preferences/start the application, so it remains for a
-disposable, separately approved test account. An unsigned application build is
-not signing, installation, launch, or real-device acceptance.
+Do not run that combined runner while the 50-issue repair gate is closed. Use the
+individual component runners and isolated Debug host described in
+[VALIDATION.md](VALIDATION.md). The normal `TelephoneTests` host can load real
+preferences and start the app; test-host isolation must remove its main nib,
+use a synthetic bundle/defaults identity and preserve production metadata. A
+development build does not establish installation or real-device acceptance.
 
-Required separately approved device scenarios: a healthy wired call; a failing
+Manual device scenarios still to record: a healthy wired call; a failing
 open; repeated queued media/unmute/ringback events; failed fallback; explicit
 retry with changed selection during a call and while idle; hangup and quit while
 failed; rapid outgoing requests; sleep/restart and late callback delivery;

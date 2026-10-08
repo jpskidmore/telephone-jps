@@ -9,34 +9,42 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained release: 2.1.8 (160)</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0">3.0 (161): publication pending</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained baseline: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
   <a href="LICENSE"><img alt="GPL version 3" src="https://img.shields.io/badge/license-GPLv3-blue"></a>
 </p>
 
 > [!IMPORTANT]
-> **Private maintenance: fix and verify all 50 audit findings (#2–51) before any new Release/distributable build.** Read [AGENTS.md](AGENTS.md), the [repair handover](docs/BUG_FIX_HANDOVER.md), [complete issue snapshot](docs/audit-2.1.8/issues.json) and [tracked checklist](docs/audit-2.1.8/repair-progress.json). Local development compilation and isolated tests for fixes are allowed; cloud builds, packaging and publication are paused.
+> **3.0 preparation: all 50 baseline audit findings are fixed and verified.** The repair gate passed with 617 local automated test cases and zero failures. Source fixes are on main at [`01ae573`](https://github.com/jpskidmore/telephone-jps/commit/01ae5734bfd933c9048f00ef4c3ebe035fabeb0b); issue #39 was fixed earlier. Local Release build/signing, installation and publication are being prepared. The link above is the planned v3.0 release location, not a claim that a downloadable build is available yet.
 >
-> The [audio-recovery changes](docs/AUDIO_RECOVERY.md) contain repeated failed audio opens and add explicit recovery. A first hardware timeout can still block; real-device acceptance remains separate.
+> Read [the verified repair map](docs/REPAIR_VERIFICATION.md), [tracked evidence](docs/audit-2.1.8/repair-progress.json), [3.0 notes](docs/releases/3.0.md) and [maintenance handover](docs/BUG_FIX_HANDOVER.md). The repository stays private, work stays on main, and all builds remain local with `[skip ci]` commits and no cloud dispatch.
+>
+> [Audio recovery](docs/AUDIO_RECOVERY.md) keeps repeated failures gated and moves native work off the interface thread. One native driver operation can still stall its worker; real SIP/audio and VoiceOver remain manual acceptance limits. [Recording recovery](docs/RECORDING_RECOVERY.md) retains captured audio after export failure.
 > Call recording is disabled by default. Only enable it when recording is lawful and everyone whose consent is required has consented.
 
-## Retained release and private access
+## 3.0 preparation and private access
 
-The retained [2.1.8 release](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8)
-is build 160 from `9a32ae8`. It uses the accepted Icon rail/Titled sections
-Settings, Dial bar with one recent call, and Pocket call cards. See its
-[historical release notes](docs/releases/2.1.8.md) and
-[interface guidance](docs/LIQUID_GLASS.md).
+Version **3.0/build 161** is the authorised next local release. All 50 baseline
+findings #2–51 have recorded verified repairs; the full four-suite local run passed
+**617 automated test cases, zero failures**. Component assertion counts and
+manual limits are recorded separately in [VALIDATION.md](docs/VALIDATION.md).
+The [planned 3.0 download page](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0)
+remains pending until the exact locally built, signed and verified package is
+installed and published. Do not interpret a planned link or source commit as a
+published binary.
 
-Repository contents, issues and release downloads now require authorised GitHub
-access. The existing app/source ZIPs, checksums and build-verification files are
-retained as the audit baseline. A later documentation-only main commit carries
-the 50-item repair handover; it does not rebuild or replace 2.1.8.
+Repository contents, issues and downloads require authorised GitHub access.
+The historical [2.1.8 release](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8)
+remains unchanged: build 160 from `9a32ae8`, with its original app/source ZIPs,
+checksums and verification files. The accepted design is preserved: Icon rail
+Settings with Titled sections and one Accounts-sized window, Dial bar with one
+recent call, Pocket call cards, native close controls, UK English, Light/Dark,
+green Online and red Offline.
 
-Apple silicon and macOS 15.6+; the retained package is ad-hoc signed and
-unnotarised. Read its verification limits before using it. Do not create or
-publish another package until the [repair gate](docs/BUG_FIX_HANDOVER.md) passes.
+Apple silicon and macOS 15.6+. The intended local 3.0 package is ad-hoc signed and
+unnotarised. Read its final build-verification record before testing it.
 
 ## What it does
 
@@ -72,14 +80,15 @@ More detail is available in [RECORDING.md](RECORDING.md).
 
 ## Build from source
 
-**Paused for Release/distributable builds until all 50 fixes are verified.**
-The commands below are post-repair instructions; they are not permission to
-bypass [the current gate](docs/BUG_FIX_HANDOVER.md). Targeted local Debug/test
-compilation remains available for implementation. Do not dispatch GitHub build
-workflows; use main and include `[skip ci]` in pushed commits.
+The 50-issue repair gate has passed. Build, sign, package and test the authorised
+3.0/build 161 candidate locally from the exact repaired main revision. Do not
+launch cloud workflows; include `[skip ci]` in pushed commits. Preserve the
+historical v2.1.8 assets and the user's settings, credentials and call data.
 
-
-The repository contains the application source, tests, blue artwork, the exact prebuilt arm64 dependency libraries used for the 2.0 releases, and unmodified upstream dependency archives under `ThirdParty Sources/`.
+The repository contains application source, tests, blue artwork, pinned arm64
+dependency libraries and the unmodified upstream archives under
+`ThirdParty Sources/`. The 3.0 physical-device UID repair includes a reviewed
+CoreAudio driver archive rebuild; see [dependency provenance](docs/DEPENDENCY_BUILDS.md).
 
 Requirements:
 
@@ -110,10 +119,12 @@ Run the ordinary (unsanitized) focused recording tests and dependency checks:
 ./Scripts/verify-vendor-security.sh
 ```
 
-For the recording harness, all four XCTest bundles and an unsigned Release build,
-use `./Scripts/run-macos-validation.sh` on a clean macOS test account. This runner
-has not been executed in the Linux cleanup environment. See
-[VALIDATION.md](docs/VALIDATION.md) for prerequisites and remaining release checks.
+For the recording harness, four native test bundles and an unsigned Release
+build, the combined entrypoint is `./Scripts/run-macos-validation.sh`. Keep its
+hosted test environment isolated; normal app startup can load real user data.
+The current four-suite run passed locally using a synthetic nib-free Debug host.
+See [VALIDATION.md](docs/VALIDATION.md) for exact reproduction, observed checks and
+remaining binary/manual acceptance.
 
 For a local or downloadable ad-hoc build, sign nested code and apply the
 documented ad-hoc-only library-validation exception:
@@ -134,8 +145,9 @@ frameworks with the same Apple Team ID.
 The complete [dependency rebuild guide](docs/DEPENDENCY_BUILDS.md) covers the six
 bundled source archives: Opus, libogg, LAME, libopusenc, LibreSSL, and PJSIP. It uses
 an isolated staging directory, the checked-in PJSIP configuration and patches, and
-explicit arm64/macOS 15.6 settings. Its commands were checked against the bundled
-source but have not been executed on macOS during the current cleanup.
+explicit arm64/macOS 15.6 settings. The general six-library recipe remains
+source-derived. The narrow 3.0 CoreAudio UID object/archive rebuild was executed
+locally and has pinned hashes and native fixture provenance.
 
 Verify the source manifest and prebuilt archive inventory on macOS or Linux:
 
