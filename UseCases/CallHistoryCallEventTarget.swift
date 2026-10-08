@@ -50,13 +50,18 @@ public final class CallHistoryWork: @unchecked Sendable {
     public func resume() { lock.lock(); accepting = true; lock.unlock() }
 }
 
-public final class CallHistoryCallEventTarget: Sendable {
+public final class CallHistoryCallEventTarget: @unchecked Sendable {
     private let histories: CallHistories
     private let factory: CallHistoryRecordAddUseCaseFactory
+    private let accountName: @Sendable (String) -> String?
+    private let namesLock = NSLock()
+    private var callNames: [ObjectIdentifier: String] = [:]
 
-    public init(histories: CallHistories, factory: CallHistoryRecordAddUseCaseFactory) {
+    public init(histories: CallHistories, factory: CallHistoryRecordAddUseCaseFactory,
+                accountName: @escaping @Sendable (String) -> String? = { _ in nil }) {
         self.histories = histories
         self.factory = factory
+        self.accountName = accountName
     }
 }
 
@@ -64,7 +69,12 @@ extension CallHistoryCallEventTarget: CallEventTarget {
     public func didDisconnect(_ call: Call) {
         let uuid = call.account.uuid
         let domain = call.account.domain
-        let record = CallHistoryRecord(call: call)
+        namesLock.lock()
+        let capturedName = callNames.removeValue(forKey: ObjectIdentifier(call))
+        namesLock.unlock()
+        // Read the call-time canonical value at disconnection: the incoming
+        // notification may assign it after this target's receive observer.
+        let record = CallHistoryRecord(call: call, originAccountName: capturedName ?? accountName(uuid))
         CallHistoryWork.shared.submit { [histories, factory] in
             factory.make(
                 history: await histories.history(withUUID: uuid),
@@ -74,7 +84,13 @@ extension CallHistoryCallEventTarget: CallEventTarget {
         }
     }
 
-    public func didMake(_ call: Call) {}
-    public func didReceive(_ call: Call) {}
+    public func didMake(_ call: Call) { captureName(call) }
+    public func didReceive(_ call: Call) { captureName(call) }
     public func isConnecting(_ call: Call) {}
+
+    private func captureName(_ call: Call) {
+        guard let name = accountName(call.account.uuid) else { return }
+        namesLock.lock(); defer { namesLock.unlock() }
+        callNames[ObjectIdentifier(call)] = name
+    }
 }

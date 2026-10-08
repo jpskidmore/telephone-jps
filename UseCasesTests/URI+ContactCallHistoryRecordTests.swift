@@ -21,6 +21,18 @@ import UseCases
 import UseCasesTestDoubles
 
 final class URI_ContactCallHistoryRecordTests: XCTestCase {
+    func testExplicitSIPPortTransportAndIPv6ArePreservedInTheContactConversion() {
+        let origin = CallHistoryRecord(uri: URI(user: "desk", address: ServiceAddress(host: "[2001:db8::1]", port: "5071"),
+                                                displayName: "", transport: .tls),
+                                       date: Date(), duration: 2, isIncoming: false, isMissed: false)
+        let record = ContactCallHistoryRecord(origin: origin, contact: MatchedContact(name: "Office", address: .email(address: "desk@example", label: "work")))
+        let result = URI(record: record)
+        XCTAssertEqual(result.port, "5071")
+        XCTAssertEqual(result.host, "2001:db8::1")
+        XCTAssertEqual(result.transport, .tls)
+        XCTAssertEqual(result.displayName, "Office")
+        XCTAssertEqual(origin.callbackDestination, "sip:desk@[2001:db8::1]:5071;transport=tls")
+    }
     func testURIIsRecordURIWhenContactNameIsEmpty() {
         let record = ContactCallHistoryRecord(
             origin: CallHistoryRecordTestFactory().makeRecord(number: 1),

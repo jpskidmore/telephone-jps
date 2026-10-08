@@ -25,13 +25,20 @@ final class PresentationCallHistoryRecord: NSObject {
     @objc let date: String
     @objc let duration: String
     @objc let isIncoming: Bool
+    @objc let accountUUID: String?
+    @objc let accountName: String
+    @objc let accountBadge: String
 
-    init(identifier: String, contact: PresentationContact, date: String, duration: String, isIncoming: Bool) {
+    init(identifier: String, contact: PresentationContact, date: String, duration: String, isIncoming: Bool,
+         accountUUID: String? = nil, accountName: String = "") {
         self.identifier = identifier
         self.contact = contact
         self.date = date
         self.duration = duration
         self.isIncoming = isIncoming
+        self.accountUUID = accountUUID
+        self.accountName = accountName
+        accountBadge = accountName.trimmingCharacters(in: .whitespacesAndNewlines).first.map { String($0).uppercased() } ?? ""
     }
 }
 
@@ -48,6 +55,8 @@ extension PresentationCallHistoryRecord {
         hasher.combine(date)
         hasher.combine(duration)
         hasher.combine(isIncoming)
+        hasher.combine(accountUUID)
+        hasher.combine(accountName)
         return hasher.finalize()
     }
 
@@ -57,7 +66,8 @@ extension PresentationCallHistoryRecord {
             contact == record.contact &&
             date == record.date &&
             duration == record.duration &&
-            isIncoming == record.isIncoming
+            isIncoming == record.isIncoming &&
+            accountUUID == record.accountUUID && accountName == record.accountName
     }
 }
 

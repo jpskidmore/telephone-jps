@@ -26,12 +26,12 @@ extension URI {
             user: uri.user,
             address: ServiceAddress(host: uri.host, port: uri.port > 0 ? "\(uri.port)" : ""),
             displayName: uri.displayName,
-            transport: transport
+            transport: uri.usesExplicitTransport ? Transport(rawValue: uri.transport) ?? transport : transport
         )
     }
 
     @objc(initWithURI:)
     convenience init(_ uri: AKSIPURI) {
-        self.init(uri: uri, transport: .udp)
+        self.init(uri: uri, transport: Transport(rawValue: uri.transport) ?? .udp)
     }
 }

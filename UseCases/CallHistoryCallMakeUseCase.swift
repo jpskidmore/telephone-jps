@@ -14,17 +14,34 @@
 //
 
 public final class CallHistoryCallMakeUseCase {
-    private let account: Account
+    private let account: Account?
+    private let route: (@MainActor @Sendable (String, String, String) -> Void)?
 
     public init(account: Account) {
         self.account = account
+        route = nil
+    }
+
+    public init(route: @escaping @MainActor @Sendable (String, String) -> Void) {
+        account = nil
+        self.route = { destination, label, _ in route(destination, label) }
+    }
+
+    public init(routeWithDisplayName: @escaping @MainActor @Sendable (String, String, String) -> Void) {
+        account = nil
+        route = routeWithDisplayName
     }
 }
 
 extension CallHistoryCallMakeUseCase: ContactCallHistoryRecordGetUseCaseOutput {
     public func update(record: ContactCallHistoryRecord) {
         Task {
-            await account.makeCall(to: URI(record: record), label: label(for: record.contact.address))
+            if let route {
+                let name = record.contact.name.isEmpty ? record.origin.uri.displayName : record.contact.name
+                await route(record.origin.callbackDestination, label(for: record.contact.address), name)
+            } else if let account {
+                await account.makeCall(to: URI(record: record), label: label(for: record.contact.address))
+            }
         }
     }
 }

@@ -1,6 +1,50 @@
 # Validation and release checks
 
-## Verified repair gate and local release policy
+## 3.5 Guided routes local validation — 8 October 2026
+
+The complete current four-bundle run passed **664 test cases, zero failures**:
+Domain 28 XCTest; UseCases 201 XCTest + 131 Swift Testing; ReceiptValidation 5
+XCTest; isolated Telephone 251 XCTest + 48 Swift Testing. This includes the final
+Unavailable status and collapsed/expanded width-retention corrections.
+
+The production Foundation dial-plan harness separately passed **170 cases, zero
+failures**, including country/area expansion, longest-prefix precedence,
+category/default interaction, blocks, emergency isolation, stale/deleted account
+rejection, service literals, malformed URI rejection and legacy link aliases.
+Strict Swift 6 concurrency and Objective-C bridge export passed.
+
+Actual native hosted tests verify the single editable offline dial field, one
+history table, 368 × 104 minimum content (368 × 268 expanded), fixed 592 × 337
+Settings outer bounds, route/exception save/discard/cancel behaviour, bounded
+prefix sheet, provider-owned immutable pending requests and current-plan
+callbacks. Rendered native Numbers/Routes/Exceptions/Test panes and the main
+Dial bar were checked in Light and Dark. They use synthetic data and a uniquely
+identified nib-free Debug host; the production MainMenu metadata is retained.
+
+Separate current checks passed: 18 URI assertions across eight native corpus
+cases (including explicit TCP preservation), 32 fresh-source SIP lifecycle and
+11 callback assertions; 25 Foundation checks; 309 audio-gate and 18 patched
+CoreAudio UID assertions; history file preservation/retry/clear, 12 reachability,
+4 DNS and nullable-import checks; real synthetic WAV/MP3/Ogg recovery/export;
+11 audio wiring and 6 recording model cases. Dependency inventory passed for
+7 manifest files, 24 archives and 21 linked libraries; all 50 recorded baseline
+repair entries still pass their gate. These component/assertion counts are
+separate from the four-bundle test-case total.
+
+Build products and executable fixtures stay under `/private/tmp`; durable logs,
+source/object hashes and ten native UI snapshots are under local
+`outputs/v3.5`. Framework runs and hosted test-manager runs are serial. The URI
+transport reproduction initially failed and then passed after preserving the
+native parser's explicit transport; prior failures are diagnostic history.
+
+Release signing, ZIP/source parity, installation and publication are recorded
+from actual results in the release proof after they complete. Live provider
+routing/negotiation, physical audio/hotplug, actual capture, sandbox grants and
+proficient VoiceOver remain manual acceptance boundaries. No emergency call is
+placed by a test. Offline classification is not a tariff or live allocation
+lookup; consult [numbering metadata](DIAL_PLAN_NUMBERING.md).
+
+## Historical 3.0 verified repair gate and local release policy
 
 The repository is private. All 50 baseline issues #2–51 are recorded
 **fixed_verified** in [repair-progress.json](audit-2.1.8/repair-progress.json), with
@@ -30,7 +74,7 @@ has its own documented checks. Normal TelephoneTests startup can load real
 accounts/defaults, so follow the nib-free unique-identity host guidance.
 
 Historical sections below describe earlier releases. Their earlier passes do
-not certify changed code or replace the current 617-case/component evidence.
+not certify changed code or replace the current 3.5 evidence above.
 
 ## 3.0 repair validation and completed publication
 

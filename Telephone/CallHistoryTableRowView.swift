@@ -40,3 +40,58 @@ private func fillRectIfNotEmpty(_ rect: NSRect) {
 private func makeSeparatorRect(bounds: NSRect) -> NSRect {
     return NSRect(x: NSMinX(bounds) + 27, y: NSMaxY(bounds) - 1, width: bounds.size.width - 27, height: 1)
 }
+
+/// Keeps the origin badge in the existing direction column, without widening the compact dialler.
+final class CallHistoryDirectionCellView: NSTableCellView {
+    private let accountBadge = CallHistoryAccountBadgeView(frame: .zero)
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        accountBadge.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(accountBadge)
+        NSLayoutConstraint.activate([
+            accountBadge.centerXAnchor.constraint(equalTo: centerXAnchor),
+            accountBadge.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -3),
+            accountBadge.widthAnchor.constraint(equalToConstant: 18),
+            accountBadge.heightAnchor.constraint(equalToConstant: 18)
+        ])
+    }
+
+    override var objectValue: Any? {
+        didSet {
+            let record = objectValue as? PresentationCallHistoryRecord
+            accountBadge.name = record?.accountName ?? ""
+            accountBadge.glyph = record?.accountBadge ?? ""
+        }
+    }
+}
+
+final class CallHistoryAccountBadgeView: NSView {
+    var name = "" {
+        didSet {
+            toolTip = name.isEmpty ? nil : name
+            setAccessibilityElement(!name.isEmpty)
+            setAccessibilityRole(.staticText)
+            setAccessibilityLabel(NSLocalizedString("Call account", comment: "Call history origin account badge."))
+            setAccessibilityValue(name)
+        }
+    }
+    var glyph = "" { didSet { isHidden = glyph.isEmpty; needsDisplay = true } }
+
+    override func draw(_ dirtyRect: NSRect) {
+        NSColor.labelColor.setFill()
+        NSBezierPath(ovalIn: bounds).fill()
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 11, weight: .semibold),
+            .foregroundColor: NSColor.controlBackgroundColor
+        ]
+        let text = NSAttributedString(string: glyph, attributes: attributes)
+        let size = text.size()
+        text.draw(at: NSPoint(x: (bounds.width - size.width) / 2, y: (bounds.height - size.height) / 2))
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsDisplay = true
+    }
+}

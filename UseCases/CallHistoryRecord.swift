@@ -20,19 +20,51 @@ import Foundation
 
 public struct CallHistoryRecord: Sendable {
     public let identifier: String
+    /// The identity inside its original UUID store. Global rows qualify this identity without changing the store.
+    public let accountRecordIdentifier: String
     public let uri: URI
     public let date: Date
     public let duration: Int
     public let isIncoming: Bool
     public let isMissed: Bool
+    public let canonicalDestination: String?
+    public let originAccountUUID: String?
+    public let originAccountName: String?
 
-    public init(uri: URI, date: Date, duration: Int, isIncoming: Bool, isMissed: Bool) {
-        identifier = "\(uri.user)@\(uri.host)|\(date.timeIntervalSinceReferenceDate)|\(duration)|\(isIncoming ? 1 : 0)"
+    public init(uri: URI, date: Date, duration: Int, isIncoming: Bool, isMissed: Bool,
+                canonicalDestination: String? = nil, originAccountUUID: String? = nil, originAccountName: String? = nil) {
+        self.init(uri: uri, date: date, duration: duration, isIncoming: isIncoming, isMissed: isMissed,
+                  canonicalDestination: canonicalDestination, originAccountUUID: originAccountUUID,
+                  originAccountName: originAccountName, identityAccountUUID: nil)
+    }
+
+    private init(uri: URI, date: Date, duration: Int, isIncoming: Bool, isMissed: Bool,
+                 canonicalDestination: String?, originAccountUUID: String?, originAccountName: String?, identityAccountUUID: String?) {
+        let recordIdentifier = "\(uri.user)@\(uri.host)|\(date.timeIntervalSinceReferenceDate)|\(duration)|\(isIncoming ? 1 : 0)"
+        accountRecordIdentifier = recordIdentifier
+        identifier = identityAccountUUID.map { "\($0)|\(recordIdentifier)" } ?? recordIdentifier
         self.uri = uri
         self.date = date
         self.duration = duration
         self.isIncoming = isIncoming
         self.isMissed = isMissed
+        self.canonicalDestination = canonicalDestination
+        self.originAccountUUID = originAccountUUID
+        self.originAccountName = originAccountName
+    }
+
+    public func qualified(accountUUID: String, accountName: String) -> CallHistoryRecord {
+        CallHistoryRecord(uri: uri, date: date, duration: duration, isIncoming: isIncoming, isMissed: isMissed,
+                          canonicalDestination: canonicalDestination, originAccountUUID: accountUUID,
+                          originAccountName: accountName, identityAccountUUID: accountUUID)
+    }
+
+    /// Legacy number/service users enter today's plan without a historical provider host.
+    /// New records retain their call-time dispatch value, including explicit numeric SIP intent.
+    public var callbackDestination: String {
+        if let canonicalDestination, !canonicalDestination.isEmpty { return canonicalDestination }
+        if uri.host.isEmpty || isLiteralHistoryDestination(uri.user) { return uri.user }
+        return URI(user: uri.user, address: uri.address, displayName: "", transport: uri.transport).stringValue
     }
 
     public func removingHost() -> CallHistoryRecord {
@@ -41,9 +73,21 @@ public struct CallHistoryRecord: Sendable {
             date: date,
             duration: duration,
             isIncoming: isIncoming,
-            isMissed: isMissed
+            isMissed: isMissed,
+            canonicalDestination: canonicalDestination,
+            originAccountUUID: originAccountUUID,
+            originAccountName: originAccountName
         )
     }
+}
+
+private func isLiteralHistoryDestination(_ text: String) -> Bool {
+    if text.hasPrefix("+") {
+        let digits = text.dropFirst()
+        return (6...15).contains(digits.count) && digits.first != "0" && digits.allSatisfy { $0.isASCII && $0.isNumber }
+    }
+    return (1...64).contains(text.utf8.count) && text.contains(where: { $0.isASCII && $0.isNumber }) &&
+        text.allSatisfy { $0.isASCII && ($0.isNumber || "*#RP".contains($0)) }
 }
 
 extension CallHistoryRecord: Equatable {
@@ -53,18 +97,25 @@ extension CallHistoryRecord: Equatable {
             lhs.date == rhs.date &&
             lhs.duration == rhs.duration &&
             lhs.isIncoming == rhs.isIncoming &&
-            lhs.isMissed == rhs.isMissed
+            lhs.isMissed == rhs.isMissed &&
+            lhs.identifier == rhs.identifier &&
+            lhs.canonicalDestination == rhs.canonicalDestination &&
+            lhs.originAccountUUID == rhs.originAccountUUID &&
+            lhs.originAccountName == rhs.originAccountName
     }
 }
 
 extension CallHistoryRecord {
-    public init(call: Call) {
+    public init(call: Call, originAccountName: String? = nil) {
         self.init(
             uri: call.remote,
             date: call.date,
             duration: call.duration,
             isIncoming: call.isIncoming,
-            isMissed: call.isMissed
+            isMissed: call.isMissed,
+            canonicalDestination: call.canonicalDestination ?? nil,
+            originAccountUUID: call.account.uuid,
+            originAccountName: originAccountName
         )
     }
 }

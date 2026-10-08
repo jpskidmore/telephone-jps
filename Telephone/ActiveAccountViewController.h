@@ -43,6 +43,9 @@ extern NSString * const kPhoneLabel;
 
 @property(nonatomic, readonly) BOOL allowsCallDestinationInput;
 @property(nonatomic, readonly) NSView *keyView;
+@property(nonatomic, copy, nullable) void (^callDestinationHandler)(AKSIPURI *uri, NSString *phoneLabel);
+@property(nonatomic, copy, nullable) NSString * (^callRoutePreviewHandler)(AKSIPURI * _Nullable uri, NSString *text);
+- (void)refreshCallRoutePreview;
 
 - (instancetype)initWithAccountController:(AccountController *)accountController NS_DESIGNATED_INITIALIZER;
 - (instancetype)initWithNibName:(NSNibName)name bundle:(NSBundle *)bundle NS_DESIGNATED_INITIALIZER;

@@ -1,9 +1,14 @@
 # Changelog
 
-## jps Telephone 3.0 (build 161) — verified repairs, publication pending
+## jps Telephone 3.5 (build 162) — Guided routes
 
-The 50-issue repair gate passed. The next release is being built, signed,
-installed and packaged locally; no published 3.0 binary is claimed yet.
+One compact dialler now uses configurable country/area expansion and guided outgoing routes, with precise longest-prefix exceptions and Block rules. All accounts share one incoming/outgoing/missed-call history; callbacks use the current plan and account badges derive automatically from account names. Native compact Settings gains a Dial plan pane with route testing.
+
+See [3.5 notes](docs/releases/3.5.md) and [dialling plans](docs/DIAL_PLANS.md). Local build, install and publication verification is in progress. Historical releases remain immutable.
+
+## jps Telephone 3.0 (build 161) — verified repairs, published
+
+The 50-issue repair gate passed. Version 3.0 was built, signed, installed and published locally; its immutable package evidence is in [the publication record](docs/releases/3.0-verification.md).
 
 - Preserve unreadable history, commit Clear History durably, reject stale reloads and deleted-account additions, and drain history before Quit
 - Retain captured recordings in durable recovery jobs and offer Retry, Save Elsewhere, Reveal and Later after failed export

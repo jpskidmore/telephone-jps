@@ -23,6 +23,46 @@ import UseCasesTestDoubles
 
 @CallHistoryActor
 struct PersistentCallHistoryTests {
+    @Test func canonicalOriginAndExplicitSIPPortTransportSurviveReload() {
+        let storage = MemoryPropertyListStorage()
+        let record = CallHistoryRecord(uri: URI(user: "office", address: ServiceAddress(host: "[2001:db8::1]", port: "5071"),
+                                                displayName: "Office", transport: .tls),
+                                       date: Date(timeIntervalSinceReferenceDate: 123), duration: 4, isIncoming: true, isMissed: false,
+                                       canonicalDestination: "sip:office@[2001:db8::1]:5071;transport=tls",
+                                       originAccountUUID: "stable-account", originAccountName: "First provider")
+        let history = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+        history.add(record)
+        let reopened = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+        #expect(reopened.allRecords == [record])
+        #expect(reopened.allRecords[0].callbackDestination == record.canonicalDestination)
+        #expect(reopened.allRecords[0].uri.port == "5071")
+        #expect(reopened.allRecords[0].uri.transport == .tls)
+    }
+
+    @Test func legacyReadDoesNotInventCanonicalOrOriginMetadataOrWriteTheStore() {
+        let storage = FaultingHistoryStorage()
+        storage.records = [["user": "123456", "host": "", "name": "Old call", "date": Date(timeIntervalSinceReferenceDate: 10),
+                            "duration": 4, "incoming": false, "missed": false]]
+        let history = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+        #expect(storage.saveCount == 0)
+        #expect(history.allRecords[0].canonicalDestination == nil)
+        #expect(history.allRecords[0].originAccountUUID == nil)
+        #expect(history.allRecords[0].callbackDestination == "123456")
+        history.add(makeRecord2())
+        #expect(storage.records[0]["canonicalDestination"] == nil)
+        #expect(storage.records[0]["originAccountUUID"] == nil)
+    }
+
+    @Test func hostRemovalRetainsCallTimeCanonicalDestinationAndOriginMetadata() {
+        let record = CallHistoryRecord(uri: URI(user: "123456", host: "old-provider", displayName: ""),
+                                       date: Date(), duration: 4, isIncoming: false, isMissed: false,
+                                       canonicalDestination: "+441442123456", originAccountUUID: "uuid", originAccountName: "First")
+        let stripped = record.removingHost()
+        #expect(stripped.uri.host.isEmpty)
+        #expect(stripped.canonicalDestination == "+441442123456")
+        #expect(stripped.originAccountUUID == "uuid" && stripped.originAccountName == "First")
+    }
+
     @Test func persistsAfterAdding() {
         let storage = MemoryPropertyListStorage()
         let record1 = makeRecord1()

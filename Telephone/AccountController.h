@@ -48,6 +48,12 @@ extern NSString * const kEmailSIPLabel;
 @property(nonatomic, copy) NSString *plusCharacterSubstitution;
 @property(nonatomic) BOOL callsShouldDisplayAccountInfo;
 @property(nonatomic, readonly) BOOL canMakeCalls;
+@property(nonatomic, readonly) NSString *routingAvailability;
+@property(nonatomic, readonly) NSString *accountUUID;
+@property(nonatomic, readonly) BOOL hasPendingRoutedCalls;
+- (void)cancelPendingRoutedCalls;
+- (void)changeRoutingAvailability:(NSString *)availability;
+- (void)makeRoutedCallToURI:(AKSIPURI *)uri phoneLabel:(NSString *)phoneLabel canonicalDestination:(nullable NSString *)canonicalDestination;
 
 
 - (instancetype)initWithSIPAccount:(AKSIPAccount *)account

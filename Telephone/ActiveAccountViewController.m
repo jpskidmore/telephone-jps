@@ -84,6 +84,7 @@ static NSDictionary *DestinationForToken(id token) {
 @property(nonatomic) NSButton *historyButton;
 @property(nonatomic) NSTextField *offlineLabel;
 @property(nonatomic) BOOL observesDestinationValues;
+@property(nonatomic) NSView *compactLastKeyView;
 @end
 
 @implementation ActiveAccountViewController
@@ -218,8 +219,15 @@ static NSDictionary *DestinationForToken(id token) {
         if ([control isKindOfClass:[NSPopUpButton class]]) {
             more.nextKeyView = control;
             control.nextKeyView = historyKeyView;
+            self.compactLastKeyView = control;
         }
     }
+    if ([availability isKindOfClass:NSPopUpButton.class]) {
+        more.nextKeyView = availability;
+        availability.nextKeyView = historyKeyView;
+        self.compactLastKeyView = availability;
+    }
+    if (self.compactLastKeyView == nil) self.compactLastKeyView = more;
 }
 
 - (NSButton *)compactButtonWithSymbol:(NSString *)symbol title:(NSString *)title target:(id)target action:(SEL)action {
@@ -249,14 +257,23 @@ static NSDictionary *DestinationForToken(id token) {
 
 - (void)controlTextDidChange:(NSNotification *)notification {
     self.dialButton.enabled = self.allowsCallDestinationInput && self.callDestinationField.stringValue.length > 0;
+    [self refreshCallRoutePreview];
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
     if (context == CompactDialerValueObservation) {
         self.dialButton.enabled = self.allowsCallDestinationInput && self.callDestinationField.stringValue.length > 0;
+        [self refreshCallRoutePreview];
         return;
     }
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+}
+
+- (void)refreshCallRoutePreview {
+    if (self.callRoutePreviewHandler == nil) return;
+    NSString *preview = self.callRoutePreviewHandler(self.callDestinationURI, self.callDestinationField.stringValue);
+    self.dialButton.toolTip = preview.length ? preview : @"Call";
+    self.dialButton.accessibilityHelp = self.dialButton.toolTip;
 }
 
 - (IBAction)dialFromButton:(NSButton *)sender {
@@ -277,7 +294,8 @@ static NSDictionary *DestinationForToken(id token) {
     
     AKSIPURI *uri = [self callDestinationURI];
     if (uri != nil) {
-        [[self accountController] makeCallToURI:uri phoneLabel:phoneLabel];
+        if (self.callDestinationHandler) self.callDestinationHandler(uri, phoneLabel ?: @"");
+        else [[self accountController] makeCallToURI:uri phoneLabel:phoneLabel];
     }
 }
 
@@ -314,7 +332,7 @@ static NSDictionary *DestinationForToken(id token) {
 }
 
 - (void)updateNextKeyView:(NSView *)view {
-    self.keyView.nextKeyView = view;
+    (self.compactLastKeyView ?: self.keyView).nextKeyView = view;
 }
 
 

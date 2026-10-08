@@ -69,7 +69,10 @@
 - (nullable instancetype)initWithString:(NSString *)SIPURIString {
     URI *uri = [[URI alloc] initWithString:SIPURIString];
     if (uri) {
-        return [self initWithUser:uri.user host:uri.host displayName:uri.displayName port:uri.port.integerValue];
+        self = [self initWithUser:uri.user host:uri.host displayName:uri.displayName port:uri.port.integerValue];
+        self.transport = uri.transport;
+        self.usesExplicitTransport = [SIPURIString.lowercaseString containsString:@";transport="];
+        return self;
     } else {
         return nil;
     }
@@ -77,10 +80,15 @@
 
 - (NSString *)description {
     NSString *port = self.port > 0 ? @(self.port).stringValue : @"";
-    return [[URI alloc] initWithUser:self.user
+    NSString *value = [[URI alloc] initWithUser:self.user
                              address:[[ServiceAddress alloc] initWithHost:self.host port:port]
                          displayName:self.displayName
-                           transport:TransportUDP].stringValue;
+                           transport:self.transport].stringValue;
+    if (self.usesExplicitTransport && self.transport == TransportUDP) {
+        if ([value hasSuffix:@">"]) value = [value stringByReplacingCharactersInRange:NSMakeRange(value.length-1,1) withString:@";transport=udp>"];
+        else value = [value stringByAppendingString:@";transport=udp"];
+    }
+    return value;
 }
 
 
@@ -88,10 +96,13 @@
 #pragma mark NSCopying protocol
 
 - (id)copyWithZone:(NSZone *)zone {
-    return [[AKSIPURI allocWithZone:zone] initWithUser:self.user
+    AKSIPURI *copy = [[AKSIPURI allocWithZone:zone] initWithUser:self.user
                                                   host:self.host
                                            displayName:self.displayName
                                                   port:self.port];
+    copy.transport = self.transport;
+    copy.usesExplicitTransport = self.usesExplicitTransport;
+    return copy;
 }
 
 @end

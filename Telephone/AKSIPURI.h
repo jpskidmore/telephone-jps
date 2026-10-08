@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy) NSString *displayName;
 
 @property(nonatomic, assign) NSInteger port;
+// Mirrors UseCases.Transport without changing existing URI initialisers.
+@property(nonatomic, assign) NSInteger transport;
+@property(nonatomic) BOOL usesExplicitTransport;
 
 + (instancetype)SIPURIWithUser:(NSString *)user host:(NSString *)host displayName:(NSString *)displayName;
 + (nullable instancetype)SIPURIWithString:(NSString *)SIPURIString;

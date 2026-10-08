@@ -140,7 +140,7 @@
     [window.contentView layoutSubtreeIfNeeded];
 
     NSTableView *sidebar = [controller valueForKey:@"settingsSidebar"];
-    XCTAssertEqual(sidebar.numberOfRows, 4);
+    XCTAssertEqual(sidebar.numberOfRows, 5);
     XCTAssertEqual(sidebar.selectedRow, 0);
     NSTableCellView *generalRow = [sidebar viewAtColumn:0 row:0 makeIfNecessary:YES];
     // Icon-only navigation still exposes each section's native name to
@@ -302,7 +302,10 @@
     [controller changeView:controller.networkToolbarItem];
     XCTAssertEqualObjects(window.title, NSLocalizedString(@"Network — All Accounts", nil));
     NSTableView *sidebar = [controller valueForKey:@"settingsSidebar"];
-    NSTableCellView *networkRow = [sidebar viewAtColumn:0 row:3 makeIfNecessary:YES];
+    NSArray<NSToolbarItem *> *items = [controller valueForKey:@"settingsItems"];
+    NSUInteger networkIndex = [items indexOfObject:controller.networkToolbarItem];
+    XCTAssertNotEqual(networkIndex, NSNotFound);
+    NSTableCellView *networkRow = [sidebar viewAtColumn:0 row:networkIndex makeIfNecessary:YES];
     NSString *globalScope = NSLocalizedString(@"Network settings for all accounts.", nil);
     XCTAssertEqualObjects(networkRow.toolTip, globalScope);
     XCTAssertEqualObjects(networkRow.accessibilityHelp, globalScope);
@@ -519,6 +522,10 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
 - (id)accountControllerWithDictionary:(NSDictionary *)dictionary { return self.account; }
 - (void)makeCallTo:(NSString *)destination { [self.dispatched addObject:destination]; }
 - (void)showAccountPreferencesIfNeeded { self.postSetupPreferences++; }
+// The first-launch acceptance test keeps unrelated plan persistence and native
+// shared-window creation inert while exercising the real setup transition.
+- (void)bootstrapDefaultRouteIfNeeded { }
+- (void)showSharedDialler { }
 @end
 
 @interface V30AccountRepairsTests : XCTestCase @end

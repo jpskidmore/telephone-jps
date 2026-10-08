@@ -213,6 +213,7 @@ final class CompositionRoot: NSObject {
             )
         )
 
+        let historyAccountCatalog = CallHistoryAccountCatalog()
         accountsEventSource = PreferencesControllerAccountsEventSource(
             center: NotificationCenter.default, target: CallHistoriesHistoryRemoveUseCase(histories: callHistories)
         )
@@ -222,7 +223,8 @@ final class CompositionRoot: NSObject {
             target: CallEventTargets(
                 targets: [
                     CallHistoryCallEventTarget(
-                        histories: callHistories, factory: DefaultCallHistoryRecordAddUseCaseFactory()
+                        histories: callHistories, factory: DefaultCallHistoryRecordAddUseCaseFactory(),
+                        accountName: { historyAccountCatalog.name(forUUID: $0) }
                     ),
                     MusicPlayerCallEventTarget(
                         player: SettingsMusicPlayer(
@@ -268,7 +270,8 @@ final class CompositionRoot: NSObject {
                 dateFormatter: ShortRelativeDateTimeFormatter(),
                 durationFormatter: DurationFormatter(),
                 storeEventTargets: storeEventTargets,
-                dayChangeEventTargets: dayChangeEventTargets
+                dayChangeEventTargets: dayChangeEventTargets,
+                accountCatalog: historyAccountCatalog
             )
         )
 

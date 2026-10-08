@@ -181,20 +181,25 @@ private extension CallHistoryRecord {
         self.init(
             uri: URI(
                 user: dictionary[Keys.user.rawValue] as? String ?? "",
-                host: dictionary[Keys.host.rawValue] as? String ?? "",
-                displayName: dictionary[Keys.name.rawValue] as? String ?? ""
+                address: ServiceAddress(host: dictionary[Keys.host.rawValue] as? String ?? "",
+                                        port: dictionary[Keys.port.rawValue] as? String ?? ""),
+                displayName: dictionary[Keys.name.rawValue] as? String ?? "",
+                transport: historyTransport(from: dictionary[Keys.transport.rawValue] as? String)
             ),
             date: dictionary[Keys.date.rawValue] as? Date ?? Date.distantPast,
             duration: dictionary[Keys.duration.rawValue] as? Int ?? 0,
             isIncoming: dictionary[Keys.incoming.rawValue] as? Bool ?? false,
-            isMissed: dictionary[Keys.missed.rawValue] as? Bool ?? false
+            isMissed: dictionary[Keys.missed.rawValue] as? Bool ?? false,
+            canonicalDestination: dictionary[Keys.canonicalDestination.rawValue] as? String,
+            originAccountUUID: dictionary[Keys.originAccountUUID.rawValue] as? String,
+            originAccountName: dictionary[Keys.originAccountName.rawValue] as? String
         )
     }
 }
 
 private func dictionaries(from records: [CallHistoryRecord]) -> [[String: Any]] {
     return records.map {
-        [
+        var result: [String: Any] = [
             Keys.user.rawValue: $0.uri.user,
             Keys.host.rawValue: $0.uri.host,
             Keys.name.rawValue: $0.uri.displayName,
@@ -203,9 +208,24 @@ private func dictionaries(from records: [CallHistoryRecord]) -> [[String: Any]] 
             Keys.incoming.rawValue: $0.isIncoming,
             Keys.missed.rawValue: $0.isMissed
         ]
+        if !$0.uri.port.isEmpty { result[Keys.port.rawValue] = $0.uri.port }
+        if $0.uri.transport != .udp { result[Keys.transport.rawValue] = $0.uri.transport.stringValue }
+        if let value = $0.canonicalDestination { result[Keys.canonicalDestination.rawValue] = value }
+        if let value = $0.originAccountUUID { result[Keys.originAccountUUID.rawValue] = value }
+        if let value = $0.originAccountName { result[Keys.originAccountName.rawValue] = value }
+        return result
     }
 }
 
 private enum Keys: String {
     case user, host, name, date, duration, incoming, missed
+    case port, transport, canonicalDestination, originAccountUUID, originAccountName
+}
+
+private func historyTransport(from value: String?) -> Transport {
+    switch value {
+    case "tcp": .tcp
+    case "tls": .tls
+    default: .udp
+    }
 }

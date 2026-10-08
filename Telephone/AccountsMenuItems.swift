@@ -18,6 +18,7 @@
 
 import Cocoa
 
+@MainActor
 final class AccountsMenuItems: NSObject {
     private var items: [NSMenuItem] = []
 
@@ -46,11 +47,11 @@ private extension AccountsMenuItems {
     }
 
     func updateItems() {
-        items = zip(controllers.enabled, 1...).map {
-            NSMenuItem(controller: $0, target: self, selector: #selector(toggleAccountWindow), count: $1)
-        }
-        if !items.isEmpty {
-            items.append(NSMenuItem.separator())
+        items = []
+        if !controllers.all.isEmpty {
+            let item = NSMenuItem(title: "Dialler", action: #selector(toggleAccountWindow), keyEquivalent: "1")
+            item.target = self
+            items = [item, NSMenuItem.separator()]
         }
     }
 
@@ -62,25 +63,11 @@ private extension AccountsMenuItems {
     }
 
     @objc func toggleAccountWindow(_ item: NSMenuItem) {
-        guard let controller = item.representedObject as? AccountController else { return }
-        if controller.isWindowKey() {
-            controller.hideWindow()
-        } else {
-            controller.showWindow()
-        }
+        DialPlanCoordinator.shared.showDialler()
     }
 
     func indexOfFirstSeparatorItem() -> Int {
         guard let firstSeparator = menu.items.first(where:(\.isSeparatorItem)) else { return 0 }
         return menu.index(of: firstSeparator)
-    }
-}
-
-private extension NSMenuItem {
-    convenience init(controller: AccountController, target: AnyObject, selector: Selector, count: Int) {
-        let hotkey = count < 10 ? String(count) : ""
-        self.init(title: controller.accountDescription, action: selector, keyEquivalent: hotkey)
-        self.target = target
-        self.representedObject = controller
     }
 }

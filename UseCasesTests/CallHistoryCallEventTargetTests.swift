@@ -21,6 +21,32 @@ import UseCasesTestDoubles
 import XCTest
 
 final class CallHistoryCallEventTargetTests: XCTestCase {
+    func testIncomingObserverOrderPreservesReceiptTimeCanonicalAndCallTimeAccountName() {
+        let catalog = CallHistoryAccountCatalog()
+        catalog.update([CallHistoryAccount(uuid: "origin", name: "First provider", domain: "provider")])
+        let recorded = expectation(description: "Call metadata logged")
+        var result: CallHistoryRecord?
+        let history = TruncatingCallHistory()
+        let sut = CallHistoryCallEventTarget(
+            histories: DefaultCallHistories(factory: CallHistoryFactorySpy(history: history)),
+            factory: CallHistoryRecordAddUseCaseFactorySpy(add: UseCaseSpy(), makeCallback: { _, record, _ in
+                result = record; recorded.fulfill()
+            }),
+            accountName: { catalog.name(forUUID: $0) }
+        )
+        let call = CanonicalHistoryCall()
+        sut.didReceive(call)
+        // Root incoming delivery captures the canonical number after an earlier
+        // history observer; a later profile or account-name edit cannot change it.
+        call.canonicalDestination = "+441442123456"
+        catalog.update([CallHistoryAccount(uuid: "origin", name: "Renamed later", domain: "provider")])
+        sut.didDisconnect(call)
+        wait(for: [recorded], timeout: 1)
+        XCTAssertEqual(result?.canonicalDestination, "+441442123456")
+        XCTAssertEqual(result?.originAccountUUID, "origin")
+        XCTAssertEqual(result?.originAccountName, "First provider")
+        XCTAssertEqual(result?.uri.user, "123456")
+    }
     func testCreatesUseCaseWithExpectedArgumentsOnDidDisconnect() {
         let account = SimpleAccount(uuid: "any-id", domain: "any-domain")
         let history: CallHistory = TruncatingCallHistory()
@@ -89,6 +115,16 @@ final class CallHistoryCallEventTargetTests: XCTestCase {
         XCTAssertTrue(coordinator.submit {})
     }
 
+}
+
+private final class CanonicalHistoryCall: NSObject, Call, @unchecked Sendable {
+    let account: Account = SimpleAccount(uuid: "origin", domain: "provider")
+    let remote = URI(user: "123456", host: "provider", displayName: "")
+    let date = Date(timeIntervalSinceReferenceDate: 10)
+    let duration = 2
+    let isIncoming = true
+    let isMissed = false
+    var canonicalDestination: String?
 }
 
 private func makeCall(account: Account) -> Call {

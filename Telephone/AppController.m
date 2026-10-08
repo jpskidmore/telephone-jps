@@ -35,6 +35,7 @@
 #import "CallController.h"
 #import "NameServers.h"
 #import "PreferencesController.h"
+#import "SharedDialerController.h"
 
 #import "Telephone-Swift.h"
 
@@ -59,6 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) BOOL presentingRecordingRecovery;
 @property(nonatomic) BOOL presentingHistoryError;
 @property(nonatomic) AccountsMenuItems *accountsMenuItems;
+@property(nonatomic) SharedDialerController *sharedDialler;
 @property(nonatomic, weak) IBOutlet NSMenu *windowMenu;
 @property(nonatomic, weak) IBOutlet NSMenuItem *preferencesMenuItem;
 @property(nonatomic, weak) IBOutlet HelpMenuActionRedirect *helpMenuActionRedirect;
@@ -116,6 +118,17 @@ NS_ASSUME_NONNULL_END
     _destinationToCall = @"";
     _userSessionActive = YES;
     _accountControllers = _compositionRoot.accountControllers;
+    DialPlanCoordinator.shared.controllers = _accountControllers;
+    __weak AppController *weakSelf = self;
+    DialPlanCoordinator.shared.canAcceptCallsHandler = ^BOOL{ return weakSelf != nil && !weakSelf.isTerminating && NSApp.modalWindow == nil; };
+    DialPlanCoordinator.shared.showDiallerHandler = ^{ [weakSelf showSharedDialler]; };
+    DialPlanCoordinator.shared.errorHandler = ^(NSString *message) { [weakSelf ensureSharedDialler]; [weakSelf.sharedDialler presentFailure:message]; };
+    DialPlanCoordinator.shared.startBackendHandler = ^{
+        if (!weakSelf.isTerminating && weakSelf.userAgent.state == AKSIPUserAgentStateStopped) [weakSelf.userAgentStart execute];
+    };
+    _preferencesController.dialPlanStore = DialPlanCoordinator.shared.store;
+    _preferencesController.dialPlanAccountProvider = ^NSArray *{ return [DialPlanCoordinator.shared accountSnapshots]; };
+
     _nameServers = _compositionRoot.nameServers;
     NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
     [notificationCenter addObserver:self selector:@selector(recordingExportDidFail:)
@@ -217,6 +230,24 @@ NS_ASSUME_NONNULL_END
 
 - (IBAction)showStoreWindow:(id)sender {
     [self.storeWindowPresenter present];
+}
+
+- (void)bootstrapDefaultRouteIfNeeded {
+    [DialPlanStore.shared bootstrapDefaultAccountUUID:self.accountControllers.enabled.firstObject.account.uuid ?: @""];
+}
+
+- (void)ensureSharedDialler {
+    if (self.sharedDialler == nil) self.sharedDialler = [[SharedDialerController alloc] initWithAccounts:self.accountControllers historyFactory:self.callHistoryViewEventTargetFactory];
+}
+
+- (void)showSharedDialler {
+    [self ensureSharedDialler];
+    [self.sharedDialler showWindow:self];
+}
+
+- (IBAction)showGuidedRoutes:(id)sender {
+    [self.preferencesController showWindowCentered];
+    [self.preferencesController showDialPlan];
 }
 
 - (IBAction)showPreferencePanel:(id)sender {
@@ -391,8 +422,10 @@ NS_ASSUME_NONNULL_END
     AccountController *controller = [self accountControllerWithDictionary:notification.userInfo];
     
     [self.accountControllers addController:controller];
+    [self bootstrapDefaultRouteIfNeeded];
     [self.accountControllers updateCallsShouldDisplayAccountInfo];
     [self.accountsMenuItems update];
+    [self.sharedDialler refreshAccounts];
     
     [controller showWindowWithoutMakingKey];
 
@@ -414,6 +447,7 @@ NS_ASSUME_NONNULL_END
     [self.accountControllers removeControllerAtIndex:index];
     [self.accountControllers updateCallsShouldDisplayAccountInfo];
     [self.accountsMenuItems update];
+    [self.sharedDialler refreshAccounts];
 }
 
 - (void)preferencesControllerDidChangeAccountEnabled:(NSNotification *)notification {
@@ -450,6 +484,7 @@ NS_ASSUME_NONNULL_END
     
     [self.accountControllers updateCallsShouldDisplayAccountInfo];
     [self.accountsMenuItems update];
+    [self.sharedDialler refreshAccounts];
 }
 
 - (void)preferencesControllerDidSwapAccounts:(NSNotification *)notification {
@@ -469,6 +504,7 @@ NS_ASSUME_NONNULL_END
     }
     
     [self.accountsMenuItems update];
+    [self.sharedDialler refreshAccounts];
 }
 
 - (NSUserDefaults *)networkSettingsDefaults { return NSUserDefaults.standardUserDefaults; }
@@ -672,21 +708,17 @@ NS_ASSUME_NONNULL_END
     for (NSUInteger i = 0; i < accounts.count; ++i) {
         AccountController *controller = [self accountControllerWithDictionary:accounts[i]];
         [self.accountControllers addController:controller];
-        if (![controller isEnabled]) {
-            continue;
-        }
-        if (i == 0) {
-            [controller showWindow];
-        } else {
-            AccountController *previous = self.accountControllers[i - 1];
-            [controller orderWindow:NSWindowBelow relativeTo:previous.windowNumber];
-        }
+
     }
     [self.accountControllers updateCallsShouldDisplayAccountInfo];
     [self.accountsMenuItems update];
+    [self.sharedDialler refreshAccounts];
     [self setShouldPresentUserAgentLaunchError:YES];
     [self remindAboutPurchasingAfterDelay];
-    [self.accountControllers registerAllAccountsWhereManualRegistrationRequired];
+    [self bootstrapDefaultRouteIfNeeded];
+    [self showSharedDialler];
+    [self.accountControllers registerAllAccounts];
+    [DialPlanCoordinator.shared startBackend];
     [self makeCallAfterLaunchIfNeeded];
     [self.compositionRoot.orphanLogFileRemoval performSelector:@selector(execute) withObject:nil afterDelay:0];
     [self showAccountPreferencesIfNeeded];
@@ -891,6 +923,10 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)SIPCallIncoming:(NSNotification *)notification {
+    AKSIPCall *call = notification.object;
+    if ([call isKindOfClass:AKSIPCall.class] && call.canonicalDestination == nil) {
+        call.canonicalDestination = [DialPlanStore.shared normaliseDestination:call.remoteURI.user].canonicalNumber;
+    }
     [self updateDockTileBadgeLabel];
 }
 
@@ -1012,10 +1048,7 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)makeCallTo:(NSString *)destination {
-    if ([self canMakeCall]) {
-        [self.accountControllers.enabled.firstObject makeCallToDestinationRegisteringAccountIfNeeded:
-         [[SanitizedCallDestination alloc] initWithString:destination]];
-    }
+    if ([self canMakeCall]) [DialPlanCoordinator.shared routeDestination:destination phoneLabel:@""];
 }
 
 - (BOOL)canMakeCall {

@@ -20,9 +20,27 @@ import UseCases
 import UseCasesTestDoubles
 import XCTest
 import Cocoa
+@testable import Telephone
 
 @MainActor
 final class CallHistoryViewPresenterTests: XCTestCase {
+    func testAccountBadgeUsesConfiguredFirstGraphemeAndFullNameInsteadOfHardcodedLetters() async {
+        var displayed: [PresentationCallHistoryRecord] = []
+        let sut = CallHistoryViewPresenter(view: CallHistoryViewSpy { displayed = $0 },
+                                          dateFormatter: ShortRelativeDateTimeFormatter(), durationFormatter: DurationFormatter())
+        let base = CallHistoryRecordTestFactory().makeRecord(number: 1)
+        let records = [base.qualified(accountUUID: "a", accountName: "  First provider"),
+                       base.qualified(accountUUID: "b", accountName: "Second provider"),
+                       base.qualified(accountUUID: "c", accountName: "👩🏽‍💻 Office")]
+        await sut.update(records: records.map { ContactCallHistoryRecord(origin: $0, contact: makeContact(number: 1)) })
+        XCTAssertEqual(displayed.map(\.accountBadge), ["F", "S", "👩🏽‍💻"])
+        XCTAssertEqual(displayed.map(\.accountUUID), ["a", "b", "c"])
+        XCTAssertEqual(displayed[0].accountName, "  First provider")
+        XCTAssertEqual(Set(displayed.map(\.identifier)).count, 3)
+        await sut.update(records: [ContactCallHistoryRecord(origin: base.qualified(accountUUID: "a", accountName: "Primary"), contact: makeContact(number: 1))])
+        XCTAssertEqual(displayed[0].accountBadge, "P")
+        XCTAssertEqual(displayed[0].identifier, records[0].identifier)
+    }
     func testShowsRecordsOnRecordsUpdate() async {
         let factory = CallHistoryRecordTestFactory()
         let record1 = factory.makeRecord(number: 1)
@@ -339,6 +357,87 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0,
                                      windowNumber: window.windowNumber, context: nil, characters: characters,
                                      charactersIgnoringModifiers: characters, isARepeat: false, keyCode: code))
+    }
+}
+
+@MainActor
+final class GlobalHistoryNativePresentationTests: XCTestCase {
+    func testNativeOriginBadgesHaveFullNameAccessibilityAndStayWithinCompactGridInLightAndDark() throws {
+        let controller = Telephone.CallHistoryViewController()
+        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 368, height: 47),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        window.contentView = controller.view
+        controller.setHistoryExpanded(false)
+        let table = try XCTUnwrap(findTable(controller.view))
+        for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+            window.appearance = NSAppearance(named: appearance)
+            for name in ["First provider", "Second provider", "👩🏽‍💻 Office"] {
+                controller.show([record(identifier: "a|record", uuid: "a", name: name)])
+                window.contentView?.layoutSubtreeIfNeeded()
+                let cell = try XCTUnwrap(table.view(atColumn: 0, row: 0, makeIfNecessary: true) as? Telephone.CallHistoryDirectionCellView)
+                cell.layoutSubtreeIfNeeded()
+                let badge = try XCTUnwrap(cell.subviews.compactMap { $0 as? Telephone.CallHistoryAccountBadgeView }.first)
+                XCTAssertEqual(badge.toolTip, name)
+                XCTAssertEqual(badge.accessibilityValue() as? String, name)
+                XCTAssertEqual(badge.accessibilityLabel(), "Call account")
+                XCTAssertEqual(badge.glyph, name.first.map { String($0).uppercased() })
+                XCTAssertEqual(badge.frame.size, NSSize(width: 18, height: 18))
+                XCTAssertTrue(cell.bounds.contains(badge.frame))
+                XCTAssertEqual(table.tableColumns[0].width, 44)
+                XCTAssertEqual(table.enclosingScrollView?.frame.height, 47)
+                XCTAssertEqual(table.numberOfRows, 1)
+                XCTAssertFalse(controller.view.hasAmbiguousLayout)
+                let image = try XCTUnwrap(badge.bitmapImageRepForCachingDisplay(in: badge.bounds))
+                badge.cacheDisplay(in: badge.bounds, to: image)
+                XCTAssertGreaterThan(image.pixelsWide, 0)
+                if name.first?.isASCII == true {
+                    var dark = 0, light = 0
+                    for x in 0..<image.pixelsWide {
+                        for y in 0..<image.pixelsHigh {
+                            guard let pixel = image.colorAt(x: x, y: y)?.usingColorSpace(.sRGB), pixel.alphaComponent > 0.8 else { continue }
+                            let brightness = (pixel.redComponent + pixel.greenComponent + pixel.blueComponent) / 3
+                            if brightness < 0.3 { dark += 1 }
+                            if brightness > 0.7 { light += 1 }
+                        }
+                    }
+                    XCTAssertGreaterThan(dark, 3, "The inverted badge needs a dark component in \(appearance)")
+                    XCTAssertGreaterThan(light, 3, "The inverted badge needs a light component in \(appearance)")
+                }
+            }
+        }
+    }
+
+    func testQualifiedSelectionSurvivesEqualRecordsFromDifferentAccountsAndRename() throws {
+        let controller = Telephone.CallHistoryViewController()
+        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 368, height: 141),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        window.contentView = controller.view
+        let table = try XCTUnwrap(findTable(controller.view))
+        controller.show([record(identifier: "a|same", uuid: "a", name: "First"), record(identifier: "b|same", uuid: "b", name: "Second")])
+        table.selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+        controller.show([record(identifier: "b|new", uuid: "b", name: "Renamed"),
+                         record(identifier: "a|same", uuid: "a", name: "First"), record(identifier: "b|same", uuid: "b", name: "Renamed")])
+        XCTAssertEqual(table.selectedRow, 2)
+        let selected = try XCTUnwrap(controller.tableView(table, objectValueFor: nil, row: 2) as? Telephone.PresentationCallHistoryRecord)
+        XCTAssertEqual(selected.identifier, "b|same")
+        XCTAssertEqual(selected.accountName, "Renamed")
+        controller.removeRecord(withIdentifier: "a|same")
+        XCTAssertEqual(controller.recordCount, 2)
+        XCTAssertEqual((controller.tableView(table, objectValueFor: nil, row: 1) as? Telephone.PresentationCallHistoryRecord)?.identifier, "b|same")
+    }
+
+    private func findTable(_ view: NSView) -> NSTableView? {
+        if let table = view as? NSTableView { return table }
+        return view.subviews.lazy.compactMap { self.findTable($0) }.first
+    }
+    private func record(identifier: String, uuid: String, name: String) -> Telephone.PresentationCallHistoryRecord {
+        Telephone.PresentationCallHistoryRecord(identifier: identifier,
+            contact: Telephone.PresentationContact(title: "Contact", tooltip: "+441442123456", label: "home", color: .labelColor, address: "+441442123456"),
+            date: "Today, 13:00", duration: "2 sec", isIncoming: false, accountUUID: uuid, accountName: name)
     }
 }
 

@@ -47,6 +47,7 @@
 
 - (void)makeCallTo:(URI *)uri label:(NSString *)label {
     AKSIPURI *destination = [[AKSIPURI alloc] initWithUser:uri.user host:uri.host displayName:uri.displayName port:uri.port.integerValue];
+    destination.transport = uri.transport;
     [self.controller makeCallToURI:destination phoneLabel:label];
 }
 

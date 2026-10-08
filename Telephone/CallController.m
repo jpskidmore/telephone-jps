@@ -402,54 +402,12 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)redial {
-    if (![[self userAgent] isStarted] ||
-        ![[self accountController] isEnabled] ||
-        ![[self accountController] canMakeCalls] ||
-        [self redialURI] == nil) {
-        
-        return;
+    NSString *destination = self.canonicalDestination ?: (self.redialURI.host.length ? self.redialURI.description : self.redialURI.user);
+    if (destination.length == 0) return;
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(closeCallWindow) object:nil];
+    if ([DialPlanCoordinator.shared routeDestination:destination phoneLabel:self.phoneLabelFromAddressBook ?: @"" displayName:self.nameFromAddressBook ?: self.redialURI.displayName ?: @""]) {
+        [self.window close];
     }
-    
-    // Cancel call window auto-close.
-    [NSObject cancelPreviousPerformRequestsWithTarget:self
-                                             selector:@selector(closeCallWindow)
-                                               object:nil];
-    
-    // Replace plus character if needed.
-    if ([[self accountController] substitutesPlusCharacter] &&
-        [[[self redialURI] user] hasPrefix:@"+"]) {
-        
-        [[self redialURI] setUser:[[[self redialURI] user]
-                                   stringByReplacingCharactersInRange:NSMakeRange(0, 1)
-                                   withString:[[self accountController]
-                                               plusCharacterSubstitution]]];
-    }
-
-    self.closed = NO;
-    [self prepareForCall];
-    
-    if ([[self phoneLabelFromAddressBook] length] > 0) {
-        [self setStatus:[NSString stringWithFormat:
-                         NSLocalizedString(@"calling %@...",
-                                           @"Outgoing call in progress. Calling specific phone "
-                                            "type (mobile, home, etc)."),
-          [self phoneLabelFromAddressBook]]];
-        
-    } else {
-        [self setStatus:NSLocalizedString(@"calling...", @"Outgoing call in progress.")];
-    }
-
-    // Make actual call.
-    [self.accountController.account makeCallTo:self.redialURI completion:^(AKSIPCall *call) {
-        if (self.closed || !self.accountController.isEnabled) { [call hangUp]; return; }
-        if (call != nil) {
-            [self setCall:call];
-            [self setCallActive:YES];
-        } else {
-            [self showEndedCallView];
-            [self setStatus:NSLocalizedString(@"Call Failed", @"Call failed.")];
-        }
-    }];
 }
 
 - (void)toggleCallHold {

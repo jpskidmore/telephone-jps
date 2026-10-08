@@ -82,6 +82,7 @@
 
 // SIP URI for the redial.
 @property(nonatomic, copy) AKSIPURI *redialURI;
+@property(nonatomic, copy, nullable) NSString *canonicalDestination;
 
 // Timer to display intermediate call status. This status appears for the short period of time and then is being
 // replaced with the current call status.

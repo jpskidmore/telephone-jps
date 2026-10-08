@@ -29,6 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class AKSIPUserAgent;
 @class GeneralPreferencesViewController, AccountPreferencesViewController;
 @class SoundPreferencesViewController, NetworkPreferencesViewController;
+@class DialPlanStore, DialPlanAccount, DialPlanPreferencesViewController;
 
 // A preferences controller.
 @interface PreferencesController : NSWindowController <SoundIOPreferences>
@@ -49,6 +50,12 @@ NS_ASSUME_NONNULL_BEGIN
 // Network preferences view controller.
 @property(nonatomic, readonly) NetworkPreferencesViewController *networkPreferencesViewController;
 
+// Shared routing settings and live account status, injected by the app coordinator.
+@property(nonatomic, strong, nullable) DialPlanStore *dialPlanStore;
+@property(nonatomic, copy, nullable) NSArray<DialPlanAccount *> * (^dialPlanAccountProvider)(void);
+@property(nonatomic, readonly) DialPlanPreferencesViewController *dialPlanPreferencesViewController;
+@property(nonatomic, readonly) NSToolbarItem *dialPlanToolbarItem;
+
 // Outlets.
 //
 @property(nonatomic, weak) IBOutlet NSToolbar *toolbar;
@@ -67,6 +74,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)showWindowCentered;
 - (void)showAccounts;
 - (void)showSound;
+- (void)showDialPlan;
 
 @end
 

@@ -1,4 +1,7 @@
+Version **3.5/build 162** adds one compact dialler, configurable Guided routes and combined call history. Its local release preparation is in progress. Read [the dial-plan guide](docs/DIAL_PLANS.md) and [3.5 release notes](docs/releases/3.5.md).
+
 <p align="center">
+
   <img src="docs/assets/jps-telephone-blue-icon.png" width="180" alt="jps Telephone blue app icon">
 </p>
 
@@ -24,9 +27,9 @@
 > [Audio recovery](docs/AUDIO_RECOVERY.md) keeps repeated failures gated and moves native work off the interface thread. One native driver operation can still stall its worker; real SIP/audio and VoiceOver remain manual acceptance limits. [Recording recovery](docs/RECORDING_RECOVERY.md) retains captured audio after export failure.
 > Call recording is disabled by default. Only enable it when recording is lawful and everyone whose consent is required has consented.
 
-## 3.0 release and private access
+## Historical 3.0 release and private access
 
-Version **3.0/build 161** is the published Latest release. All 50 baseline
+Version **3.0/build 161** was published as Latest before the 3.5 preparation. All 50 baseline
 findings #2–51 have recorded verified repairs; the full four-suite local run passed
 **617 automated test cases, zero failures**. Component assertion counts and
 manual limits are recorded separately in [VALIDATION.md](docs/VALIDATION.md).
@@ -60,6 +63,9 @@ phone numbers and contact names remain supported.
 
 jps Telephone retains the original Telephone SIP calling experience and adds:
 
+- one compact dialler and combined incoming/outgoing/missed-call history;
+- configurable country/area expansion, Guided routes, prefix exceptions and blocks;
+- callbacks resolved by the current plan, with automatic account-name badges;
 - a distinct blue icon, app name, and bundle identity;
 - independent Keychain storage for SIP credentials used by this edition;
 - an opt-in **Automatically record all calls** preference;

@@ -3,8 +3,7 @@
 Read [the maintenance handover](docs/BUG_FIX_HANDOVER.md),
 [verified repair map](docs/REPAIR_VERIFICATION.md) and
 [tracked issue evidence](docs/audit-2.1.8/repair-progress.json) before implementation.
-The repository remains private. The owner authorised 3.0/build 161 after fixing
-all 50 baseline findings and requires main, local builds and no cloud workflows.
+The repository remains private. The owner authorised 3.5/build 162 Guided routes after the published 3.0 repair baseline and requires main, local builds and no cloud workflows. Read [DIAL_PLANS.md](docs/DIAL_PLANS.md) and [offline numbering coverage](docs/DIAL_PLAN_NUMBERING.md) before changing routing. Current 3.5 build, tests, install and publication are in progress; preserve the historical verification below.
 
 ## Current verified baseline and published release
 

@@ -49,8 +49,8 @@ NSString * const kEmailSIPLabel = @"sip";
 
 @property(nonatomic, readonly) AuthenticationFailureController *authenticationFailureController;
 
-@property(nonatomic, readonly) AccountViewController *accountViewController;
-@property(nonatomic, readonly) AccountWindowController *windowController;
+@property(nonatomic) NSMutableArray<NSDictionary *> *pendingRoutedCalls;
+@property(nonatomic) NSTimer *routedCallTimeout;
 
 @property(nonatomic, readonly, getter=isAccountAdded) BOOL accountAdded;
 @property(nonatomic, strong) NSTimer *reRegistrationTimer;
@@ -81,6 +81,7 @@ NSString * const kEmailSIPLabel = @"sip";
                                      object:reachability];
         }
     } else {
+        [self cancelPendingRoutedCalls];
         if ([self registrarReachability] != nil) {
             [notificationCenter removeObserver:self
                                           name:AKNetworkReachabilityDidBecomeReachableNotification
@@ -119,9 +120,15 @@ NSString * const kEmailSIPLabel = @"sip";
             if (added) [self.userAgent removeAccount:self.account completion:^(BOOL removed) {}];
             [self showOfflineState];
         } else if (added) {
-            if (!flag) [self showUnavailableState];
+            if (!flag) {
+                [self showUnavailableState];
+                [self dispatchPendingRoutedCalls];
+            }
         } else {
+            BOOL hadPendingCalls = self.hasPendingRoutedCalls;
+            [self cancelPendingRoutedCalls];
             [self showUnavailableState];
+            if (hadPendingCalls) [DialPlanCoordinator.shared presentFailure:[NSString stringWithFormat:@"%@ could not connect. No other connection was used.", self.accountDescription]];
         }
     }];
 }
@@ -140,7 +147,7 @@ NSString * const kEmailSIPLabel = @"sip";
 }
 
 - (BOOL)canMakeCalls {
-    return self.windowController.allowsCallDestinationInput;
+    return self.isEnabled && self.isAccountAdded && self.desiredAvailability != AccountWindowControllerAccountStateOffline;
 }
 
 - (instancetype)initWithSIPAccount:(AKSIPAccount *)account
@@ -168,17 +175,7 @@ NSString * const kEmailSIPLabel = @"sip";
     _destinationToCall = @"";
     _desiredAvailability = AccountWindowControllerAccountStateAvailable;
 
-    _accountViewController
-    = [[AccountViewController alloc] initWithActiveAccountViewController:[[ActiveAccountViewController alloc] initWithAccountController:self]
-                                               callHistoryViewController:[[CallHistoryViewController alloc] init]
-                                       callHistoryViewEventTargetFactory:callHistoryViewEventTargetFactory
-                                             purchaseCheckUseCaseFactory:purchaseCheckUseCaseFactory
-                                                                 account:[[AccountControllerToAccountAdapter alloc] initWithController:self]
-                                                    storeWindowPresenter:storeWindowPresenter];
-    _windowController = [[AccountWindowController alloc] initWithAccountDescription:_accountDescription
-                                                                         SIPAddress:_account.SIPAddress
-                                                              accountViewController:_accountViewController
-                                                                           delegate:self];
+    _pendingRoutedCalls = [NSMutableArray array];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(SIPUserAgentDidFinishStarting:)
                                                  name:AKSIPUserAgentDidFinishStartingNotification
@@ -188,6 +185,7 @@ NSString * const kEmailSIPLabel = @"sip";
 }
 
 - (void)dealloc {
+    [self.routedCallTimeout invalidate];
     for (CallController *aCallController in [self callControllers]) {
         [aCallController close];
     }
@@ -233,6 +231,7 @@ NSString * const kEmailSIPLabel = @"sip";
 }
 
 - (void)removeAccountFromUserAgentWithCompletion:(void (^)(BOOL))completion {
+    [self cancelPendingRoutedCalls];
     [self.account cancelPendingOutgoingCalls];
     self.attemptingToRegisterAccount = NO;
     self.attemptingToUnregisterAccount = NO;
@@ -246,6 +245,11 @@ NSString * const kEmailSIPLabel = @"sip";
         phoneLabel:(NSString *)phoneLabel
         callTransferController:(CallTransferController *)callTransferController {
     
+    [self makeCallToURI:destinationURI phoneLabel:phoneLabel callTransferController:callTransferController canonicalDestination:nil];
+}
+
+- (void)makeCallToURI:(AKSIPURI *)destinationURI phoneLabel:(NSString *)phoneLabel callTransferController:(CallTransferController *)callTransferController canonicalDestination:(NSString *)canonicalDestination {
+    destinationURI = [destinationURI copy];
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     AKTelephoneNumberFormatter *telephoneNumberFormatter = [[AKTelephoneNumberFormatter alloc] init];
     [telephoneNumberFormatter setSplitsLastFourDigits:
@@ -253,13 +257,14 @@ NSString * const kEmailSIPLabel = @"sip";
     
     NSString *enteredCallDestinationString = [[destinationURI user] copy];
     
-    // Make user part a string of contiguous digits if needed.
-    if (![[destinationURI user] ak_hasLetters]) {
+    // Canonical routed numbers already passed strict validation. Service strings
+    // and explicit SIP URIs must keep their syntax and transport.
+    if (canonicalDestination == nil && callTransferController != nil && ![[destinationURI user] ak_hasLetters]) {
         [destinationURI setUser:[telephoneNumberFormatter telephoneNumberFromString:[destinationURI user]]];
     }
     
     // Replace plus character if needed.
-    if ([self substitutesPlusCharacter] &&
+    if (destinationURI.host.length == 0 && [self substitutesPlusCharacter] &&
         [[destinationURI user] hasPrefix:@"+"]) {
         [destinationURI setUser:[[destinationURI user]
                                  stringByReplacingCharactersInRange:NSMakeRange(0, 1)
@@ -326,7 +331,8 @@ NSString * const kEmailSIPLabel = @"sip";
         [destinationURI setHost:[[[self account] uri] host]];
     }
     
-    // Set URI for redial.
+    // Redial retains the pre-provider canonical destination.
+    aCallController.canonicalDestination = canonicalDestination.length ? canonicalDestination : nil;
     [aCallController setRedialURI:destinationURI];
     
     [aCallController prepareForCall];
@@ -348,6 +354,7 @@ NSString * const kEmailSIPLabel = @"sip";
     [self.account makeCallTo:destinationURI completion:^(AKSIPCall *call) {
         if (!aCallController.acceptsPendingCallResult || !self.isEnabled) { [call hangUp]; return; }
         if (call != nil) {
+            call.canonicalDestination = canonicalDestination.length ? canonicalDestination : nil;
             [aCallController setCall:call];
             [aCallController setCallActive:YES];
         } else {
@@ -357,53 +364,76 @@ NSString * const kEmailSIPLabel = @"sip";
     }];
 }
 
+- (NSString *)routingAvailability {
+    if (!self.isEnabled || self.desiredAvailability == AccountWindowControllerAccountStateOffline) return @"offline";
+    if (self.isAccountRegistered) return @"online";
+    if (self.isAccountUnavailable && self.isAccountAdded) return @"unavailable";
+    if (self.addingAccount || self.attemptingToRegisterAccount || self.userAgent.state == AKSIPUserAgentStateStarting) return @"registering";
+    if (self.account.registrationStatus >= 300 && self.account.registrationExpireTime == kAKSIPAccountRegistrationExpireTimeNotSpecified) return @"failed";
+    return @"needsRegistration";
+}
+- (NSString *)accountUUID { return self.account.uuid; }
+
+- (void)changeRoutingAvailability:(NSString *)availability {
+    AccountWindowControllerAccountState state = [availability isEqualToString:@"offline"] ? AccountWindowControllerAccountStateOffline :
+        [availability isEqualToString:@"unavailable"] ? AccountWindowControllerAccountStateUnavailable : AccountWindowControllerAccountStateAvailable;
+    [self changeAccountState:state];
+}
+
 - (void)makeCallToURI:(AKSIPURI *)destinationURI phoneLabel:(NSString *)phoneLabel {
-    if (self.isAccountAdded) {
-        [self makeCallToURI:destinationURI phoneLabel:phoneLabel callTransferController:nil];
+    [DialPlanCoordinator.shared routeURI:destinationURI phoneLabel:phoneLabel ?: @""];
+}
+
+- (void)makeRoutedCallToURI:(AKSIPURI *)uri phoneLabel:(NSString *)phoneLabel canonicalDestination:(NSString *)canonicalDestination {
+    if (!self.isEnabled || self.desiredAvailability == AccountWindowControllerAccountStateOffline) {
+        [DialPlanCoordinator.shared presentFailure:[NSString stringWithFormat:@"%@ is Offline. Choose Online before calling.", self.accountDescription]];
+        return;
     }
+    NSDictionary *request = @{@"uri": [uri copy], @"label": phoneLabel ?: @"", @"canonical": canonicalDestination ?: @"", @"id": NSUUID.UUID.UUIDString};
+    if (!self.isAccountAdded || (!self.isAccountRegistered && !self.isAccountUnavailable)) {
+        [self.pendingRoutedCalls addObject:request];
+        if (self.routedCallTimeout == nil) {
+            __weak AccountController *weakSelf = self;
+            self.routedCallTimeout = [NSTimer scheduledTimerWithTimeInterval:30 repeats:NO block:^(NSTimer *timer) {
+                BOOL pending = weakSelf.hasPendingRoutedCalls;
+                [weakSelf cancelPendingRoutedCalls];
+                if (pending) [DialPlanCoordinator.shared presentFailure:[NSString stringWithFormat:@"%@ did not register in time. The pending call was cancelled; try again when it is Online.", weakSelf.accountDescription]];
+            }];
+        }
+        self.shouldPresentRegistrationError = YES;
+        if (self.isAccountUnavailable || self.desiredAvailability == AccountWindowControllerAccountStateUnavailable) [self setAccountRegistered:NO];
+        else [self registerAccount];
+        return;
+    }
+    [self dispatchRoutedRequest:request];
+}
+
+- (BOOL)hasPendingRoutedCalls { return self.pendingRoutedCalls.count > 0; }
+- (void)cancelPendingRoutedCalls {
+    [self.pendingRoutedCalls removeAllObjects];
+    [self.routedCallTimeout invalidate]; self.routedCallTimeout = nil;
+}
+
+- (void)dispatchRoutedRequest:(NSDictionary *)request {
+    [self makeCallToURI:request[@"uri"] phoneLabel:request[@"label"] callTransferController:nil canonicalDestination:request[@"canonical"]];
+}
+- (void)dispatchPendingRoutedCalls {
+    if (!self.isEnabled || !self.isAccountAdded || self.desiredAvailability == AccountWindowControllerAccountStateOffline) { [self cancelPendingRoutedCalls]; return; }
+    NSArray *requests = self.pendingRoutedCalls.copy;
+    [self cancelPendingRoutedCalls];
+    for (NSDictionary *request in requests) [self dispatchRoutedRequest:request];
 }
 
 - (void)makeCallToDestinationRegisteringAccountIfNeeded:(SanitizedCallDestination *)destination {
-    if (![self isAccountAdded]) {
-        [self setDestinationToCall:destination.value];
-        [self registerAccount];
-    } else {
-        [self makeCallToDestination:destination.value];
-    }
+    [DialPlanCoordinator.shared routeDestination:destination.value phoneLabel:@""];
 }
 
-- (void)makeCallToDestination:(NSString *)destination {
-    [self.windowController makeCallToDestination:destination];
-}
-
-- (void)makeCallToSavedDestination {
-    [self makeCallToDestination:[self destinationToCall]];
-    [self setDestinationToCall:@""];
-}
-
-- (void)showWindow {
-    [self.windowController showWindow:self];
-}
-
-- (void)showWindowWithoutMakingKey {
-    [self.windowController showWindowWithoutMakingKey];
-}
-
-- (void)hideWindow {
-    [self.windowController hideWindow];
-}
-
-- (BOOL)isWindowKey {
-    return self.windowController.isWindowKey;
-}
-
-- (void)orderWindow:(NSWindowOrderingMode)place relativeTo:(NSInteger)otherWindow {
-    [self.windowController orderWindow:place relativeTo:otherWindow];
-}
-
-- (NSInteger)windowNumber {
-    return self.windowController.windowNumber;
-}
+- (void)showWindow { [DialPlanCoordinator.shared showDialler]; }
+- (void)showWindowWithoutMakingKey { [DialPlanCoordinator.shared showDialler]; }
+- (void)hideWindow { }
+- (BOOL)isWindowKey { return NSApp.mainWindow.isKeyWindow; }
+- (void)orderWindow:(NSWindowOrderingMode)place relativeTo:(NSInteger)otherWindow { [DialPlanCoordinator.shared showDialler]; }
+- (NSInteger)windowNumber { return NSApp.mainWindow.windowNumber; }
 
 - (void)changeAccountState:(AccountWindowControllerAccountState)state {
     self.desiredAvailability = state;
@@ -415,6 +445,7 @@ NSString * const kEmailSIPLabel = @"sip";
             self.accountUnavailable = NO;
             [self.account cancelPendingOutgoingCalls];
             self.destinationToCall = @"";
+            [self cancelPendingRoutedCalls];
             self.account.registered = NO;
             [self showOfflineState];
             break;
@@ -447,24 +478,24 @@ NSString * const kEmailSIPLabel = @"sip";
         [alert setInformativeText:error];
     }
     
-    [self.windowController showAlert:alert];
+    [DialPlanCoordinator.shared presentFailure:alert.informativeText];
 }
 
 
 - (void)showAvailableState {
-    [self.windowController showAvailableState];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"JPSAccountRoutingStateDidChangeNotification" object:self];
 }
 
 - (void)showUnavailableState {
-    [self.windowController showUnavailableState];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"JPSAccountRoutingStateDidChangeNotification" object:self];
 }
 
 - (void)showOfflineState {
-    [self.windowController showOfflineState];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"JPSAccountRoutingStateDidChangeNotification" object:self];
 }
 
 - (void)showConnectingState {
-    [self.windowController showConnectingState];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"JPSAccountRoutingStateDidChangeNotification" object:self];
 }
 
 - (void)reRegistrationTimerTick:(NSTimer *)theTimer {
@@ -506,16 +537,17 @@ NSString * const kEmailSIPLabel = @"sip";
         // to the user agent. User agent will register the account. Set the account to Unavailable (unregister it) here.
         if (self.isAccountUnavailable || [self attemptingToUnregisterAccount]) {
             [self unregisterAccount];
+            [self dispatchPendingRoutedCalls];
             
         } else {
             [self setAccountUnavailable:NO];
             [self showAvailableState];
-            if ([[self destinationToCall] length] > 0) {
-                [self makeCallToSavedDestination];
-            }
+            [self dispatchPendingRoutedCalls];
         }
         
     } else {
+        if (self.isAccountUnavailable) [self dispatchPendingRoutedCalls];
+        else [self cancelPendingRoutedCalls];
         [self showUnavailableState];
         
         // Handle authentication failure
@@ -535,7 +567,8 @@ NSString * const kEmailSIPLabel = @"sip";
             [[[self authenticationFailureController] usernameField] setStringValue:[[self account] username]];
             [[[self authenticationFailureController] passwordField] setStringValue:password];
 
-            [[self windowController] beginSheet:[[self authenticationFailureController] window]];
+            [DialPlanCoordinator.shared showDialler];
+            [NSApp.mainWindow beginSheet:self.authenticationFailureController.window completionHandler:nil];
 
         } else if (([[self account] registrationStatus] / 100 != 2) &&
                    ([[self account] registrationExpireTime] == kAKSIPAccountRegistrationExpireTimeNotSpecified)) {
@@ -588,6 +621,7 @@ NSString * const kEmailSIPLabel = @"sip";
 }
 
 - (void)SIPAccount:(AKSIPAccount *)account didReceiveReplacementCall:(AKSIPCall *)call replacingIdentifier:(NSInteger)oldIdentifier {
+    if (call.canonicalDestination == nil) call.canonicalDestination = [self canonicalIncomingDestinationForURI:call.remoteURI];
     CallController *controller = nil;
     for (CallController *candidate in self.callControllers) {
         if (candidate.call.identifier == oldIdentifier) { controller = candidate; break; }
@@ -598,6 +632,7 @@ NSString * const kEmailSIPLabel = @"sip";
         [self.callControllers addObject:controller];
     }
     controller.call = call;
+    controller.canonicalDestination = call.canonicalDestination;
     controller.callActive = YES;
     AKSIPURIFormatter *formatter = [AKSIPURIFormatter new];
     controller.displayedName = [formatter stringForObjectValue:call.remoteURI];
@@ -606,7 +641,20 @@ NSString * const kEmailSIPLabel = @"sip";
     [controller showWindow:self];
 }
 
+- (NSString *)canonicalIncomingDestinationForURI:(AKSIPURI *)uri {
+    DialPlanNumber *number = [DialPlanStore.shared normaliseDestination:uri.user];
+    if (number.valid && ![number.kind isEqualToString:@"sip"]) return number.destination;
+    if (uri.host.length) {
+        AKSIPURI *address = [uri copy]; address.displayName = @"";
+        return address.description;
+    }
+    return number.valid ? number.destination : nil;
+}
+
 - (void)SIPAccount:(AKSIPAccount *)account didReceiveCall:(AKSIPCall *)aCall {
+    if (aCall.canonicalDestination == nil) {
+        aCall.canonicalDestination = [self canonicalIncomingDestinationForURI:aCall.remoteURI];
+    }
     if (self.desiredAvailability == AccountWindowControllerAccountStateOffline || [self isAccountUnavailable]) {
         // Reply with 480 Temporarily Unavailable if the user selected Unavailable account state.
         [aCall replyWithTemporarilyUnavailable];
@@ -630,6 +678,7 @@ NSString * const kEmailSIPLabel = @"sip";
                                                                            delegate:self];
     
     [aCallController setCall:aCall];
+    aCallController.canonicalDestination = aCall.canonicalDestination;
     [aCallController setCallActive:YES];
     [[self callControllers] addObject:aCallController];
     
@@ -896,6 +945,7 @@ NSString * const kEmailSIPLabel = @"sip";
 
 - (void)SIPUserAgentDidFinishStarting:(NSNotification *)notification {
     if (![[notification object] isStarted]) {
+        [self cancelPendingRoutedCalls];
         [self showOfflineState];
         
         return;

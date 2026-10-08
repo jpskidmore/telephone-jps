@@ -59,12 +59,22 @@
     NSString *user = @"";
     NSString *host = @"";
     NSInteger port = 0;
+    NSInteger transport = 0;
+    BOOL usesExplicitTransport = NO;
 
     if (PJSIP_URI_SCHEME_IS_SIP(nameAddr) || PJSIP_URI_SCHEME_IS_SIPS(nameAddr)) {
         pjsip_sip_uri *uri = (pjsip_sip_uri *)pjsip_uri_get_uri(nameAddr);
         user = [NSString stringWithPJString:uri->user];
         host = [NSString stringWithPJString:uri->host];
         port = uri->port;
+        NSString *transportName = [NSString stringWithPJString:uri->transport_param].lowercaseString;
+        usesExplicitTransport = transportName.length > 0;
+        if ([transportName isEqualToString:@"tcp"]) transport = 1;
+        else if ([transportName isEqualToString:@"tls"]) transport = 2;
+        else if (usesExplicitTransport && ![transportName isEqualToString:@"udp"]) {
+            pj_pool_release(pool);
+            return nil;
+        }
     } else if (PJSIP_URI_SCHEME_IS_TEL(nameAddr)) {
         // TODO(eofster): we really must have some kind of AKTelURI here instead.
         pjsip_tel_uri *uri = (pjsip_tel_uri *)pjsip_uri_get_uri(nameAddr);
@@ -76,7 +86,10 @@
 
     pj_pool_release(pool);
 
-    return [[AKSIPURI alloc] initWithUser:user host:host displayName:displayName port:port];
+    AKSIPURI *result = [[AKSIPURI alloc] initWithUser:user host:host displayName:displayName port:port];
+    result.transport = transport;
+    result.usesExplicitTransport = usesExplicitTransport;
+    return result;
 }
 
 @end

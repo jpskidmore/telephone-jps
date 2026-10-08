@@ -46,6 +46,70 @@ final class SimplePropertyListStorageURLTests: XCTestCase {
         XCTAssertThrowsError(try storage.load())
     }
 
+    func testMalformedAdditiveHistoryMetadataIsRejectedWithoutChangingLegacyFile() throws {
+        let directory = URL(fileURLWithPath: "/private/tmp").appendingPathComponent("jps-history-metadata-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("synthetic.plist")
+        let storage = Telephone.SimplePropertyListStorage(url: url, manager: .default)
+        let legacy: [String: Any] = ["user": "123456", "host": "", "name": "", "date": Date(timeIntervalSinceReferenceDate: 1),
+                                     "duration": 2, "incoming": true, "missed": true]
+        try storage.save([legacy])
+        let original = try Data(contentsOf: url)
+        _ = try storage.load()
+        XCTAssertEqual(try Data(contentsOf: url), original)
+        for key in ["port", "transport", "canonicalDestination", "originAccountUUID", "originAccountName"] {
+            var malformed = legacy; malformed[key] = ["wrong": "type"]
+            try storage.save([malformed])
+            let bytes = try Data(contentsOf: url)
+            XCTAssertThrowsError(try storage.load(), key)
+            XCTAssertEqual(try Data(contentsOf: url), bytes, key)
+        }
+        for destination in ["+441442123456", "sip:desk@example.test:5071;transport=tls", "desk@example.test", "office", "sip:desk@[2001:db8::1]:5071;transport=tcp",
+                            "999", "112", "*21*123#", "12P34"] {
+            var valid = legacy; valid["canonicalDestination"] = destination
+            try storage.save([valid])
+            XCTAssertEqual(try storage.load().first?["canonicalDestination"] as? String, destination)
+        }
+        for destination in ["", "garbage\n", "+abc", "sip:missinghost@", "sip:desk@bad/path", "sip:desk@example:NaN",
+                            "999\n", "*21*123#\t", "12P\u{0000}34", String(repeating: "1", count: 65)] {
+            var malformed = legacy; malformed["canonicalDestination"] = destination
+            try storage.save([malformed]); let bytes = try Data(contentsOf: url)
+            XCTAssertThrowsError(try storage.load(), destination)
+            XCTAssertEqual(try Data(contentsOf: url), bytes, destination)
+        }
+    }
+
+    @CallHistoryActor
+    func testGlobalProjectionReadsTwoLegacyFilesWithoutMigratingTheirBytes() async throws {
+        let directory = URL(fileURLWithPath: "/private/tmp").appendingPathComponent("jps-global-history-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let firstURL = directory.appendingPathComponent("first.plist"), secondURL = directory.appendingPathComponent("second.plist")
+        let firstStorage = Telephone.SimplePropertyListStorage(url: firstURL, manager: .default)
+        let secondStorage = Telephone.SimplePropertyListStorage(url: secondURL, manager: .default)
+        let legacy: [String: Any] = ["user": "123456", "host": "", "name": "", "date": Date(timeIntervalSinceReferenceDate: 1),
+                                     "duration": 2, "incoming": true, "missed": true]
+        try firstStorage.save([legacy]); try secondStorage.save([legacy])
+        let firstBytes = try Data(contentsOf: firstURL), secondBytes = try Data(contentsOf: secondURL)
+        let first = PersistentCallHistory(origin: TruncatingCallHistory(), storage: firstStorage)
+        let second = PersistentCallHistory(origin: TruncatingCallHistory(), storage: secondStorage)
+        let global = GlobalCallHistory(histories: NativeGlobalHistoryMap(stores: ["a": first, "b": second]))
+        global.updateAccounts([CallHistoryAccount(uuid: "a", name: "First", domain: "one"),
+                               CallHistoryAccount(uuid: "b", name: "Second", domain: "two")])
+        XCTAssertEqual(global.allRecords.count, 2)
+        XCTAssertEqual(Set(global.allRecords.map(\.identifier)).count, 2)
+        XCTAssertEqual(try Data(contentsOf: firstURL), firstBytes)
+        XCTAssertEqual(try Data(contentsOf: secondURL), secondBytes)
+    }
+
+}
+
+@CallHistoryActor private final class NativeGlobalHistoryMap: CallHistories {
+    let stores: [String: CallHistory]
+    init(stores: [String: CallHistory]) { self.stores = stores }
+    func history(withUUID uuid: String) -> CallHistory { stores[uuid]! }
+    func remove(withUUID uuid: String) { stores[uuid]?.invalidate() }
 }
 
 // The production event adapters, queued mapper and failure gate run here with

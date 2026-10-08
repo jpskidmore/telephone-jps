@@ -31,4 +31,21 @@ final class AsyncCallHistoryViewEventTargetFactory: NSObject {
             completion(await origin.make(account: account, view: view, purchaseCheck: purchaseCheck))
         }
     }
+
+    @objc(makeGlobalWithAccounts:view:callDestinationHandler:completion:)
+    func makeGlobal(accounts: [CallHistoryAccount], view: CallHistoryView,
+                    callDestinationHandler: @escaping @MainActor @Sendable (String, String, String) -> Void,
+                    completion: @escaping (CallHistoryViewEventTarget) -> Void) {
+        let request = origin.prepareGlobalAccounts(accounts)
+        Task {
+            completion(await origin.makeGlobal(accounts: accounts, view: view, route: callDestinationHandler, request: request))
+        }
+    }
+
+    @objc func updateGlobalAccounts(_ accounts: [CallHistoryAccount]) {
+        // Reserve the generation synchronously before the actor hop. Rapid
+        // rename/reorder events cannot let an older snapshot replace the latest.
+        let request = origin.prepareGlobalAccounts(accounts)
+        Task { await origin.applyGlobalAccounts(accounts, request: request) }
+    }
 }

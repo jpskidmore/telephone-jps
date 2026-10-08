@@ -25,4 +25,5 @@ import Foundation
     var duration: Int  { get }
     var isIncoming: Bool  { get }
     var isMissed: Bool  { get }
+    @objc optional var canonicalDestination: String? { get }
 }

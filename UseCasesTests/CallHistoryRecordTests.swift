@@ -20,6 +20,22 @@ import UseCases
 import XCTest
 
 final class CallHistoryRecordTests: XCTestCase {
+    func testLegacyDispatchFallbackProtectsLiteralsWhileExplicitSIPMetadataRetainsItsDestination() {
+        for literal in ["999", "112", "*21*123#", "12P34", "+441442123456"] {
+            let record = CallHistoryRecord(uri: URI(user: literal, host: "historical-provider.invalid", displayName: ""),
+                                           date: Date(), duration: 1, isIncoming: false, isMissed: false)
+            XCTAssertEqual(record.callbackDestination, literal)
+            XCTAssertNil(record.canonicalDestination, "Reading a callback must not populate guessed metadata")
+        }
+        let alpha = CallHistoryRecord(uri: URI(user: "desk", address: ServiceAddress(host: "example.test", port: "5071"),
+                                               displayName: "Caller", transport: .tls),
+                                      date: Date(), duration: 1, isIncoming: false, isMissed: false)
+        XCTAssertEqual(alpha.callbackDestination, "sip:desk@example.test:5071;transport=tls")
+        let explicit = "sip:999@example.test:5071;transport=tls"
+        let numericSIP = CallHistoryRecord(uri: URI(user: "999", host: "example.test", displayName: ""),
+                                           date: Date(), duration: 1, isIncoming: false, isMissed: false, canonicalDestination: explicit)
+        XCTAssertEqual(numericSIP.callbackDestination, explicit)
+    }
     func testIdentifierContainsUserHostDateDurationIncomingFlag() {
         let user = "any-user"
         let host = "any-host"

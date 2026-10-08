@@ -19,12 +19,22 @@
 import UseCases
 
 final class DefaultCallHistoryCallMakeUseCaseFactory {
-    private let account: Account
+    private let account: Account?
+    private let route: (@MainActor @Sendable (String, String, String) -> Void)?
     private let history: CallHistory
     private let factory: FallingBackMatchedContactFactory
 
     init(account: Account, history: CallHistory, factory: FallingBackMatchedContactFactory) {
         self.account = account
+        route = nil
+        self.history = history
+        self.factory = factory
+    }
+
+    init(history: CallHistory, factory: FallingBackMatchedContactFactory,
+         route: @escaping @MainActor @Sendable (String, String, String) -> Void) {
+        account = nil
+        self.route = route
         self.history = history
         self.factory = factory
     }
@@ -32,11 +42,13 @@ final class DefaultCallHistoryCallMakeUseCaseFactory {
 
 extension DefaultCallHistoryCallMakeUseCaseFactory: CallHistoryCallMakeUseCaseFactory {
     func make(identifier: String) -> UseCase {
+        let output = route.map { CallHistoryCallMakeUseCase(routeWithDisplayName: $0) }
+            ?? CallHistoryCallMakeUseCase(account: account!)
         return CallHistoryRecordGetUseCase(
             identifier: identifier,
             history: history,
             output: ContactCallHistoryRecordGetUseCase(
-                factory: factory, output: CallHistoryCallMakeUseCase(account: account)
+                factory: factory, output: output
             )
         )
     }

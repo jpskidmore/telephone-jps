@@ -41,6 +41,9 @@ checks = [
     data[4]['swiftReparsed']['parsed'] == 1,
     data[6]['port'] == 5070 and data[6]['copyPort'] == 5070,
     data[7]['historyMakeAdapterInput'] == 'sip:alice@example.invalid:5070' and data[7]['output'] == 'sip:alice@example.invalid:5070',
+    data[5]['typedAKString'] == 'sip:alice@example.invalid;transport=tcp',
+    data[5]['productionNativeString'] == 'sip:alice@example.invalid;transport=tcp',
+    data[5]['historyAdapterString'] == 'sip:alice@example.invalid;transport=tcp',
 ]
 assert all(checks), checks
 (scratch/'uri-results.json').write_text(json.dumps(data, indent=2, ensure_ascii=False)+'\n')

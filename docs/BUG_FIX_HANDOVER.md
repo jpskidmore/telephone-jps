@@ -1,4 +1,6 @@
-# Maintenance handover — published 3.0 release
+# Maintenance handover — 3.5 Guided routes
+
+The owner authorised **3.5/build 162 Guided routes** on 8 October: one dialler, configurable country/area expansion, account routing and consolidated history. Implementation and local validation are in progress on main. Read [DIAL_PLANS.md](DIAL_PLANS.md) and [3.5 notes](releases/3.5.md) before continuing. The previous 3.0 publication proof below is historical and remains immutable; no completed 3.5 publication is claimed yet.
 
 The owner's 7 October privacy/repair gate is complete. All 50 baseline findings
 #2–51 are recorded **fixed_verified**, documented and closed on GitHub; current

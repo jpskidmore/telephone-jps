@@ -23,6 +23,7 @@
 #import "GeneralPreferencesViewController.h"
 #import "NetworkPreferencesViewController.h"
 #import "SoundPreferencesViewController.h"
+#import "Telephone-Swift.h"
 
 @interface PreferencesController () <NSTableViewDelegate, NSTableViewDataSource>
 @property(nonatomic) NSViewController *settingsContainerController;
@@ -34,6 +35,7 @@
 @property(nonatomic) NSArray<NSLayoutConstraint *> *settingsPaneConstraints;
 @property(nonatomic) NSSize settingsContentSize;
 @property(nonatomic) BOOL updatingSidebarSelection;
+@property(nonatomic, readwrite) NSToolbarItem *dialPlanToolbarItem;
 @end
 
 @implementation PreferencesController
@@ -42,6 +44,8 @@
 @synthesize accountPreferencesViewController = _accountPreferencesViewController;
 @synthesize soundPreferencesViewController = _soundPreferencesViewController;
 @synthesize networkPreferencesViewController = _networkPreferencesViewController;
+@synthesize dialPlanPreferencesViewController = _dialPlanPreferencesViewController;
+@synthesize dialPlanToolbarItem = _dialPlanToolbarItem;
 
 - (void)setDelegate:(id)aDelegate {
     if (_delegate == aDelegate) {
@@ -118,6 +122,32 @@
     return _networkPreferencesViewController;
 }
 
+- (DialPlanPreferencesViewController *)dialPlanPreferencesViewController {
+    if (_dialPlanPreferencesViewController == nil) {
+        DialPlanStore *store = self.dialPlanStore ?: [[DialPlanStore alloc] initWithDefaults:NSUserDefaults.standardUserDefaults];
+        if (self.dialPlanAccountProvider != nil) {
+            _dialPlanPreferencesViewController = [[DialPlanPreferencesViewController alloc] initWithStore:store
+                                                                                       accountProvider:self.dialPlanAccountProvider];
+        } else {
+            _dialPlanPreferencesViewController = [[DialPlanPreferencesViewController alloc] initWithStore:store
+                                                                                              defaults:NSUserDefaults.standardUserDefaults];
+        }
+    }
+    return _dialPlanPreferencesViewController;
+}
+
+- (NSToolbarItem *)dialPlanToolbarItem {
+    if (_dialPlanToolbarItem == nil) {
+        _dialPlanToolbarItem = [[NSToolbarItem alloc] initWithItemIdentifier:@"DialPlan"];
+        _dialPlanToolbarItem.label = NSLocalizedString(@"Dial plan", @"Guided outgoing route settings.");
+        _dialPlanToolbarItem.toolTip = NSLocalizedString(@"Number format, outgoing connections and exceptions.", @"Dial plan settings scope.");
+        _dialPlanToolbarItem.image = [NSImage imageWithSystemSymbolName:@"arrow.triangle.branch" accessibilityDescription:nil];
+        _dialPlanToolbarItem.target = self;
+        _dialPlanToolbarItem.action = @selector(changeView:);
+    }
+    return _dialPlanToolbarItem;
+}
+
 - (BOOL)isSoundPreferencesViewControllerLoaded {
     return _soundPreferencesViewController != nil;
 }
@@ -151,7 +181,7 @@
     // Retain the nib's action items so deep links and unsaved-network prompts
     // continue to use exactly the same section-selection path.
     self.navigationToolbar = self.toolbar;
-    self.settingsItems = @[self.generalToolbarItem, self.accountsToolbarItem,
+    self.settingsItems = @[self.generalToolbarItem, self.accountsToolbarItem, self.dialPlanToolbarItem,
                            self.soundToolbarItem, self.networkToolbarItem];
     self.window.toolbar = nil;
     // Keep a dedicated native titlebar for the window title and close control.
@@ -288,7 +318,8 @@
 
 - (void)selectSidebarItem:(NSToolbarItem *)item {
     self.updatingSidebarSelection = YES;
-    self.toolbar.selectedItemIdentifier = item.itemIdentifier;
+    // The routing item belongs to the native icon rail rather than the old nib toolbar.
+    self.toolbar.selectedItemIdentifier = item == self.dialPlanToolbarItem ? nil : item.itemIdentifier;
     NSUInteger index = [self.settingsItems indexOfObject:item];
     if (index != NSNotFound) {
         [self.settingsSidebar selectRowIndexes:[NSIndexSet indexSetWithIndex:index] byExtendingSelection:NO];
@@ -339,6 +370,15 @@
 }
 
 - (IBAction)changeView:(id)sender {
+    if (self.selectedSettingsController == _dialPlanPreferencesViewController &&
+        ![sender isEqual:self.dialPlanToolbarItem] && _dialPlanPreferencesViewController.hasUnsavedChanges) {
+        [self selectSidebarItem:self.dialPlanToolbarItem];
+        __weak PreferencesController *weakSelf = self;
+        [_dialPlanPreferencesViewController confirmLeavingWithCompletion:^(BOOL leave) {
+            if (leave) [weakSelf changeView:sender];
+        }];
+        return;
+    }
     if ([self isNetworkPreferencesViewCurrent] &&
         ![sender isEqual:self.networkToolbarItem] &&
         [self.networkPreferencesViewController areNetworkSettingsChanged:sender]) {
@@ -358,6 +398,10 @@
         controller = self.accountPreferencesViewController;
         title = self.accountPreferencesViewController.title;
         firstResponder = self.accountPreferencesViewController.accountsTable;
+    } else if ([sender isEqual:self.dialPlanToolbarItem]) {
+        controller = self.dialPlanPreferencesViewController;
+        title = self.dialPlanPreferencesViewController.title;
+        firstResponder = nil;
     } else if ([sender isEqual:self.soundToolbarItem]) {
         controller = self.soundPreferencesViewController;
         title = self.soundPreferencesViewController.title;
@@ -401,6 +445,11 @@
     [self changeView:self.soundToolbarItem];
 }
 
+- (void)showDialPlan {
+    [self showWindowCentered];
+    [self changeView:self.dialPlanToolbarItem];
+}
+
 - (BOOL)isNetworkPreferencesViewCurrent {
     return self.selectedSettingsController == self.networkPreferencesViewController;
 }
@@ -421,6 +470,7 @@
 - (NSArray *)toolbarSelectableItemIdentifiers:(NSToolbar *)aToolbar {
     return @[[[self generalToolbarItem] itemIdentifier],
             [[self accountsToolbarItem] itemIdentifier],
+            self.dialPlanToolbarItem.itemIdentifier,
             [[self soundToolbarItem] itemIdentifier],
             [[self networkToolbarItem] itemIdentifier]];
 }
@@ -430,6 +480,14 @@
 #pragma mark NSWindow delegate
 
 - (BOOL)windowShouldClose:(id)window {
+    if (self.selectedSettingsController == _dialPlanPreferencesViewController &&
+        _dialPlanPreferencesViewController.hasUnsavedChanges) {
+        __weak PreferencesController *weakSelf = self;
+        [_dialPlanPreferencesViewController confirmLeavingWithCompletion:^(BOOL leave) {
+            if (leave) [weakSelf.window performClose:nil];
+        }];
+        return NO;
+    }
     if ([self isNetworkPreferencesViewCurrent] &&
         [[self networkPreferencesViewController] areNetworkSettingsChanged:window]) {
         return NO;

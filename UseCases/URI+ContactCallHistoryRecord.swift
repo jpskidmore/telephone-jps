@@ -20,8 +20,9 @@ public extension URI {
     convenience init(record: ContactCallHistoryRecord) {
         self.init(
             user: record.origin.uri.user,
-            host: record.origin.uri.host,
-            displayName: record.contact.name.isEmpty ? record.origin.uri.displayName : record.contact.name
+            address: record.origin.uri.address,
+            displayName: record.contact.name.isEmpty ? record.origin.uri.displayName : record.contact.name,
+            transport: record.origin.uri.transport
         )
     }
 }

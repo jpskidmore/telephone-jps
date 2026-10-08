@@ -710,6 +710,14 @@
 		AAFC002A1074D0B50018C7DA /* SoundPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = AAFC00291074D0B50018C7DA /* SoundPreferencesView.xib */; };
 		AAFC002C1074D0B50018C7DA /* GeneralPreferencesView.xib in Resources */ = {isa = PBXBuildFile; fileRef = AAFC002B1074D0B50018C7DA /* GeneralPreferencesView.xib */; };
 		AAFCFFBD1074BFCA0018C7DA /* AccountSetupController.m in Sources */ = {isa = PBXBuildFile; fileRef = AAFCFFBC1074BFCA0018C7DA /* AccountSetupController.m */; };
+		B062FCD597F7BA9BF40A9240 /* DialPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92899AE27E466A3AC818830 /* DialPlan.swift */; };
+		01D3BE301A22BE8AD6AB6615 /* DialPlanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CFDCE06132B257F696292C0 /* DialPlanCoordinator.swift */; };
+		D2ED800E553D141385770A6D /* DialPlanPreferencesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B14B3C9EB481B3D6C081BC93 /* DialPlanPreferencesViewController.swift */; };
+		F46F24444924938A05BFD24D /* SharedDialerController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8CEC8CA2A6E7DF1660A8F828 /* SharedDialerController.m */; };
+		0FC686D472D430671BAA6220 /* GlobalCallHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8979B95D4F1373CA4DD77B25 /* GlobalCallHistory.swift */; };
+		BEFAEDCA5BE1F8B83CDB623D /* SharedDialerControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 80BEA5F45C4BF11FAA36CDED /* SharedDialerControllerTests.m */; };
+		9B7527EE39264F648CA7152C /* DialPlanPreferencesViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 241F6DA315E2F2A78FB3DA3E /* DialPlanPreferencesViewControllerTests.swift */; };
+		9AD9DE953431417FAED683DF /* AccountRoutingRegressionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = FCCABEA1E3CFEAE96A328781 /* AccountRoutingRegressionTests.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1607,6 +1615,15 @@
 		AAFA9C3C0EE411BA009A45CB /* AKTelephoneNumberFormatter.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = AKTelephoneNumberFormatter.m; sourceTree = "<group>"; tabWidth = 4; };
 		AAFCFFBB1074BFCA0018C7DA /* AccountSetupController.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = AccountSetupController.h; sourceTree = "<group>"; tabWidth = 4; };
 		AAFCFFBC1074BFCA0018C7DA /* AccountSetupController.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = AccountSetupController.m; sourceTree = "<group>"; tabWidth = 4; };
+		D92899AE27E466A3AC818830 /* DialPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialPlan.swift; sourceTree = "<group>"; };
+		0CFDCE06132B257F696292C0 /* DialPlanCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialPlanCoordinator.swift; sourceTree = "<group>"; };
+		B14B3C9EB481B3D6C081BC93 /* DialPlanPreferencesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialPlanPreferencesViewController.swift; sourceTree = "<group>"; };
+		8CEC8CA2A6E7DF1660A8F828 /* SharedDialerController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SharedDialerController.m; sourceTree = "<group>"; };
+		AB21F0FA721AE7934B266CAF /* SharedDialerController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SharedDialerController.h; sourceTree = "<group>"; };
+		8979B95D4F1373CA4DD77B25 /* GlobalCallHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalCallHistory.swift; sourceTree = "<group>"; };
+		80BEA5F45C4BF11FAA36CDED /* SharedDialerControllerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SharedDialerControllerTests.m; sourceTree = "<group>"; };
+		241F6DA315E2F2A78FB3DA3E /* DialPlanPreferencesViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialPlanPreferencesViewControllerTests.swift; sourceTree = "<group>"; };
+		FCCABEA1E3CFEAE96A328781 /* AccountRoutingRegressionTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AccountRoutingRegressionTests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1690,6 +1707,11 @@
 		080E96DDFE201D6D7F000001 /* Telephone */ = {
 			isa = PBXGroup;
 			children = (
+				AB21F0FA721AE7934B266CAF /* SharedDialerController.h */,
+				8CEC8CA2A6E7DF1660A8F828 /* SharedDialerController.m */,
+				B14B3C9EB481B3D6C081BC93 /* DialPlanPreferencesViewController.swift */,
+				0CFDCE06132B257F696292C0 /* DialPlanCoordinator.swift */,
+				D92899AE27E466A3AC818830 /* DialPlan.swift */,
 				AA4D49111BB9A0CF004D1D4B /* Account Setup */,
 				AADAA302107E5AA200789F2D /* Account */,
 				8AD9A0D61DDF83D4000BB2F2 /* ApplicationDataLocations */,
@@ -2682,6 +2704,7 @@
 		AA078B2A1BFF80E30013FF8F /* UseCases */ = {
 			isa = PBXGroup;
 			children = (
+				8979B95D4F1373CA4DD77B25 /* GlobalCallHistory.swift */,
 				8AA27AD91E97C060002A08CD /* Accounts */,
 				AA39055F1C007799005A8AA3 /* Audio Devices */,
 				8A11B3C81DDB443A002EDA93 /* Calls */,
@@ -2802,6 +2825,9 @@
 		AA3FAB861BBAAE630064B2C3 /* TelephoneTests */ = {
 			isa = PBXGroup;
 			children = (
+				FCCABEA1E3CFEAE96A328781 /* AccountRoutingRegressionTests.m */,
+				241F6DA315E2F2A78FB3DA3E /* DialPlanPreferencesViewControllerTests.swift */,
+				80BEA5F45C4BF11FAA36CDED /* SharedDialerControllerTests.m */,
 				B20000020000000000000002 /* CallControllerLifecycleTests.m */,
                 A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */,
                 A63000000000000000000001 /* AppTerminationRegressionTests.m */,
@@ -3665,6 +3691,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F46F24444924938A05BFD24D /* SharedDialerController.m in Sources */,
+				D2ED800E553D141385770A6D /* DialPlanPreferencesViewController.swift in Sources */,
+				01D3BE301A22BE8AD6AB6615 /* DialPlanCoordinator.swift in Sources */,
+				B062FCD597F7BA9BF40A9240 /* DialPlan.swift in Sources */,
 				8D11072D0486CEB800E47090 /* main.m in Sources */,
 				8AA748961D6F6D7C000587DC /* SpotifyMusicPlayer.m in Sources */,
 				8AD9A0D21DDF76DE000BB2F2 /* SimpleApplicationDataLocations.swift in Sources */,
@@ -3861,6 +3891,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0FC686D472D430671BAA6220 /* GlobalCallHistory.swift in Sources */,
 				8AD012B12126F81500619781 /* DefaultSystemSoundIOChangeEventTarget.swift in Sources */,
 				8A09E0FA1E79A29D0027A25E /* ReversedCallHistory.swift in Sources */,
 				AA1019731C48046D00869D01 /* DefaultRingtonePlaybackUseCase.swift in Sources */,
@@ -4087,6 +4118,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9AD9DE953431417FAED683DF /* AccountRoutingRegressionTests.m in Sources */,
+				9B7527EE39264F648CA7152C /* DialPlanPreferencesViewControllerTests.swift in Sources */,
+				BEFAEDCA5BE1F8B83CDB623D /* SharedDialerControllerTests.m in Sources */,
 				B20000010000000000000001 /* CallControllerLifecycleTests.m in Sources */,
                 A62000000000000000000002 /* PreferencesControllerLifecycleTests.m in Sources */,
                 A63000000000000000000002 /* AppTerminationRegressionTests.m in Sources */,
@@ -4889,7 +4923,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited) PJ_AUTOCONF=1";
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/ThirdParty/PJSIP/include";
+				HEADER_SEARCH_PATHS = ("$(SRCROOT)/ThirdParty/PJSIP/include", "$(OBJROOT)/Telephone.build/$(CONFIGURATION)/Telephone.build/DerivedSources");
 				INFOPLIST_FILE = TelephoneTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -4914,7 +4948,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited) PJ_AUTOCONF=1";
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/ThirdParty/PJSIP/include";
+				HEADER_SEARCH_PATHS = ("$(SRCROOT)/ThirdParty/PJSIP/include", "$(OBJROOT)/Telephone.build/$(CONFIGURATION)/Telephone.build/DerivedSources");
 				INFOPLIST_FILE = TelephoneTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -5160,7 +5194,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 161;
+				CURRENT_PROJECT_VERSION = 162;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -5186,7 +5220,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 3.0;
+				MARKETING_VERSION = 3.5;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",
@@ -5228,7 +5262,7 @@
 				CODE_SIGN_ENTITLEMENTS = Telephone/Telephone.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 161;
+				CURRENT_PROJECT_VERSION = 162;
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "PJ_AUTOCONF=1";
@@ -5251,7 +5285,7 @@
 					"\"$(SRCROOT)/ThirdParty/Ogg/lib\"",
 					"\"$(SRCROOT)/ThirdParty/OpusEnc/lib\"",
 				);
-				MARKETING_VERSION = 3.0;
+				MARKETING_VERSION = 3.5;
 				OTHER_LDFLAGS = (
 					"-lpjsua-arm-apple-darwin",
 					"-lpjsip-ua-arm-apple-darwin",
