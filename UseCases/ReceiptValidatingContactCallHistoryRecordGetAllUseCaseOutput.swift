@@ -28,6 +28,16 @@ public final class ReceiptValidatingContactCallHistoryRecordGetAllUseCaseOutput 
 }
 
 extension ReceiptValidatingContactCallHistoryRecordGetAllUseCaseOutput: ContactCallHistoryRecordGetAllUseCaseOutput {
+    public func update(records: [ContactCallHistoryRecord], request: CallHistoryReloadRequest) async {
+        let validation = await receipt.validate()
+        guard request.isCurrent else { return }
+        if case .receiptIsValid = validation {
+            await origin.update(records: records, request: request)
+        } else {
+            await origin.update(records: Array(records.prefix(3)), request: request)
+        }
+    }
+
     public func update(records: [ContactCallHistoryRecord]) async {
         if case .receiptIsValid = await receipt.validate() {
             await origin.update(records: records)

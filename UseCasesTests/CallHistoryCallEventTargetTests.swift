@@ -65,6 +65,30 @@ final class CallHistoryCallEventTargetTests: XCTestCase {
 
         wait(for: [didCallExecute], timeout: 1)
     }
+    func testDrainWaitsForQueuedAndNestedWritesBeforeFinalCompletion() async {
+        let coordinator = CallHistoryWork()
+        let first = HistoryWorkLatch()
+        let nested = HistoryWorkLatch()
+        let drained = expectation(description: "All admitted writes are durable")
+        let finished = HistoryWorkFlag()
+        XCTAssertTrue(coordinator.submit {
+            await first.wait()
+            coordinator.submit { await nested.wait() }
+        })
+        while !(await first.entered) { await Task.yield() }
+        coordinator.finish { finished.set(); drained.fulfill() }
+        XCTAssertFalse(finished.value)
+        XCTAssertFalse(coordinator.submit {})
+        await first.release()
+        while !(await nested.entered) { await Task.yield() }
+        XCTAssertFalse(finished.value)
+        await nested.release()
+        await fulfillment(of: [drained], timeout: 2)
+        XCTAssertTrue(finished.value)
+        coordinator.resume()
+        XCTAssertTrue(coordinator.submit {})
+    }
+
 }
 
 private func makeCall(account: Account) -> Call {
@@ -76,4 +100,17 @@ private func makeCall(account: Account) -> Call {
         isIncoming: false,
         isMissed: false
     )
+}
+
+private actor HistoryWorkLatch {
+    var entered = false
+    private var continuation: CheckedContinuation<Void, Never>?
+    func wait() async { entered = true; await withCheckedContinuation { continuation = $0 } }
+    func release() { continuation?.resume(); continuation = nil }
+}
+private final class HistoryWorkFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var flag = false
+    var value: Bool { lock.lock(); defer { lock.unlock() }; return flag }
+    func set() { lock.lock(); flag = true; lock.unlock() }
 }

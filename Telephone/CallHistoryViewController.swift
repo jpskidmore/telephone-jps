@@ -234,7 +234,10 @@ extension CallHistoryViewController: CallHistoryView {
 
     private func restoreSelection(oldIndex: Int, old: [PresentationCallHistoryRecord], new: [PresentationCallHistoryRecord]) {
         guard !records.isEmpty else { return }
-        selectVisibleRecord(at: isExpanded ? RestoredSelectionIndex(indexBefore: oldIndex, before: old, after: new).value : 0)
+        let selectedIdentifier = old.indices.contains(oldIndex) ? old[oldIndex].identifier : nil
+        let restoredIndex = selectedIdentifier.flatMap { identifier in new.firstIndex { $0.identifier == identifier } }
+            ?? min(max(oldIndex, 0), new.count - 1)
+        selectVisibleRecord(at: isExpanded ? restoredIndex : 0)
     }
 }
 

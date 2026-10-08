@@ -13,7 +13,7 @@
 //  GNU General Public License for more details.
 //
 
-public final class CallHistoriesHistoryRemoveUseCase {
+public final class CallHistoriesHistoryRemoveUseCase: Sendable {
     private let histories: CallHistories
 
     public init(histories: CallHistories) {
@@ -23,7 +23,7 @@ public final class CallHistoriesHistoryRemoveUseCase {
 
 extension CallHistoriesHistoryRemoveUseCase: AccountsEventTarget {
     public func didRemoveAccount(withUUID uuid: String) {
-        Task { @CallHistoryActor [histories] in
+        CallHistoryWork.shared.submit { @CallHistoryActor [histories] in
             histories.history(withUUID: uuid).removeAll()
             histories.remove(withUUID: uuid)
         }

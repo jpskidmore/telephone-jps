@@ -33,15 +33,24 @@ final class CallHistoryViewPresenter {
 }
 
 nonisolated extension CallHistoryViewPresenter: ContactCallHistoryRecordGetAllUseCaseOutput {
-    func update(records: [ContactCallHistoryRecord]) {
-        let result = records.map(makeRecord)
-        Task { @MainActor in
-            view.show(result)
-        }
+    func update(records: [ContactCallHistoryRecord]) async {
+        await present(records: records, request: nil)
     }
 
-    private func makeRecord(from record: ContactCallHistoryRecord) -> PresentationCallHistoryRecord {
-        return PresentationCallHistoryRecord(
+    func update(records: [ContactCallHistoryRecord], request: CallHistoryReloadRequest) async {
+        await present(records: records, request: request)
+    }
+}
+
+private extension CallHistoryViewPresenter {
+    func present(records: [ContactCallHistoryRecord], request: CallHistoryReloadRequest?) {
+        // Check at the actual MainActor presentation hop, after Contacts/receipt awaits.
+        guard request?.isCurrent != false else { return }
+        view.show(records.map(makeRecord))
+    }
+
+    func makeRecord(from record: ContactCallHistoryRecord) -> PresentationCallHistoryRecord {
+        PresentationCallHistoryRecord(
             identifier: record.origin.identifier,
             contact: PresentationContact(contact: record.contact, color: contactColor(for: record)),
             date: dateFormatter.string(from: record.origin.date),

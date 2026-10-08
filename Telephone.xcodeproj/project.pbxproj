@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        A63000000000000000000002 /* AppTerminationRegressionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A63000000000000000000001 /* AppTerminationRegressionTests.m */; };
         A62000000000000000000002 /* PreferencesControllerLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */; };
         A61000000000000000000003 /* AKLiquidGlass.m in Sources */ = {isa = PBXBuildFile; fileRef = A61000000000000000000002 /* AKLiquidGlass.m */; };
 		AFA000030000000000000003 /* AKAudioDeviceController.m in Sources */ = {isa = PBXBuildFile; fileRef = AFA000020000000000000002 /* AKAudioDeviceController.m */; };
@@ -585,7 +586,6 @@
 		AA1019951C494B5700869D01 /* FoundationToUseCasesTimerAdapterFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1019941C494B5700869D01 /* FoundationToUseCasesTimerAdapterFactory.swift */; };
 		AA167A1E0F07BF9E00AF8B71 /* SIPResponses.strings in Resources */ = {isa = PBXBuildFile; fileRef = AA167A1C0F07BF9E00AF8B71 /* SIPResponses.strings */; };
 		AA16CBE60F856ACD000CAFD1 /* AKNSString+PJSUA.m in Sources */ = {isa = PBXBuildFile; fileRef = AA16CBE50F856ACD000CAFD1 /* AKNSString+PJSUA.m */; };
-		AA16CC9E0F857009000CAFD1 /* AKNSString+Escaping.m in Sources */ = {isa = PBXBuildFile; fileRef = AA16CC9D0F857009000CAFD1 /* AKNSString+Escaping.m */; };
 		AA18F5FF1C21CD2500FD8E9F /* SettingsSoundIOSaveUseCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA18F5FE1C21CD2500FD8E9F /* SettingsSoundIOSaveUseCaseTests.swift */; };
 		AA18F6011C21CD9600FD8E9F /* SettingsSoundIOSaveUseCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA18F6001C21CD9600FD8E9F /* SettingsSoundIOSaveUseCase.swift */; };
 		AA19CFF51BED148A00991CAA /* DefaultUseCaseFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA19CFF41BED148A00991CAA /* DefaultUseCaseFactory.swift */; };
@@ -702,7 +702,6 @@
 		AADAA2D1107E572300789F2D /* EndedCallView.xib in Resources */ = {isa = PBXBuildFile; fileRef = AADAA2D0107E572300789F2D /* EndedCallView.xib */; };
 		AAE39A3B1BDA59F100EFB7BC /* NSUserDefaults+KeyValueSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE39A3A1BDA59F100EFB7BC /* NSUserDefaults+KeyValueSettings.swift */; };
 		AAECDE8F0E70703100CEAE7B /* AKNSString+Scanning.m in Sources */ = {isa = PBXBuildFile; fileRef = AAECDE8E0E70703100CEAE7B /* AKNSString+Scanning.m */; };
-		AAEE7C310ECD953200A7DEB4 /* AKNSWindow+Resizing.m in Sources */ = {isa = PBXBuildFile; fileRef = AAEE7C300ECD953200A7DEB4 /* AKNSWindow+Resizing.m */; };
 		AAF6336A1056FEA600CF6C3B /* ActiveAccountViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AAF633691056FEA600CF6C3B /* ActiveAccountViewController.m */; };
 		AAFA9B1D0EE1D8FC009A45CB /* AKSIPURIFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = AAFA9B1C0EE1D8FC009A45CB /* AKSIPURIFormatter.m */; };
 		AAFA9C3D0EE411BA009A45CB /* AKTelephoneNumberFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = AAFA9C3C0EE411BA009A45CB /* AKTelephoneNumberFormatter.m */; };
@@ -847,6 +846,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        A63000000000000000000001 /* AppTerminationRegressionTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppTerminationRegressionTests.m; sourceTree = "<group>"; };
         A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PreferencesControllerLifecycleTests.m; sourceTree = "<group>"; };
         A61000000000000000000001 /* AKLiquidGlass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AKLiquidGlass.h; sourceTree = "<group>"; };
         A61000000000000000000002 /* AKLiquidGlass.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AKLiquidGlass.m; sourceTree = "<group>"; };
@@ -1444,8 +1444,6 @@
 		AA167A1D0F07BF9E00AF8B71 /* en-GB */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/SIPResponses.strings; sourceTree = "<group>"; };
 		AA16CBE40F856ACD000CAFD1 /* AKNSString+PJSUA.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = "AKNSString+PJSUA.h"; sourceTree = "<group>"; tabWidth = 4; };
 		AA16CBE50F856ACD000CAFD1 /* AKNSString+PJSUA.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = "AKNSString+PJSUA.m"; sourceTree = "<group>"; tabWidth = 4; };
-		AA16CC9C0F857009000CAFD1 /* AKNSString+Escaping.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = "AKNSString+Escaping.h"; sourceTree = "<group>"; tabWidth = 4; };
-		AA16CC9D0F857009000CAFD1 /* AKNSString+Escaping.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = "AKNSString+Escaping.m"; sourceTree = "<group>"; tabWidth = 4; };
 		AA18F5FE1C21CD2500FD8E9F /* SettingsSoundIOSaveUseCaseTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SettingsSoundIOSaveUseCaseTests.swift; path = UseCasesTests/SettingsSoundIOSaveUseCaseTests.swift; sourceTree = SOURCE_ROOT; };
 		AA18F6001C21CD9600FD8E9F /* SettingsSoundIOSaveUseCase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsSoundIOSaveUseCase.swift; sourceTree = "<group>"; };
 		AA19171B0F8EA627002BA093 /* iTunes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = iTunes.h; sourceTree = "<group>"; };
@@ -1597,8 +1595,6 @@
 		AAE39A3A1BDA59F100EFB7BC /* NSUserDefaults+KeyValueSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "NSUserDefaults+KeyValueSettings.swift"; sourceTree = "<group>"; };
 		AAECDE8D0E70703100CEAE7B /* AKNSString+Scanning.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = "AKNSString+Scanning.h"; sourceTree = "<group>"; tabWidth = 4; };
 		AAECDE8E0E70703100CEAE7B /* AKNSString+Scanning.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = "AKNSString+Scanning.m"; sourceTree = "<group>"; tabWidth = 4; };
-		AAEE7C2F0ECD953200A7DEB4 /* AKNSWindow+Resizing.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = "AKNSWindow+Resizing.h"; sourceTree = "<group>"; tabWidth = 4; };
-		AAEE7C300ECD953200A7DEB4 /* AKNSWindow+Resizing.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = "AKNSWindow+Resizing.m"; sourceTree = "<group>"; tabWidth = 4; };
 		AAF633681056FEA600CF6C3B /* ActiveAccountViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.h; path = ActiveAccountViewController.h; sourceTree = "<group>"; tabWidth = 4; };
 		AAF633691056FEA600CF6C3B /* ActiveAccountViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 4; lastKnownFileType = sourcecode.c.objc; path = ActiveAccountViewController.m; sourceTree = "<group>"; tabWidth = 4; };
 		AAFA2BAC1BCD812C00066CFC /* UserAgentSoundIOSelectionUseCase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UserAgentSoundIOSelectionUseCase.swift; sourceTree = "<group>"; };
@@ -2808,6 +2804,7 @@
 			children = (
 				B20000020000000000000002 /* CallControllerLifecycleTests.m */,
                 A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */,
+                A63000000000000000000001 /* AppTerminationRegressionTests.m */,
 				8A68C9511FFE6A8C005125AF /* ApplicationDataLocationsFake.swift */,
 				8A778C0D1E0C136C004B00B8 /* CallHistoryViewSpy.swift */,
 				8A769CFA2825A43400BC57CB /* ClipboardSpy.swift */,
@@ -3108,10 +3105,6 @@
 				AAECDE8D0E70703100CEAE7B /* AKNSString+Scanning.h */,
 				AAECDE8E0E70703100CEAE7B /* AKNSString+Scanning.m */,
 				8A0E8A8223E0A5D800FC7BC3 /* AKNSString+ScanningTests.swift */,
-				AA16CC9C0F857009000CAFD1 /* AKNSString+Escaping.h */,
-				AA16CC9D0F857009000CAFD1 /* AKNSString+Escaping.m */,
-				AAEE7C2F0ECD953200A7DEB4 /* AKNSWindow+Resizing.h */,
-				AAEE7C300ECD953200A7DEB4 /* AKNSWindow+Resizing.m */,
 				AAB5AAC00F2E7A7D00A57531 /* AKABRecord+Querying.h */,
 				AAB5AAC10F2E7A7D00A57531 /* AKABRecord+Querying.m */,
 				AA3A14F90F309C7C00C45739 /* AKABAddressBook+Localizing.h */,
@@ -3727,7 +3720,6 @@
 				8A9533901F9A4B2300483940 /* HelpMenuActionTarget.swift in Sources */,
 				8AA689981FFFEDA000BA369B /* NSWorkspace+WebBrowser.swift in Sources */,
 				8A1DA8131DF07EA700F5BA40 /* WorkspaceSleepStatus.swift in Sources */,
-				AAEE7C310ECD953200A7DEB4 /* AKNSWindow+Resizing.m in Sources */,
 				8AC1A43C1C679DA8007778A2 /* NSSoundToSoundAdapterFactory.swift in Sources */,
 				8A9175AD1CABF61200354E26 /* UserAgentError.swift in Sources */,
 				8A11B3DC1DDCC028002EDA93 /* AKSIPCallEventSource.swift in Sources */,
@@ -3762,7 +3754,6 @@
 				8A9175A51CA5A10800354E26 /* PJSUAOnCallReplaced.m in Sources */,
 				8AC443BF1F90E21E00ECE463 /* OrphanLogFileRemoval.swift in Sources */,
 				8A837FCF24A5277300DFA3F3 /* AKSIPURIParser.m in Sources */,
-				AA16CC9E0F857009000CAFD1 /* AKNSString+Escaping.m in Sources */,
 				8A1BCFFC1ED3462800628062 /* CNContactStoreToContactsAdapter.swift in Sources */,
 				8A125F7D1F59821D00148C99 /* AsyncCallHistoryPurchaseCheckUseCaseFactory.swift in Sources */,
 				8ACB9C811E13F8F50081A0A5 /* PresentationContact.swift in Sources */,
@@ -4098,6 +4089,7 @@
 			files = (
 				B20000010000000000000001 /* CallControllerLifecycleTests.m in Sources */,
                 A62000000000000000000002 /* PreferencesControllerLifecycleTests.m in Sources */,
+                A63000000000000000000002 /* AppTerminationRegressionTests.m in Sources */,
 				AAC0FFBF1BE38B3800A5C7E5 /* AKSIPUserAgentEventSource.swift in Sources */,
 				8A68C9521FFE6A8C005125AF /* ApplicationDataLocationsFake.swift in Sources */,
 				8AD2C5EA1EADFF32005EED3E /* ArrayDifferenceTests.swift in Sources */,

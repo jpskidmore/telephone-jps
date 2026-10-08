@@ -41,9 +41,13 @@
     if (!pool) {
         return nil;
     }
+    NSData *bytes = [string dataUsingEncoding:NSUTF8StringEncoding];
+    char *buffer = pj_pool_alloc(pool, bytes.length + 1);
+    memcpy(buffer, bytes.bytes, bytes.length);
+    buffer[bytes.length] = '\0';
     pjsip_name_addr *nameAddr = (pjsip_name_addr *)pjsip_parse_uri(pool,
-                                                                   (char *)[string cStringUsingEncoding:NSUTF8StringEncoding],
-                                                                   [string length],
+                                                                   buffer,
+                                                                   bytes.length,
                                                                    PJSIP_PARSE_URI_AS_NAMEADDR);
     if (nameAddr == NULL) {
         pj_pool_release(pool);

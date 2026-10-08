@@ -52,25 +52,33 @@ static void LogCallMedia(const pjsua_call_info *callInfo) {
 static void CallMediaStateChanged(pjsua_call_id identifier, NSString *dialogIdentifier) {
     AKSIPUserAgent *userAgent = [AKSIPUserAgent sharedUserAgent];
     if (!userAgent.isStarted) return;
-    AKSIPCall *call = [userAgent callWithIdentifier:identifier];
+    AKSIPCall *call = [userAgent callWithIdentifier:identifier dialogIdentifier:dialogIdentifier];
     if (call == nil || ![call.dialogIdentifier isEqualToString:dialogIdentifier] ||
         call.state == kAKSIPCallDisconnectedState) {
         return;
     }
     // Main may have been blocked in a prior hardware open. Re-read current
     // native state; do not replay stale ports/hold transitions or reused IDs.
-    pjsua_call_info info;
-    if (pjsua_call_get_info(identifier, &info) != PJ_SUCCESS ||
-        info.state == PJSIP_INV_STATE_DISCONNECTED || info.media_cnt == 0 ||
-        info.media[0].type != PJMEDIA_TYPE_AUDIO ||
-        ![[NSString stringWithPJString:info.call_id] isEqualToString:dialogIdentifier]) {
-        return;
-    }
-    pjsua_call_media_status status = info.media[0].status;
-    pjsua_conf_port_id port = info.media[0].stream.aud.conf_slot;
-    ConnectCallToSoundDevice(call, status, port);
-    [userAgent stopRingbackForCall:call];
-    PostMediaStateChangeNotification(call, status);
+    __block pjsua_call_media_status status = PJSUA_CALL_MEDIA_NONE;
+    __block pjsua_conf_port_id port = PJSUA_INVALID_ID;
+    [userAgent performSIPOperation:^pj_status_t {
+        pjsua_call_info info;
+        if (pjsua_call_get_info(identifier, &info) != PJ_SUCCESS ||
+            info.state == PJSIP_INV_STATE_DISCONNECTED || info.media_cnt == 0 ||
+            info.media[0].type != PJMEDIA_TYPE_AUDIO ||
+            ![[NSString stringWithPJString:info.call_id] isEqualToString:dialogIdentifier]) return PJ_ECANCELLED;
+        status = info.media[0].status;
+        port = info.media[0].stream.aud.conf_slot;
+        return PJ_SUCCESS;
+    } completion:^(pj_status_t result) {
+        if (result != PJ_SUCCESS || call != [userAgent callWithIdentifier:identifier dialogIdentifier:dialogIdentifier] ||
+            call.state == kAKSIPCallDisconnectedState) return;
+        call.localHold = status == PJSUA_CALL_MEDIA_LOCAL_HOLD;
+        call.remoteHold = status == PJSUA_CALL_MEDIA_REMOTE_HOLD;
+        ConnectCallToSoundDevice(call, status, port);
+        [userAgent stopRingbackForCall:call];
+        PostMediaStateChangeNotification(call, status);
+    }];
 }
 
 static const char *MediaStatusTextWithStatus(pjsua_call_media_status status) {

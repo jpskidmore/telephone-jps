@@ -19,7 +19,6 @@
 #import "ActiveCallViewController.h"
 #import "AKLiquidGlass.h"
 
-#import "AKNSWindow+Resizing.h"
 #import "AKSIPCall.h"
 
 #import "CallController.h"
@@ -43,10 +42,17 @@
 @property(nonatomic) NSTextField *durationField;
 @property(nonatomic) NSPopover *keypadPopover;
 @property(nonatomic) NSTextField *keypadDigitsField;
+@property(nonatomic) BOOL updatesDurationStatus;
 
 @end
 
 @implementation ActiveCallViewController
+
+- (void)setRepresentedObject:(id)representedObject {
+    [super setRepresentedObject:representedObject];
+    [self.enteredDTMF setString:@""];
+    self.keypadDigitsField.stringValue = @"";
+}
 
 - (instancetype)initWithNibName:(NSString *)nibName callController:(CallController *)callController {
     self = [super initWithNibName:nibName bundle:nil];
@@ -220,16 +226,13 @@
 }
 
 - (IBAction)showCallTransferSheet:(id)sender {
-    if (![[self callController] isCallOnHold]) {
-        [[self callController] toggleCallHold];
-    }
-    
     CallTransferController *callTransferController = [[self callController] callTransferController];
-
+    [callTransferController beginTransferSetup];
     [[[self callController] window] beginSheet:[callTransferController window] completionHandler:nil];
 }
 
 - (void)startCallTimer {
+    self.updatesDurationStatus = YES;
     [self refreshVisibleCallControls];
     if ([self callTimer] != nil && [[self callTimer] isValid]) {
         return;
@@ -244,6 +247,12 @@
 }
 
 - (void)stopCallTimer {
+    self.updatesDurationStatus = NO;
+    // Connected duration continues during hold/mute and intermediate feedback.
+    if (self.callController.isCallActive && self.callController.call.state == kAKSIPCallConfirmedState) {
+        [self refreshVisibleCallControls];
+        return;
+    }
     if ([self callTimer] != nil) {
         [[self callTimer] invalidate];
         [self setCallTimer:nil];
@@ -255,6 +264,9 @@
 
 - (void)callTimerTick:(NSTimer *)theTimer {
     [self refreshVisibleCallControls];
+    [self.callController willChangeValueForKey:@"presentationDuration"];
+    [self.callController didChangeValueForKey:@"presentationDuration"];
+    if (!self.updatesDurationStatus) return;
     NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
     NSInteger seconds = (NSInteger)(now - ([[self callController] callStartTime]));
     
@@ -353,26 +365,11 @@
         }
     }
     
-    if (isDTMFValid) {
-        if ([[self enteredDTMF] length] == 0) {
-            [[self enteredDTMF] appendString:aString];
-            if (![self.nibName isEqualToString:@"ActiveCallView"]) {
-                [[[self view] window] setTitle:[[self callController] displayedName]];
-            }
-            
-            if ([[self displayedNameField] lineBreakMode]!= NSLineBreakByTruncatingHead) {
-                [[self displayedNameField] setLineBreakMode:NSLineBreakByTruncatingHead];
-                [[[[self callController] endedCallViewController] displayedNameField] setSelectable:YES];
-            }
-            
-            [[self callController] setDisplayedName:aString];
-            
-        } else {
-            [[self enteredDTMF] appendString:aString];
-            [[self callController] setDisplayedName:[self enteredDTMF]];
-        }
-        
-        [[[self callController] call] sendDTMFDigits:aString];
+    if (isDTMFValid && aString.length > 0 && self.callController.call.state == kAKSIPCallConfirmedState) {
+        [self.enteredDTMF appendString:aString];
+        [self.callController.call sendDTMFDigits:aString];
+        // Identity always remains in Caller; keypad has a separate named echo.
+        [self prepareKeypad];
         self.keypadDigitsField.stringValue = self.enteredDTMF;
     }
 }

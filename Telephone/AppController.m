@@ -47,12 +47,17 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, readonly) AccountSetupController *accountSetupController;
 @property(nonatomic) BOOL shouldRegisterAllAccounts;
 @property(nonatomic) BOOL shouldRestartUserAgentASAP;
+@property(nonatomic) BOOL pendingNetworkRestart;
 @property(nonatomic, getter=isTerminating) BOOL terminating;
 @property(nonatomic) BOOL waitingForRecordingFinalizations;
+@property(nonatomic) BOOL terminationReplySent;
 @property(nonatomic) BOOL shouldPresentUserAgentLaunchError;
 @property(nonatomic) BOOL hasPresentedAudioFailure;
 @property(nonatomic, nullable) NSAlert *audioFailureAlert;
 @property(nonatomic, nullable) NSMenuItem *retryAudioMenuItem;
+@property(nonatomic, nullable) NSMenuItem *recordingRecoveryMenuItem;
+@property(nonatomic) BOOL presentingRecordingRecovery;
+@property(nonatomic) BOOL presentingHistoryError;
 @property(nonatomic) AccountsMenuItems *accountsMenuItems;
 @property(nonatomic, weak) IBOutlet NSMenu *windowMenu;
 @property(nonatomic, weak) IBOutlet NSMenuItem *preferencesMenuItem;
@@ -69,7 +74,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, getter=isFinishedLaunching) BOOL finishedLaunching;
 @property(nonatomic, copy) NSString *destinationToCall;
 @property(nonatomic, getter=isUserSessionActive) BOOL userSessionActive;
-@property(nonatomic, readonly) NameServers *nameServers;
+@property(nonatomic, readonly, nullable) NameServers *nameServers;
 
 - (void)finishTerminationAfterRecordings;
 
@@ -113,6 +118,10 @@ NS_ASSUME_NONNULL_END
     _accountControllers = _compositionRoot.accountControllers;
     _nameServers = _compositionRoot.nameServers;
     NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
+    [notificationCenter addObserver:self selector:@selector(recordingExportDidFail:)
+                               name:AKRecordingExportDidFailNotification object:nil];
+    [notificationCenter addObserver:self selector:@selector(callHistoryPersistenceDidFail:)
+                               name:@"AKCallHistoryPersistenceDidFailNotification" object:nil];
 
     if (_userAgent != nil) {
         [notificationCenter addObserver:self
@@ -191,6 +200,9 @@ NS_ASSUME_NONNULL_END
     if ([[self userAgent] isStarted]) {
         [self setShouldRegisterAllAccounts:YES];
         [self stopUserAgent];
+    } else if (self.userAgent.state == AKSIPUserAgentStateStarting || self.userAgent.state == AKSIPUserAgentStateStopping) {
+        self.pendingNetworkRestart = YES;
+        self.shouldRegisterAllAccounts = YES;
     }
 }
 
@@ -232,7 +244,7 @@ NS_ASSUME_NONNULL_END
     self.retryAudioMenuItem.title = self.userAgent.hasAudioFailure
         ? NSLocalizedString(@"Audio unavailable: Retry Audio", @"Persistent audio failure and recovery menu item.")
         : NSLocalizedString(@"Retry Audio", @"Explicit audio recovery action.");
-    self.retryAudioMenuItem.enabled = self.userAgent.hasAudioFailure && self.userAgent.isStarted && !self.isTerminating;
+    self.retryAudioMenuItem.enabled = self.userAgent.hasAudioFailure && self.userAgent.isStarted && !self.isTerminating && !self.userAgent.audioCommandPending;
 }
 
 - (IBAction)retryAudio:(id)sender {
@@ -247,8 +259,9 @@ NS_ASSUME_NONNULL_END
 
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
     if (menuItem.action == @selector(retryAudio:)) {
-        return self.userAgent.hasAudioFailure && self.userAgent.isStarted && !self.isTerminating;
+        return self.userAgent.hasAudioFailure && self.userAgent.isStarted && !self.isTerminating && !self.userAgent.audioCommandPending;
     }
+    if (menuItem.action == @selector(recoverRecordings:)) return [self pendingRecordingRecoveryJobs].count > 0 && !self.isTerminating;
     return YES;
 }
 
@@ -303,12 +316,7 @@ NS_ASSUME_NONNULL_END
 }
 
 - (IBAction)addAccountOnFirstLaunch:(id)sender {
-    [[self accountSetupController] addAccount:sender];
-    
-    if ([[[[self accountSetupController] fullNameField] stringValue] length] > 0 &&
-        [[[[self accountSetupController] domainField] stringValue] length] > 0 &&
-        [[[[self accountSetupController] usernameField] stringValue] length] > 0 &&
-        [[[[self accountSetupController] passwordField] stringValue] length] > 0) {
+    if ([[self accountSetupController] addAccountAndSave:sender]) {
         // Re-enable Preferences.
         [[self preferencesMenuItem] setAction:@selector(showPreferencePanel:)];
         
@@ -317,6 +325,12 @@ NS_ASSUME_NONNULL_END
         [[[self accountSetupController] defaultButton] setAction:@selector(addAccount:)];
         [[[self accountSetupController] otherButton] setTarget:[self accountSetupController]];
         [[[self accountSetupController] otherButton] setAction:@selector(closeSheet:)];
+        if (!self.isFinishedLaunching) {
+            self.finishedLaunching = YES;
+            [self makeCallAfterLaunchIfNeeded];
+            [self.compositionRoot.orphanLogFileRemoval performSelector:@selector(execute) withObject:nil afterDelay:0];
+            [self showAccountPreferencesIfNeeded];
+        }
     }
 }
 
@@ -421,7 +435,9 @@ NS_ASSUME_NONNULL_END
         AccountController *controller = self.accountControllers[index];
         
         // Close all call windows hanging up all calls.
-        [[controller callControllers] makeObjectsPerformSelector:@selector(close)];
+        for (CallController *callController in controller.callControllers.copy) {
+            [callController.window performClose:nil];
+        }
         
         // Remove account from the user agent.
         [controller removeAccountFromUserAgent];
@@ -455,8 +471,10 @@ NS_ASSUME_NONNULL_END
     [self.accountsMenuItems update];
 }
 
+- (NSUserDefaults *)networkSettingsDefaults { return NSUserDefaults.standardUserDefaults; }
+
 - (void)preferencesControllerDidChangeNetworkSettings:(NSNotification *)notification {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [self networkSettingsDefaults];
     
     [[self userAgent] setTransportPort:[defaults integerForKey:UserDefaultsKeys.transportPort]];
     [[self userAgent] setSTUNServerHost:[defaults stringForKey:UserDefaultsKeys.stunServerHost]];
@@ -472,7 +490,7 @@ NS_ASSUME_NONNULL_END
     }
     
     // Restart SIP user agent.
-    if ([[self userAgent] isStarted]) {
+    if (self.userAgent.state != AKSIPUserAgentStateStopped && !self.isTerminating) {
         [self setShouldPresentUserAgentLaunchError:YES];
         [self restartUserAgent];
     }
@@ -509,6 +527,12 @@ NS_ASSUME_NONNULL_END
         }
         return;
     }
+    if (self.userAgent.isStarted && self.pendingNetworkRestart) {
+        self.pendingNetworkRestart = NO;
+        self.shouldRegisterAllAccounts = YES;
+        [self stopUserAgent];
+        return;
+    }
     if ([[self userAgent] isStarted]) {
         if ([self shouldRegisterAllAccounts]) {
             [self.accountControllers registerAllAccounts];
@@ -522,6 +546,7 @@ NS_ASSUME_NONNULL_END
               "Please check your network connection and STUN server settings.");
         
         [self setShouldRegisterAllAccounts:NO];
+        self.pendingNetworkRestart = NO;
         
         // Set |shouldPresentUserAgentLaunchError| if needed and if it wasn't set
         // somewhere else.
@@ -559,6 +584,7 @@ NS_ASSUME_NONNULL_END
         [self finishTerminationAfterRecordings];
         
     } else if ([self shouldRegisterAllAccounts]) {
+        self.pendingNetworkRestart = NO;
         if (self.accountControllers.enabled.count > 0) {
             [[self userAgentStart] execute];
         } else {
@@ -614,6 +640,13 @@ NS_ASSUME_NONNULL_END
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     NSWindow.allowsAutomaticWindowTabbing = NO;
     [self installAudioRecoveryMenuItem];
+    NSMenu *applicationMenu = self.preferencesMenuItem.menu;
+    self.recordingRecoveryMenuItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Recover Recordings…", @"Recording recovery menu.") action:@selector(recoverRecordings:) keyEquivalent:@""];
+    self.recordingRecoveryMenuItem.target = self;
+    [applicationMenu insertItem:self.recordingRecoveryMenuItem atIndex:[applicationMenu indexOfItem:self.preferencesMenuItem] + 1];
+    if ([self pendingRecordingRecoveryJobs].count > 0) {
+        dispatch_async(dispatch_get_main_queue(), ^{ [self recoverRecordings:nil]; });
+    }
     [self.compositionRoot.defaultAppSettings registerDefaults];
     [self.compositionRoot.settingsMigration execute];
     self.helpMenuActionRedirect.target = self.compositionRoot.helpMenuActionTarget;
@@ -712,6 +745,7 @@ NS_ASSUME_NONNULL_END
         }
     }
     
+    self.terminationReplySent = NO;
     [self setTerminating:YES];
     if ([[self userAgent] isStarted]) {
         [self stopUserAgent];
@@ -725,20 +759,126 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)finishTerminationAfterRecordings {
-    if (self.waitingForRecordingFinalizations) {
+    if (self.waitingForRecordingFinalizations || self.terminationReplySent || !self.isTerminating) {
         return;
     }
     self.waitingForRecordingFinalizations = YES;
-    AKWaitForPendingRecordingFinalizations(^{
-        self.waitingForRecordingFinalizations = NO;
-        // Defensive recheck: startup results or stop notifications may have
-        // arrived while the conversion queue was draining.
-        if (self.userAgent.state == AKSIPUserAgentStateStopped) {
-            [NSApp replyToApplicationShouldTerminate:YES];
-        } else if (self.userAgent.isStarted) {
-            [self stopUserAgent];
+    [self waitForRecordingFinalizations:^{
+        [self finishPendingHistoryWrites:^{
+            [self retryFailedHistoryWrites:^(BOOL succeeded) {
+                self.waitingForRecordingFinalizations = NO;
+                if (!succeeded) {
+                    [self cancelTerminationAfterPersistenceFailure];
+                    [self callHistoryPersistenceDidFail:nil];
+                    return;
+                }
+                if (self.userAgent.state == AKSIPUserAgentStateStopped) {
+                    NSArray *jobs = [self pendingRecordingRecoveryJobs];
+                    if (jobs.count > 0 && ![self confirmQuitWithRecoveryJobs:jobs]) {
+                        [self cancelTerminationAfterPersistenceFailure];
+                        return;
+                    }
+                    self.terminationReplySent = YES;
+                    [self replyToTermination:YES];
+                } else if (self.userAgent.isStarted) {
+                    [self stopUserAgent];
+                }
+            }];
+        }];
+    }];
+}
+
+- (NSArray<NSDictionary *> *)pendingRecordingRecoveryJobs { return AKPendingRecordingRecoveryJobs(); }
+- (void)waitForRecordingFinalizations:(dispatch_block_t)completion { AKWaitForPendingRecordingFinalizations(completion); }
+- (void)finishPendingHistoryWrites:(dispatch_block_t)completion { [HistoryPersistenceCoordinator finishPendingWritesWithCompletion:completion]; }
+- (void)retryFailedHistoryWrites:(void (^)(BOOL))completion { [HistoryPersistenceCoordinator retryFailedWritesWithCompletion:completion]; }
+- (void)replyToTermination:(BOOL)shouldTerminate { [NSApp replyToApplicationShouldTerminate:shouldTerminate]; }
+
+- (void)cancelTerminationAfterPersistenceFailure {
+    self.terminating = NO;
+    self.terminationReplySent = NO;
+    [HistoryPersistenceCoordinator resumeAcceptingWrites];
+    [self replyToTermination:NO];
+}
+
+- (BOOL)confirmQuitWithRecoveryJobs:(NSArray *)jobs {
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Some recordings need recovery", @"Recording quit recovery warning.");
+    alert.informativeText = NSLocalizedString(@"The original audio is safely retained. You can recover it from the Telephone menu after reopening the app.", @"Durable recording recovery at quit.");
+    [alert addButtonWithTitle:NSLocalizedString(@"Keep Files and Quit", @"Quit with durable recovery files.")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Stay Open", @"Keep application open for recovery.")];
+    return [alert runModal] == NSAlertFirstButtonReturn;
+}
+
+- (void)callHistoryPersistenceDidFail:(NSNotification *)notification {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{ [self callHistoryPersistenceDidFail:notification]; });
+        return;
+    }
+    if (self.isTerminating || self.presentingHistoryError) return;
+    self.presentingHistoryError = YES;
+    NSAlert *alert = [[NSAlert alloc] init];
+    NSString *operation = notification.userInfo[@"operation"];
+    if ([operation isEqualToString:@"clear"]) {
+        alert.messageText = NSLocalizedString(@"Call history could not be cleared", @"History clear failure.");
+    } else if ([operation isEqualToString:@"read"]) {
+        alert.messageText = NSLocalizedString(@"Call history could not be loaded", @"History read failure.");
+    } else {
+        alert.messageText = NSLocalizedString(@"Call history could not be saved", @"History persistence failure.");
+    }
+    alert.informativeText = NSLocalizedString(@"Your existing history has been kept. Check the available disk space and folder access, then retry.", @"History failure recovery guidance.");
+    [alert addButtonWithTitle:NSLocalizedString(@"Retry", @"Retry failed history writes.")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Later", @"Retain a retryable history write.")];
+    if ([alert runModal] == NSAlertFirstButtonReturn) {
+        [self retryFailedHistoryWrites:^(BOOL succeeded) {
+            self.presentingHistoryError = NO;
+            if (!succeeded) [self callHistoryPersistenceDidFail:nil];
+        }];
+    } else self.presentingHistoryError = NO;
+}
+
+- (void)recordingExportDidFail:(NSNotification *)notification {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (!self.isTerminating) [self recoverRecordings:nil];
+    });
+}
+
+- (IBAction)recoverRecordings:(id)sender {
+    if (self.isTerminating || self.presentingRecordingRecovery) return;
+    NSDictionary *job = [self pendingRecordingRecoveryJobs].firstObject;
+    if (!job) return;
+    self.presentingRecordingRecovery = YES;
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Recording could not be saved", @"Recording export failure.");
+    alert.informativeText = NSLocalizedString(@"The original audio has been kept for recovery. Retry saving it or choose a different destination.", @"Recording recovery options.");
+    [alert addButtonWithTitle:NSLocalizedString(@"Retry", @"Retry recording export.")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Save Elsewhere…", @"Choose a recording recovery destination.")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Show Recovery Files", @"Reveal retained original recordings.")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Later", @"Keep recording recovery for later.")];
+    NSInteger choice = [alert runModal];
+    if (choice == NSAlertThirdButtonReturn) {
+        [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[job[@"directoryURL"]]];
+        self.presentingRecordingRecovery = NO;
+        return;
+    }
+    if (choice != NSAlertFirstButtonReturn && choice != NSAlertSecondButtonReturn) {
+        self.presentingRecordingRecovery = NO;
+        return;
+    }
+    NSURL *destination = job[@"destinationURL"];
+    if (choice == NSAlertSecondButtonReturn || [job[@"needsNewDestination"] boolValue] || [NSFileManager.defaultManager fileExistsAtPath:destination.path]) {
+        NSSavePanel *panel = NSSavePanel.savePanel;
+        panel.title = NSLocalizedString(@"Recover Recording", @"Recording recovery file panel.");
+        panel.nameFieldStringValue = destination.lastPathComponent ?: @"Recovered Recording.wav";
+        if ([panel runModal] != NSModalResponseOK) {
+            self.presentingRecordingRecovery = NO;
+            return;
         }
-        // Starting/stopping notifications resume termination once stopped.
+        destination = panel.URL;
+    }
+    AKRetryRecordingRecoveryJob(job, destination, ^(BOOL succeeded) {
+        self.presentingRecordingRecovery = NO;
+        if (!succeeded || [self pendingRecordingRecoveryJobs].count > 0) [self recoverRecordings:nil];
     });
 }
 

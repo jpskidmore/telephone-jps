@@ -27,10 +27,25 @@ NSString * const AKAccountSetupControllerDidAddAccountNotification = @"AKAccount
 
 @implementation AccountSetupController
 
+- (NSUserDefaults *)accountDefaults { return NSUserDefaults.standardUserDefaults; }
+
+- (BOOL)savePassword:(NSString *)password service:(NSString *)service account:(NSString *)account error:(NSError **)error {
+    return [AKKeychain addItemWithService:service account:account password:password error:error];
+}
+
+
 - (instancetype)init {
     self = [super initWithWindowNibName:@"AccountSetup"];
     
     return self;
+}
+
+- (void)windowDidLoad {
+    [super windowDidLoad];
+    self.fullNameField.cell.accessibilityLabel = NSLocalizedString(@"Full name", @"Accessible account field purpose.");
+    self.domainField.cell.accessibilityLabel = NSLocalizedString(@"Domain", @"Accessible account field purpose.");
+    self.usernameField.cell.accessibilityLabel = NSLocalizedString(@"Username", @"Accessible account field purpose.");
+    self.passwordField.cell.accessibilityLabel = NSLocalizedString(@"Password", @"Accessible account field purpose.");
 }
 
 - (IBAction)closeSheet:(id)sender {
@@ -42,6 +57,19 @@ NSString * const AKAccountSetupControllerDidAddAccountNotification = @"AKAccount
 }
 
 - (IBAction)addAccount:(id)sender {
+    [self addAccountAndSave:sender];
+}
+
+- (void)presentAccountSaveError:(NSError *)error {
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Password could not be saved", @"Account credential save error.");
+    alert.informativeText = error.localizedDescription;
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", @"Dismiss error.")];
+    [alert beginSheetModalForWindow:self.window completionHandler:nil];
+    [self.window makeFirstResponder:self.passwordField];
+}
+
+- (BOOL)addAccountAndSave:(id)sender {
     // Reset hidden states of the invalid data indicators.
     [[self fullNameInvalidDataView] setHidden:YES];
     [[self domainInvalidDataView] setHidden:YES];
@@ -76,7 +104,11 @@ NSString * const AKAccountSetupControllerDidAddAccountNotification = @"AKAccount
     }
     
     if (invalidFormData) {
-        return;
+        NSTextField *invalidField = fullName.length == 0 ? self.fullNameField :
+            domain.length == 0 ? self.domainField : username.length == 0 ? self.usernameField : self.passwordField;
+        invalidField.accessibilityHelp = NSLocalizedString(@"Enter a value for this field.", @"Required account field.");
+        [self.window makeFirstResponder:invalidField];
+        return NO;
     }
     
     NSMutableDictionary *accountDict = [NSMutableDictionary dictionary];
@@ -98,20 +130,24 @@ NSString * const AKAccountSetupControllerDidAddAccountNotification = @"AKAccount
     accountDict[AKSIPAccountKeys.updateViaHeader] = @YES;
     accountDict[AKSIPAccountKeys.updateSDP] = @YES;
     
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSError *saveError;
+    if (![self savePassword:self.passwordField.stringValue service:[NSString stringWithFormat:@"SIP: %@", domain]
+                       account:username error:&saveError]) {
+        [self presentAccountSaveError:saveError];
+        return NO;
+    }
+
+    NSUserDefaults *defaults = [self accountDefaults];
     NSMutableArray *savedAccounts = [NSMutableArray arrayWithArray:[defaults arrayForKey:UserDefaultsKeys.accounts]];
     [savedAccounts addObject:accountDict];
     [defaults setObject:savedAccounts forKey:UserDefaultsKeys.accounts];
-    
-    [AKKeychain addItemWithService:[NSString stringWithFormat:@"SIP: %@", domain]
-                           account:username
-                          password:[[self passwordField] stringValue]];
     
     [self closeSheet:sender];
     
     [[NSNotificationCenter defaultCenter] postNotificationName:AKAccountSetupControllerDidAddAccountNotification
                                                         object:self
                                                       userInfo:accountDict];
+    return YES;
 }
 
 @end

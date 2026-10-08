@@ -37,10 +37,10 @@ public struct SystemDefaultingSoundIO {
 
     public enum Item {
         case systemDefault
-        case device(name: String)
+        case device(name: String, uniqueIdentifier: String? = nil)
 
         init(_ device: SystemAudioDevice) {
-            self = device.isNil ? .systemDefault : .device(name: device.name)
+            self = device.isNil ? .systemDefault : .device(name: device.name, uniqueIdentifier: device.uniqueIdentifier.isEmpty ? nil : device.uniqueIdentifier)
         }
     }
 }

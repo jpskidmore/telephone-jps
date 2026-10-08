@@ -45,4 +45,16 @@ final class RingtoneOutputUpdateUseCaseTests: XCTestCase {
         XCTAssertFalse(playback.didCallStop)
         XCTAssertFalse(playback.didCallStart)
     }
+    func testChangingOutputRestartsWhileRingingEvenWhenNormalStopIsForbidden() throws {
+        let delegate = ConditionalRingtonePlaybackUseCaseTestDelegate()
+        delegate.forbidStoppingPlayback()
+        let conditional = ConditionalRingtonePlaybackUseCase(origin: playback, delegate: delegate)
+        try conditional.start()
+        conditional.stop()
+        XCTAssertFalse(playback.didCallStop)
+        try RingtoneOutputUpdateUseCase(playback: conditional).execute()
+        XCTAssertTrue(playback.didCallStop)
+        XCTAssertTrue(playback.isPlaying)
+    }
+
 }

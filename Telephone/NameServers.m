@@ -26,6 +26,7 @@ static void NameServersDidChange(SCDynamicStoreRef store, CFArrayRef keys, void 
 @interface NameServers ()
 
 @property(nonatomic, readonly) SCDynamicStoreRef store;
+@property(nonatomic, readonly) CFRunLoopSourceRef source;
 @property(nonatomic, readonly) id <NameServersChangeEventTarget> target;
 
 @end
@@ -40,23 +41,31 @@ static void NameServersDidChange(SCDynamicStoreRef store, CFArrayRef keys, void 
                                       &NameServersDidChange,
                                       &context);
         _target = target;
-        SCDynamicStoreSetNotificationKeys(_store, (__bridge CFArrayRef)@[kDynamicStoreDNSSettings], NULL);
-        CFRunLoopSourceRef source = SCDynamicStoreCreateRunLoopSource(kCFAllocatorDefault, _store, 0);
-        CFRunLoopAddSource(CFRunLoopGetMain(), source, kCFRunLoopDefaultMode);
-        CFRelease(source);
+        if (!_store) return nil;
+        if (!SCDynamicStoreSetNotificationKeys(_store, (__bridge CFArrayRef)@[kDynamicStoreDNSSettings], NULL)) return nil;
+        _source = SCDynamicStoreCreateRunLoopSource(kCFAllocatorDefault, _store, 0);
+        if (!_source) return nil;
+        CFRunLoopAddSource(CFRunLoopGetMain(), _source, kCFRunLoopDefaultMode);
     }
     return self;
 }
 
 - (void)dealloc {
-    CFRelease(_store);
+    if (_source) {
+        CFRunLoopRemoveSource(CFRunLoopGetMain(), _source, kCFRunLoopDefaultMode);
+        CFRelease(_source);
+    }
+    if (_store) CFRelease(_store);
 }
 
 - (NSArray<NSString *> *)all {
+    if (!self.store) return @[];
     NSArray *result;
     CFPropertyListRef settings = SCDynamicStoreCopyValue(self.store, (__bridge CFStringRef)kDynamicStoreDNSSettings);
     if (settings) {
-        result = ((__bridge NSDictionary *)settings)[@"ServerAddresses"];
+        id addresses = [(__bridge NSDictionary *)settings isKindOfClass:NSDictionary.class]
+            ? ((__bridge NSDictionary *)settings)[@"ServerAddresses"] : nil;
+        result = [addresses isKindOfClass:NSArray.class] ? addresses : @[];
         CFRelease(settings);
     } else {
         result = @[];

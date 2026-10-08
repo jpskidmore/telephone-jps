@@ -174,4 +174,20 @@ final class URITests: XCTestCase {
     func testCanCreateWithStringWhenSchemeIsNotLowercased() {
         XCTAssertEqual(URI("SiP:user@host"), URI(user: "user", host: "host", displayName: ""))
     }
+    func testIPv6PortAndTransportSurviveStringRoundTrip() {
+        let text = "sip:alice@[2001:db8::1]:5070;transport=tcp"
+        let uri = URI(text)
+        XCTAssertEqual(uri?.host, "2001:db8::1")
+        XCTAssertEqual(uri?.port, "5070")
+        XCTAssertEqual(uri?.transport, .tcp)
+        XCTAssertEqual(uri?.stringValue, text)
+        XCTAssertEqual(URI(uri!.stringValue), uri)
+    }
+
+    func testIPv6WithoutPortAndDNSPortRemainStructured() {
+        XCTAssertEqual(URI("sip:alice@[2001:db8::1]")?.host, "2001:db8::1")
+        XCTAssertEqual(URI("sip:alice@[2001:db8::1]")?.stringValue, "sip:alice@[2001:db8::1]")
+        XCTAssertEqual(URI("sip:alice@example.invalid:5070")?.port, "5070")
+    }
+
 }

@@ -75,10 +75,14 @@ public extension URI {
             let match = regex.firstMatch(in: string, range: NSRange(string.startIndex..<string.endIndex, in: string)) {
             let host = substring(for: match.range(at: 4), in: string)
             if substring(for: match.range(at: 2), in: string).lowercased() == "sip" {
+                let parameters = host.split(separator: ";").dropFirst()
+                let transport: Transport = parameters.contains(where: { $0.lowercased() == "transport=tcp" }) ? .tcp
+                    : parameters.contains(where: { $0.lowercased() == "transport=tls" }) ? .tls : .udp
                 self.init(
                     user: substring(for: match.range(at: 3), in: string),
-                    host: host,
-                    displayName: substring(for: match.range(at: 1), in: string)
+                    address: ServiceAddress(host),
+                    displayName: substring(for: match.range(at: 1), in: string),
+                    transport: transport
                 )
             } else {
                 self.init(user: host, host: "", displayName: substring(for: match.range(at: 1), in: string))

@@ -60,9 +60,11 @@ extern NSString * const kEmailSIPLabel;
               storeWindowPresenter:(StoreWindowPresenter *)storeWindowPresenter;
 
 - (void)registerAccount;
+- (void)resumeRegistrationIfDesired;
 - (void)unregisterAccount;
 
 - (void)removeAccountFromUserAgent;
+- (void)removeAccountFromUserAgentWithCompletion:(void (^)(BOOL removed))completion;
 
 // Makes a call to a given destination URI with a given phone label.
 // When |callTransferController| is not nil, no new window will be created, existing |callTransferController| will be

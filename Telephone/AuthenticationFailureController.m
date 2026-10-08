@@ -29,7 +29,16 @@
 NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNotification
     = @"AKAuthenticationFailureControllerDidChangeUsernameAndPassword";
 
+@interface AuthenticationFailureController ()
+@property(nonatomic) BOOL retryPending;
+@end
+
 @implementation AuthenticationFailureController
+
+- (BOOL)savePassword:(NSString *)password service:(NSString *)service account:(NSString *)account error:(NSError **)error {
+    return [AKKeychain addItemWithService:service account:account password:password error:error];
+}
+
 
 - (instancetype)initWithAccountController:(AccountController *)accountController userAgent:(AKSIPUserAgent *)userAgent {
     self = [super initWithWindowNibName:@"AuthenticationFailure"];
@@ -54,61 +63,78 @@ NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNo
     [[self passwordField] setStringValue:password];
 }
 
+- (void)windowDidLoad {
+    [super windowDidLoad];
+    self.usernameField.cell.accessibilityLabel = NSLocalizedString(@"Username", @"Accessible account field purpose.");
+    self.passwordField.cell.accessibilityLabel = NSLocalizedString(@"Password", @"Accessible account field purpose.");
+}
+
 - (IBAction)closeSheet:(id)sender {
     [self.window.sheetParent endSheet:self.window];
 }
 
+- (void)presentCredentialError:(NSString *)message field:(NSTextField *)field {
+    self.informativeText.stringValue = message;
+    field.accessibilityHelp = message;
+    [self.window makeFirstResponder:field];
+    NSAccessibilityPostNotification(field, NSAccessibilityValueChangedNotification);
+}
+
 - (IBAction)changeUsernameAndPassword:(id)sender {
-    [self closeSheet:sender];
+    if (self.retryPending) return;
     
     NSCharacterSet *spacesSet = [NSCharacterSet whitespaceAndNewlineCharacterSet];
     NSString *username = [[[self usernameField] stringValue] stringByTrimmingCharactersInSet:spacesSet];
     
-    if ([username length] > 0) {
-        [[self accountController] removeAccountFromUserAgent];
-        [[[self accountController] account] updateUsername:username];
-        
-        [[self accountController] showConnectingState];
-        
-        // Add account to the user agent.
-        [[self userAgent] addAccount:[[self accountController] account]
-                        withPassword:[[self passwordField] stringValue]];
-        
-        // Error connecting to registrar.
-        if (![[self accountController] isAccountRegistered] &&
-            [[[self accountController] account] registrationExpireTime] == kAKSIPAccountRegistrationExpireTimeNotSpecified) {
-            
-            [[self accountController] showUnavailableState];
-            
-            NSString *statusText = LocalizedStringForSIPResponseCode([[[self accountController] account] registrationStatus])
-                ?: [[[self accountController] account] registrationStatusText];
-            
-            NSString *error;
-            if (statusText == nil) {
-                error = [NSString stringWithFormat:
-                         NSLocalizedString(@"Error %ld", @"Error #."),
-                         [[[self accountController] account] registrationStatus]];
-                error = [error stringByAppendingString:@"."];
-            } else {
-                error = [NSString stringWithFormat:
-                         NSLocalizedString(@"The error was: “%ld %@”.", @"Error description."),
-                         [[[self accountController] account] registrationStatus], statusText];
-            }
-            
-            [[self accountController] showRegistrarConnectionErrorSheetWithError:error];
-        }
-        
-        if ([[self mustSaveCheckBox] state] == NSControlStateValueOn) {
-            NSString *service = [NSString stringWithFormat:@"SIP: %@", [[[self accountController] account] registrar]];
-            [AKKeychain addItemWithService:service account:username password:[[self passwordField] stringValue]];
-        }
-        
-        [[NSNotificationCenter defaultCenter]
-         postNotificationName:AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNotification
-                       object:self];
+    if (username.length == 0) {
+        [self presentCredentialError:NSLocalizedString(@"Enter your username before trying again.", @"Authentication username required.")
+                              field:self.usernameField];
+        return;
     }
-    
-    [[self passwordField] setStringValue:@""];
+
+    if (self.mustSaveCheckBox.state == NSControlStateValueOn) {
+        NSError *saveError;
+        NSString *service = [NSString stringWithFormat:@"SIP: %@", self.accountController.account.registrar];
+        if (![self savePassword:self.passwordField.stringValue service:service account:username error:&saveError]) {
+            [self presentCredentialError:[NSString stringWithFormat:NSLocalizedString(@"Password could not be saved. %@", @"Credential save failure."), saveError.localizedDescription]
+                                  field:self.passwordField];
+            return;
+        }
+    }
+    AccountController *controller = self.accountController;
+    AKSIPAccount *account = controller.account;
+    NSString *password = self.passwordField.stringValue;
+    self.retryPending = YES;
+    [controller removeAccountFromUserAgentWithCompletion:^(BOOL removed) {
+        if (!controller.isEnabled || controller.account != account || !account.desiredRegistered) {
+            self.retryPending = NO;
+            return;
+        }
+        if (!removed) {
+            self.retryPending = NO;
+            [self presentCredentialError:NSLocalizedString(@"Could not reset this account. Try again.", @"Authentication account removal failure.") field:self.usernameField];
+            return;
+        }
+        [account updateUsername:username];
+        [controller showConnectingState];
+        [self.userAgent addAccount:account withPassword:password completion:^(BOOL added) {
+            self.retryPending = NO;
+            if (!controller.isEnabled || controller.account != account || !account.desiredRegistered) {
+                if (added) [self.userAgent removeAccount:account completion:^(BOOL removedAgain) {}];
+                return;
+            }
+            if (!added) {
+                [controller showUnavailableState];
+                [self presentCredentialError:NSLocalizedString(@"Could not reconnect this account. Try again.", @"Authentication account add failure.") field:self.usernameField];
+                return;
+            }
+            // Registration success/failure arrives through the account delegate;
+            // a cached pre-REGISTER snapshot cannot decide the retry result.
+            [self closeSheet:sender];
+            self.passwordField.stringValue = @"";
+            [[NSNotificationCenter defaultCenter] postNotificationName:AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNotification object:self];
+        }];
+    }];
 }
 
 @end

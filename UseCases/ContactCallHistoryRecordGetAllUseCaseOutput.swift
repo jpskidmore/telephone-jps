@@ -19,4 +19,12 @@
 @ContactsActor
 public protocol ContactCallHistoryRecordGetAllUseCaseOutput: Sendable {
     func update(records: [ContactCallHistoryRecord]) async
+    func update(records: [ContactCallHistoryRecord], request: CallHistoryReloadRequest) async
+}
+
+public extension ContactCallHistoryRecordGetAllUseCaseOutput {
+    func update(records: [ContactCallHistoryRecord], request: CallHistoryReloadRequest) async {
+        guard request.isCurrent else { return }
+        await update(records: records)
+    }
 }

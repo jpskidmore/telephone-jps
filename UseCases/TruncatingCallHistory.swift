@@ -21,6 +21,7 @@ public final class TruncatingCallHistory {
     private var records = [CallHistoryRecord]()
 
     private let limit: Int
+    private var valid = true
 
     public nonisolated init(limit: Int = 100) {
         self.limit = limit
@@ -33,6 +34,7 @@ extension TruncatingCallHistory: CallHistory {
     }
 
     public func add(_ record: CallHistoryRecord) {
+        guard valid else { return }
         records.append(record)
         if records.count > limit {
             records = [CallHistoryRecord](records.suffix(limit))
@@ -40,14 +42,18 @@ extension TruncatingCallHistory: CallHistory {
     }
 
     public func remove(_ record: CallHistoryRecord) {
+        guard valid else { return }
         if let index = records.firstIndex(of: record) {
             records.remove(at: index)
         }
     }
 
     public func removeAll() {
+        guard valid else { return }
         records.removeAll()
     }
+
+    public func invalidate() { valid = false }
 
     public func updateTarget(_ target: CallHistoryEventTarget) {}
 }

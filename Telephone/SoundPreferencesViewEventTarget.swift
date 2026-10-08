@@ -73,6 +73,7 @@ private extension SoundPreferencesViewEventTarget {
             try makeSettingsSoundIOLoadUseCase(view: view).execute()
         } catch {
             print("Could not load Sound IO view data")
+            view.showSoundIOLoadError?(NSLocalizedString("Audio devices could not be loaded. Reopen Sound settings to try again.", comment: "Recoverable audio device query failure."))
         }
     }
 

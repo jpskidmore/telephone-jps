@@ -23,9 +23,16 @@ public protocol CallHistory: AnyObject, Sendable {
     func remove(_ record: CallHistoryRecord)
     func removeAll()
     func updateTarget(_ target: CallHistoryEventTarget)
+    func invalidate()
+    var persistenceError: String? { get }
+    @discardableResult func retryPersistence() -> Bool
 }
 
 public extension CallHistory {
+    func invalidate() {}
+    var persistenceError: String? { nil }
+    @discardableResult func retryPersistence() -> Bool { true }
+
     func record(withIdentifier identifier: String) -> CallHistoryRecord? {
         return self.allRecords.first { $0.identifier == identifier }
     }

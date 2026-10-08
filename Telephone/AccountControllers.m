@@ -86,7 +86,7 @@
 }
 
 - (BOOL)haveActiveCallControllers {
-    for (AccountController *accountController in self.enabled) {
+    for (AccountController *accountController in self.all) {
         for (CallController *callController in accountController.callControllers) {
             if (callController.isCallActive) {
                 return YES;
@@ -127,7 +127,7 @@
 }
 
 - (void)hangUpCallsAndRemoveAccountsFromUserAgent {
-    for (AccountController *accountController in self.enabled) {
+    for (AccountController *accountController in self.all) {
         for (CallController *callController in accountController.callControllers) {
             [callController hangUpCall];
         }
@@ -137,14 +137,14 @@
 
 - (void)registerAllAccounts {
     for (AccountController *controller in self.enabled) {
-        [controller registerAccount];
+        [controller resumeRegistrationIfDesired];
     }
 }
 
 - (void)registerReachableAccounts {
     for (AccountController *controller in self.enabled) {
         if ([controller.registrarReachability isReachable]) {
-            [controller registerAccount];
+            [controller resumeRegistrationIfDesired];
         }
     }
 }
@@ -157,7 +157,7 @@
 
 - (void)registerAccountIfManualRegistrationRequired:(AccountController *)controller {
     if (controller.account.registrar.host.ak_isIPAddress && controller.registrarReachability.isReachable) {
-        [controller registerAccount];
+        [controller resumeRegistrationIfDesired];
     }
 }
 

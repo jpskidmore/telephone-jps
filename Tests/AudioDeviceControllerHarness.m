@@ -182,7 +182,11 @@ static void TestConnectClassification(void) {
         CHECK(backend.connectCount == 2, "non-audio failure allows later connect");
     }
 
-    const int audioFailures[] = {420000, 420001, 420007, 440050, 469999, stopStatus};
+    const int audioFailures[] = {420000, 420001, 420007, 440050, 469999, stopStatus,
+        440000 - (int)'what', 440000 - (int)'who?', 440000 - (int)'!siz',
+        440000 - (int)'nope', 440000 - (int)'!obj', 440000 - (int)'!dev',
+        440000 - (int)'!str', 440000 - (int)'unop', 440000 - (int)'nrdy',
+        440000 - (int)'!dat', 440000 - (int)'!hog'};
     for (NSUInteger index = 0; index < sizeof(audioFailures) / sizeof(audioFailures[0]); index++) {
         int expectedStatus = audioFailures[index];
         FakeAudioBackend *backend = [FakeAudioBackend new];

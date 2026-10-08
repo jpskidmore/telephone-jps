@@ -25,16 +25,15 @@ struct SettingsSoundIO: SoundIO {
     let ringtoneOutput: SystemAudioDevice
 
     init(devices: SystemAudioDevices, settings: KeyValueSettings) {
-        input = Self.device(withName: settings.string(forKey: SettingsKeys.soundInput), lookup: devices.inputDevice)
-        output = Self.device(withName: settings.string(forKey: SettingsKeys.soundOutput), lookup: devices.outputDevice)
-        ringtoneOutput = Self.device(withName: settings.string(forKey: SettingsKeys.ringtoneOutput), lookup: devices.outputDevice)
+        input = Self.device(name: settings.string(forKey: SettingsKeys.soundInput), uid: settings.string(forKey: SettingsKeys.soundInputUID), byName: devices.inputDevice(named:), byUID: devices.inputDevice(uniqueIdentifier:))
+        output = Self.device(name: settings.string(forKey: SettingsKeys.soundOutput), uid: settings.string(forKey: SettingsKeys.soundOutputUID), byName: devices.outputDevice(named:), byUID: devices.outputDevice(uniqueIdentifier:))
+        ringtoneOutput = Self.device(name: settings.string(forKey: SettingsKeys.ringtoneOutput), uid: settings.string(forKey: SettingsKeys.ringtoneOutputUID), byName: devices.outputDevice(named:), byUID: devices.outputDevice(uniqueIdentifier:))
     }
 
-    private static func device(withName name: String?, lookup: (String) -> SystemAudioDevice) -> SystemAudioDevice {
-        if let name = name {
-            return lookup(name)
-        } else {
-            return NullSystemAudioDevice()
-        }
+    private static func device(name: String?, uid: String?, byName: (String) -> SystemAudioDevice,
+                               byUID: (String) -> SystemAudioDevice) -> SystemAudioDevice {
+        if let uid = uid, !uid.isEmpty { return byUID(uid) }
+        if let name = name { return byName(name) }
+        return NullSystemAudioDevice()
     }
 }

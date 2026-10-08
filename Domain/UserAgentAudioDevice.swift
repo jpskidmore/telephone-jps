@@ -18,6 +18,7 @@
 
 public protocol UserAgentAudioDevice {
     var identifier: Int { get }
+    var uniqueIdentifier: String { get }
     var name: String  { get }
     var inputs: Int { get }
     var outputs: Int { get }
@@ -25,6 +26,8 @@ public protocol UserAgentAudioDevice {
 }
 
 public extension UserAgentAudioDevice {
+    var uniqueIdentifier: String { "" }
+
     var hasInputs: Bool {
         return inputs > 0
     }

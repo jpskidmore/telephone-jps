@@ -49,6 +49,9 @@ extern NSString * const kPhoneLabel;
 - (instancetype)init NS_UNAVAILABLE;
 - (instancetype)initWithCoder:(NSCoder *)coder NS_UNAVAILABLE;
 
+// Validates the first represented destination before calling or transferring.
+- (BOOL)canMakeCall;
+
 // Makes a call.
 - (IBAction)makeCall:(id)sender;
 

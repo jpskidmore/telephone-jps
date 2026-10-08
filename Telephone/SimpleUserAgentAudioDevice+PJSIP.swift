@@ -20,12 +20,18 @@ import Domain
 import UseCases
 
 extension SimpleUserAgentAudioDevice {
-    init(device: pjmedia_aud_dev_info, identifier: Int) {
+    init(device: pjmedia_aud_dev_info, identifier: Int) throws {
+        var uidBytes = [CChar](repeating: 0, count: 1024)
+        let status = jps_coreaudio_device_uid(Int32(identifier), &uidBytes, UInt32(uidBytes.count))
+        guard status == 0 else { throw UserAgentError.audioDeviceEnumerationError }
+        let uid = String(cString: uidBytes)
+        guard !uid.isEmpty else { throw UserAgentError.audioDeviceEnumerationError }
         self.init(
             identifier: identifier,
             name: nameOf(device),
             inputs: Int(device.input_count),
-            outputs: Int(device.output_count)
+            outputs: Int(device.output_count),
+            uniqueIdentifier: uid
         )
     }
 }

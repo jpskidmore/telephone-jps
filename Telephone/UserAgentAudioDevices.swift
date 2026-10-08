@@ -32,7 +32,7 @@ private func makeDevices() throws -> [UserAgentAudioDevice] {
     defer { bytes.deallocate() }
     var count = UInt32(bufferSize)
     try copyDevicesBytes(to: bytes, count: &count)
-    let result = devices(with: bytes, count: Int(count))
+    let result = try devices(with: bytes, count: Int(count))
     return result
 }
 
@@ -42,12 +42,12 @@ private func copyDevicesBytes(to bytes: UnsafeMutablePointer<pjmedia_aud_dev_inf
     }
 }
 
-private func devices(with bytes: UnsafeMutablePointer<pjmedia_aud_dev_info>, count: Int) -> [UserAgentAudioDevice] {
-    return devices(with: UnsafeBufferPointer<pjmedia_aud_dev_info>(start: bytes, count: count))
+private func devices(with bytes: UnsafeMutablePointer<pjmedia_aud_dev_info>, count: Int) throws -> [UserAgentAudioDevice] {
+    return try devices(with: UnsafeBufferPointer<pjmedia_aud_dev_info>(start: bytes, count: count))
 }
 
-private func devices(with pointer: UnsafeBufferPointer<pjmedia_aud_dev_info>) -> [UserAgentAudioDevice] {
-    return pointer.enumerated().map { SimpleUserAgentAudioDevice(device: $0.element, identifier: $0.offset) }
+private func devices(with pointer: UnsafeBufferPointer<pjmedia_aud_dev_info>) throws -> [UserAgentAudioDevice] {
+    return try pointer.map { try SimpleUserAgentAudioDevice(device: $0, identifier: Int($0.id)) }
 }
 
 private let bufferSize = 32

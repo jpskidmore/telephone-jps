@@ -29,6 +29,8 @@ NS_ASSUME_NONNULL_BEGIN
 // Adds an item to the Keychain with a specified service, account, and password. If the same item already
 // exists, its password will be replaced with the new one.
 + (BOOL)addItemWithService:(NSString *)service account:(NSString *)account password:(NSString *)password;
++ (BOOL)addItemWithService:(NSString *)service account:(NSString *)account password:(NSString *)password
+                    error:(NSError * _Nullable * _Nullable)error;
 
 @end
 

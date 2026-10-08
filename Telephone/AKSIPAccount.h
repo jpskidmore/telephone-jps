@@ -104,16 +104,16 @@ extern const NSInteger kAKSIPAccountRegistrationExpireTimeNotSpecified;
 @property(nonatomic, getter=isRegistered) BOOL registered;
 
 // The receiver's SIP registration status code.
-@property(nonatomic, readonly) NSInteger registrationStatus;
+@property(nonatomic) NSInteger registrationStatus;
 
 // The receiver's SIP registration error code.
-@property(nonatomic, readonly) NSInteger registrationErrorCode;
+@property(nonatomic) NSInteger registrationErrorCode;
 
 // The receiver's SIP registration status text.
-@property(nonatomic, readonly) NSString *registrationStatusText;
+@property(nonatomic, copy) NSString *registrationStatusText;
 
 // An up to date expiration interval for the receiver's registration session.
-@property(nonatomic, readonly) NSInteger registrationExpireTime;
+@property(nonatomic) NSInteger registrationExpireTime;
 
 // A Boolean value indicating whether the receiver is online in terms of SIP
 // presence.
@@ -133,11 +133,14 @@ extern const NSInteger kAKSIPAccountRegistrationExpireTimeNotSpecified;
 
 - (void)updateUsername:(NSString *)username;
 - (void)updateIdentifier:(NSInteger)identifier;
+@property(atomic, readonly) NSUInteger outgoingGeneration;
+@property(nonatomic) BOOL desiredRegistered;
+- (void)cancelPendingOutgoingCalls;
 
 // Makes a call to a given destination URI.
 - (void)makeCallTo:(AKSIPURI *)destination completion:(void (^)(AKSIPCall * _Nullable))completion;
 
-- (AKSIPCall *)addCallWithInfo:(PJSUACallInfo *)info;
+- (nullable AKSIPCall *)addCallWithInfo:(PJSUACallInfo *)info;
 - (nullable AKSIPCall *)callWithIdentifier:(NSInteger)identifier;
 - (void)removeCall:(AKSIPCall *)call;
 - (void)removeAllCalls;

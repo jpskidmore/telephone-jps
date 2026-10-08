@@ -17,6 +17,7 @@
 //
 
 #import "ActiveAccountViewController.h"
+#import <objc/runtime.h>
 
 @import AddressBook;
 @import UseCases;
@@ -36,6 +37,21 @@
 NSString * const kURI = @"URI";
 NSString * const kPhoneLabel = @"PhoneLabel";
 static void *CompactDialerValueObservation = &CompactDialerValueObservation;
+static const void *SelectedTokenDestination = &SelectedTokenDestination;
+
+static NSUInteger DestinationIndexForToken(id token) {
+    if (![token isKindOfClass:NSArray.class] || [token count] == 0) { return NSNotFound; }
+    NSNumber *stored = objc_getAssociatedObject(token, SelectedTokenDestination);
+    NSUInteger index = stored ? stored.unsignedIntegerValue : 0;
+    return index < [token count] ? index : NSNotFound;
+}
+
+static NSDictionary *DestinationForToken(id token) {
+    NSUInteger index = DestinationIndexForToken(token);
+    if (index == NSNotFound || ![token[index] isKindOfClass:NSDictionary.class]) { return nil; }
+    NSDictionary *destination = token[index];
+    return [destination[kURI] isKindOfClass:AKSIPURI.class] ? destination : nil;
+}
 
 // On macOS 26, NSTokenField can invalidate its own intrinsic content size while
 // AppKit is already calculating that size. This creates an endless constraints
@@ -79,21 +95,26 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
     }
 }
 
-- (AKSIPURI *)callDestinationURI {
-    NSDictionary *callDestinationDict = [[self callDestinationField] objectValue][0][[self callDestinationURIIndex]];
-    
-    AKSIPURI *uri = [callDestinationDict[kURI] copy];
-    
-    // Displayed name is stored in the first URI only.
-    AKSIPURI *firstURI = [[self callDestinationField] objectValue][0][0][kURI];
-    
-    [uri setDisplayName:[firstURI displayName]];
-    
-    if ([uri isKindOfClass:[AKSIPURI class]] && [[uri user] length] > 0) {
-        return uri;
-    } else {
-        return nil;
+- (id)firstCallDestinationToken {
+    id value = self.callDestinationField.objectValue;
+    return [value isKindOfClass:NSArray.class] && [value count] > 0 ? value[0] : nil;
+}
+
+- (NSUInteger)callDestinationURIIndex {
+    NSUInteger index = DestinationIndexForToken([self firstCallDestinationToken]);
+    return index == NSNotFound ? 0 : index;
+}
+
+- (void)setCallDestinationURIIndex:(NSUInteger)index {
+    id token = [self firstCallDestinationToken];
+    if ([token isKindOfClass:NSArray.class] && index < [token count]) {
+        objc_setAssociatedObject(token, SelectedTokenDestination, @(index), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
+}
+
+- (AKSIPURI *)callDestinationURI {
+    AKSIPURI *uri = [DestinationForToken([self firstCallDestinationToken])[kURI] copy];
+    return uri.user.length > 0 ? uri : nil;
 }
 
 - (BOOL)allowsCallDestinationInput {
@@ -251,7 +272,7 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
         return;
     }
     
-    NSDictionary *callDestinationDict = [[self callDestinationField] objectValue][0][[self callDestinationURIIndex]];
+    NSDictionary *callDestinationDict = DestinationForToken([self firstCallDestinationToken]);
     NSString *phoneLabel = callDestinationDict[kPhoneLabel];
     
     AKSIPURI *uri = [self callDestinationURI];
@@ -261,18 +282,17 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
 }
 
 - (BOOL)canMakeCall {
-    id value = self.callDestinationField.objectValue;
-    if (![value isKindOfClass:[NSArray class]] || [value count] == 0) {
-        return NO;
-    }
-    id destinations = value[0];
-    return [destinations isKindOfClass:[NSArray class]] &&
-           self.callDestinationURIIndex < [destinations count] &&
-           [destinations[self.callDestinationURIIndex] isKindOfClass:[NSDictionary class]];
+    return DestinationForToken([self firstCallDestinationToken]) != nil;
 }
 
 - (IBAction)changeCallDestinationURIIndex:(id)sender {
-    [self setCallDestinationURIIndex:[sender tag]];
+    id token = [sender isKindOfClass:NSMenuItem.class] ? [sender representedObject] : [self firstCallDestinationToken];
+    NSInteger index = [sender tag];
+    if ([token isKindOfClass:NSArray.class] && index >= 0 && (NSUInteger)index < [token count]) {
+        objc_setAssociatedObject(token, SelectedTokenDestination, @(index), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        // Refresh the existing represented objects without parsing or changing another token.
+        self.callDestinationField.objectValue = self.callDestinationField.objectValue;
+    }
 }
 
 - (void)allowCallDestinationInput {
@@ -909,10 +929,9 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
         [callDestinations addObject:@{kURI: theURI, kPhoneLabel: @""}];
     }
     
-    // First URI in the array is the default call destination.
-    [self setCallDestinationURIIndex:destinationIndex];
-    
-    return [callDestinations copy];
+    NSArray *token = [callDestinations copy];
+    objc_setAssociatedObject(token, SelectedTokenDestination, @(destinationIndex), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return token;
 }
 
 - (NSString *)tokenField:(NSTokenField *)tokenField displayStringForRepresentedObject:(id)representedObject {
@@ -920,7 +939,8 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
         return nil;
     }
     
-    AKSIPURI *uri = representedObject[[self callDestinationURIIndex]][kURI];
+    AKSIPURI *uri = DestinationForToken(representedObject)[kURI];
+    if (uri == nil) { return nil; }
     
     NSString *returnString = nil;
     
@@ -954,7 +974,8 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
         return nil;
     }
     
-    AKSIPURI *uri = representedObject[[self callDestinationURIIndex]][kURI];
+    AKSIPURI *uri = DestinationForToken(representedObject)[kURI];
+    if (uri == nil) { return nil; }
     
     NSAssert(([[uri user] length] > 0), @"User part of the URI must not have zero length in this context");
     
@@ -977,7 +998,7 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
 }
 
 - (BOOL)tokenField:(NSTokenField *)tokenField hasMenuForRepresentedObject:(id)representedObject {
-    AKSIPURI *uri = representedObject[[self callDestinationURIIndex]][kURI];
+    AKSIPURI *uri = DestinationForToken(representedObject)[kURI];
     
     if ([representedObject isKindOfClass:[NSArray class]] && [[uri displayName] length] > 0) {
         return YES;
@@ -987,10 +1008,13 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
 }
 
 - (NSMenu *)tokenField:(NSTokenField *)tokenField menuForRepresentedObject:(id)representedObject {
+    if (DestinationForToken(representedObject) == nil) { return nil; }
     NSMenu *tokenMenu = [[NSMenu alloc] init];
     
     for (NSUInteger i = 0; i < [representedObject count]; ++i) {
+        if (![representedObject[i] isKindOfClass:NSDictionary.class]) { continue; }
         AKSIPURI *uri = representedObject[i][kURI];
+        if (![uri isKindOfClass:AKSIPURI.class]) { continue; }
         
         NSString *phoneLabel = representedObject[i][kPhoneLabel];
         
@@ -1012,18 +1036,20 @@ static void *CompactDialerValueObservation = &CompactDialerValueObservation;
         
         [menuItem setTag:i];
         [menuItem setAction:@selector(changeCallDestinationURIIndex:)];
+        menuItem.target = self;
+        menuItem.representedObject = representedObject;
         
         [tokenMenu addItem:menuItem];
     }
     
-    [[tokenMenu itemWithTag:[self callDestinationURIIndex]] setState:NSControlStateValueOn];
+    [[tokenMenu itemWithTag:DestinationIndexForToken(representedObject)] setState:NSControlStateValueOn];
     
     return tokenMenu;
 }
 
 - (NSArray *)tokenField:(NSTokenField *)tokenField shouldAddObjects:(NSArray *)tokens atIndex:(NSUInteger)index {
     if (index > 0 && [tokenField tokenStyle] == NSTokenStyleRounded) {
-        return nil;
+        return @[];
     } else {
         return tokens;
     }

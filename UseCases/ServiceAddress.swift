@@ -40,7 +40,11 @@ public final class ServiceAddress: NSObject, Sendable {
 
     @objc(initWithString:) public convenience init(_ string: String) {
         let address = beforeSemicolon(string)
-        if trimmingSquareBrackets(address).isIP6Address {
+        if address.hasPrefix("["), let close = address.firstIndex(of: "]") {
+            let host = String(address[address.index(after: address.startIndex)..<close])
+            let suffix = address[address.index(after: close)...]
+            self.init(host: host, port: suffix.hasPrefix(":") ? String(suffix.dropFirst()) : "")
+        } else if trimmingSquareBrackets(address).isIP6Address {
             self.init(host: address)
         } else if let range = address.range(of: ":", options: .backwards) {
             self.init(host: String(address[..<range.lowerBound]), port: String(address[range.upperBound...]))

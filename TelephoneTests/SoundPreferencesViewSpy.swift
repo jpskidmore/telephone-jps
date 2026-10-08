@@ -19,9 +19,12 @@
 final class SoundPreferencesViewSpy: NSObject {
     private(set) var invokedSoundIO: PresentationSoundIO?
     private(set) var invokedDevices: PresentationAudioDevices?
+    private(set) var invokedLoadError: String?
 }
 
 extension SoundPreferencesViewSpy: SoundPreferencesView {
+    func showSoundIOLoadError(_ message: String) { invokedLoadError = message }
+
     func update(soundIO: PresentationSoundIO, devices: PresentationAudioDevices) {
         invokedSoundIO = soundIO
         invokedDevices = devices

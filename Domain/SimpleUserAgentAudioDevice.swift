@@ -18,13 +18,15 @@
 
 public struct SimpleUserAgentAudioDevice: UserAgentAudioDevice {
     public let identifier: Int
+    public let uniqueIdentifier: String
     public let name: String
     public let inputs: Int
     public let outputs: Int
     public let isNil = false
 
-    public init(identifier: Int, name: String, inputs: Int, outputs: Int) {
+    public init(identifier: Int, name: String, inputs: Int, outputs: Int, uniqueIdentifier: String = "") {
         self.identifier = identifier
+        self.uniqueIdentifier = uniqueIdentifier
         self.name = name
         self.inputs = inputs
         self.outputs = outputs

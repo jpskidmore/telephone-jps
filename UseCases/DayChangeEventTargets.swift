@@ -22,12 +22,16 @@ public final class DayChangeEventTargets {
     public init() {}
 
     public func add(_ target: DayChangeEventTarget) {
+        prune()
         targets.append(target)
     }
+    private func prune() { targets.removeAll { ($0 as? WeakDayChangeEventTarget)?.isExpired == true } }
+    var count: Int { prune(); return targets.count }
 }
 
 extension DayChangeEventTargets: DayChangeEventTarget {
     public func dayDidChange() {
+        prune()
         targets.forEach { $0.dayDidChange() }
     }
 }

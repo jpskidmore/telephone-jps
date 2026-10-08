@@ -22,4 +22,7 @@
 
 @protocol SoundPreferencesView <SoundIOPresenterOutput>
 
+@optional
+- (void)showSoundIOLoadError:(NSString *)message;
+
 @end

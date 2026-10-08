@@ -56,3 +56,21 @@ final class RestoredSelectionIndexTests: XCTestCase {
         XCTAssertEqual(sut.value, after.endIndex - 1)
     }
 }
+
+extension RestoredSelectionIndexTests {
+    func testCappedPrependKeepsSelectedIdentity() {
+        let before = Array(0..<1000)
+        let after = [-1] + before.dropLast()
+        for selected in [0, 1, 500, 998] {
+            let result = RestoredSelectionIndex(indexBefore: selected, before: before, after: after)
+            XCTAssertEqual(after[result.value], before[selected])
+        }
+        XCTAssertEqual(RestoredSelectionIndex(indexBefore: 999, before: before, after: after).value, 999)
+    }
+
+    func testReorderingKeepsSelectedIdentityAndEvictionUsesNearestRow() {
+        XCTAssertEqual(RestoredSelectionIndex(indexBefore: 1, before: ["A", "B", "C"], after: ["C", "A", "B"]).value, 2)
+        XCTAssertEqual(RestoredSelectionIndex(indexBefore: 1, before: ["A", "B", "C"], after: ["A", "C"]).value, 1)
+        XCTAssertEqual(RestoredSelectionIndex(indexBefore: 900, before: ["A"], after: ["A"]).value, 0)
+    }
+}

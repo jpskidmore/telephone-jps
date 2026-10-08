@@ -165,11 +165,22 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 - (void)stop;
 - (void)stopAndWait;
 
+// Native commands run on the same serial control thread as startup/teardown.
+// Completion always returns to main, including cancellation of an old lifecycle.
+- (void)performSIPOperation:(pj_status_t (^ _Nonnull)(void))operation
+                completion:(void (^ _Nullable)(pj_status_t status))completion;
+- (void)performSIPCleanupOperation:(pj_status_t (^ _Nonnull)(void))operation
+                       completion:(void (^ _Nullable)(pj_status_t status))completion;
+
 // Adds an account to the user agent.
 - (BOOL)addAccount:(AKSIPAccount * _Null_unspecified )anAccount withPassword:(NSString * _Null_unspecified )aPassword;
 
 // Removes an account from the user agent.
 - (BOOL)removeAccount:(AKSIPAccount * _Null_unspecified )account;
+- (void)addAccount:(AKSIPAccount * _Nonnull)account withPassword:(NSString * _Nullable)password completion:(void (^ _Nonnull)(BOOL))completion;
+- (void)removeAccount:(AKSIPAccount * _Nonnull)account completion:(void (^ _Nonnull)(BOOL))completion;
+- (void)forgetRetiredAccountIfUnused:(AKSIPAccount * _Nonnull)account;
+- (AKSIPCall * _Nullable)callWithIdentifier:(NSInteger)identifier dialogIdentifier:(NSString * _Nonnull)dialogIdentifier;
 
 // Returns a SIP account with a given identifier.
 - (AKSIPAccount * _Null_unspecified )accountWithIdentifier:(NSInteger)identifier;
@@ -188,10 +199,15 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 
 // Sets sound input and output.
 - (BOOL)setSoundInputDevice:(NSInteger)input soundOutputDevice:(NSInteger)output;
+// Admit a complete enumeration/mapping/open transaction before scheduling the SDK worker.
+- (BOOL)performAudioSelection:(pj_status_t (^ _Nonnull)(NSUInteger revision))operation;
+- (BOOL)isAudioSelectionCurrent:(NSUInteger)revision;
 
 // Audio failure stays visible until a real device selection succeeds. Recovery
 // is explicit; generic device notifications never reset the retry barrier.
 @property(nonatomic, readonly) BOOL hasAudioFailure;
+@property(atomic, readonly) BOOL audioCommandPending;
+- (void)reportAudioSelectionFailure;
 @property(atomic, readonly) NSUInteger audioGeneration;
 // A pending make-call must finish classification on main before another is
 // enqueued. This bounds SDK implicit audio opens across rapid/double requests.

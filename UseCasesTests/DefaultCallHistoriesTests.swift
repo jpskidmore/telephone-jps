@@ -54,4 +54,18 @@ struct DefaultCallHistoriesTests {
 
         #expect(sut.count == 0)
     }
+    @Test func accountRemovalInvalidatesHeldHistoryAndTombstonesLaterLookups() {
+        let origin = TruncatingCallHistory()
+        let factory = CallHistoryFactorySpy(history: origin)
+        let sut = DefaultCallHistories(factory: factory)
+        let held = sut.history(withUUID: "retired")
+        held.add(CallHistoryRecordTestFactory().makeRecord(number: 1))
+        held.removeAll()
+        sut.remove(withUUID: "retired")
+        held.add(CallHistoryRecordTestFactory().makeRecord(number: 2))
+        #expect(held.allRecords.isEmpty)
+        #expect(sut.history(withUUID: "retired").allRecords.isEmpty)
+        #expect(sut.count == 0)
+    }
+
 }

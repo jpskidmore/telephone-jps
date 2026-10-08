@@ -35,16 +35,18 @@ void PJSUAOnCallTransferStatus(pjsua_call_id callID,
                (int)statusText->slen, statusText->ptr,
                (isFinal ? "[final]" : "")));
 
-    if (statusCode / 100 == 2) {
-        PJ_LOG(3, (THIS_FILE, "Call %d: call transfered successfully, disconnecting call", callID));
-        pjsua_call_hangup(callID, PJSIP_SC_GONE, NULL, NULL);
-        *wantsFurtherNotifications = PJ_FALSE;
-    }
-
+    BOOL successfulFinal = isFinal && statusCode / 100 == 2;
+    if (successfulFinal && wantsFurtherNotifications != NULL) *wantsFurtherNotifications = PJ_FALSE;
+    pjsua_call_info info;
+    if (pjsua_call_get_info(callID, &info) != PJ_SUCCESS) return;
+    NSString *dialog = [NSString stringWithPJString:info.call_id];
+    AKSIPUserAgent *agent = [AKSIPUserAgent sharedUserAgent];
+    AKSIPCall *sourceCall = [agent callWithIdentifier:callID dialogIdentifier:dialog];
     NSString *statusTextString = [NSString stringWithPJString:*statusText];
     dispatch_async(dispatch_get_main_queue(), ^{
-        AKSIPCall *call = [[AKSIPUserAgent sharedUserAgent] callWithIdentifier:callID];
+        AKSIPCall *call = sourceCall;
 
+        if (call == nil || ![call.dialogIdentifier isEqualToString:dialog]) return;
         [call setTransferStatus:statusCode];
         [call setTransferStatusText:statusTextString];
 
@@ -53,5 +55,7 @@ void PJSUAOnCallTransferStatus(pjsua_call_id callID,
         [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPCallTransferStatusDidChangeNotification
                                                             object:call
                                                           userInfo:userInfo];
+        // Publish the final result to its owner before hangup can remove it.
+        if (successfulFinal && call.delegate == nil) [call hangUp];
     });
 }

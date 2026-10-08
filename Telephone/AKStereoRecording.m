@@ -15,6 +15,139 @@
 #include <stdio.h>
 #include <unistd.h>
 
+NSString *const AKRecordingExportDidFailNotification = @"AKRecordingExportDidFailNotification";
+static NSString *const RecoveryManifestName = @"recovery.plist";
+
+static NSURL *RecordingRecoveryRoot(void) {
+    NSURL *support = [NSFileManager.defaultManager URLsForDirectory:NSApplicationSupportDirectory
+                                                         inDomains:NSUserDomainMask].firstObject;
+    NSString *identifier = NSBundle.mainBundle.bundleIdentifier ?: @"com.tlphn.Telephone";
+    return [[support URLByAppendingPathComponent:identifier isDirectory:YES]
+            URLByAppendingPathComponent:@"Recording Recovery" isDirectory:YES];
+}
+
+NSURL *AKCreateRecordingRecoveryDirectoryAtRoot(NSURL *root, NSError **error) {
+    NSFileManager *manager = NSFileManager.defaultManager;
+    NSDictionary *attributes = @{NSFilePosixPermissions: @0700};
+    if (![manager createDirectoryAtURL:root withIntermediateDirectories:YES attributes:attributes error:error] ||
+        ![manager setAttributes:attributes ofItemAtPath:root.path error:error]) return nil;
+    NSURL *directory = [root URLByAppendingPathComponent:NSUUID.UUID.UUIDString isDirectory:YES];
+    if (![manager createDirectoryAtURL:directory withIntermediateDirectories:NO attributes:attributes error:error]) return nil;
+    return directory;
+}
+
+NSURL *AKCreateRecordingRecoveryDirectory(NSError **error) {
+    return AKCreateRecordingRecoveryDirectoryAtRoot(RecordingRecoveryRoot(), error);
+}
+
+BOOL AKPersistRecordingRecoveryJob(NSURL *directory, NSURL *local, NSURL *remote,
+                                   NSURL *destination, NSError **error) {
+    NSString *directoryPath = directory.URLByResolvingSymlinksInPath.standardizedURL.path;
+    NSString *destinationPath = destination.URLByResolvingSymlinksInPath.standardizedURL.path;
+    // Never persist paths that could escape the protected job directory.
+    // The exported file must survive removing the raw job after success.
+    if (![local.URLByDeletingLastPathComponent.standardizedURL isEqual:directory.standardizedURL] ||
+        ![remote.URLByDeletingLastPathComponent.standardizedURL isEqual:directory.standardizedURL] ||
+        !destination.isFileURL || !destinationPath.isAbsolutePath ||
+        [destinationPath isEqualToString:directoryPath] ||
+        [destinationPath hasPrefix:[directoryPath stringByAppendingString:@"/"]]) {
+        if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteInvalidFileNameError userInfo:nil];
+        return NO;
+    }
+    NSDictionary *manifest = @{@"version": @1, @"local": local.lastPathComponent,
+                               @"remote": remote.lastPathComponent, @"destination": destination.path,
+                               @"created": NSDate.date};
+    NSData *data = [NSPropertyListSerialization dataWithPropertyList:manifest
+                                                            format:NSPropertyListBinaryFormat_v1_0
+                                                           options:0 error:error];
+    NSURL *manifestURL = [directory URLByAppendingPathComponent:RecoveryManifestName];
+    if (!data || ![data writeToURL:manifestURL options:NSDataWritingAtomic error:error]) return NO;
+    NSFileManager *manager = NSFileManager.defaultManager;
+    if (![manager setAttributes:@{NSFilePosixPermissions: @0600} ofItemAtPath:manifestURL.path error:error]) return NO;
+    for (NSURL *track in @[local, remote]) {
+        if ([manager fileExistsAtPath:track.path] &&
+            ![manager setAttributes:@{NSFilePosixPermissions: @0600} ofItemAtPath:track.path error:error]) return NO;
+    }
+    return YES;
+}
+
+NSArray<NSDictionary *> *AKRecordingRecoveryJobsAtRoot(NSURL *root) {
+    NSFileManager *manager = NSFileManager.defaultManager;
+    NSArray *directories = [manager contentsOfDirectoryAtURL:root includingPropertiesForKeys:@[NSURLIsDirectoryKey]
+                                                    options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
+    NSMutableArray *jobs = [NSMutableArray array];
+    for (NSURL *directory in directories) {
+        NSNumber *isDirectory = nil;
+        [directory getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:nil];
+        if (!isDirectory.boolValue) continue;
+        NSData *data = [NSData dataWithContentsOfURL:[directory URLByAppendingPathComponent:RecoveryManifestName]];
+        NSDictionary *manifest = data ? [NSPropertyListSerialization propertyListWithData:data options:0 format:nil error:nil] : nil;
+        if (![manifest isKindOfClass:NSDictionary.class]) manifest = nil;
+        NSString *localName = [manifest[@"local"] isKindOfClass:NSString.class] ? manifest[@"local"] : @"local.wav";
+        NSString *remoteName = [manifest[@"remote"] isKindOfClass:NSString.class] ? manifest[@"remote"] : @"remote.wav";
+        if (localName.length == 0 || remoteName.length == 0 ||
+            [@[@".", @".."] containsObject:localName] || [@[@".", @".."] containsObject:remoteName] ||
+            ![localName isEqual:localName.lastPathComponent] || ![remoteName isEqual:remoteName.lastPathComponent]) continue;
+        NSURL *local = [directory URLByAppendingPathComponent:localName];
+        NSURL *remote = [directory URLByAppendingPathComponent:remoteName];
+        if (![manager fileExistsAtPath:local.path] || ![manager fileExistsAtPath:remote.path]) continue;
+        NSString *destinationPath = [manifest[@"destination"] isKindOfClass:NSString.class] ? manifest[@"destination"] : nil;
+        NSString *directoryPath = directory.URLByResolvingSymlinksInPath.standardizedURL.path;
+        NSString *standardDestination = destinationPath.isAbsolutePath ?
+            [NSURL fileURLWithPath:destinationPath].URLByResolvingSymlinksInPath.standardizedURL.path : nil;
+        BOOL validDestination = destinationPath.isAbsolutePath &&
+            ![standardDestination isEqualToString:directoryPath] &&
+            ![standardDestination hasPrefix:[directoryPath stringByAppendingString:@"/"]];
+        NSURL *destination = validDestination ? [NSURL fileURLWithPath:destinationPath] :
+                            [directory.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"Recovered recording.wav"];
+        [jobs addObject:@{@"directoryURL": directory, @"localURL": local, @"remoteURL": remote,
+                         @"destinationURL": destination, @"needsNewDestination": @(!validDestination)}];
+    }
+    return jobs;
+}
+
+NSArray<NSDictionary *> *AKPendingRecordingRecoveryJobs(void) {
+    return AKRecordingRecoveryJobsAtRoot(RecordingRecoveryRoot());
+}
+
+void AKReportRecordingExportFailure(NSURL *directory, NSURL *destination, NSError *error) {
+    NSMutableDictionary *info = [@{@"recoveryDirectoryURL": directory, @"destinationURL": destination} mutableCopy];
+    info[@"error"] = error ?: [NSError errorWithDomain:@"com.tlphn.Telephone.recording" code:1
+                                            userInfo:@{NSLocalizedDescriptionKey: @"The recording could not be exported. Its captured audio has been kept for recovery."}];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [NSNotificationCenter.defaultCenter postNotificationName:AKRecordingExportDidFailNotification object:nil userInfo:info];
+    });
+}
+
+void AKRetryRecordingRecoveryJob(NSDictionary *job, NSURL *destination, void (^completion)(BOOL)) {
+    BOOL accessGranted = [destination startAccessingSecurityScopedResource];
+    void (^finish)(BOOL) = ^(BOOL succeeded) {
+        if (accessGranted) [destination stopAccessingSecurityScopedResource];
+        if (completion) completion(succeeded);
+    };
+    NSURL *directory = job[@"directoryURL"];
+    NSURL *local = job[@"localURL"];
+    NSURL *remote = job[@"remoteURL"];
+    NSError *error = nil;
+    // A failed original export owns no successful output. Never silently erase a
+    // different recording later created at its old destination.
+    if ([NSFileManager.defaultManager fileExistsAtPath:destination.path] ||
+        !AKPersistRecordingRecoveryJob(directory, local, remote, destination, &error)) {
+        AKReportRecordingExportFailure(directory, destination, error ?: [NSError errorWithDomain:NSCocoaErrorDomain
+             code:NSFileWriteFileExistsError userInfo:@{NSLocalizedDescriptionKey: @"Choose a new filename to recover this recording."}]);
+        dispatch_async(dispatch_get_main_queue(), ^{ finish(NO); });
+        return;
+    }
+    AKMergeMonoRecordingsIntoStereoAsync(local, remote, destination, ^(BOOL succeeded) {
+        if (succeeded) {
+            [NSFileManager.defaultManager removeItemAtURL:directory error:nil];
+        } else {
+            AKReportRecordingExportFailure(directory, destination, nil);
+        }
+        finish(succeeded);
+    });
+}
+
 typedef NS_ENUM(NSUInteger, AKRecordingEncoder) {
     AKRecordingEncoderWave,
     AKRecordingEncoderMP3,

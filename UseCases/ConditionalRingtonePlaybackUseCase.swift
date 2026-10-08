@@ -40,6 +40,12 @@ extension ConditionalRingtonePlaybackUseCase: RingtonePlaybackUseCase {
             origin.stop()
         }
     }
+
+    public func restartForOutputChange() throws {
+        // Output changes must replace the playing sound even while calls ring.
+        origin.stop()
+        try origin.start()
+    }
 }
 
 @objc public protocol ConditionalRingtonePlaybackUseCaseDelegate {

@@ -18,8 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 typedef void (^AKAudioDeviceLogger)(NSString *message);
 typedef void (^AKAudioDeviceFailureHandler)(int status);
 
-// Synchronous, main-thread-owned failure gate. The application must serialize
-// all access on its main thread; this class neither dispatches nor uses locks.
+// Synchronous failure gate. Native operations are serialised on the user-agent
+// control worker; lightweight admission is owned by main. Failure snapshots are atomic.
 // It bounds repeated backend attempts, not the duration of one backend call.
 // The logger must not reenter the controller. The failure handler is called
 // synchronously after fallback has finished, with the first failure still
@@ -30,8 +30,8 @@ typedef void (^AKAudioDeviceFailureHandler)(int status);
                          logger:(nullable AKAudioDeviceLogger)logger NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
-@property(nonatomic, readonly) BOOL hasFailed;
-@property(nonatomic, readonly) int lastFailureStatus;
+@property(atomic, readonly) BOOL hasFailed;
+@property(atomic, readonly) int lastFailureStatus;
 @property(nonatomic, readonly) BOOL outgoingCallPending;
 // At most one call per failure episode. Assigning this after a failure does not
 // replay it. The owner should avoid a retain cycle when capturing itself.
@@ -42,7 +42,7 @@ typedef void (^AKAudioDeviceFailureHandler)(int status);
 // backend. The owner also checks user-agent lifecycle and visible recovery state.
 - (BOOL)beginOutgoingCall;
 // The owner must verify the lifecycle generation before finishing a request,
-// and finish/report its result in the same main-thread completion without
+// and finish/report its result in the same main-thread admission completion without
 // yielding or invoking user callbacks between those two operations.
 - (void)finishOutgoingCall;
 
@@ -58,7 +58,7 @@ typedef void (^AKAudioDeviceFailureHandler)(int status);
 
 // For SDK entry points that may open audio internally (for example make-call).
 // The caller times/logs its own SDK operation, then reports its raw result here
-// on the main thread. Only recognized audio errors latch and trigger fallback.
+// on the serial control thread. Only recognized audio errors latch and trigger fallback.
 // Known diagnostic labels: make-call, answer-call, media-state, external.
 // Any other label is logged as "external" to avoid leaking arbitrary content.
 - (void)reportAudioFailure:(int)status operation:(NSString *)operation;

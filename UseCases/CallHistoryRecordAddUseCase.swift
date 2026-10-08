@@ -30,7 +30,7 @@ public final class CallHistoryRecordAddUseCase: Sendable {
 
 extension CallHistoryRecordAddUseCase: UseCase {
     public func execute() {
-        Task {
+        CallHistoryWork.shared.submit { [self] in
             await history.add(recordByRemovingHostIfNeeded(from: record))
         }
     }

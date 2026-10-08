@@ -7,8 +7,83 @@
 
 #import "AKSIPCall.h"
 #import "CallController.h"
+#import "AccountController.h"
 
 @interface AKStoppedRecordingCallStub : AKSIPCall
+@end
+
+#import "AuthenticationFailureController.h"
+@interface AuthenticationFailureController (AsyncRetryTests)
+- (void)presentCredentialError:(NSString *)message field:(NSTextField *)field;
+@end
+@interface AKAsyncAuthenticationAgent : NSObject
+@property(nonatomic) NSUInteger adds;
+@property(nonatomic,copy) void (^addCompletion)(BOOL);
+- (void)addAccount:(AKSIPAccount *)account withPassword:(NSString *)password completion:(void (^)(BOOL))completion;
+- (void)removeAccount:(AKSIPAccount *)account completion:(void (^)(BOOL))completion;
+@end
+@implementation AKAsyncAuthenticationAgent
+- (void)addAccount:(AKSIPAccount *)account withPassword:(NSString *)password completion:(void (^)(BOOL))completion { self.adds++; self.addCompletion=completion; }
+- (void)removeAccount:(AKSIPAccount *)account completion:(void (^)(BOOL))completion { completion(YES); }
+@end
+@interface AKAsyncAuthenticationAccountController : AccountController
+@property(nonatomic) NSUInteger removals, connecting, unavailable;
+@property(nonatomic,copy) void (^removeCompletion)(BOOL);
+@end
+@implementation AKAsyncAuthenticationAccountController
+- (void)removeAccountFromUserAgentWithCompletion:(void (^)(BOOL))completion { self.removals++; self.removeCompletion=completion; }
+- (void)showConnectingState { self.connecting++; }
+- (void)showUnavailableState { self.unavailable++; }
+@end
+@interface AKAsyncAuthenticationController : AuthenticationFailureController
+@property(nonatomic) NSUInteger dismissals, errors;
+@end
+@implementation AKAsyncAuthenticationController
+- (void)closeSheet:(id)sender { self.dismissals++; }
+- (void)presentCredentialError:(NSString *)message field:(NSTextField *)field { self.errors++; }
+@end
+@interface AuthenticationAsyncRetryRepairTests : XCTestCase
+@property(nonatomic) AKAsyncAuthenticationAccountController *owner;
+@property(nonatomic) AKAsyncAuthenticationAgent *agent;
+@property(nonatomic) AKAsyncAuthenticationController *sheet;
+@property(nonatomic) NSArray *retainedControls;
+@end
+@implementation AuthenticationAsyncRetryRepairTests
+- (void)setUp {
+    [super setUp];
+    AKSIPAccount *account=[[AKSIPAccount alloc] initWithDictionary:@{@"UUID":NSUUID.UUID.UUIDString,@"FullName":@"Synthetic",@"Realm":@"*",@"Username":@"old",@"Domain":@"example.invalid"} parser:nil];
+    self.owner=[AKAsyncAuthenticationAccountController new];
+    [self.owner setValue:account forKey:@"account"]; [self.owner setValue:@YES forKey:@"_enabled"];
+    self.agent=[AKAsyncAuthenticationAgent new];
+    self.sheet=[[AKAsyncAuthenticationController alloc] initWithAccountController:self.owner userAgent:(id)self.agent];
+    NSTextField *username=[NSTextField new], *password=[NSTextField new]; NSButton *save=[NSButton new];
+    username.stringValue=@" new "; password.stringValue=@"synthetic-only"; save.state=NSControlStateValueOff;
+    self.retainedControls=@[username,password,save]; self.sheet.usernameField=username; self.sheet.passwordField=password; self.sheet.mustSaveCheckBox=save;
+}
+- (void)testRetryWaitsForDeleteThenNativeAddAndDoesNotUseOldRegistrationSnapshot {
+    [self.sheet changeUsernameAndPassword:nil];
+    XCTAssertEqual(self.owner.removals,1u); XCTAssertEqual(self.agent.adds,0u); XCTAssertEqualObjects(self.owner.account.username,@"old");
+    [self.sheet changeUsernameAndPassword:nil]; XCTAssertEqual(self.owner.removals,1u);
+    self.owner.removeCompletion(YES);
+    XCTAssertEqual(self.agent.adds,1u); XCTAssertEqualObjects(self.owner.account.username,@"new"); XCTAssertEqual(self.sheet.dismissals,0u);
+    self.agent.addCompletion(YES);
+    XCTAssertEqual(self.sheet.dismissals,1u); XCTAssertEqual(self.sheet.errors,0u); XCTAssertEqual(self.owner.unavailable,0u);
+    XCTAssertEqualObjects(self.sheet.passwordField.stringValue,@"");
+}
+- (void)testRejectedDeleteRetainsRetryFieldsAndDoesNotAdd {
+    [self.sheet changeUsernameAndPassword:nil]; self.owner.removeCompletion(NO);
+    XCTAssertEqual(self.agent.adds,0u); XCTAssertEqual(self.sheet.errors,1u); XCTAssertEqual(self.sheet.dismissals,0u);
+    XCTAssertEqualObjects(self.owner.account.username,@"old"); XCTAssertEqualObjects(self.sheet.passwordField.stringValue,@"synthetic-only");
+}
+- (void)testRejectedAddRetainsSheetAndAllowsRetry {
+    [self.sheet changeUsernameAndPassword:nil]; self.owner.removeCompletion(YES); self.agent.addCompletion(NO);
+    XCTAssertEqual(self.sheet.errors,1u); XCTAssertEqual(self.sheet.dismissals,0u); XCTAssertEqual(self.owner.unavailable,1u);
+    [self.sheet changeUsernameAndPassword:nil]; XCTAssertEqual(self.owner.removals,2u);
+}
+- (void)testDisablingAccountWhileDeleteIsPendingCancelsRetry {
+    [self.sheet changeUsernameAndPassword:nil]; [self.owner setValue:@NO forKey:@"_enabled"]; self.owner.removeCompletion(YES);
+    XCTAssertEqual(self.agent.adds,0u); XCTAssertEqual(self.sheet.dismissals,0u); XCTAssertEqualObjects(self.owner.account.username,@"old");
+}
 @end
 
 @implementation AKStoppedRecordingCallStub
@@ -83,6 +158,7 @@
 @end
 @implementation AKDeferredRecordingCall
 - (BOOL)isRecording { return self.recordingActive; }
+- (BOOL)requiresSIPControlThread { return NO; }
 - (BOOL)startRecordingToURL:(NSURL *)URL {
     if (self.setupFails) return NO;
     self.recordingActive = YES;
@@ -105,6 +181,7 @@
                      destinationURL:(NSURL *)destinationURL completion:(void (^)(BOOL))completion {
     self.pendingCompletion = completion;
 }
+- (BOOL)persistRecordingRecoveryJobAtDirectory:(NSURL *)directory localURL:(NSURL *)local remoteURL:(NSURL *)remote destinationURL:(NSURL *)destination error:(NSError **)error { return YES; }
 - (void)complete:(BOOL)succeeded {
     void (^completion)(BOOL) = self.pendingCompletion;
     self.pendingCompletion = nil;
@@ -306,6 +383,8 @@
 @property(nonatomic) BOOL localHeld;
 @property(nonatomic) BOOL remoteHeld;
 @property(nonatomic) NSUInteger answers;
+@property(nonatomic) BOOL rejectsHangUp;
+@property(nonatomic) BOOL rejectsHold;
 @property(nonatomic) NSUInteger hangups;
 @property(nonatomic) NSUInteger recordingStops;
 @property(nonatomic, strong) NSMutableString *sentDigits;
@@ -321,13 +400,23 @@
 - (BOOL)isOnRemoteHold { return self.remoteHeld; }
 - (void)answer { self.answers++; }
 - (void)hangUp { self.hangups++; }
+- (void)requestHangUpWithCompletion:(void (^)(BOOL))completion { self.hangups++; completion(!self.rejectsHangUp); }
+- (void)requestToggleHoldWithCompletion:(void (^)(BOOL))completion { if (!self.rejectsHold) self.localHeld = !self.localHeld; completion(!self.rejectsHold); }
 - (void)stopRecording { self.recordingStops++; }
 - (void)toggleMicrophoneMute { self.muted = !self.muted; }
+- (void)requestToggleMicrophoneMuteWithCompletion:(void (^)(BOOL))completion { self.muted = !self.muted; completion(YES); }
 - (void)toggleHold { self.localHeld = !self.localHeld; }
 - (void)sendDTMFDigits:(NSString *)digits { [self.sentDigits appendString:digits]; }
 @end
 
 @interface AKCompactCallController : CallController
+@end
+
+@interface AKDeferredHangupCall : AKCompactCallFixture
+@property(nonatomic,copy) void (^hangupCompletion)(BOOL);
+@end
+@implementation AKDeferredHangupCall
+- (void)requestHangUpWithCompletion:(void (^)(BOOL))completion { self.hangups++; self.hangupCompletion=completion; }
 @end
 @implementation AKCompactCallController
 - (void)removeUserNotification {}
@@ -341,6 +430,7 @@
 
 @interface CallController (CompactCardTests)
 - (void)showActiveCallView;
+- (BOOL)windowShouldClose:(NSWindow *)window;
 @end
 
 @interface CompactCallCardTests : XCTestCase
@@ -567,11 +657,11 @@
     XCTAssertEqualObjects(self.call.sentDigits, @"123456789*0#");
     [active activeCallView:(AKActiveCallView *)active.view didReceiveText:@"ABCDRabcdr"];
     XCTAssertEqualObjects(self.call.sentDigits, @"123456789*0#ABCDRabcdr");
-    XCTAssertEqualObjects(self.controller.displayedName, self.call.sentDigits);
+    XCTAssertEqualObjects(self.controller.displayedName, @"Alex Morgan");
     XCTAssertEqualObjects([[active valueForKey:@"keypadDigitsField"] stringValue], self.call.sentDigits);
     XCTAssertEqualObjects(self.controller.window.title, @"Personal");
     [active activeCallView:(AKActiveCallView *)active.view didReceiveText:@"invalid!"];
-    XCTAssertEqualObjects(self.controller.displayedName, self.call.sentDigits);
+    XCTAssertEqualObjects(self.controller.displayedName, @"Alex Morgan");
     self.call.state = kAKSIPCallDisconnectedState;
     for (NSView *child in popover.contentViewController.view.subviews) {
         if ([child isKindOfClass:NSButton.class]) [(NSButton *)child performClick:nil];
@@ -596,7 +686,7 @@
     XCTAssertFalse(self.controller.window.visible);
     XCTAssertFalse(self.controller.isCallActive);
     XCTAssertEqual(self.call.hangups, 2u);
-    XCTAssertNil(self.call.delegate);
+    XCTAssertEqual(self.call.delegate, self.controller);
     XCTAssertNil(self.controller.activeCallViewController.callTimer);
 }
 - (void)testDisconnectRetainsOneSecondCallBackGuard {
@@ -613,5 +703,544 @@
         [reenabled fulfill];
     });
     [self waitForExpectations:@[reenabled] timeout:3];
+}
+
+- (void)testDeadKeyDoesNotTransmitAndNormalDigitsStillDo {
+    [self.controller showActiveCallView];
+    AKActiveCallView *view = (id)self.controller.activeCallViewController.view;
+    NSEvent *dead = [NSEvent keyEventWithType:NSEventTypeKeyDown location:NSZeroPoint modifierFlags:NSEventModifierFlagOption
+        timestamp:0 windowNumber:0 context:nil characters:@"" charactersIgnoringModifiers:@"e" isARepeat:NO keyCode:14];
+    XCTAssertNoThrow([view keyDown:dead]);
+    XCTAssertEqualObjects(self.call.sentDigits, @"");
+    [view insertText:@"5#ABCDR"];
+    XCTAssertEqualObjects(self.call.sentDigits, @"5#ABCDR");
+}
+
+- (void)testDurationContinuesDuringLocalRemoteHoldAndMute {
+    self.controller.callActive = YES;
+    self.controller.callStartTime = NSDate.timeIntervalSinceReferenceDate - 61;
+    [self.controller showActiveCallView];
+    [self.controller.activeCallViewController startCallTimer];
+    for (NSString *status in @[@"on hold", @"on remote hold", @"mic muted"]) {
+        [self.controller.activeCallViewController stopCallTimer];
+        self.controller.status = status;
+        XCTAssertNotNil(self.controller.activeCallViewController.callTimer);
+        self.controller.callStartTime -= 5;
+        [self.controller.activeCallViewController callTimerTick:nil];
+        XCTAssertEqualObjects(self.controller.status, status);
+        XCTAssertEqualObjects([[self.controller.activeCallViewController valueForKey:@"durationField"] stringValue], self.controller.presentationDuration);
+    }
+    self.call.state = kAKSIPCallDisconnectedState;
+    self.call.duration = 84;
+    self.controller.callActive = NO;
+    [self.controller.activeCallViewController stopCallTimer];
+    XCTAssertNil(self.controller.activeCallViewController.callTimer);
+    XCTAssertEqualObjects(self.controller.presentationDuration, @"01:24");
+}
+
+- (void)testCallerIdentitySurvivesDTMFAndEndedView {
+    [self.controller showActiveCallView];
+    [self.controller.activeCallViewController activeCallView:(id)self.controller.activeCallViewController.view didReceiveText:@"12#"];
+    self.call.state = kAKSIPCallDisconnectedState;
+    [self.controller showEndedCallView];
+    XCTAssertEqualObjects(self.controller.displayedName, @"Alex Morgan");
+    XCTAssertEqualObjects(self.controller.endedCallViewController.displayedNameField.stringValue, @"Alex Morgan");
+    XCTAssertEqualObjects(self.controller.endedCallViewController.displayedNameField.accessibilityLabel, @"Caller");
+    XCTAssertEqualObjects(self.call.sentDigits, @"12#");
+}
+
+- (void)testCallGrowthAtScreenBottomStaysInVisibleAreaInBothAppearances {
+    NSScreen *screen = NSScreen.mainScreen;
+    XCTAssertNotNil(screen);
+    for (NSString *appearance in @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]) {
+        self.controller.window.appearance = [NSAppearance appearanceNamed:appearance];
+        [self.controller showActiveCallView];
+        self.controller.status = @"00:12";
+        NSRect frame = self.controller.window.frame;
+        frame.origin = NSMakePoint(NSMinX(screen.visibleFrame) + 30, NSMinY(screen.visibleFrame));
+        [self.controller.window setFrame:frame display:YES];
+        [self.controller.window orderFront:nil];
+        self.controller.status = @"The remote telephone could not be reached. Please check the number and try the call again.";
+        XCTAssertGreaterThanOrEqual(NSMinY(self.controller.window.frame), NSMinY(screen.visibleFrame));
+        XCTAssertTrue(NSContainsRect(screen.visibleFrame, self.controller.window.frame));
+        for (NSView *child in self.controller.activeCallViewController.view.subviews) {
+            if (![child isKindOfClass:NSButton.class]) continue;
+            NSRect control = [self.controller.window convertRectToScreen:[child convertRect:child.bounds toView:nil]];
+            XCTAssertTrue(NSContainsRect(screen.visibleFrame, control));
+        }
+        self.call.state = kAKSIPCallDisconnectedState;
+        [self.controller showEndedCallView];
+        XCTAssertTrue(NSContainsRect(screen.visibleFrame, self.controller.window.frame));
+        self.call.state = kAKSIPCallConfirmedState;
+    }
+}
+
+- (void)testRejectedHangupLeavesCallControllableAndCloseCanRetry {
+    self.controller.callActive = YES;
+    self.call.rejectsHangUp = YES;
+    [self.controller showActiveCallView];
+    [self.controller hangUpCall];
+    XCTAssertTrue(self.controller.isCallActive);
+    XCTAssertEqual(self.call.delegate, self.controller);
+    XCTAssertTrue([self buttonWithAction:@selector(hangUpCall:) inView:self.controller.activeCallViewController.view].enabled);
+    XCTAssertFalse([self.controller windowShouldClose:self.controller.window]);
+    XCTAssertTrue(self.controller.isCallActive);
+    self.call.rejectsHangUp = NO;
+    [self.controller hangUpCall];
+    XCTAssertFalse(self.controller.isCallActive);
+    XCTAssertEqual(self.call.hangups, 3u);
+}
+- (void)testReplacingModelDuringHangupLeavesNewCallControllableAndClearsOldDigits {
+    AKDeferredHangupCall *old=[AKDeferredHangupCall new]; old.state=kAKSIPCallConfirmedState;
+    self.controller.call=old; self.controller.callActive=YES;
+    [self.controller.activeCallViewController activeCallView:(id)self.controller.activeCallViewController.view didReceiveText:@"12"];
+    [self.controller hangUpCall]; XCTAssertNotNil(old.hangupCompletion);
+    AKCompactCallFixture *replacement=[AKCompactCallFixture new]; replacement.state=kAKSIPCallConfirmedState; replacement.rejectsHangUp=YES;
+    self.controller.call=replacement; self.controller.callActive=YES;
+    XCTAssertEqualObjects(self.controller.activeCallViewController.enteredDTMF,@"");
+    XCTAssertEqualObjects([[self.controller.activeCallViewController valueForKey:@"keypadDigitsField"] stringValue],@"");
+    [self.controller hangUpCall]; XCTAssertEqual(replacement.hangups,1u); XCTAssertTrue(self.controller.isCallActive);
+    old.hangupCompletion(YES); XCTAssertTrue(self.controller.isCallActive); XCTAssertEqual(self.controller.call,replacement);
+}
+
+@end
+
+#import "CallTransferController.h"
+#import "ActiveCallTransferViewController.h"
+#import "EndedCallTransferViewController.h"
+
+@interface CallTransferController (RepairTests)
+- (void)sourceCallControllerSIPCallTransferStatusDidChange:(NSNotification *)notification;
+@end
+@interface ActiveCallTransferViewController (RepairTests)
+- (IBAction)transferCall:(id)sender;
+- (void)callDidHold;
+@end
+
+@interface AKTransferFixtureController : CallTransferController
+@property(nonatomic) NSUInteger transfers;
+@property(nonatomic) NSUInteger closures;
+@property(nonatomic) BOOL ignoreActualSheet;
+@end
+@implementation AKTransferFixtureController
+- (void)transferCall { self.transfers++; }
+- (void)closeSheet:(id)sender { self.closures++; [super closeSheet:sender]; }
+- (NSWindow *)window { return nil; }
+- (void)unsubscribeFromWindowFloatingChanges {}
+@end
+
+@interface TransferRepairTests : XCTestCase
+@property(nonatomic) AKCompactCallController *source;
+@property(nonatomic) AKCompactCallFixture *call;
+@property(nonatomic) AKCompactAccountFixture *account;
+@property(nonatomic) AKTransferFixtureController *transfer;
+@end
+
+@interface AKDeferredSetupHoldCall : AKCompactCallFixture
+@property(nonatomic) NSUInteger holdRequests;
+@property(nonatomic,copy) void (^holdCompletion)(BOOL);
+@end
+@implementation AKDeferredSetupHoldCall
+- (void)requestToggleHoldWithCompletion:(void (^)(BOOL))completion {
+    self.holdRequests++;
+    if (self.holdRequests==1) self.holdCompletion=completion;
+    else [super requestToggleHoldWithCompletion:completion];
+}
+@end
+@implementation TransferRepairTests
+- (void)setUp {
+    self.account = [AKCompactAccountFixture new];
+    self.account.accountDescription = @"Synthetic";
+    self.source = [[AKCompactCallController alloc] initWithWindowNibName:@"Call" accountController:(id)self.account userAgent:nil delegate:nil];
+    self.call = [AKCompactCallFixture new]; self.call.state = kAKSIPCallConfirmedState;
+    self.source.call = self.call; self.source.callActive = YES;
+    self.transfer = [[AKTransferFixtureController alloc] initWithSourceCallController:self.source userAgent:nil];
+    [self.source setValue:self.transfer forKey:@"callTransferController"];
+}
+- (void)tearDown {
+    self.source.callActive = NO;
+    self.transfer.callActive = NO;
+    [self.transfer.activeCallViewController stopCallTimer];
+    [self.source.activeCallViewController stopCallTimer];
+    [self.source.window close];
+    self.transfer = nil; self.source = nil;
+}
+- (void)testClosingSetupPreservesManualHoldAndRestoresOnlySetupHold {
+    self.source.callOnHold = YES; self.call.localHeld = YES;
+    [self.transfer beginTransferSetup];
+    [self.transfer closeSheet:nil];
+    XCTAssertTrue(self.call.localHeld);
+    self.source.callOnHold = NO; self.call.localHeld = NO;
+    [self.transfer beginTransferSetup];
+    self.source.callOnHold = YES; self.call.localHeld = YES;
+    [self.transfer closeSheet:nil];
+    XCTAssertFalse(self.call.localHeld);
+}
+- (void)testClosingBeforeSetupHoldAcknowledgementRestoresLateHold {
+    AKDeferredSetupHoldCall *call=[AKDeferredSetupHoldCall new]; call.state=kAKSIPCallConfirmedState;
+    self.source.call=call; self.source.callActive=YES; self.source.callOnHold=NO;
+    [self.transfer beginTransferSetup]; XCTAssertEqual(call.holdRequests,1u);
+    [self.transfer closeSheet:nil]; call.holdCompletion(YES);
+    XCTAssertEqual(call.holdRequests,1u);
+    call.localHeld=YES; self.source.callOnHold=YES;
+    [NSNotificationCenter.defaultCenter postNotificationName:AKSIPCallDidLocalHoldNotification object:call];
+    XCTAssertEqual(call.holdRequests,2u); XCTAssertFalse(call.localHeld);
+}
+- (void)testCachedTransferRebindsCurrentCallAndIgnoresOldFinalResult {
+    AKCompactCallFixture *a = self.call;
+    AKCompactCallFixture *b = [AKCompactCallFixture new]; b.state = kAKSIPCallConfirmedState;
+    self.source.call = b;
+    b.transferStatus = PJSIP_SC_OK;
+    [NSNotificationCenter.defaultCenter postNotificationName:AKSIPCallTransferStatusDidChangeNotification object:b
+        userInfo:@{@"AKFinalTransferNotification": @YES}];
+    XCTAssertTrue([[self.transfer valueForKey:@"sourceCallTransferred"] boolValue]);
+    XCTAssertEqual(self.transfer.closures, 1u);
+    AKCompactCallFixture *c = [AKCompactCallFixture new]; c.state = kAKSIPCallConfirmedState;
+    self.source.call = c;
+    a.transferStatus = PJSIP_SC_OK;
+    [NSNotificationCenter.defaultCenter postNotificationName:AKSIPCallTransferStatusDidChangeNotification object:a
+        userInfo:@{@"AKFinalTransferNotification": @YES}];
+    XCTAssertFalse([[self.transfer valueForKey:@"sourceCallTransferred"] boolValue]);
+    XCTAssertEqual(self.transfer.closures, 1u);
+    c.transferStatus = PJSIP_SC_BUSY_HERE;
+    [NSNotificationCenter.defaultCenter postNotificationName:AKSIPCallTransferStatusDidChangeNotification object:c
+        userInfo:@{@"AKFinalTransferNotification": @YES}];
+    XCTAssertFalse([[self.transfer valueForKey:@"sourceCallTransferred"] boolValue]);
+}
+- (void)testRejectedPreliminaryHoldAllowsTransferRetryThenAcceptedAckTransfersOnce {
+    AKCompactCallFixture *consultation = [AKCompactCallFixture new]; consultation.state = kAKSIPCallConfirmedState;
+    self.transfer.call = consultation;
+    self.transfer.callActive = YES;
+    ActiveCallTransferViewController *view = (id)self.transfer.activeCallViewController;
+    (void)view.view;
+    NSButton *button = [view valueForKey:@"transferButton"];
+    [view allowTransfer];
+    consultation.rejectsHold = YES;
+    [view transferCall:nil];
+    XCTAssertFalse([[view valueForKey:@"waitingForHold"] boolValue]);
+    XCTAssertTrue(button.enabled);
+    XCTAssertEqual(self.transfer.transfers, 0u);
+    consultation.rejectsHold = NO;
+    [view transferCall:nil];
+    XCTAssertTrue([[view valueForKey:@"waitingForHold"] boolValue]);
+    XCTAssertFalse(button.enabled);
+    self.transfer.callOnHold = YES;
+    [view callDidHold];
+    XCTAssertFalse([[view valueForKey:@"waitingForHold"] boolValue]);
+    XCTAssertEqual(self.transfer.transfers, 1u);
+    [view callDidHold];
+    XCTAssertEqual(self.transfer.transfers, 1u);
+}
+- (void)testCompiledEndedTransferNibHasItsRedialOutletAndOneSecondGuard {
+    AKCompactCallFixture *consultation = [AKCompactCallFixture new];
+    consultation.state = kAKSIPCallDisconnectedState; consultation.lastStatus = PJSIP_SC_OK;
+    self.transfer.call = consultation;
+    (void)self.transfer.endedCallViewController.view;
+    NSButton *redial = self.transfer.endedCallViewController.redialButton;
+    XCTAssertNotNil(redial);
+    XCTAssertEqual(redial.action, @selector(redial:));
+    [self.transfer SIPCallDidDisconnect:[NSNotification notificationWithName:@"test" object:consultation]];
+    XCTAssertFalse(redial.enabled);
+    XCTestExpectation *enabled = [self expectationWithDescription:@"transfer redial guard"];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        XCTAssertTrue(redial.enabled); [enabled fulfill];
+    });
+    [self waitForExpectations:@[enabled] timeout:3];
+}
+- (void)testLateHoldAcceptanceAfterTransferPaneClosesCannotTransfer {
+    AKDeferredSetupHoldCall *call=[AKDeferredSetupHoldCall new]; call.state=kAKSIPCallConfirmedState;
+    self.transfer.call=call; self.transfer.callActive=YES;
+    ActiveCallTransferViewController *view=(id)self.transfer.activeCallViewController; (void)view.view;
+    [view transferCall:nil]; XCTAssertEqual(call.holdRequests,1u);
+    [view transferCall:nil]; XCTAssertEqual(call.holdRequests,1u);
+    [view viewWillDisappear]; call.holdCompletion(YES);
+    self.transfer.callOnHold=YES; [view callDidHold];
+    XCTAssertFalse([[view valueForKey:@"waitingForHold"] boolValue]); XCTAssertNil([view valueForKey:@"holdAcceptanceTimer"]);
+    XCTAssertEqual(self.transfer.transfers,0u);
+}
+@end
+
+#import "AccountController.h"
+#import "AccountControllers.h"
+#import "AccountWindowController.h"
+#import "AKSIPUserAgent.h"
+#import <objc/runtime.h>
+
+@interface AccountController (IntentRepairTests)
+- (void)changeAccountState:(AccountWindowControllerAccountState)state;
+- (void)SIPUserAgentDidFinishStarting:(NSNotification *)notification;
+@end
+
+@interface AKIntentAccount : AKSIPAccount
+@property(nonatomic) NSUInteger registerRequests;
+@property(nonatomic) NSUInteger unregisterRequests;
+@end
+@implementation AKIntentAccount
+- (void)setRegistered:(BOOL)registered {
+    self.desiredRegistered = registered;
+    if (registered) self.registerRequests++; else self.unregisterRequests++;
+}
+- (void)setOnline:(BOOL)online {}
+@end
+@interface AKIntentAgent : NSObject
+@property(nonatomic, getter=isStarted) BOOL started;
+@property(nonatomic) NSUInteger removals;
+- (void)removeAccount:(AKSIPAccount *)account completion:(void (^)(BOOL))completion;
+@end
+@implementation AKIntentAgent
+- (void)removeAccount:(AKSIPAccount *)account completion:(void (^)(BOOL))completion { self.removals++; completion(YES); }
+@end
+@interface AKIntentController : AccountController
+@property(nonatomic) NSUInteger offlinePresentations;
+@property(nonatomic) NSUInteger unavailablePresentations;
+@end
+@implementation AKIntentController
+- (void)showOfflineState { self.offlinePresentations++; }
+- (void)showUnavailableState { self.unavailablePresentations++; }
+- (void)showConnectingState {}
+@end
+@interface AKShutdownIntentController : AKIntentController
+@property(nonatomic) NSUInteger removals;
+@end
+@implementation AKShutdownIntentController
+- (void)removeAccountFromUserAgent { self.removals++; }
+@end
+@interface AKShutdownCallFixture : NSObject
+@property(nonatomic,getter=isCallActive) BOOL callActive;
+@property(nonatomic) NSUInteger hangups;
+- (void)hangUpCall;
+@end
+@implementation AKShutdownCallFixture
+- (void)hangUpCall { self.hangups++; }
+- (void)close {}
+@end
+@interface AKRegistryTestAgent : AKSIPUserAgent
+@end
+@implementation AKRegistryTestAgent
+- (void)performSIPOperation:(pj_status_t (^)(void))operation completion:(void (^)(pj_status_t))completion { if (completion) completion(PJ_SUCCESS); }
+- (void)performSIPCleanupOperation:(pj_status_t (^)(void))operation completion:(void (^)(pj_status_t))completion {
+    // Inert accepted account-delete boundary. No native operation is executed.
+    if (completion) completion(PJ_SUCCESS);
+}
+@end
+
+@interface AccountIntentRepairTests : XCTestCase
+@end
+@implementation AccountIntentRepairTests
+- (void)testDisabledAccountWithRejectedHangupStillCountsForQuitAndShutdown {
+    AKShutdownIntentController *controller=[AKShutdownIntentController new];
+    [controller setValue:@NO forKey:@"_enabled"];
+    AKShutdownCallFixture *call=[AKShutdownCallFixture new]; call.callActive=YES;
+    [controller setValue:[NSMutableArray arrayWithObject:call] forKey:@"callControllers"];
+    AccountControllers *controllers=[AccountControllers new]; [controllers addController:controller];
+    XCTAssertEqual(controllers.enabled.count,0u); XCTAssertTrue(controllers.haveActiveCallControllers);
+    [controllers hangUpCallsAndRemoveAccountsFromUserAgent];
+    XCTAssertEqual(call.hangups,1u); XCTAssertEqual(controller.removals,1u);
+    call.callActive=NO; XCTAssertFalse(controllers.haveActiveCallControllers);
+}
+- (AKIntentAccount *)account {
+    return [[AKIntentAccount alloc] initWithDictionary:@{@"UUID": NSUUID.UUID.UUIDString, @"FullName": @"Synthetic",
+        @"Realm": @"*", @"Username": @"test", @"Domain": @"example.invalid"} parser:nil];
+}
+- (AKIntentController *)controllerWithAccount:(AKIntentAccount *)account agent:(AKIntentAgent *)agent {
+    AKIntentController *controller = [AKIntentController new];
+    [controller setValue:account forKey:@"account"];
+    [controller setValue:agent forKey:@"userAgent"];
+    [controller setValue:[NSMutableArray new] forKey:@"callControllers"];
+    [controller setValue:@(YES) forKey:@"_enabled"];
+    [controller setValue:@(AccountWindowControllerAccountStateAvailable) forKey:@"desiredAvailability"];
+    return controller;
+}
+- (void)testOfflineCancelsPendingRegistrationAndLateStartupDoesNotReverseIntent {
+    AKIntentAccount *account = [self account];
+    AKIntentAgent *agent = [AKIntentAgent new];
+    AKIntentController *controller = [self controllerWithAccount:account agent:agent];
+    [controller registerAccount];
+    XCTAssertTrue(controller.attemptingToRegisterAccount);
+    NSUInteger generation = account.outgoingGeneration;
+    [controller changeAccountState:AccountWindowControllerAccountStateOffline];
+    XCTAssertFalse(controller.attemptingToRegisterAccount);
+    XCTAssertGreaterThan(account.outgoingGeneration, generation);
+    agent.started = YES;
+    [controller SIPUserAgentDidFinishStarting:[NSNotification notificationWithName:@"test" object:agent]];
+    XCTAssertEqual(account.registerRequests, 0u);
+    XCTAssertEqual(agent.removals, 0u);
+}
+- (void)testManualUnavailableSurvivesAutomaticRegistrationAndExplicitAvailableWorks {
+    AKIntentAccount *account = [self account]; [account updateIdentifier:7];
+    AKIntentAgent *agent = [AKIntentAgent new]; agent.started = YES;
+    AKIntentController *controller = [self controllerWithAccount:account agent:agent];
+    [controller changeAccountState:AccountWindowControllerAccountStateUnavailable];
+    [controller resumeRegistrationIfDesired];
+    XCTAssertTrue(controller.isAccountUnavailable);
+    XCTAssertEqual(account.registerRequests, 0u);
+    XCTAssertGreaterThan(account.unregisterRequests, 0u);
+    [controller changeAccountState:AccountWindowControllerAccountStateAvailable];
+    XCTAssertFalse(controller.isAccountUnavailable);
+    XCTAssertEqual(account.registerRequests, 1u);
+}
+- (void)testOfflineRetainsActiveCallOwnershipAndAccountRemovalRetiresRegistryUntilDisconnect {
+    AKIntentAccount *account = [self account]; [account updateIdentifier:7];
+    AKCompactCallFixture *call = [AKCompactCallFixture new]; call.identifier = 3; call.state = kAKSIPCallConfirmedState;
+    [call setValue:account forKey:@"account"];
+    [[account valueForKey:@"calls"] addObject:call];
+    AKRegistryTestAgent *registry = class_createInstance(AKRegistryTestAgent.class, 0);
+    [registry setValue:[NSMutableArray arrayWithObject:account] forKey:@"accounts"];
+    [registry setValue:[NSMutableArray new] forKey:@"retiredAccounts"];
+    [registry setValue:@(2) forKey:@"state"];
+    XCTAssertNotNil([registry callWithIdentifier:3]);
+    AKIntentController *controller = [self controllerWithAccount:account agent:(id)registry];
+    AKHeadlessCallController *card = [[AKHeadlessCallController alloc] initWithWindowNibName:@"Call"
+        accountController:controller userAgent:nil delegate:nil];
+    card.call = call; card.callActive = YES;
+    [controller.callControllers addObject:card];
+    [controller changeAccountState:AccountWindowControllerAccountStateOffline];
+    XCTAssertEqual([registry callWithIdentifier:3], call);
+    XCTAssertTrue(card.isCallActive);
+    XCTAssertEqual(call.delegate, card);
+    XCTAssertEqual(call.hangups, 0u);
+    [card SIPCallDidLocalHold:[NSNotification notificationWithName:@"test" object:call]];
+    XCTAssertTrue(card.isCallOnHold);
+    __block BOOL removed = NO;
+    [registry removeAccount:account completion:^(BOOL success) { removed = success; }];
+    XCTAssertTrue(removed);
+    XCTAssertEqualObjects([registry callWithIdentifier:3], call);
+    XCTAssertEqual(account.callsSnapshot.count, 1u);
+    [account removeCall:call];
+    [registry forgetRetiredAccountIfUnused:account];
+    XCTAssertNil([registry callWithIdentifier:3]);
+}
+- (void)testOutgoingCancellationTokenChangesOnRemovalAndIdentifierReplacement {
+    AKIntentAccount *account = [self account];
+    NSUInteger initial = account.outgoingGeneration;
+    [account updateIdentifier:3];
+    XCTAssertGreaterThan(account.outgoingGeneration, initial);
+    NSUInteger added = account.outgoingGeneration;
+    [account cancelPendingOutgoingCalls];
+    XCTAssertGreaterThan(account.outgoingGeneration, added);
+    NSUInteger cancelled = account.outgoingGeneration;
+    [account updateIdentifier:3];
+    XCTAssertEqual(account.outgoingGeneration, cancelled);
+    [account updateIdentifier:-1];
+    XCTAssertGreaterThan(account.outgoingGeneration, cancelled);
+}
+@end
+
+@interface AKSIPUserAgent (RingbackRepairTests)
+- (void)finishStopping;
+@end
+@interface AKRingbackTestAgent : AKRegistryTestAgent
+@property(nonatomic) NSUInteger connectionRequests;
+@end
+@implementation AKRingbackTestAgent
+- (pj_status_t)connectAudioSource:(pjsua_conf_port_id)source destination:(pjsua_conf_port_id)destination {
+    self.connectionRequests++; return PJ_SUCCESS;
+}
+@end
+@interface RingbackRestartRepairTests : XCTestCase
+@end
+@implementation RingbackRestartRepairTests
+- (void)testFinishStoppingResetsEveryOldSlotAndNewTonePortConnectsOnce {
+    AKRingbackTestAgent *agent = class_createInstance(AKRingbackTestAgent.class, 0);
+    [agent setValue:[NSMutableArray new] forKey:@"accounts"];
+    [agent setValue:[NSMutableArray new] forKey:@"retiredAccounts"];
+    [agent setValue:@1 forKey:@"ringbackCount"];
+    agent.callData[0].ringbackOn = PJ_TRUE;
+    [agent finishStopping];
+    XCTAssertEqual([[agent valueForKey:@"ringbackCount"] integerValue], 0);
+    for (NSInteger i=0; i<PJSUA_MAX_CALLS; i++) XCTAssertFalse(agent.callData[i].ringbackOn);
+    [agent setValue:@42 forKey:@"ringbackSlot"];
+    AKCompactCallFixture *call = [AKCompactCallFixture new]; call.identifier = 0;
+    XCTestExpectation *started = [self expectationWithDescription:@"ringback started on SDK worker"];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT,0), ^{
+        XCTAssertFalse(NSThread.isMainThread);
+        [agent startRingbackForCall:call];
+        [agent startRingbackForCall:call];
+        [started fulfill];
+    });
+    [self waitForExpectations:@[started] timeout:2];
+    XCTAssertEqual(agent.connectionRequests, 1u);
+    XCTAssertEqual([[agent valueForKey:@"ringbackCount"] integerValue], 1);
+    XCTAssertTrue(agent.callData[0].ringbackOn);
+    [agent setValue:@(-1) forKey:@"ringbackSlot"];
+    XCTestExpectation *stopped = [self expectationWithDescription:@"ringback stopped on SDK worker"];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT,0), ^{
+        XCTAssertFalse(NSThread.isMainThread);
+        [agent stopRingbackForCall:call];
+        [stopped fulfill];
+    });
+    [self waitForExpectations:@[stopped] timeout:2];
+    XCTAssertFalse(agent.callData[0].ringbackOn);
+    XCTAssertEqual([[agent valueForKey:@"ringbackCount"] integerValue], 0);
+}
+@end
+
+#import "AKSIPURI.h"
+#import <objc/message.h>
+
+@interface AKOutgoingQueueAccount : AKSIPAccount
+@property(nonatomic) id capturedParameters;
+@end
+@implementation AKOutgoingQueueAccount
+- (void)performSelector:(SEL)selector onThread:(NSThread *)thread withObject:(id)object waitUntilDone:(BOOL)wait {
+    NSCAssert([NSStringFromSelector(selector) isEqualToString:@"thread_makeCallWithParameters:"], @"unexpected SDK queue");
+    self.capturedParameters = object;
+}
+@end
+@interface AKOutgoingAgentDouble : NSObject
+@property(nonatomic) NSUInteger audioGeneration;
+- (BOOL)beginOutgoingCall;
+@end
+@implementation AKOutgoingAgentDouble
+- (BOOL)beginOutgoingCall { return YES; }
+@end
+@interface AKCallInfoDouble : NSObject
+@property(nonatomic) NSInteger identifier, accountIdentifier, state, lastStatus;
+@property(nonatomic, copy) NSString *dialogIdentifier, *stateText, *lastStatusText;
+@property(nonatomic) AKSIPURI *localURI, *remoteURI;
+@property(nonatomic, getter=isIncoming) BOOL incoming;
+@end
+@implementation AKCallInfoDouble
+@end
+static id AKOutgoingRegressionAgent;
+static id AKOutgoingSharedAgent(id receiver, SEL selector) { return AKOutgoingRegressionAgent; }
+
+@interface OutgoingAccountRepairTests : XCTestCase
+@end
+@implementation OutgoingAccountRepairTests
+- (void)testAcceptedCompletionCannotAttachAfterAccountRemovalOrTerminalDialog {
+    Method shared = class_getClassMethod(AKSIPUserAgent.class, @selector(sharedUserAgent));
+    IMP original = method_getImplementation(shared);
+    AKOutgoingAgentDouble *agent = [AKOutgoingAgentDouble new]; agent.audioGeneration = 7;
+    AKOutgoingRegressionAgent = agent;
+    method_setImplementation(shared, (IMP)AKOutgoingSharedAgent);
+    @try {
+        for (NSString *scenario in @[@"current", @"removed", @"replaced", @"disconnected"]) {
+            AKOutgoingQueueAccount *account = [[AKOutgoingQueueAccount alloc] initWithDictionary:
+                @{@"UUID": NSUUID.UUID.UUIDString, @"FullName": @"Synthetic", @"Realm": @"*", @"Username": @"test", @"Domain": @"example.invalid"} parser:nil];
+            [account updateIdentifier:3]; account.thread = NSThread.currentThread;
+            AKSIPURI *uri = [[AKSIPURI alloc] initWithUser:@"remote" host:@"example.invalid" displayName:@""];
+            __block NSUInteger completions = 0; __block AKSIPCall *returned = nil;
+            [account makeCallTo:uri completion:^(AKSIPCall *call) { completions++; returned = call; }];
+            XCTAssertNotNil(account.capturedParameters);
+            AKCallInfoDouble *info = [AKCallInfoDouble new]; info.identifier = 9; info.accountIdentifier = 3;
+            info.state = kAKSIPCallCallingState; info.dialogIdentifier = @"synthetic-dialog";
+            info.stateText = @"Calling"; info.lastStatusText = @"Synthetic"; info.localURI = uri; info.remoteURI = uri;
+            if ([scenario isEqual:@"removed"]) [account updateIdentifier:-1];
+            if ([scenario isEqual:@"replaced"]) { [account updateIdentifier:-1]; [account updateIdentifier:3]; }
+            if ([scenario isEqual:@"disconnected"]) {
+                AKSIPCall *prior = [account addCallWithInfo:(id)info]; prior.state = kAKSIPCallDisconnectedState;
+                [account removeCall:prior];
+            }
+            void (^complete)(BOOL,id) = [account.capturedParameters valueForKey:@"completion"];
+            complete(YES, info);
+            XCTAssertEqual(completions, 1u);
+            XCTAssertEqual(returned != nil, [scenario isEqual:@"current"]);
+            XCTAssertEqual(account.callsSnapshot.count, [scenario isEqual:@"current"] ? 1u : 0u);
+        }
+    } @finally {
+        method_setImplementation(shared, original);
+        AKOutgoingRegressionAgent = nil;
+    }
 }
 @end

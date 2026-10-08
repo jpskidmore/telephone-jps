@@ -118,7 +118,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="528" id="532"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="Full name"/>
+</textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="98" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="86" width="185" height="19"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="111">
@@ -132,7 +134,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="104" id="308"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="Account username"/>
+</textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="99">
                                         <rect key="frame" x="81" y="146" width="60" height="14"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Full Name:" id="110">
@@ -170,7 +174,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="93" id="Owu-jQ-I96"/>
                                         </connections>
-                                    </secureTextField>
+
+                    <accessibility description="Account password"/>
+</secureTextField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="528" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="115" width="185" height="19"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="529">
@@ -184,7 +190,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="98" id="533"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="Account domain"/>
+</textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="530">
                                         <rect key="frame" x="94" y="117" width="47" height="14"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Domain:" id="531">
@@ -203,7 +211,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="95" id="539"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="Account description"/>
+</textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="536">
                                         <rect key="frame" x="73" y="185" width="68" height="14"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Description:" id="537">
@@ -284,7 +294,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="dli-GZ-E5f" id="MZ4-hf-rrq"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="Account proxy host"/>
+</textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="dli-GZ-E5f">
                                         <rect key="frame" x="115" y="212" width="43" height="19"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="5060" drawsBackground="YES" id="nF4-3B-Ugx">
@@ -298,7 +310,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="iBU-Gy-PuJ" id="i2S-ck-dwH"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="Account proxy port"/>
+</textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ho6-cH-aLd">
                                         <rect key="frame" x="68" y="241" width="42" height="14"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" enabled="NO" sendsActionOnEndEditing="YES" title="Server:" id="UdE-Fh-xcJ">
@@ -471,7 +485,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="416" id="G7d-Xt-Qez"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="Registration interval"/>
+</textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="501">
                                         <rect key="frame" x="183" y="200" width="49" height="14"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="seconds" id="502">
@@ -493,7 +509,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="97" id="306"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="SIP address"/>
+</textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="97" horizontalCompressionResistancePriority="250">
                                         <rect key="frame" x="146" y="225" width="185" height="19"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="112">
@@ -507,7 +525,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="499" id="iuP-5F-ZBO"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="Registrar"/>
+</textField>
                                     <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="100">
                                         <rect key="frame" x="70" y="266" width="71" height="14"/>
                                         <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="SIP Address:" id="109">
@@ -548,7 +568,9 @@
                                         <connections>
                                             <outlet property="nextKeyView" destination="96" id="Uib-Sv-2j8"/>
                                         </connections>
-                                    </textField>
+
+                    <accessibility description="Plus character replacement"/>
+</textField>
                                 </subviews>
                                 <constraints>
                                     <constraint firstAttribute="leading" firstItem="96" secondItem="412" secondAttribute="leading" constant="112" priority="750" id="caa-1"/>

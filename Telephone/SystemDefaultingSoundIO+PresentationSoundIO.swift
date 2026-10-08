@@ -28,6 +28,6 @@ extension SystemDefaultingSoundIO {
 
 extension SystemDefaultingSoundIO.Item {
     init(_ device: PresentationAudioDevice) {
-        self = device.isSystemDefault ? .systemDefault : .device(name: device.name)
+        self = device.isSystemDefault ? .systemDefault : .device(name: device.name, uniqueIdentifier: device.uniqueIdentifier.isEmpty ? nil : device.uniqueIdentifier)
     }
 }

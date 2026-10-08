@@ -27,8 +27,12 @@ public final class RingtoneOutputUpdateUseCase {
 extension RingtoneOutputUpdateUseCase: ThrowingUseCase {
     public func execute() throws {
         if playback.isPlaying {
-            playback.stop()
-            try playback.start()
+            if let conditional = playback as? ConditionalRingtonePlaybackUseCase {
+                try conditional.restartForOutputChange()
+            } else {
+                playback.stop()
+                try playback.start()
+            }
         }
     }
 }

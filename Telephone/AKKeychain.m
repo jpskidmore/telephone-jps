@@ -61,26 +61,45 @@
 }
 
 + (BOOL)addItemWithService:(nonnull NSString *)service account:(nonnull NSString *)account password:(nonnull NSString *)password {
+    return [self addItemWithService:service account:account password:password error:NULL];
+}
+
++ (OSStatus)addSecurityItem:(NSDictionary *)item {
+    return SecItemAdd((__bridge CFDictionaryRef)item, NULL);
+}
+
++ (OSStatus)updateSecurityItem:(NSDictionary *)query attributes:(NSDictionary *)attributes {
+    return SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)attributes);
+}
+
++ (BOOL)addItemWithService:(NSString *)service account:(NSString *)account password:(NSString *)password
+                    error:(NSError **)error {
     NSParameterAssert(service);
     NSParameterAssert(account);
     NSParameterAssert(password);
+    if (error) { *error = nil; }
     
     NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
     NSMutableDictionary *item = [[self queryForService:service account:account] mutableCopy];
     item[(__bridge id)kSecValueData] = passwordData;
 
-    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)item, NULL);
+    OSStatus status = [self addSecurityItem:item];
     if (status == errSecSuccess) {
         return YES;
     }
 
     if (status == errSecDuplicateItem) {
         NSDictionary *attributes = @{(__bridge id)kSecValueData: passwordData};
-        status = SecItemUpdate((__bridge CFDictionaryRef)[self queryForService:service account:account],
-                               (__bridge CFDictionaryRef)attributes);
+        status = [self updateSecurityItem:[self queryForService:service account:account] attributes:attributes];
     }
 
     if (status != errSecSuccess) {
+        NSString *message = CFBridgingRelease(SecCopyErrorMessageString(status, NULL))
+            ?: @"The password could not be saved in the Keychain.";
+        if (error) {
+            *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:status
+                                    userInfo:@{NSLocalizedDescriptionKey: message}];
+        }
         NSLog(@"Telephone keychain write failed (%d): %@",
               (int)status,
               CFBridgingRelease(SecCopyErrorMessageString(status, NULL)));

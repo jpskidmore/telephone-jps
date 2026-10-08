@@ -26,6 +26,9 @@
 @interface ActiveCallTransferViewController () <NSMenuItemValidation>
 
 @property(nonatomic, getter=isWaitingForHold) BOOL waitingForHold;
+@property(nonatomic) NSTimer *holdAcceptanceTimer;
+@property(nonatomic) NSUInteger holdRequestGeneration;
+@property(nonatomic) BOOL holdRequestPending;
 
 @property(nonatomic, weak) IBOutlet NSButton *cancelButton;
 @property(nonatomic, weak) IBOutlet NSButton *transferButton;
@@ -37,23 +40,67 @@
 - (void)setRepresentedObject:(id)representedObject {
     super.representedObject = representedObject;
     self.waitingForHold = NO;
+    self.holdRequestPending = NO;
+    self.holdRequestGeneration++;
+    [self.holdAcceptanceTimer invalidate];
+    self.holdAcceptanceTimer = nil;
 }
 
 - (IBAction)transferCall:(id)sender {
+    if (self.holdRequestPending || self.isWaitingForHold) return;
+    if (self.callController.call.state != kAKSIPCallConfirmedState || self.callController.call.isOnRemoteHold) return;
     if (self.callController.isCallOnHold) {
         [(CallTransferController *)self.callController transferCall];
-    } else {
-        [self.callController toggleCallHold];
-        [self disallowTransfer];
-        self.waitingForHold = YES;
+        return;
     }
+    AKSIPCall *call = self.callController.call;
+    NSUInteger generation = self.holdRequestGeneration;
+    self.holdRequestPending = YES;
+    [self disallowTransfer];
+    [self.callController requestToggleCallHoldWithCompletion:^(BOOL accepted) {
+        if (self.callController.call != call || self.holdRequestGeneration != generation) return;
+        self.holdRequestPending = NO;
+        self.waitingForHold = accepted;
+        if (!accepted) {
+            [self allowTransfer];
+            [self.callController setIntermediateStatus:NSLocalizedString(@"Could not hold call. Try again.", @"Transfer hold failed.")];
+        } else if (self.callController.isCallOnHold) {
+            [self callDidHold];
+        } else {
+            self.holdAcceptanceTimer = [NSTimer scheduledTimerWithTimeInterval:12 target:self
+                selector:@selector(holdAcceptanceDidTimeOut:) userInfo:nil repeats:NO];
+        }
+    }];
 }
 
 - (void)callDidHold {
-    if (self.isWaitingForHold) {
+    if (self.isWaitingForHold && self.callController.call.state == kAKSIPCallConfirmedState) {
         [(CallTransferController *)self.callController transferCall];
         self.waitingForHold = NO;
+        [self.holdAcceptanceTimer invalidate];
+        self.holdAcceptanceTimer = nil;
     }
+}
+
+- (void)holdAcceptanceDidTimeOut:(NSTimer *)timer {
+    self.holdAcceptanceTimer = nil;
+    if (!self.isWaitingForHold) return;
+    self.waitingForHold = NO;
+    self.holdRequestPending = NO;
+    self.holdRequestGeneration++;
+    if (self.callController.call.state == kAKSIPCallConfirmedState && !self.callController.call.isOnRemoteHold) {
+        [self allowTransfer];
+        [self.callController setIntermediateStatus:NSLocalizedString(@"Hold was not confirmed. Try again.", @"Transfer hold timed out.")];
+    }
+}
+
+- (void)viewWillDisappear {
+    [super viewWillDisappear];
+    self.waitingForHold = NO;
+    self.holdRequestPending = NO;
+    self.holdRequestGeneration++;
+    [self.holdAcceptanceTimer invalidate];
+    self.holdAcceptanceTimer = nil;
 }
 
 - (void)allowTransfer {

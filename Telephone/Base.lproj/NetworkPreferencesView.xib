@@ -50,7 +50,9 @@
                     <connections>
                         <outlet property="nextKeyView" destination="192" id="495"/>
                     </connections>
-                </textField>
+
+                    <accessibility description="Local SIP port"/>
+</textField>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="320">
                     <rect key="frame" x="186" y="45" width="34" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Port:" id="321">
@@ -66,7 +68,9 @@
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
-                </textField>
+
+                    <accessibility description="Outbound proxy port"/>
+</textField>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="317">
                     <rect key="frame" x="114" y="74" width="106" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Outbound Proxy:" id="318">
@@ -85,7 +89,9 @@
                             <string>NSAllRomanInputSourcesLocaleIdentifier</string>
                         </allowedInputSourceLocales>
                     </textFieldCell>
-                </textField>
+
+                    <accessibility description="Outbound proxy host"/>
+</textField>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="198">
                     <rect key="frame" x="186" y="167" width="34" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Port:" id="199">
@@ -104,7 +110,9 @@
                     <connections>
                         <outlet property="nextKeyView" destination="466" id="b8V-OP-RqG"/>
                     </connections>
-                </textField>
+
+                    <accessibility description="STUN server port"/>
+</textField>
                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="194">
                     <rect key="frame" x="133" y="196" width="87" height="16"/>
                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="STUN Server:" id="195">
@@ -126,8 +134,10 @@
                     <connections>
                         <outlet property="nextKeyView" destination="196" id="325"/>
                     </connections>
-                </textField>
-                <button translatesAutoresizingMaskIntoConstraints="NO" id="9cR-ug-aVH">
+
+                    <accessibility description="STUN server host"/>
+</textField>
+                <button translatesAutoresizingMaskIntoConstraints="NO" id="9cR-ug-aVH" toolTip="Clear outbound proxy">
                     <rect key="frame" x="433" y="72.5" width="13" height="18"/>
                     <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="NSStopProgressFreestandingTemplate" imagePosition="only" alignment="center" controlSize="small" imageScaling="proportionallyUpOrDown" inset="2" id="HfD-MN-Ug9">
                         <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -136,7 +146,9 @@
                     <connections>
                         <action selector="deleteOutboundProxy:" target="-2" id="aGO-F9-GJ7"/>
                     </connections>
-                </button>
+
+                    <accessibility description="Clear outbound proxy"/>
+</button>
                 <button translatesAutoresizingMaskIntoConstraints="NO" id="466">
                     <rect key="frame" x="222" y="133" width="74" height="18"/>
                     <buttonCell key="cell" type="check" title="Use ICE" bezelStyle="regularSquare" imagePosition="left" alignment="left" state="on" inset="2" id="467">

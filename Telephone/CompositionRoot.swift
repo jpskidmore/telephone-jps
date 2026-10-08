@@ -20,6 +20,7 @@ import Contacts
 import Foundation
 import StoreKit
 import UseCases
+import Domain
 
 @MainActor
 final class CompositionRoot: NSObject {
@@ -38,7 +39,7 @@ final class CompositionRoot: NSObject {
     @objc let defaultAppSettings: DefaultAppSettings
     @objc let helpMenuActionTarget: HelpMenuActionTarget
     @objc let accountControllers: AccountControllers
-    @objc let nameServers: NameServers
+    @objc let nameServers: NameServers?
     private let defaults: UserDefaults
 
     private let storeEventSource: SKPaymentQueueStoreEventSource
@@ -126,8 +127,10 @@ final class CompositionRoot: NSObject {
             target: ReceiptValidatingStoreEventTarget(origin: storeEventTargets, receipt: receipt)
         )
 
-        let soundIOSelection = UserAgentSoundIOSelectionUseCase(
-            devicesFactory: systemAudioDevicesFactory, soundIOFactory: soundIOFactory, agent: userAgent
+        let soundIOSelection = QueuedSoundIOSelectionUseCase(
+            devicesFactory: systemAudioDevicesFactory,
+            defaultIOFactory: CoreAudioDefaultSystemSoundIOFactory(defaultIO: CoreAudioDefaultIO()),
+            settings: defaults, agent: userAgent
         )
         let userAgentEventsUserAgentSoundIOSelection = UserAgentEventsUserAgentSoundIOSelectionUseCase(
             useCase: soundIOSelection, calls: userAgent
@@ -184,18 +187,18 @@ final class CompositionRoot: NSObject {
         let background = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".background-queue", qos: .userInitiated)
 
         devicesChangeEventSource = CoreAudioSystemAudioDevicesChangeEventSource(
-            target: SystemAudioDevicesChangeEventTargets(
+            target: MainQueueAudioDeviceEvents(origin: SystemAudioDevicesChangeEventTargets(
                 targets: [
                     UserAgentAudioDeviceUpdateUseCase(agent: userAgent),
                     userAgentSoundIOSelection,
                     PreferencesSoundIOUpdater(preferences: preferencesController)
                 ]
-            ),
+            )),
             queue: background
         )
 
         soundIOChangeEventSource = CoreAudioDefaultSystemSoundIOChangeEventSource(
-            target: userAgentSoundIOSelection, queue: background
+            target: MainQueueDefaultSoundEvents(origin: userAgentSoundIOSelection), queue: background
         )
 
         let callHistories = DefaultCallHistories(
@@ -291,5 +294,118 @@ final class CompositionRoot: NSObject {
         accountControllers = AccountControllers()
 
         nameServers = NameServers(bundle: Bundle.main, target: nameServersChangeEventTarget)
+    }
+}
+
+// CoreAudio delivers on its listener queue. Move the complete ordered fanout to
+// main before either refresh or selection admits work to the SDK control queue.
+// Dispatch preserves listener delivery order; CoreAudio queries remain on the worker.
+@MainActor
+final class MainQueueAudioDeviceEvents: SystemAudioDevicesChangeEventTarget {
+    private let origin: SystemAudioDevicesChangeEventTarget
+    init(origin: SystemAudioDevicesChangeEventTarget) { self.origin = origin }
+    nonisolated func systemAudioDevicesDidUpdate() {
+        DispatchQueue.main.async { self.origin.systemAudioDevicesDidUpdate() }
+    }
+}
+
+@MainActor
+final class MainQueueDefaultSoundEvents: DefaultSystemSoundIOChangeEventTarget {
+    private let origin: DefaultSystemSoundIOChangeEventTarget
+    init(origin: DefaultSystemSoundIOChangeEventTarget) { self.origin = origin }
+    nonisolated func defaultSystemSoundIODidUpdate() {
+        DispatchQueue.main.async { self.origin.defaultSystemSoundIODidUpdate() }
+    }
+}
+
+// Capture only immutable preference strings on main. Every CoreAudio query,
+// native UID enumeration and SDK driver open belongs to the lifecycle worker.
+protocol SoundIOSelectionAgent: AnyObject {
+    var isStarted: Bool { get }
+    func performAudioSelection(_ operation: @escaping (UInt) -> Int32) -> Bool
+    func isAudioSelectionCurrent(_ revision: UInt) -> Bool
+    func setSoundInputDevice(_ input: Int, soundOutputDevice output: Int) -> Bool
+    func reportAudioSelectionFailure()
+}
+
+extension AKSIPUserAgent: SoundIOSelectionAgent {}
+
+@MainActor
+final class QueuedSoundIOSelectionUseCase: ThrowingUseCase {
+    private let devicesFactory: SystemAudioDevicesFactory
+    private let defaultIOFactory: SystemSoundIOFactory
+    private let settings: KeyValueSettings
+    private let agent: SoundIOSelectionAgent
+    private let userAgentDevices: () throws -> [Domain.UserAgentAudioDevice]
+
+    init(devicesFactory: SystemAudioDevicesFactory, defaultIOFactory: SystemSoundIOFactory,
+         settings: KeyValueSettings, agent: SoundIOSelectionAgent,
+         userAgentDevices: @escaping () throws -> [Domain.UserAgentAudioDevice] = { try UserAgentAudioDevices().all }) {
+        self.devicesFactory = devicesFactory
+        self.defaultIOFactory = defaultIOFactory
+        self.settings = settings
+        self.agent = agent
+        self.userAgentDevices = userAgentDevices
+    }
+
+    nonisolated func execute() throws {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { executeOnMain() }
+        } else {
+            DispatchQueue.main.async { self.executeOnMain() }
+        }
+    }
+
+    private func executeOnMain() {
+        guard agent.isStarted else { return }
+        let preferences = AudioSelectionPreferences(settings: settings)
+        let devicesFactory = devicesFactory
+        let defaultIOFactory = defaultIOFactory
+        let nativeDevices = userAgentDevices
+        let agent = agent
+        _ = agent.performAudioSelection { revision in
+            do {
+                let devices = try devicesFactory.make()
+                let defaultIO = try defaultIOFactory.make()
+                guard agent.isAudioSelectionCurrent(revision) else { return PJ_ECANCELLED }
+                let soundIO = preferences.resolve(devices: devices, defaultIO: defaultIO)
+                let map = SystemToUserAgentAudioDeviceMap(systemDevices: devices.all, userAgentDevices: try nativeDevices())
+                guard agent.isAudioSelectionCurrent(revision) else { return PJ_ECANCELLED }
+                return agent.setSoundInputDevice(map.userAgentDevice(for: soundIO.input).identifier,
+                    soundOutputDevice: map.userAgentDevice(for: soundIO.output).identifier) ? 0 : PJ_EUNKNOWN
+            } catch {
+                if agent.isAudioSelectionCurrent(revision) { agent.reportAudioSelectionFailure() }
+                return PJ_EUNKNOWN
+            }
+        }
+    }
+}
+
+private struct AudioSelectionPreferences {
+    let inputName: String?
+    let inputUID: String?
+    let outputName: String?
+    let outputUID: String?
+
+    @MainActor init(settings: KeyValueSettings) {
+        inputName = settings.string(forKey: SettingsKeys.soundInput)
+        inputUID = settings.string(forKey: SettingsKeys.soundInputUID)
+        outputName = settings.string(forKey: SettingsKeys.soundOutput)
+        outputUID = settings.string(forKey: SettingsKeys.soundOutputUID)
+    }
+
+    func resolve(devices: SystemAudioDevices, defaultIO: SystemSoundIO) -> Domain.SoundIO {
+        let fallback = Domain.PreferredSoundIO(devices: devices.all, defaultIO: defaultIO)
+        let input = device(name: inputName, uid: inputUID, byName: devices.inputDevice(named:), byUID: devices.inputDevice(uniqueIdentifier:))
+        let output = device(name: outputName, uid: outputUID, byName: devices.outputDevice(named:), byUID: devices.outputDevice(uniqueIdentifier:))
+        return Domain.SimpleSoundIO(input: input.isNil ? fallback.input : input,
+            output: output.isNil ? fallback.output : output, ringtoneOutput: fallback.ringtoneOutput)
+    }
+
+    private func device(name: String?, uid: String?, byName: (String) -> SystemAudioDevice,
+                        byUID: (String) -> SystemAudioDevice) -> SystemAudioDevice {
+        if let uid, !uid.isEmpty { return byUID(uid) }
+        if let name { return byName(name) }
+        return NullSystemAudioDevice()
     }
 }

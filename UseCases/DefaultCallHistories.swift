@@ -20,6 +20,7 @@
 public final class DefaultCallHistories {
     private var histories: [String: CallHistory] = [:]
     private let factory: CallHistoryFactory
+    private var removedUUIDs = Set<String>()
 
     var count: Int { return histories.count }
 
@@ -30,6 +31,7 @@ public final class DefaultCallHistories {
 
 extension DefaultCallHistories: CallHistories {
     public func history(withUUID uuid: String) -> CallHistory {
+        if removedUUIDs.contains(uuid) { return RetiredCallHistory() }
         if let history = histories[uuid] {
             return history
         } else {
@@ -38,7 +40,8 @@ extension DefaultCallHistories: CallHistories {
     }
 
     public func remove(withUUID uuid: String) {
-        histories.removeValue(forKey: uuid)
+        removedUUIDs.insert(uuid)
+        histories.removeValue(forKey: uuid)?.invalidate()
     }
 
     private func makeHistory(uuid: String) -> CallHistory {
@@ -46,4 +49,13 @@ extension DefaultCallHistories: CallHistories {
         histories[uuid] = result
         return result
     }
+}
+
+// UUIDs are never reused by account creation. A retired lookup must not recreate storage.
+@CallHistoryActor private final class RetiredCallHistory: CallHistory {
+    var allRecords: [CallHistoryRecord] { [] }
+    func add(_ record: CallHistoryRecord) {}
+    func remove(_ record: CallHistoryRecord) {}
+    func removeAll() {}
+    func updateTarget(_ target: CallHistoryEventTarget) {}
 }

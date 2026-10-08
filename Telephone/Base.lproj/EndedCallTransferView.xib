@@ -9,6 +9,7 @@
         <customObject id="-2" userLabel="File's Owner" customClass="EndedCallViewController">
             <connections>
                 <outlet property="view" destination="1" id="8"/>
+                <outlet property="redialButton" destination="4" id="redial-delay-outlet"/>
             </connections>
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>

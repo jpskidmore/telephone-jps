@@ -41,6 +41,10 @@ extension ReversedCallHistory: CallHistory {
         origin.removeAll()
     }
 
+    public func invalidate() { origin.invalidate() }
+    public var persistenceError: String? { origin.persistenceError }
+    @discardableResult public func retryPersistence() -> Bool { origin.retryPersistence() }
+
     public func updateTarget(_ target: CallHistoryEventTarget) {
         origin.updateTarget(target)
     }

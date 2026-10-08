@@ -30,7 +30,7 @@ static void LogCallDump(int call_id);
 
 void PJSUAOnCallState(pjsua_call_id callID, pjsip_event *event) {
     pjsua_call_info info;
-    pjsua_call_get_info(callID, &info);
+    if (pjsua_call_get_info(callID, &info) != PJ_SUCCESS) return;
 
     BOOL mustStartRingback = NO;
     NSNumber *SIPEventCode = nil;
@@ -83,9 +83,10 @@ void PJSUAOnCallState(pjsua_call_id callID, pjsip_event *event) {
     AKSIPUserAgent *userAgent = [AKSIPUserAgent sharedUserAgent];
     PJSUACallInfo *infoWrapper = [[PJSUACallInfo alloc] initWithInfo:info parser:userAgent.parser];
     NSInteger duration = info.connect_duration.sec;
+    AKSIPCall *capturedCall = [userAgent callWithIdentifier:callID dialogIdentifier:infoWrapper.dialogIdentifier];
 
     dispatch_async(dispatch_get_main_queue(), ^{
-        AKSIPCall *call = [userAgent callWithIdentifier:callID];
+        AKSIPCall *call = capturedCall ?: [userAgent callWithIdentifier:callID dialogIdentifier:infoWrapper.dialogIdentifier];
         if (call == nil) {
             if (infoWrapper.state == kAKSIPCallCallingState) {
                 AKSIPAccount *account = [userAgent accountWithIdentifier:infoWrapper.accountIdentifier];
@@ -104,6 +105,8 @@ void PJSUAOnCallState(pjsua_call_id callID, pjsip_event *event) {
             }
         }
 
+        if (call == nil || call.state == kAKSIPCallDisconnectedState ||
+            ![call.dialogIdentifier isEqualToString:infoWrapper.dialogIdentifier]) return;
         NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
 
         call.state = infoWrapper.state;
@@ -115,6 +118,7 @@ void PJSUAOnCallState(pjsua_call_id callID, pjsip_event *event) {
         if (infoWrapper.state == kAKSIPCallDisconnectedState) {
             [userAgent stopRingbackForCall:call];
             [call.account removeCall:call];
+            [userAgent forgetRetiredAccountIfUnused:call.account];
             [nc postNotificationName:AKSIPCallDidDisconnectNotification object:call];
 
         } else if (infoWrapper.state == kAKSIPCallEarlyState) {

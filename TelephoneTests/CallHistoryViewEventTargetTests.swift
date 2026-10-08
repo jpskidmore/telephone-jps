@@ -19,6 +19,7 @@
 import UseCases
 import UseCasesTestDoubles
 import XCTest
+@testable import Telephone
 
 @MainActor
 final class CallHistoryViewEventTargetTests: XCTestCase {
@@ -264,5 +265,33 @@ final class CallHistoryViewEventTargetTests: XCTestCase {
         sut.shouldRemoveRecord(withIdentifier: "any")
 
         XCTAssertTrue(remove.didCallExecute)
+    }
+}
+
+@MainActor
+final class V30HistorySelectionTests: XCTestCase {
+    private func record(_ id: String, name: String = "Synthetic") -> Telephone.PresentationCallHistoryRecord {
+        Telephone.PresentationCallHistoryRecord(identifier: id, contact: Telephone.PresentationContact(title: name, tooltip: "", label: "", color: .labelColor, address: "synthetic"), date: "Today", duration: "00:01", isIncoming: false)
+    }
+
+    func testCappedNativeTableKeepsTheCallIdentityUsedByReturn() throws {
+        let controller = Telephone.CallHistoryViewController(); _ = controller.view
+        let table = try XCTUnwrap(controller.keyView as? NSTableView)
+        let callFactory = CallHistoryCallMakeUseCaseFactorySpy(callMake: UseCaseSpy())
+        let target = Telephone.CallHistoryViewEventTarget(recordsGet: UseCaseSpy(), purchaseCheck: UseCaseSpy(), recordRemoveAll: UseCaseSpy(), recordRemove: CallHistoryRecordRemoveUseCaseFactorySpy(remove: UseCaseSpy()), callMake: callFactory)
+        controller.target = target
+        let before = (0..<1000).map { record("R\($0)") }
+        controller.show(before); table.selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+        controller.show([record("NEW")] + before.dropLast())
+        XCTAssertEqual(table.selectedRow, 2)
+        let event = try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0, context: nil, characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 0x24))
+        controller.keyDown(with: event)
+        XCTAssertEqual(callFactory.invokedIdentifier, "R1")
+        // Identity is retained even when its displayed metadata changes.
+        var refreshed = [record("NEW")] + Array(before.dropLast())
+        refreshed[2] = record("R1", name: "Updated synthetic name")
+        controller.show(refreshed); XCTAssertEqual(table.selectedRow, 2)
+        controller.setHistoryExpanded(false); controller.show([record("LATEST")] + refreshed.dropLast())
+        XCTAssertEqual(table.selectedRow, 0); XCTAssertEqual(table.numberOfRows, 1)
     }
 }

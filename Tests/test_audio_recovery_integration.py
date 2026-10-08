@@ -43,7 +43,7 @@ class AudioRecoveryWiringTests(unittest.TestCase):
 
     def test_outgoing_work_is_gated_and_generation_checked(self):
         account = source('Telephone/AKSIPAccount.m')
-        self.assertIn('if (![agent beginOutgoingCall])', account)
+        self.assertIn('|| ![agent beginOutgoingCall])', account)
         self.assertIn('audioGeneration != parameters.audioGeneration', account)
         self.assertIn('agent.audioGeneration == parameters.audioGeneration', account)
         self.assertIn('reportAudioFailure:makeStatus operation:@"make-call"', account)
@@ -84,9 +84,10 @@ class AudioRecoveryWiringTests(unittest.TestCase):
 
     def test_completed_shutdown_clears_warning_without_native_queries(self):
         agent = source('Telephone/AKSIPUserAgent.m')
-        finish = agent.split('- (void)finishStopping {', 1)[1].split('- (BOOL)addAccount:', 1)[0]
+        finish = agent.split('- (void)finishStopping {', 1)[1].split('- (pj_status_t)thread_addAccount:', 1)[0]
         self.assertIn('BOOL hadAudioFailure', finish)
-        self.assertIn('AKSIPUserAgentAudioStateDidChangeNotification', finish)
+        self.assertIn('[self publishAudioState]', finish)
+        self.assertIn('AKSIPUserAgentAudioStateDidChangeNotification', agent.split('- (void)publishAudioState {', 1)[1].split('- (void)audioDidFail:', 1)[0])
         call = source('Telephone/CallController.m')
         observer = call.split('- (void)SIPUserAgentAudioStateDidChange:', 1)[1].split('\n- (', 1)[0]
         self.assertLess(observer.index('!self.userAgent.isStarted'), observer.index('self.call.isOnLocalHold'))

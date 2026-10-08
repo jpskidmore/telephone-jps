@@ -29,7 +29,12 @@
     NSCharacterSet *DTMFCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@"0123456789*#abcdrABCDR"];
     NSCharacterSet *commandsCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@"mh"];
     
-    unichar firstCharacter = [[theEvent characters] characterAtIndex:0];
+    NSString *characters = theEvent.characters;
+    if (characters.length == 0 || (theEvent.modifierFlags & NSEventModifierFlagCommand) != 0) {
+        [super keyDown:theEvent];
+        return;
+    }
+    unichar firstCharacter = [characters characterAtIndex:0];
     if ([DTMFCharacterSet characterIsMember:firstCharacter]) {
         if (![theEvent isARepeat]) {
             // We want to get DTMF string as text.

@@ -38,6 +38,7 @@ const NSInteger kAKSIPAccountRegistrationExpireTimeNotSpecified = PJSIP_EXPIRES_
 @property(nonatomic, readonly) URI *destination;
 @property(nonatomic, readonly) pjsua_acc_id account;
 @property(nonatomic) NSUInteger audioGeneration;
+@property(nonatomic) NSUInteger accountGeneration;
 @property(nonatomic, readonly) void (^ _Nonnull completion)(BOOL, PJSUACallInfo * _Nullable);
 
 - (instancetype)initWithDestination:(URI *)destination
@@ -52,6 +53,8 @@ const NSInteger kAKSIPAccountRegistrationExpireTimeNotSpecified = PJSIP_EXPIRES_
 
 @property(nonatomic, copy) NSString *username;
 @property(nonatomic) NSInteger identifier;
+@property(atomic) NSUInteger outgoingGeneration;
+@property(nonatomic) NSMutableOrderedSet<NSString *> *disconnectedDialogIdentifiers;
 
 @property(nonatomic, readonly) NSMutableArray *calls;
 @property(nonatomic, readonly) AKSIPURIParser *parser;
@@ -89,133 +92,39 @@ NS_ASSUME_NONNULL_END
 }
 
 - (BOOL)isRegistered {
-    return [self registrationStatus] / 100 == 2 && [self registrationExpireTime] != kAKSIPAccountRegistrationExpireTimeNotSpecified;
+    return self.registrationStatus / 100 == 2 && self.registrationExpireTime > 0;
 }
 
 - (void)setRegistered:(BOOL)value {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return;
-    }
-    
-    if (value) {
-        pjsua_acc_set_registration((pjsua_acc_id)[self identifier], PJ_TRUE);
-        [self setOnline:YES];
-    } else {
-        [self setOnline:NO];
-        pjsua_acc_set_registration((pjsua_acc_id)[self identifier], PJ_FALSE);
-    }
-}
-
-- (NSInteger)registrationStatus {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return 0;
-    }
-    
-    pjsua_acc_info accountInfo;
-    pj_status_t status;
-    
-    status = pjsua_acc_get_info((pjsua_acc_id)[self identifier], &accountInfo);
-    if (status != PJ_SUCCESS) {
-        return 0;
-    }
-    
-    return accountInfo.status;
-}
-
-- (NSInteger)registrationErrorCode {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return 0;
-    }
-
-    pjsua_acc_info accountInfo;
-    pj_status_t status;
-
-    status = pjsua_acc_get_info((pjsua_acc_id)[self identifier], &accountInfo);
-    if (status != PJ_SUCCESS) {
-        return 0;
-    }
-
-    return accountInfo.reg_last_err;
-}
-
-- (NSString *)registrationStatusText {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return @"";
-    }
-    
-    pjsua_acc_info accountInfo;
-    pj_status_t status;
-    
-    status = pjsua_acc_get_info((pjsua_acc_id)[self identifier], &accountInfo);
-    if (status != PJ_SUCCESS) {
-        return @"";
-    }
-    
-    return [NSString stringWithPJString:accountInfo.status_text];
-}
-
-- (NSInteger)registrationExpireTime {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return -1;
-    }
-    
-    pjsua_acc_info accountInfo;
-    pj_status_t status;
-    
-    status = pjsua_acc_get_info((pjsua_acc_id)[self identifier], &accountInfo);
-    if (status != PJ_SUCCESS) {
-        return -1;
-    }
-    
-    return accountInfo.expires;
-}
-
-- (BOOL)isOnline {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return NO;
-    }
-    
-    pjsua_acc_info accountInfo;
-    pj_status_t status;
-    
-    status = pjsua_acc_get_info((pjsua_acc_id)[self identifier], &accountInfo);
-    if (status != PJ_SUCCESS) {
-        return NO;
-    }
-    
-    return (accountInfo.online_status == PJ_TRUE) ? YES : NO;
+    self.desiredRegistered = value;
+    NSInteger identifier = self.identifier;
+    if (identifier == kAKSIPUserAgentInvalidIdentifier) return;
+    NSUInteger generation = self.outgoingGeneration;
+    [[AKSIPUserAgent sharedUserAgent] performSIPOperation:^pj_status_t {
+        if (self.identifier != identifier || self.outgoingGeneration != generation) return PJ_ECANCELLED;
+        pj_status_t status = pjsua_acc_set_registration((pjsua_acc_id)identifier, value ? PJ_TRUE : PJ_FALSE);
+        if (status == PJ_SUCCESS) pjsua_acc_set_online_status((pjsua_acc_id)identifier, value ? PJ_TRUE : PJ_FALSE);
+        return status;
+    } completion:^(pj_status_t status) {
+        if (status == PJ_SUCCESS) self.online = value;
+    }];
 }
 
 - (void)setOnline:(BOOL)value {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return;
-    }
-    
-    if (value) {
-        pjsua_acc_set_online_status((pjsua_acc_id)[self identifier], PJ_TRUE);
-    } else {
-        pjsua_acc_set_online_status((pjsua_acc_id)[self identifier], PJ_FALSE);
-    }
+    _online = value;
+    NSInteger identifier = self.identifier;
+    if (identifier == kAKSIPUserAgentInvalidIdentifier) return;
+    NSUInteger generation = self.outgoingGeneration;
+    [[AKSIPUserAgent sharedUserAgent] performSIPOperation:^pj_status_t {
+        if (self.identifier != identifier || self.outgoingGeneration != generation) return PJ_ECANCELLED;
+        return pjsua_acc_set_online_status((pjsua_acc_id)identifier, value ? PJ_TRUE : PJ_FALSE);
+    } completion:nil];
 }
 
-- (NSString *)onlineStatusText {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return @"";
-    }
-    
-    pjsua_acc_info accountInfo;
-    pj_status_t status;
-    
-    status = pjsua_acc_get_info((pjsua_acc_id)[self identifier], &accountInfo);
-    if (status != PJ_SUCCESS) {
-        return @"";
-    }
-    
-    return [NSString stringWithPJString:accountInfo.online_status_text];
-}
+- (NSString *)onlineStatusText { return self.isOnline ? @"Online" : @"Offline"; }
 
 - (BOOL)hasUnansweredIncomingCalls {
-    for (AKSIPCall *call in self.calls) {
+    for (AKSIPCall *call in self.callsSnapshot) {
         if (call.isActive &&
             call.isIncoming &&
             (call.state == kAKSIPCallIncomingState || call.state == kAKSIPCallEarlyState)) {
@@ -276,8 +185,13 @@ NS_ASSUME_NONNULL_END
     _updatesSDP = [dict[AKSIPAccountKeys.updateSDP] boolValue];
 
     _identifier = kAKSIPUserAgentInvalidIdentifier;
+    _outgoingGeneration = 1;
+    _desiredRegistered = YES;
+    _registrationExpireTime = kAKSIPAccountRegistrationExpireTimeNotSpecified;
+    _registrationStatusText = @"";
     
     _calls = [[NSMutableArray alloc] init];
+    _disconnectedDialogIdentifiers = [NSMutableOrderedSet new];
     _parser = parser;
     
     return self;
@@ -292,8 +206,11 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)updateIdentifier:(NSInteger)identifier {
+    if (self.identifier != identifier) [self cancelPendingOutgoingCalls];
     self.identifier = identifier;
 }
+
+- (void)cancelPendingOutgoingCalls { self.outgoingGeneration++; }
 
 - (void)makeCallTo:(URI *)uri label:(NSString *)label {
     NSLog(@"Not calling %@", uri);
@@ -301,13 +218,15 @@ NS_ASSUME_NONNULL_END
 
 - (void)makeCallTo:(AKSIPURI *)destination completion:(void (^ _Nonnull)(AKSIPCall * _Nullable))completion {
     AKSIPUserAgent *agent = [AKSIPUserAgent sharedUserAgent];
-    if (![agent beginOutgoingCall]) {
+    if (self.identifier == kAKSIPUserAgentInvalidIdentifier || ![agent beginOutgoingCall]) {
         dispatch_async(dispatch_get_main_queue(), ^{ completion(nil); });
         return;
     }
+    NSUInteger accountGeneration = self.outgoingGeneration;
     URI *uri = [[URI alloc] initWithURI:destination transport:self.transport];
     void (^onCallMakeCompletion)(BOOL, PJSUACallInfo * _Nullable) = ^(BOOL success, PJSUACallInfo * _Nullable call) {
-        if (success) {
+        if (success && self.outgoingGeneration == accountGeneration &&
+            self.identifier != kAKSIPUserAgentInvalidIdentifier && call.state != kAKSIPCallDisconnectedState) {
             completion([self addCallWithInfo:call]);
         } else {
             NSLog(@"Error making call to %@ via account %@", uri, self);
@@ -318,6 +237,7 @@ NS_ASSUME_NONNULL_END
                                                                                account:(pjsua_acc_id)self.identifier
                                                                             completion:onCallMakeCompletion];
     parameters.audioGeneration = agent.audioGeneration;
+    parameters.accountGeneration = accountGeneration;
     assert(self.thread);
     [self performSelector:@selector(thread_makeCallWithParameters:) onThread:self.thread withObject:parameters waitUntilDone:NO];
 }
@@ -325,7 +245,8 @@ NS_ASSUME_NONNULL_END
 - (void)thread_makeCallWithParameters:(AKSIPCallParameters *)parameters {
     // The owner may have requested shutdown while this request was queued.
     // audioGeneration is the only atomic cross-thread lifecycle token used here.
-    if ([AKSIPUserAgent sharedUserAgent].audioGeneration != parameters.audioGeneration) {
+    if ([AKSIPUserAgent sharedUserAgent].audioGeneration != parameters.audioGeneration ||
+        self.outgoingGeneration != parameters.accountGeneration || self.identifier != parameters.account) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [[AKSIPUserAgent sharedUserAgent] finishOutgoingCallForGeneration:parameters.audioGeneration];
             parameters.completion(NO, nil);
@@ -356,30 +277,45 @@ NS_ASSUME_NONNULL_END
         // state; ordinary SIP failures must not disable a working device.
         AKSIPUserAgent *agent = [AKSIPUserAgent sharedUserAgent];
         [agent finishOutgoingCallForGeneration:parameters.audioGeneration];
-        if (agent.isStarted && agent.audioGeneration == parameters.audioGeneration) {
+        if (agent.isStarted && agent.audioGeneration == parameters.audioGeneration &&
+            self.outgoingGeneration == parameters.accountGeneration && self.identifier == parameters.account) {
             [agent reportAudioFailure:makeStatus operation:@"make-call"];
             parameters.completion(success, infoWrapper);
         } else {
             // Never let a delayed result from the previous SIP instance latch
             // new audio or attach its obsolete call identifier after restart.
+            if (success && infoWrapper != nil && agent.audioGeneration == parameters.audioGeneration) {
+                NSInteger staleID = infoWrapper.identifier;
+                NSString *dialog = infoWrapper.dialogIdentifier;
+                [agent performSIPOperation:^pj_status_t {
+                    pjsua_call_info current;
+                    if (pjsua_call_get_info((pjsua_call_id)staleID, &current) != PJ_SUCCESS ||
+                        ![[NSString stringWithPJString:current.call_id] isEqualToString:dialog]) return PJ_ECANCELLED;
+                    return pjsua_call_hangup((pjsua_call_id)staleID, 0, NULL, NULL);
+                } completion:nil];
+            }
             parameters.completion(NO, nil);
         }
     });
 }
 
-- (NSArray<AKSIPCall *> *)callsSnapshot { return [self.calls copy]; }
+- (NSArray<AKSIPCall *> *)callsSnapshot { @synchronized(self) { return [self.calls copy]; } }
 
 - (AKSIPCall *)addCallWithInfo:(PJSUACallInfo *)info {
+    @synchronized(self) {
+    if ([self.disconnectedDialogIdentifiers containsObject:info.dialogIdentifier]) return nil;
     AKSIPCall *call = [self callWithIdentifier:info.identifier];
+    if (call != nil && ![call.dialogIdentifier isEqualToString:info.dialogIdentifier]) call = nil;
     if (!call) {
         call = [[AKSIPCall alloc] initWithSIPAccount:self info:info];
         [self.calls addObject:call];
     }
     return call;
+    }
 }
 
 - (nullable AKSIPCall *)callWithIdentifier:(NSInteger)identifier {
-    for (AKSIPCall *call in self.calls) {
+    for (AKSIPCall *call in self.callsSnapshot) {
         if (call.identifier == identifier) {
             return call;
         }
@@ -388,16 +324,22 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)removeCall:(AKSIPCall *)call {
-    [self.calls removeObject:call];
+    @synchronized(self) {
+        if (call.state == kAKSIPCallDisconnectedState && call.dialogIdentifier.length > 0) {
+            [self.disconnectedDialogIdentifiers addObject:call.dialogIdentifier];
+            if (self.disconnectedDialogIdentifiers.count > 128) [self.disconnectedDialogIdentifiers removeObjectAtIndex:0];
+        }
+        [self.calls removeObject:call];
+    }
 }
 
 - (void)removeAllCalls {
-    [self.calls removeAllObjects];
+    @synchronized(self) { [self.calls removeAllObjects]; }
 }
 
 - (NSInteger)activeCallsCount {
     NSInteger count = 0;
-    for (AKSIPCall *call in self.calls) {
+    for (AKSIPCall *call in self.callsSnapshot) {
         if (call.isActive) {
             count++;
         }

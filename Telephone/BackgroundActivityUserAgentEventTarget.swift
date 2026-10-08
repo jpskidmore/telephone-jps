@@ -31,7 +31,13 @@ final class BackgroundActivityUserAgentEventTarget {
 
 extension BackgroundActivityUserAgentEventTarget: UserAgentEventTarget {
     func didFinishStarting(_ agent: UserAgent) {
-        activity = process.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason: "SIP User Agent")
+        guard agent.isStarted else {
+            didFinishStopping(agent)
+            return
+        }
+        if activity == nil {
+            activity = process.beginActivity(options: .userInitiatedAllowingIdleSystemSleep, reason: "SIP User Agent")
+        }
     }
 
     func didFinishStopping(_ agent: UserAgent) {

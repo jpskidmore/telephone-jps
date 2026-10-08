@@ -98,6 +98,7 @@
 
 // A Boolean value indicating whether the receiver's call is unhandled.
 @property(nonatomic, readonly, getter=isCallUnhandled) BOOL callUnhandled;
+@property(nonatomic, readonly) BOOL acceptsPendingCallResult;
 
 
 - (instancetype)initWithWindowNibName:(NSString *)windowNibName
@@ -116,6 +117,7 @@
 
 // Toggles call hold.
 - (void)toggleCallHold;
+- (void)requestToggleCallHoldWithCompletion:(void (^)(BOOL accepted))completion;
 
 // Toggles microphone mute.
 - (void)toggleMicrophoneMute;

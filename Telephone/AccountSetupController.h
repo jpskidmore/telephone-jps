@@ -44,5 +44,7 @@ extern NSString * const AKAccountSetupControllerDidAddAccountNotification;
 
 // Adds new account.
 - (IBAction)addAccount:(id)sender;
+// Returns YES only after both credentials and account settings have been saved.
+- (BOOL)addAccountAndSave:(id)sender;
 
 @end

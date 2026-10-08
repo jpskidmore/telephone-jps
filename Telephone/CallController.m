@@ -22,7 +22,6 @@
 
 #import "AKActiveCallView.h"
 #import "AKLiquidGlass.h"
-#import "AKNSWindow+Resizing.h"
 #import "AKSIPURI.h"
 #import "AKSIPURIFormatter.h"
 #import "AKStereoRecording.h"
@@ -48,6 +47,7 @@ static const NSTimeInterval kCallWindowAutoCloseTime = 1.5;
 static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 @interface CallController ()
+- (NSRect)frameKeepingCallVisible:(NSRect)frame;
 
 @property(nonatomic, readonly) AKSIPUserAgent *userAgent;
 
@@ -55,6 +55,9 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 // Keep the actual call status while a recoverable audio failure is displayed.
 @property(nonatomic, copy) NSString *statusWithoutAudioFailure;
+@property(nonatomic) BOOL hangUpPending;
+@property(nonatomic) BOOL closeAfterHangUp;
+@property(nonatomic) BOOL closed;
 
 // Call info view.
 @property(nonatomic, strong) NSView *callInfoView;
@@ -145,9 +148,24 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
             NSRect frame = self.window.frame;
             frame.size.height += delta;
             frame.origin.y -= delta;
+            frame = [self frameKeepingCallVisible:frame];
             [self.window setFrame:frame display:YES];
         }
     }
+}
+
+- (NSRect)frameKeepingCallVisible:(NSRect)frame {
+    NSScreen *screen = self.window.screen ?: NSScreen.mainScreen;
+    if (!screen) return frame;
+    frame = [self.window constrainFrameRect:frame toScreen:screen];
+    NSRect visible = screen.visibleFrame;
+    // AppKit's standard constraints primarily keep the title bar reachable;
+    // compact call actions must also stay above the Dock/visible-frame bottom.
+    if (NSWidth(frame) <= NSWidth(visible))
+        frame.origin.x = MIN(MAX(NSMinX(frame), NSMinX(visible)), NSMaxX(visible) - NSWidth(frame));
+    if (NSHeight(frame) <= NSHeight(visible))
+        frame.origin.y = MIN(MAX(NSMinY(frame), NSMinY(visible)), NSMaxY(visible) - NSHeight(frame));
+    return frame;
 }
 
 - (void)setCallActive:(BOOL)callActive {
@@ -168,10 +186,15 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
             _call.delegate = nil;
         }
         _call = call;
+        self.hangUpPending = NO;
+        self.closeAfterHangUp = NO;
+        self.closed = NO;
         _call.delegate = self;
         _incomingCallViewController.representedObject = _call;
         _activeCallViewController.representedObject = _call;
         _endedCallViewController.representedObject = _call;
+        [_callTransferController refreshSourceCallBinding];
+        [_activeCallViewController.enteredDTMF setString:@""];
         if (_call != nil) {
             self.window.styleMask |= NSWindowStyleMaskClosable;
             [_activeCallViewController allowHangUp];
@@ -220,6 +243,8 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         }
     }
 }
+
+- (BOOL)acceptsPendingCallResult { return !self.closed; }
 
 - (BOOL)isCallUnhandled {
     return self.call.isMissed;
@@ -303,6 +328,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         windowFrame.origin.y -= deltaHeight;
         windowFrame.size.width += deltaWidth;
         
+        windowFrame = [self frameKeepingCallVisible:windowFrame];
         // Set new window frame.
         [[self window] setFrame:windowFrame display:YES animate:YES];
     }
@@ -341,37 +367,38 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)hangUpCall {
-    [self setCallActive:NO];
-    [self stopRecording];
-
-    if (_activeCallViewController != nil) {
-        [[self activeCallViewController] stopCallTimer];
-    }
-    
-    // If remote party hasn't sent back any replies, call hang-up will not happen immediately. Unsubscribe from any
-    // notifications about the call state and set disconnected look to the call window.
-    
-    if ([[[self call] delegate] isEqual:self]) {
-        [[self call] setDelegate:nil];
-    }
-    
-    [[self call] hangUp];
-    
-    [self setStatus:NSLocalizedString(@"call ended", @"Call ended.")];
-
-    [self showEndedCallView];
-    
-    [self.activeCallViewController showHangUp];
+    if (self.hangUpPending || self.call == nil || self.call.state == kAKSIPCallDisconnectedState) return;
+    self.hangUpPending = YES;
     [self.activeCallViewController disallowHangUp];
-    [[[self incomingCallViewController] acceptCallButton] setEnabled:NO];
-    [[[self incomingCallViewController] declineCallButton] setEnabled:NO];
-    
-    [self removeUserNotification];
-
-    // Optionally close call window.
-    if ([self.defaults boolForKey:UserDefaultsKeys.autoCloseCallWindow] && ![self isKindOfClass:[CallTransferController class]]) {
-        [self performSelector:@selector(closeCallWindow) withObject:nil afterDelay:kCallWindowAutoCloseTime];
-    }
+    AKSIPCall *call = self.call;
+    [call requestHangUpWithCompletion:^(BOOL accepted) {
+        if (self.call != call) return;
+        self.hangUpPending = NO;
+        if (!accepted && call.state != kAKSIPCallDisconnectedState) {
+            self.closeAfterHangUp = NO;
+            [self.activeCallViewController allowHangUp];
+            [self setIntermediateStatus:NSLocalizedString(@"Could not end call. Try again.", @"Rejected local hangup.")];
+            return;
+        }
+        self.callActive = NO;
+        [self stopRecording];
+        [self.activeCallViewController stopCallTimer];
+        // Keep the delegate until the disconnect callback has collected history.
+        [self setStatus:NSLocalizedString(@"call ended", @"Call ended.")];
+        [self showEndedCallView];
+        [self.activeCallViewController showHangUp];
+        [self.activeCallViewController disallowHangUp];
+        self.incomingCallViewController.acceptCallButton.enabled = NO;
+        self.incomingCallViewController.declineCallButton.enabled = NO;
+        [self removeUserNotification];
+        if (self.closeAfterHangUp) {
+            self.closeAfterHangUp = NO;
+            [self.window close];
+        } else if ([self.defaults boolForKey:UserDefaultsKeys.autoCloseCallWindow] &&
+                   ![self isKindOfClass:CallTransferController.class]) {
+            [self performSelector:@selector(closeCallWindow) withObject:nil afterDelay:kCallWindowAutoCloseTime];
+        }
+    }];
 }
 
 - (void)redial {
@@ -398,6 +425,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
                                                plusCharacterSubstitution]]];
     }
 
+    self.closed = NO;
     [self prepareForCall];
     
     if ([[self phoneLabelFromAddressBook] length] > 0) {
@@ -413,6 +441,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
     // Make actual call.
     [self.accountController.account makeCallTo:self.redialURI completion:^(AKSIPCall *call) {
+        if (self.closed || !self.accountController.isEnabled) { [call hangUp]; return; }
         if (call != nil) {
             [self setCall:call];
             [self setCallActive:YES];
@@ -424,28 +453,34 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)toggleCallHold {
-    if ([[self call] state] == kAKSIPCallConfirmedState && ![[self call] isOnRemoteHold]) {
-        [[self call] toggleHold];
-    }
+    [self requestToggleCallHoldWithCompletion:^(BOOL accepted) {
+        if (!accepted) [self setIntermediateStatus:NSLocalizedString(@"Could not change hold. Try again.", @"Rejected local hold.")];
+    }];
+}
+
+- (void)requestToggleCallHoldWithCompletion:(void (^)(BOOL))completion {
+    if (self.call.state != kAKSIPCallConfirmedState || self.call.isOnRemoteHold) { completion(NO); return; }
+    AKSIPCall *call = self.call;
+    [call requestToggleHoldWithCompletion:^(BOOL accepted) {
+        completion(accepted && self.call == call && self.call.state == kAKSIPCallConfirmedState);
+    }];
 }
 
 - (void)toggleMicrophoneMute {
-    if ([[self call] state] != kAKSIPCallConfirmedState) {
-        return;
-    }
-    
-    [[self call] toggleMicrophoneMute];
-    
-    if ([[self call] isMicrophoneMuted]) {
-        if (![self isCallOnHold]) {
-            [[self activeCallViewController] stopCallTimer];
-            [self setStatus:NSLocalizedString(@"mic muted", @"Microphone muted status text.")];
+    if (self.call.state != kAKSIPCallConfirmedState) return;
+    AKSIPCall *call = self.call;
+    [call requestToggleMicrophoneMuteWithCompletion:^(BOOL accepted) {
+        if (self.call != call) return;
+        if (!accepted) {
+            [self setIntermediateStatus:NSLocalizedString(@"Could not change mute. Try again.", @"Mute failed.")];
+        } else if (call.isMicrophoneMuted && !self.isCallOnHold) {
+            [self.activeCallViewController stopCallTimer];
+            self.status = NSLocalizedString(@"mic muted", @"Microphone muted status text.");
         } else {
-            [self setIntermediateStatus:NSLocalizedString(@"mic muted", @"Microphone muted status text.")];
+            [self setIntermediateStatus:call.isMicrophoneMuted ? NSLocalizedString(@"mic muted", @"Microphone muted status text.")
+                                                              : NSLocalizedString(@"mic unmuted", @"Microphone unmuted status text.")];
         }
-    } else {
-        [self setIntermediateStatus:NSLocalizedString(@"mic unmuted", @"Microphone unmuted status text.")];
-    }
+    }];
 }
 
 - (void)startAutomaticRecordingIfNeeded {
@@ -464,9 +499,11 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     }
 
     // The call consumes this access lifetime even if recording setup fails.
-    if ([self.call startRecordingToURL:recordingURL accessedDirectoryURL:accessedDirectoryURL]) {
-        [self.activeCallViewController setRecordingIndicatorVisible:YES];
-    }
+    AKSIPCall *call = self.call;
+    [call startRecordingToURL:recordingURL accessedDirectoryURL:accessedDirectoryURL completion:^(BOOL succeeded) {
+        if (self.call != call || !self.isCallActive) { if (succeeded) [call stopRecording]; return; }
+        [self.activeCallViewController setRecordingIndicatorVisible:succeeded];
+    }];
 }
 
 - (void)stopRecording {
@@ -709,21 +746,19 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 #pragma mark -
 #pragma mark NSWindow delegate methods
 
-- (void)windowWillClose:(NSNotification *)notification {
-    if ([self isCallActive]) {
-        [self setCallActive:NO];
-        [self stopRecording];
-        [[self activeCallViewController] stopCallTimer];
-        
-        if ([[[self call] delegate] isEqual:self]) {
-            [[self call] setDelegate:nil];
-        }
-        
-        [[self call] hangUp];
+- (BOOL)windowShouldClose:(NSWindow *)sender {
+    if (self.isCallActive) {
+        self.closeAfterHangUp = YES;
+        [self hangUpCall];
+        return NO;
     }
-    
-    [self.delegate callControllerWillClose:self];
+    return YES;
+}
 
+- (void)windowWillClose:(NSNotification *)notification {
+    self.closed = YES;
+    if (self.isCallActive) [self hangUpCall];
+    [self.delegate callControllerWillClose:self];
     [_incomingCallViewController removeObservations];
     [_activeCallViewController removeObservations];
     [_endedCallViewController removeObservations];

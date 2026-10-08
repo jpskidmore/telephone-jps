@@ -19,12 +19,21 @@
 public final class SystemToUserAgentAudioDeviceMap {
     private var idMap: [SystemAudioDeviceID: UserAgentAudioDeviceID] = [:]
     private let idToUserAgentDevice: [UserAgentAudioDeviceID: UserAgentAudioDevice]
-    private let nameToUserAgentDevice: UserAgentAudioDeviceNameToDeviceMap
-
     public init(systemDevices: [SystemAudioDevice], userAgentDevices: [UserAgentAudioDevice]) {
         idToUserAgentDevice = makeIDToDeviceMap(from: userAgentDevices)
-        nameToUserAgentDevice = UserAgentAudioDeviceNameToDeviceMap(devices: userAgentDevices)
-        systemDevices.forEach(updateIDMap(with:))
+        for device in systemDevices {
+            let matches = userAgentDevices.filter {
+                let identityMatches = !device.uniqueIdentifier.isEmpty && !$0.uniqueIdentifier.isEmpty
+                    ? $0.uniqueIdentifier == device.uniqueIdentifier : $0.uniqueIdentifier.isEmpty && $0.name == device.name
+                return identityMatches && (!device.hasInputs || $0.hasInputs) && (!device.hasOutputs || $0.hasOutputs)
+            }
+            // A legacy name is safe only when each side has one compatible device.
+            let unambiguousSystemName = systemDevices.filter { $0.name == device.name &&
+                (!device.hasInputs || $0.hasInputs) && (!device.hasOutputs || $0.hasOutputs) }.count == 1
+            if matches.count == 1 && (!matches[0].uniqueIdentifier.isEmpty || unambiguousSystemName) {
+                idMap[device.identifier] = matches[0].identifier
+            }
+        }
     }
 
     public func userAgentDevice(for device: SystemAudioDevice) -> UserAgentAudioDevice {
@@ -35,28 +44,7 @@ public final class SystemToUserAgentAudioDeviceMap {
         }
     }
 
-    private func updateIDMap(with device: SystemAudioDevice) {
-        updateIDMap(withInput: device)
-        updateIDMap(withOutput: device)
-    }
 
-    private func updateIDMap(withInput device: SystemAudioDevice) {
-        if device.hasInputs {
-            let userAgentDevice = nameToUserAgentDevice.inputDevice(named: device.name)
-            if !userAgentDevice.isNil {
-                idMap[device.identifier] = userAgentDevice.identifier
-            }
-        }
-    }
-
-    private func updateIDMap(withOutput device: SystemAudioDevice) {
-        if device.hasOutputs {
-            let userAgentDevice = nameToUserAgentDevice.outputDevice(named: device.name)
-            if !userAgentDevice.isNil {
-                idMap[device.identifier] = userAgentDevice.identifier
-            }
-        }
-    }
 }
 
 private func makeIDToDeviceMap(from devices: [UserAgentAudioDevice]) -> [UserAgentAudioDeviceID: UserAgentAudioDevice] {

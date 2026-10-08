@@ -18,6 +18,7 @@
 
 public final class WeakDayChangeEventTarget {
     private weak var origin: DayChangeEventTarget?
+    var isExpired: Bool { origin == nil }
 
     public init(origin: DayChangeEventTarget)  {
         self.origin = origin

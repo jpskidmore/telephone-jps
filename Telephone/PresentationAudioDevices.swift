@@ -24,7 +24,7 @@ final class PresentationAudioDevices: NSObject {
     @objc let output: [PresentationAudioDevice]
     @objc var ringtoneOutput: [PresentationAudioDevice] { return output }
 
-    init(input: [PresentationAudioDevice], output: [PresentationAudioDevice]) {
+    @objc init(input: [PresentationAudioDevice], output: [PresentationAudioDevice]) {
         self.input = input
         self.output = output
     }

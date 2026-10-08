@@ -1,6 +1,6 @@
 --- pjmedia/src/pjmedia-audiodev/coreaudio_dev.m.orig
 +++ pjmedia/src/pjmedia-audiodev/coreaudio_dev.m
-@@ -638,11 +638,6 @@ static pj_status_t ca_factory_refresh(pjmedia_aud_dev_factory *f)
+@@ -638,11 +638,6 @@
          }
          if (cdi->info.output_count > 0) {
              cdi->info.caps |= PJMEDIA_AUD_DEV_CAP_OUTPUT_LATENCY;
@@ -12,7 +12,7 @@
          }
          if (cf->has_vpio) {
              cdi->info.caps |= PJMEDIA_AUD_DEV_CAP_EC;
-@@ -1858,11 +1853,6 @@ static pj_status_t ca_stream_get_param(pjmedia_aud_stream *s,
+@@ -1858,11 +1853,6 @@
      {
          pi->flags |= PJMEDIA_AUD_DEV_CAP_OUTPUT_LATENCY;
      }
@@ -24,3 +24,47 @@
      if (ca_stream_get_cap(s, PJMEDIA_AUD_DEV_CAP_INPUT_ROUTE,
                            &pi->input_route) == PJ_SUCCESS)
      {
+@@ -2338,1 +2328,43 @@
++
++#if COREAUDIO_MAC
++/* Return the physical UID of the exact PJSIP global device. A name or an
++ * independent CoreAudio enumeration position cannot identify duplicate devices.
++ * Caller serialises this query with PJSIP enumeration/refresh on the SDK queue. */
++PJ_DEF(pj_status_t) jps_coreaudio_device_uid(pjmedia_aud_dev_index global_index,
++                                           char *buffer, unsigned capacity)
++{
++    pjmedia_aud_subsys *subsys = pjmedia_get_aud_subsys();
++    unsigned encoded, driver, local;
++    struct coreaudio_factory *cf;
++    AudioObjectPropertyAddress address = {kAudioDevicePropertyDeviceUID,
++        kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain};
++    CFStringRef uid = NULL;
++    UInt32 size = sizeof(uid);
++    OSStatus status;
++    PJ_ASSERT_RETURN(buffer && capacity > 0, PJ_EINVAL);
++    buffer[0] = '\0';
++    if (!subsys || !subsys->pf || global_index < 0 ||
++        (unsigned)global_index >= subsys->dev_cnt) return PJ_EINVAL;
++    encoded = subsys->dev_list[global_index];
++    driver = encoded >> 16;
++    local = encoded & 0xffff;
++    if (driver >= subsys->drv_cnt || !subsys->drv[driver].f ||
++        subsys->drv[driver].f->op != &factory_op) return PJ_ENOTFOUND;
++    cf = (struct coreaudio_factory *)subsys->drv[driver].f;
++    if (local >= cf->dev_count) return PJ_ENOTFOUND;
++    status = AudioObjectGetPropertyData(cf->dev_info[local].dev_id, &address,
++                                        0, NULL, &size, &uid);
++    if (status != noErr || !uid) {
++        if (uid) CFRelease(uid);
++        return PJ_ENOTFOUND;
++    }
++    if (!CFStringGetCString(uid, buffer, capacity, kCFStringEncodingUTF8)) {
++        CFRelease(uid);
++        return PJ_ETOOSMALL;
++    }
++    CFRelease(uid);
++    return PJ_SUCCESS;
++}
++#endif
++
+ #endif  /* PJMEDIA_AUDIO_DEV_HAS_COREAUDIO */

@@ -1,0 +1,26 @@
+#import <Foundation/Foundation.h>
+#import <SystemConfiguration/SystemConfiguration.h>
+SCNetworkReachabilityRef TestReachabilityCreateName(CFAllocatorRef, const char *);
+SCNetworkReachabilityRef TestReachabilityCreateAddress(CFAllocatorRef, const struct sockaddr *);
+Boolean TestReachabilityCallback(SCNetworkReachabilityRef, SCNetworkReachabilityCallBack, SCNetworkReachabilityContext *);
+Boolean TestReachabilitySchedule(SCNetworkReachabilityRef, CFRunLoopRef, CFStringRef);
+Boolean TestReachabilityUnschedule(SCNetworkReachabilityRef, CFRunLoopRef, CFStringRef);
+SCDynamicStoreRef TestStoreCreate(CFAllocatorRef, CFStringRef, SCDynamicStoreCallBack, SCDynamicStoreContext *);
+Boolean TestStoreNotifications(SCDynamicStoreRef, CFArrayRef, CFArrayRef);
+CFRunLoopSourceRef TestStoreSource(CFAllocatorRef, SCDynamicStoreRef, CFIndex);
+void TestAddSource(CFRunLoopRef, CFRunLoopSourceRef, CFRunLoopMode);
+void TestRemoveSource(CFRunLoopRef, CFRunLoopSourceRef, CFRunLoopMode);
+CFPropertyListRef TestStoreCopyValue(SCDynamicStoreRef, CFStringRef);
+void TestResourceRelease(CFTypeRef);
+#define SCNetworkReachabilityCreateWithName TestReachabilityCreateName
+#define SCNetworkReachabilityCreateWithAddress TestReachabilityCreateAddress
+#define SCNetworkReachabilitySetCallback TestReachabilityCallback
+#define SCNetworkReachabilityScheduleWithRunLoop TestReachabilitySchedule
+#define SCNetworkReachabilityUnscheduleFromRunLoop TestReachabilityUnschedule
+#define SCDynamicStoreCreate TestStoreCreate
+#define SCDynamicStoreSetNotificationKeys TestStoreNotifications
+#define SCDynamicStoreCreateRunLoopSource TestStoreSource
+#define CFRunLoopAddSource TestAddSource
+#define CFRunLoopRemoveSource TestRemoveSource
+#define SCDynamicStoreCopyValue TestStoreCopyValue
+#define CFRelease TestResourceRelease

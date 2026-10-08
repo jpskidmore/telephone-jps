@@ -22,17 +22,19 @@ import UseCases
 
 final class PresentationAudioDevice: NSObject {
     @objc var isSystemDefault: Bool
+    @objc var uniqueIdentifier: String
     @objc var name: String
 
-    init(isSystemDefault: Bool, name: String) {
+    @objc init(isSystemDefault: Bool, name: String, uniqueIdentifier: String = "") {
         self.isSystemDefault = isSystemDefault
         self.name = name
+        self.uniqueIdentifier = uniqueIdentifier
     }
 }
 
 extension PresentationAudioDevice {
     convenience init(device: SystemAudioDevice) {
-        self.init(isSystemDefault: false, name: device.name)
+        self.init(isSystemDefault: false, name: device.name, uniqueIdentifier: device.uniqueIdentifier)
     }
 }
 
@@ -41,8 +43,8 @@ extension PresentationAudioDevice {
         switch item {
         case .systemDefault:
             self.init(isSystemDefault: true, name: systemDefaultDeviceName)
-        case .device(let name):
-            self.init(isSystemDefault: false, name: name)
+        case .device(let name, let uid):
+            self.init(isSystemDefault: false, name: name, uniqueIdentifier: uid ?? "")
         }
     }
 }
@@ -56,11 +58,12 @@ extension PresentationAudioDevice {
     override var hash: Int {
         var hasher = Hasher()
         hasher.combine(isSystemDefault)
+        hasher.combine(uniqueIdentifier)
         hasher.combine(name)
         return hasher.finalize()
     }
 
     private func isEqual(to device: PresentationAudioDevice) -> Bool {
-        return isSystemDefault == device.isSystemDefault && name == device.name
+        return isSystemDefault == device.isSystemDefault && uniqueIdentifier == device.uniqueIdentifier && name == device.name
     }
 }

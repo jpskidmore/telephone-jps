@@ -30,8 +30,8 @@ extension SystemDefaultingSoundIO.Item: @retroactive Equatable {
         switch (lhs, rhs) {
         case (.systemDefault, .systemDefault):
             return true
-        case let (.device(l), .device(r)):
-            return l == r
+        case let (.device(l, lUID), .device(r, rUID)):
+            return l == r && lUID == rUID
         case (.systemDefault, _),
              (.device, _):
             return false

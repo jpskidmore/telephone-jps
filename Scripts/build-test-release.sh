@@ -3,6 +3,7 @@
 set -euo pipefail
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$project_root"
+python3 Scripts/verify-repair-gate.py
 test "$(uname -s)" = Darwin
 test "$(uname -m)" = arm64
 xcodebuild -version
@@ -17,10 +18,12 @@ if [ -x Scripts/run-foundation-regression-tests.sh ]; then
     ./Scripts/run-foundation-regression-tests.sh
 fi
 
-run_dir="$project_root/build/test-release"
-test ! -e "$run_dir" || { echo 'Use a clean checkout for a test release.' >&2; exit 73; }
+# Keep executable products outside iCloud/FileProvider-managed source folders.
+# FileProvider can reattach FinderInfo after signing and block dyld file opens.
+run_dir=${JPS_LOCAL_BUILD_DIR:-$(mktemp -d /private/tmp/jps-telephone-release.XXXXXX)}
+test ! -e "$run_dir/distribution" || { echo 'Use a fresh local build directory for a test release.' >&2; exit 73; }
 mkdir -p "$run_dir/distribution"
-for scheme in Domain UseCasesTests TelephoneTests ReceiptValidationTests; do
+for scheme in Domain UseCasesTests ReceiptValidationTests; do
     xcodebuild -project Telephone.xcodeproj -scheme "$scheme" \
         -configuration Debug -destination 'platform=macOS,arch=arm64' \
         -derivedDataPath "$run_dir/TestDerivedData" \
@@ -29,6 +32,14 @@ for scheme in Domain UseCasesTests TelephoneTests ReceiptValidationTests; do
         "CLANG_MODULE_CACHE_PATH=$run_dir/ModuleCache" \
         'OTHER_CFLAGS=$(inherited) -ffile-prefix-map=$(SRCROOT)=.' test
 done
+xcodebuild -project Telephone.xcodeproj -scheme TelephoneTests \
+    -configuration Debug -destination 'platform=macOS,arch=arm64' \
+    -derivedDataPath "$run_dir/TestDerivedData" ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+    CODE_SIGNING_ALLOWED=NO build-for-testing
+isolated_run=$(python3 Scripts/prepare-isolated-test-host.py "$run_dir/TestDerivedData")
+xcodebuild test-without-building -xctestrun "$isolated_run" \
+    -destination 'platform=macOS,arch=arm64' \
+    -resultBundlePath "$run_dir/TelephoneTests.xcresult"
 xcodebuild -project Telephone.xcodeproj -target Telephone \
     -configuration Release ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
     DEPLOYMENT_POSTPROCESSING=YES STRIP_INSTALLED_PRODUCT=YES \
@@ -69,4 +80,4 @@ cp "docs/releases/${version}.md" "$dist/RELEASE-NOTES.md"
     cd "$dist"
     shasum -a 256 ./*.zip BUILD-VERIFICATION.md RELEASE-NOTES.md > SHA256SUMS.txt
 )
-printf 'Packaged %s (%s) from %s\n' "$version" "$build_number" "$source_sha"
+printf 'Packaged %s (%s) from %s in %s\n' "$version" "$build_number" "$source_sha" "$dist"

@@ -32,7 +32,7 @@
 }
 
 - (IBAction)makeCallToTransferDestination:(id)sender {
-    if ([[[self callDestinationField] objectValue] count] == 0) {
+    if (![self canMakeCall] || [[[self callDestinationField] objectValue] count] == 0) {
         return;
     }
     

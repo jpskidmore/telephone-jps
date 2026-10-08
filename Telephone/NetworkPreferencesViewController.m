@@ -37,6 +37,15 @@
 }
 
 - (void)awakeFromNib {
+    // Native accessibility exposes the cell; Interface Builder descriptions on
+    // its control view do not propagate into that unignored element.
+    self.transportPortField.cell.accessibilityLabel = NSLocalizedString(@"Local SIP port", @"Accessible control purpose.");
+    self.STUNServerHostField.cell.accessibilityLabel = NSLocalizedString(@"STUN server host", @"Accessible control purpose.");
+    self.STUNServerPortField.cell.accessibilityLabel = NSLocalizedString(@"STUN server port", @"Accessible control purpose.");
+    self.outboundProxyHostField.cell.accessibilityLabel = NSLocalizedString(@"Outbound proxy host", @"Accessible control purpose.");
+    self.outboundProxyPortField.cell.accessibilityLabel = NSLocalizedString(@"Outbound proxy port", @"Accessible control purpose.");
+    self.deleteOutboundProxyButton.cell.accessibilityLabel = NSLocalizedString(@"Clear outbound proxy", @"Accessible control purpose.");
+
     NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
     
     // Subscribe to User Agent start events.

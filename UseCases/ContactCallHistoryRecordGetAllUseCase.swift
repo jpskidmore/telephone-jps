@@ -36,6 +36,16 @@ extension ContactCallHistoryRecordGetAllUseCase: CallHistoryRecordGetAllUseCaseO
         await output.update(records: result)
     }
 
+    public func update(records: [CallHistoryRecord], request: CallHistoryReloadRequest) async {
+        var result = [ContactCallHistoryRecord]()
+        for record in records {
+            guard request.isCurrent else { return }
+            result.append(await makeContactCallHistoryRecord(record: record))
+        }
+        guard request.isCurrent else { return }
+        await output.update(records: result, request: request)
+    }
+
     private func makeContactCallHistoryRecord(record: CallHistoryRecord) async -> ContactCallHistoryRecord {
         return ContactCallHistoryRecord(origin: record, contact: await factory.make(uri: record.uri))
     }

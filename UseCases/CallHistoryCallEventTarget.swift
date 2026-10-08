@@ -16,6 +16,40 @@
 //  GNU General Public License for more details.
 //
 
+import Foundation
+
+// Admission happens synchronously, before the first actor hop, so Quit can wait
+// for queued writes as well as writes already running. Nested admitted writes
+// remain admitted while the top-level shutdown gate is closed.
+public final class CallHistoryWork: @unchecked Sendable {
+    public static let shared = CallHistoryWork()
+    private let lock = NSLock()
+    private let group = DispatchGroup()
+    private var accepting = true
+    @TaskLocal private static var admitted = false
+
+    public init() {}
+    @discardableResult public func submit(_ operation: @escaping @Sendable () async -> Void) -> Bool {
+        lock.lock()
+        guard accepting || Self.admitted else { lock.unlock(); return false }
+        group.enter()
+        lock.unlock()
+        Task {
+            await Self.$admitted.withValue(true) { await operation() }
+            group.leave()
+        }
+        return true
+    }
+
+    public func finish(completion: @escaping @Sendable () -> Void) {
+        lock.lock()
+        accepting = false
+        lock.unlock()
+        group.notify(queue: .main, execute: completion)
+    }
+    public func resume() { lock.lock(); accepting = true; lock.unlock() }
+}
+
 public final class CallHistoryCallEventTarget: Sendable {
     private let histories: CallHistories
     private let factory: CallHistoryRecordAddUseCaseFactory
@@ -28,11 +62,14 @@ public final class CallHistoryCallEventTarget: Sendable {
 
 extension CallHistoryCallEventTarget: CallEventTarget {
     public func didDisconnect(_ call: Call) {
-        Task {
+        let uuid = call.account.uuid
+        let domain = call.account.domain
+        let record = CallHistoryRecord(call: call)
+        CallHistoryWork.shared.submit { [histories, factory] in
             factory.make(
-                history: await histories.history(withUUID: call.account.uuid),
-                record: CallHistoryRecord(call: call),
-                domain: call.account.domain
+                history: await histories.history(withUUID: uuid),
+                record: record,
+                domain: domain
             ).execute()
         }
     }

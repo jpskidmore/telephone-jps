@@ -45,4 +45,56 @@ struct ContactCallHistoryRecordGetAllUseCaseTests {
             ]
         )
     }
+    @Test func discardsOlderSnapshotAfterClearCompletesThroughContacts() async {
+        let generation = CallHistoryReloadGeneration()
+        let matching = SuspendedHistoryContactMatching()
+        let output = HistorySnapshotsOutput()
+        let sut = ContactCallHistoryRecordGetAllUseCase(factory: FallingBackMatchedContactFactory(matching: matching), output: output)
+        let oldRequest = generation.next()
+        let old = Task {
+            await sut.update(records: [CallHistoryRecordTestFactory().makeRecord(number: 1)], request: oldRequest)
+        }
+        while !matching.entered { await Task.yield() }
+        let clearRequest = generation.next()
+        await sut.update(records: [], request: clearRequest)
+        matching.release()
+        await old.value
+        #expect(output.snapshots.count == 1)
+        #expect(output.snapshots[0].isEmpty)
+    }
+
+    @Test func discardsOlderNonemptySnapshotWhenNewerRefreshFinishesFirst() async {
+        let generation = CallHistoryReloadGeneration()
+        let matching = SuspendedHistoryContactMatching()
+        let output = HistorySnapshotsOutput()
+        let sut = ContactCallHistoryRecordGetAllUseCase(factory: FallingBackMatchedContactFactory(matching: matching), output: output)
+        let first = generation.next()
+        let old = Task { await sut.update(records: [CallHistoryRecordTestFactory().makeRecord(number: 1)], request: first) }
+        while !matching.entered { await Task.yield() }
+        let newer = generation.next()
+        let latest = CallHistoryRecordTestFactory().makeRecord(number: 2)
+        await sut.update(records: [latest], request: newer)
+        matching.release()
+        await old.value
+        #expect(output.snapshots.count == 1)
+        #expect(output.snapshots[0].map(\.origin) == [latest])
+    }
+
+}
+
+@ContactsActor private final class SuspendedHistoryContactMatching: ContactMatching {
+    var entered = false
+    private var continuation: CheckedContinuation<Void, Never>?
+    func match(for uri: URI) async -> MatchedContact? {
+        if !entered {
+            entered = true
+            await withCheckedContinuation { continuation = $0 }
+        }
+        return nil
+    }
+    func release() { continuation?.resume(); continuation = nil }
+}
+@ContactsActor private final class HistorySnapshotsOutput: ContactCallHistoryRecordGetAllUseCaseOutput {
+    var snapshots: [[ContactCallHistoryRecord]] = []
+    func update(records: [ContactCallHistoryRecord]) async { snapshots.append(records) }
 }

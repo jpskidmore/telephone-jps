@@ -108,6 +108,20 @@ final class CallHistoryViewPresenterTests: XCTestCase {
         XCTAssertEqual(invokedRecords![1].contact.title, number)
         XCTAssertTrue(invokedRecords![1].contact.tooltip.isEmpty)
     }
+    func testLatestReloadRemainsVisibleAfterAnOlderResultArrives() async {
+        let generation = CallHistoryReloadGeneration()
+        let old = generation.next()
+        let latest = generation.next()
+        var snapshots: [[PresentationCallHistoryRecord]] = []
+        let sut = CallHistoryViewPresenter(view: CallHistoryViewSpy { snapshots.append($0) },
+                                          dateFormatter: ShortRelativeDateTimeFormatter(), durationFormatter: DurationFormatter())
+        await sut.update(records: [], request: latest)
+        await sut.update(records: [ContactCallHistoryRecord(origin: CallHistoryRecordTestFactory().makeRecord(number: 1),
+                                                             contact: makeContact(number: 1))], request: old)
+        XCTAssertEqual(snapshots.count, 1)
+        XCTAssertTrue(snapshots[0].isEmpty)
+    }
+
 }
 
 private func makeContact(number: Int) -> MatchedContact {

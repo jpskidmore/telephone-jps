@@ -22,8 +22,19 @@
 #import "AKSIPUserAgent.h"
 
 void PJSUAOnAccountRegistrationState(pjsua_acc_id accountID) {
+    pjsua_acc_info info;
+    if (pjsua_acc_get_info(accountID, &info) != PJ_SUCCESS) return;
+    AKSIPUserAgent *agent = [AKSIPUserAgent sharedUserAgent];
+    AKSIPAccount *capturedAccount = [agent accountWithIdentifier:accountID];
+    NSInteger status = info.status, error = info.reg_last_err, expires = info.expires;
+    NSString *statusText = [[NSString alloc] initWithBytes:info.status_text.ptr length:info.status_text.slen encoding:NSUTF8StringEncoding] ?: @"";
     dispatch_async(dispatch_get_main_queue(), ^{
         AKSIPAccount *account = [[AKSIPUserAgent sharedUserAgent] accountWithIdentifier:accountID];
+        if (account == nil || account != capturedAccount) return;
+        account.registrationStatus = status;
+        account.registrationErrorCode = error;
+        account.registrationExpireTime = expires;
+        account.registrationStatusText = statusText;
         [account.delegate SIPAccountRegistrationDidChange:account];
     });
 }

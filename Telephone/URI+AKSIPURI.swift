@@ -32,6 +32,6 @@ extension URI {
 
     @objc(initWithURI:)
     convenience init(_ uri: AKSIPURI) {
-        self.init(user: uri.user, host: uri.host, displayName: uri.displayName)
+        self.init(uri: uri, transport: .udp)
     }
 }

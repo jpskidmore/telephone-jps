@@ -16,7 +16,7 @@
 //  GNU General Public License for more details.
 //
 
-import UseCases
+@testable import UseCases
 import UseCasesTestDoubles
 import XCTest
 
@@ -33,4 +33,15 @@ final class DayChangeEventTargetsTests: XCTestCase {
         XCTAssertTrue(first.didCallDayDidChange)
         XCTAssertTrue(second.didCallDayDidChange)
     }
+    func testPrunesExpiredSubscribersAndKeepsLiveSubscribers() {
+        let sut = DayChangeEventTargets()
+        for _ in 0..<100 { sut.add(WeakDayChangeEventTarget(origin: DayChangeEventTargetSpy())) }
+        let live = DayChangeEventTargetSpy()
+        sut.add(WeakDayChangeEventTarget(origin: live))
+        XCTAssertEqual(sut.count, 1)
+        sut.dayDidChange()
+        XCTAssertTrue(live.didCallDayDidChange)
+        XCTAssertEqual(sut.count, 1)
+    }
+
 }

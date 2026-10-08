@@ -16,11 +16,42 @@
 //  GNU General Public License for more details.
 //
 
+import Foundation
+
+public final class CallHistoryReloadGeneration: @unchecked Sendable {
+    private let lock = NSLock()
+    private var generation: UInt64 = 0
+    public init() {}
+    public func next() -> CallHistoryReloadRequest {
+        lock.lock(); defer { lock.unlock() }
+        generation &+= 1
+        return CallHistoryReloadRequest(owner: self, generation: generation)
+    }
+    fileprivate func isCurrent(_ value: UInt64) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return generation == value
+    }
+}
+
+public struct CallHistoryReloadRequest: Sendable {
+    fileprivate let owner: CallHistoryReloadGeneration
+    fileprivate let generation: UInt64
+    public var isCurrent: Bool { owner.isCurrent(generation) }
+}
+
 public protocol CallHistoryRecordGetAllUseCaseOutput: Sendable {
     func update(records: [CallHistoryRecord]) async
+    func update(records: [CallHistoryRecord], request: CallHistoryReloadRequest) async
+}
+public extension CallHistoryRecordGetAllUseCaseOutput {
+    func update(records: [CallHistoryRecord], request: CallHistoryReloadRequest) async {
+        guard request.isCurrent else { return }
+        await update(records: records)
+    }
 }
 
 public final class CallHistoryRecordGetAllUseCase: Sendable {
+    private let generation = CallHistoryReloadGeneration()
     private let history: CallHistory
     private let output: CallHistoryRecordGetAllUseCaseOutput
 
@@ -32,8 +63,11 @@ public final class CallHistoryRecordGetAllUseCase: Sendable {
 
 extension CallHistoryRecordGetAllUseCase: UseCase {
     public func execute() {
+        let request = generation.next()
         Task {
-            await output.update(records: await history.allRecords)
+            let records = await history.allRecords
+            guard request.isCurrent else { return }
+            await output.update(records: records, request: request)
         }
     }
 }

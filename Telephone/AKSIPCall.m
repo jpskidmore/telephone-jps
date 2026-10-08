@@ -40,6 +40,8 @@
 }
 
 @property(nonatomic, getter=isMicrophoneMuted) BOOL microphoneMuted;
+@property(atomic) BOOL nativeRecordingActive;
+@property(atomic) BOOL recordingStartPending;
 @property(nonatomic, readwrite, copy, nullable) NSURL *recordingURL;
 @property(nonatomic, copy, nullable) NSURL *localRecordingURL;
 @property(nonatomic, copy, nullable) NSURL *remoteRecordingURL;
@@ -47,7 +49,6 @@
 @property(nonatomic, strong, nullable) NSURL *accessedRecordingDirectoryURL;
 
 - (BOOL)stopNativeRecorders;
-- (BOOL)currentAudioInfo:(pjsua_call_info *)info;
 - (void)finalizeRecordingFromLocalURL:(NSURL *)localURL remoteURL:(NSURL *)remoteURL
                      destinationURL:(NSURL *)destinationURL completion:(void (^)(BOOL))completion;
 
@@ -150,42 +151,11 @@
 }
 
 - (BOOL)isActive {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return NO;
-    }
-    
-    return (pjsua_call_is_active((pjsua_call_id)[self identifier])) ? YES : NO;
+    return self.identifier != kAKSIPUserAgentInvalidIdentifier && self.state > kAKSIPCallNullState && self.state < kAKSIPCallDisconnectedState;
 }
 
-- (BOOL)currentAudioInfo:(pjsua_call_info *)info {
-    if (self.identifier == kAKSIPUserAgentInvalidIdentifier ||
-        pjsua_call_get_info((pjsua_call_id)self.identifier, info) != PJ_SUCCESS ||
-        info->state == PJSIP_INV_STATE_DISCONNECTED || info->media_cnt == 0 ||
-        info->media[0].type != PJMEDIA_TYPE_AUDIO) return NO;
-    return [[NSString stringWithPJString:info->call_id] isEqualToString:self.dialogIdentifier];
-}
-
-- (BOOL)isOnLocalHold {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return NO;
-    }
-    
-    pjsua_call_info callInfo;
-    if (![self currentAudioInfo:&callInfo]) return NO;
-    
-    return (callInfo.media[0].status == PJSUA_CALL_MEDIA_LOCAL_HOLD) ? YES : NO;
-}
-
-- (BOOL)isOnRemoteHold {
-    if ([self identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return NO;
-    }
-    
-    pjsua_call_info callInfo;
-    if (![self currentAudioInfo:&callInfo]) return NO;
-    
-    return (callInfo.media[0].status == PJSUA_CALL_MEDIA_REMOTE_HOLD) ? YES : NO;
-}
+- (BOOL)isOnLocalHold { return self.localHold; }
+- (BOOL)isOnRemoteHold { return self.remoteHold; }
 
 
 #pragma mark -
@@ -228,160 +198,154 @@
     return [NSString stringWithFormat:@"%@ <=> %@", [self localURI], [self remoteURI]];
 }
 
+- (void)performDialogOperation:(pj_status_t (^)(pjsua_call_info *))operation completion:(void (^)(pj_status_t))completion {
+    NSInteger identifier = self.identifier;
+    NSString *dialog = self.dialogIdentifier;
+    [[AKSIPUserAgent sharedUserAgent] performSIPOperation:^pj_status_t {
+        pjsua_call_info info;
+        if (pjsua_call_get_info((pjsua_call_id)identifier, &info) != PJ_SUCCESS ||
+            ![[NSString stringWithPJString:info.call_id] isEqualToString:dialog]) return PJ_ECANCELLED;
+        return operation(&info);
+    } completion:completion];
+}
+
 - (void)answer {
-    pj_status_t status = pjsua_call_answer((pjsua_call_id)[self identifier], PJSIP_SC_OK, NULL, NULL);
-    if (status == PJ_SUCCESS) {
-        self.missed = NO;
-    } else {
-        [[AKSIPUserAgent sharedUserAgent] reportAudioFailure:status operation:@"answer-call"];
-        NSLog(@"Error answering call %@", self);
-    }
+    [self performDialogOperation:^pj_status_t(pjsua_call_info *info) {
+        return pjsua_call_answer(info->id, PJSIP_SC_OK, NULL, NULL);
+    } completion:^(pj_status_t status) {
+        if (status == PJ_SUCCESS) self.missed = NO;
+        else [[AKSIPUserAgent sharedUserAgent] reportAudioFailure:status operation:@"answer-call"];
+    }];
 }
 
 - (void)hangUp {
-    if (([self identifier] == kAKSIPUserAgentInvalidIdentifier) || ([self state] == kAKSIPCallDisconnectedState)) {
+    [self requestHangUpWithCompletion:^(BOOL accepted) {}];
+}
+
+- (void)requestHangUpWithCompletion:(void (^)(BOOL))completion {
+    if (self.state == kAKSIPCallDisconnectedState || self.identifier == kAKSIPUserAgentInvalidIdentifier) {
+        completion(self.state == kAKSIPCallDisconnectedState);
         return;
     }
-    
-    pj_status_t status = pjsua_call_hangup((pjsua_call_id)[self identifier], 0, NULL, NULL);
-    if (status == PJ_SUCCESS) {
-        self.missed = NO;
-    } else {
-        NSLog(@"Error hanging up call %@", self);
-    }
+    NSInteger identifier = self.identifier;
+    NSString *dialog = self.dialogIdentifier;
+    [[AKSIPUserAgent sharedUserAgent] performSIPCleanupOperation:^pj_status_t {
+        pjsua_call_info info;
+        if (pjsua_call_get_info((pjsua_call_id)identifier, &info) != PJ_SUCCESS ||
+            ![[NSString stringWithPJString:info.call_id] isEqualToString:dialog]) return PJ_ECANCELLED;
+        return pjsua_call_hangup((pjsua_call_id)identifier, 0, NULL, NULL);
+    } completion:^(pj_status_t status) {
+        if (status == PJ_SUCCESS) self.missed = NO;
+        completion(status == PJ_SUCCESS);
+    }];
+}
+
+- (void)requestToggleHoldWithCompletion:(void (^)(BOOL))completion {
+    if (self.state != kAKSIPCallConfirmedState || self.isOnRemoteHold) { completion(NO); return; }
+    NSInteger identifier = self.identifier;
+    NSString *dialog = self.dialogIdentifier;
+    BOOL wasHeld = self.isOnLocalHold;
+    [[AKSIPUserAgent sharedUserAgent] performSIPOperation:^pj_status_t {
+        pjsua_call_info info;
+        if (pjsua_call_get_info((pjsua_call_id)identifier, &info) != PJ_SUCCESS ||
+            info.state != PJSIP_INV_STATE_CONFIRMED ||
+            ![[NSString stringWithPJString:info.call_id] isEqualToString:dialog]) return PJ_ECANCELLED;
+        return wasHeld ? pjsua_call_reinvite((pjsua_call_id)identifier, PJ_TRUE, NULL)
+                       : pjsua_call_set_hold((pjsua_call_id)identifier, NULL);
+    } completion:^(pj_status_t status) { completion(status == PJ_SUCCESS); }];
 }
 
 - (void)attendedTransferToCall:(AKSIPCall *)destinationCall {
-    [self setTransferStatus:kAKSIPUserAgentInvalidIdentifier];
-    [self setTransferStatusText:@""];
-    pj_status_t status = pjsua_call_xfer_replaces((pjsua_call_id)[self identifier],
-                                                  (pjsua_call_id)[destinationCall identifier],
-                                                  PJSUA_XFER_NO_REQUIRE_REPLACES,
-                                                  NULL);
-    if (status != PJ_SUCCESS) {
-        NSLog(@"Error transfering call %@", self);
-    }
+    self.transferStatus = kAKSIPUserAgentInvalidIdentifier;
+    self.transferStatusText = @"";
+    NSInteger destination = destinationCall.identifier;
+    NSString *dialog = destinationCall.dialogIdentifier;
+    [self performDialogOperation:^pj_status_t(pjsua_call_info *info) {
+        pjsua_call_info target;
+        if (pjsua_call_get_info((pjsua_call_id)destination, &target) != PJ_SUCCESS ||
+            ![[NSString stringWithPJString:target.call_id] isEqualToString:dialog]) return PJ_ECANCELLED;
+        return pjsua_call_xfer_replaces(info->id, (pjsua_call_id)destination, PJSUA_XFER_NO_REQUIRE_REPLACES, NULL);
+    } completion:^(pj_status_t status) {
+        if (status != PJ_SUCCESS) {
+            self.transferStatus = PJSIP_SC_INTERNAL_SERVER_ERROR;
+            self.transferStatusText = @"Could not transfer call";
+            [NSNotificationCenter.defaultCenter postNotificationName:AKSIPCallTransferStatusDidChangeNotification object:self
+                userInfo:@{@"AKFinalTransferNotification": @YES}];
+        }
+    }];
 }
 
-- (void)sendRingingNotification {
-    pj_status_t status = pjsua_call_answer((pjsua_call_id)[self identifier], PJSIP_SC_RINGING, NULL, NULL);
-    if (status != PJ_SUCCESS) {
-        NSLog(@"Error sending ringing notification in call %@", self);
-    }
-}
-
-- (void)replyWithTemporarilyUnavailable {
-    pj_status_t status = pjsua_call_answer((pjsua_call_id)[self identifier], PJSIP_SC_TEMPORARILY_UNAVAILABLE, NULL, NULL);
-    if (status != PJ_SUCCESS) {
-        NSLog(@"Error replying with 480 Temporarily Unavailable");
-    }
-}
-
-- (void)replyWithBusyHere {
-    pj_status_t status = pjsua_call_answer((pjsua_call_id)[self identifier], PJSIP_SC_BUSY_HERE, NULL, NULL);
-    if (status != PJ_SUCCESS) {
-        NSLog(@"Error replying with 486 Busy Here");
-    }
+- (void)sendRingingNotification { [self sendReply:PJSIP_SC_RINGING]; }
+- (void)replyWithTemporarilyUnavailable { [self sendReply:PJSIP_SC_TEMPORARILY_UNAVAILABLE]; }
+- (void)replyWithBusyHere { [self sendReply:PJSIP_SC_BUSY_HERE]; }
+- (void)sendReply:(unsigned)code {
+    [self performDialogOperation:^pj_status_t(pjsua_call_info *info) {
+        return pjsua_call_answer(info->id, code, NULL, NULL);
+    } completion:nil];
 }
 
 - (void)sendDTMFDigits:(NSString *)digits {
-    pj_status_t status;
-    pj_str_t pjDigits = [digits pjString];
-    
-    // Try to send RFC2833 DTMF first.
-    status = pjsua_call_dial_dtmf((pjsua_call_id)[self identifier], &pjDigits);
-    
-    if (status != PJ_SUCCESS) {  // Okay, that didn't work. Send INFO DTMF.
-        const pj_str_t kSIPINFO = pj_str("INFO");
-        
-        for (NSUInteger i = 0; i < [digits length]; ++i) {
-            pjsua_msg_data messageData;
-            pjsua_msg_data_init(&messageData);
-            messageData.content_type = pj_str("application/dtmf-relay");
-            
-            NSString *messageBody = [NSString stringWithFormat:@"Signal=%C\r\nDuration=300",
-                                     [digits characterAtIndex:i]];
-            messageData.msg_body = [messageBody pjString];
-            
-            status = pjsua_call_send_request((pjsua_call_id)[self identifier], &kSIPINFO, &messageData);
-            if (status != PJ_SUCCESS) {
-                NSLog(@"Error sending DTMF");
-            }
+    NSString *copiedDigits = [digits copy];
+    [self performDialogOperation:^pj_status_t(pjsua_call_info *info) {
+        pj_str_t pjDigits = copiedDigits.pjString;
+        pj_status_t status = pjsua_call_dial_dtmf(info->id, &pjDigits);
+        if (status == PJ_SUCCESS) return status;
+        const pj_str_t SIPINFO = pj_str("INFO");
+        for (NSUInteger i = 0; i < copiedDigits.length; i++) {
+            pjsua_msg_data data; pjsua_msg_data_init(&data);
+            data.content_type = pj_str("application/dtmf-relay");
+            NSString *body = [NSString stringWithFormat:@"Signal=%C\r\nDuration=300", [copiedDigits characterAtIndex:i]];
+            data.msg_body = body.pjString;
+            status = pjsua_call_send_request(info->id, &SIPINFO, &data);
+            if (status != PJ_SUCCESS) return status;
         }
-    }
+        return PJ_SUCCESS;
+    } completion:nil];
 }
 
-- (void)muteMicrophone {
-    if ([self isMicrophoneMuted] || [self state] != kAKSIPCallConfirmedState) {
-        return;
-    }
-    
-    pjsua_call_info callInfo;
-    if (![self currentAudioInfo:&callInfo]) return;
-    
-    pj_status_t status = pjsua_conf_disconnect(0, callInfo.media[0].stream.aud.conf_slot);
-    if (status == PJ_SUCCESS) {
-        [self setMicrophoneMuted:YES];
-        if ([self isRecording]) {
-            pjsua_conf_disconnect(0, _localRecorderPort);
+- (void)toggleMicrophoneMute { [self requestToggleMicrophoneMuteWithCompletion:^(BOOL accepted) {}]; }
+
+- (void)requestToggleMicrophoneMuteWithCompletion:(void (^)(BOOL))completion {
+    if (self.state != kAKSIPCallConfirmedState) { completion(NO); return; }
+    BOOL mute = !self.isMicrophoneMuted;
+    [self performDialogOperation:^pj_status_t(pjsua_call_info *info) {
+        if (info->state != PJSIP_INV_STATE_CONFIRMED || info->media_cnt == 0 || info->media[0].type != PJMEDIA_TYPE_AUDIO) return PJ_EINVALIDOP;
+        pj_status_t status = mute ? pjsua_conf_disconnect(0, info->media[0].stream.aud.conf_slot)
+            : [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:info->media[0].stream.aud.conf_slot];
+        if (status == PJ_SUCCESS && self.isRecording) {
+            if (mute) pjsua_conf_disconnect(0, _localRecorderPort);
+            else if (!self.isOnLocalHold) [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:_localRecorderPort];
         }
-    } else {
-        NSLog(@"Error muting microphone in call %@", self);
-    }
+        return status;
+    } completion:^(pj_status_t status) {
+        if (status == PJ_SUCCESS) self.microphoneMuted = mute;
+        completion(status == PJ_SUCCESS);
+    }];
 }
 
-- (void)unmuteMicrophone {
-    if (![self isMicrophoneMuted] || [self state] != kAKSIPCallConfirmedState) {
-        return;
+- (void)toggleHold { [self requestToggleHoldWithCompletion:^(BOOL accepted) {}]; }
+
+- (BOOL)isRecording { return self.nativeRecordingActive; }
+
+- (BOOL)requiresSIPControlThread { return YES; }
+
+- (void)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(NSURL *)directoryURL completion:(void (^)(BOOL))completion {
+    if (self.recordingStartPending || self.isRecording) {
+        [directoryURL stopAccessingSecurityScopedResource]; completion(NO); return;
     }
-    
-    pjsua_call_info callInfo;
-    if (![self currentAudioInfo:&callInfo]) return;
-    
-    pj_status_t status = [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:callInfo.media[0].stream.aud.conf_slot];
-    if (status == PJ_SUCCESS) {
-        [self setMicrophoneMuted:NO];
-        if ([self isRecording] && ![self isOnLocalHold]) {
-            [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:_localRecorderPort];
+    self.recordingStartPending = YES;
+    __block BOOL executed = NO;
+    [self performDialogOperation:^pj_status_t(pjsua_call_info *info) {
+        executed = YES;
+        return [self startRecordingToURL:URL accessedDirectoryURL:directoryURL] ? PJ_SUCCESS : PJ_EUNKNOWN;
+    } completion:^(pj_status_t status) {
+        self.recordingStartPending = NO;
+        if (!executed) {
+            [NSFileManager.defaultManager removeItemAtURL:URL error:nil];
+            [directoryURL stopAccessingSecurityScopedResource];
         }
-    } else {
-        NSLog(@"Error unmuting microphone in call %@", self);
-    }
-}
-
-- (void)toggleMicrophoneMute {
-    if ([self isMicrophoneMuted]) {
-        [self unmuteMicrophone];
-    } else {
-        [self muteMicrophone];
-    }
-}
-
-- (void)hold {
-    if ([self state] == kAKSIPCallConfirmedState && ![self isOnRemoteHold]) {
-        pj_status_t status = pjsua_call_set_hold((pjsua_call_id)[self identifier], NULL);
-        if (status == PJ_SUCCESS && [self isRecording]) {
-            pjsua_conf_disconnect(0, _localRecorderPort);
-        }
-    }
-}
-
-- (void)unhold {
-    if ([self state] == kAKSIPCallConfirmedState) {
-        pjsua_call_reinvite((pjsua_call_id)[self identifier], PJ_TRUE, NULL);
-    }
-}
-
-- (void)toggleHold {
-    if ([self isOnLocalHold]) {
-        [self unhold];
-    } else {
-        [self hold];
-    }
-}
-
-- (BOOL)isRecording {
-    return _localRecorderIdentifier != PJSUA_INVALID_ID || _remoteRecorderIdentifier != PJSUA_INVALID_ID;
+        completion(status == PJ_SUCCESS);
+    }];
 }
 
 - (BOOL)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(NSURL *)directoryURL {
@@ -415,21 +379,18 @@
     }
 
     NSFileManager *fileManager = NSFileManager.defaultManager;
-    NSURL *temporaryRootURL = [[NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES]
-                               URLByAppendingPathComponent:@"jps Telephone Call Recordings" isDirectory:YES];
-    NSURL *temporaryDirectoryURL = [temporaryRootURL URLByAppendingPathComponent:NSUUID.UUID.UUIDString
-                                                                      isDirectory:YES];
     NSError *directoryError = nil;
-    NSDictionary *privateDirectoryAttributes = @{NSFilePosixPermissions: @0700};
-    if (![fileManager createDirectoryAtURL:temporaryDirectoryURL
-               withIntermediateDirectories:YES
-                                attributes:privateDirectoryAttributes
-                                     error:&directoryError]) {
+    NSURL *temporaryDirectoryURL = AKCreateRecordingRecoveryDirectory(&directoryError);
+    if (temporaryDirectoryURL == nil) {
         NSLog(@"Could not create a private temporary call-recording folder: %@", directoryError.localizedDescription);
         return NO;
     }
     NSURL *localURL = [temporaryDirectoryURL URLByAppendingPathComponent:@"local.wav" isDirectory:NO];
     NSURL *remoteURL = [temporaryDirectoryURL URLByAppendingPathComponent:@"remote.wav" isDirectory:NO];
+    if (!AKPersistRecordingRecoveryJob(temporaryDirectoryURL, localURL, remoteURL, URL, &directoryError)) {
+        AKReportRecordingExportFailure(temporaryDirectoryURL, URL, directoryError);
+        return NO;
+    }
 
     pj_str_t localFilename = [localURL.path pjString];
     pjsua_recorder_id localRecorderIdentifier = PJSUA_INVALID_ID;
@@ -480,6 +441,7 @@
     self.localRecordingURL = localURL;
     self.remoteRecordingURL = remoteURL;
     self.recordingTemporaryDirectoryURL = temporaryDirectoryURL;
+    self.nativeRecordingActive = YES;
     NSLog(@"Recording separate local and remote call tracks");
     return YES;
 }
@@ -489,6 +451,14 @@
 }
 
 - (void)stopRecordingWithCompletion:(void (^)(BOOL))completion {
+    if (self.isRecording && self.requiresSIPControlThread && NSThread.isMainThread) {
+        [[AKSIPUserAgent sharedUserAgent] performSIPCleanupOperation:^pj_status_t {
+            [self stopRecordingWithCompletion:completion]; return PJ_SUCCESS;
+        } completion:^(pj_status_t status) {
+            if (status != PJ_SUCCESS && completion) completion(NO);
+        }];
+        return;
+    }
     if (![self isRecording]) {
         if (completion != nil) {
             completion(YES);
@@ -522,12 +492,21 @@
         return;
     }
 
+    NSError *recoveryError = nil;
+    if (![self persistRecordingRecoveryJobAtDirectory:temporaryDirectoryURL localURL:localURL remoteURL:remoteURL
+                                     destinationURL:destinationURL error:&recoveryError]) {
+        AKReportRecordingExportFailure(temporaryDirectoryURL, destinationURL, recoveryError);
+        [accessedDirectoryURL stopAccessingSecurityScopedResource];
+        if (completion) completion(NO);
+        return;
+    }
     [self finalizeRecordingFromLocalURL:localURL remoteURL:remoteURL destinationURL:destinationURL completion:^(BOOL succeeded) {
         if (succeeded) {
             [NSFileManager.defaultManager removeItemAtURL:temporaryDirectoryURL error:nil];
             NSLog(@"Saved stereo call recording (local left, remote right)");
         } else {
-            NSLog(@"Could not create the stereo recording; private recovery tracks were retained temporarily");
+            AKReportRecordingExportFailure(temporaryDirectoryURL, destinationURL, nil);
+            NSLog(@"Could not create the stereo recording; private durable recovery tracks were retained");
         }
         // This captured token belongs to this recording, not the controller's
         // current call or another recording using the same directory.
@@ -539,6 +518,11 @@
 }
 // Kept separate from conversion so native stop failures retain their resources
 // for a later stop request. The bundled PJSIP destroy has no transient retry case.
+- (BOOL)persistRecordingRecoveryJobAtDirectory:(NSURL *)directory localURL:(NSURL *)local
+                                    remoteURL:(NSURL *)remote destinationURL:(NSURL *)destination error:(NSError **)error {
+    return AKPersistRecordingRecoveryJob(directory, local, remote, destination, error);
+}
+
 - (BOOL)stopNativeRecorders {
     pj_status_t localStatus = PJ_SUCCESS;
     pj_status_t remoteStatus = PJ_SUCCESS;
@@ -560,6 +544,7 @@
         NSLog(@"Could not finalize call tracks (PJSIP errors %d and %d)", localStatus, remoteStatus);
         return NO;
     }
+    self.nativeRecordingActive = NO;
     return YES;
 }
 
@@ -571,20 +556,16 @@
 }
 
 - (void)refreshRecordingConnections {
-    if (![self isRecording] || [AKSIPUserAgent sharedUserAgent].hasAudioFailure) {
-        return;
-    }
-
-    pjsua_conf_port_id callPort = pjsua_call_get_conf_port((pjsua_call_id)[self identifier]);
-    if (callPort == PJSUA_INVALID_ID) {
-        return;
-    }
-    if ([[AKSIPUserAgent sharedUserAgent] connectAudioSource:callPort destination:_remoteRecorderPort] != PJ_SUCCESS) {
-        return;
-    }
-    if (![self isMicrophoneMuted] && ![self isOnLocalHold]) {
-        [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:_localRecorderPort];
-    }
+    if (!self.isRecording || [AKSIPUserAgent sharedUserAgent].hasAudioFailure) return;
+    [self performDialogOperation:^pj_status_t(pjsua_call_info *info) {
+        if (info->media_cnt == 0 || info->media[0].type != PJMEDIA_TYPE_AUDIO) return PJ_EINVALIDOP;
+        pjsua_conf_port_id callPort = info->media[0].stream.aud.conf_slot;
+        AKSIPUserAgent *agent = [AKSIPUserAgent sharedUserAgent];
+        pj_status_t result = [agent connectAudioSource:callPort destination:_remoteRecorderPort];
+        if (result == PJ_SUCCESS && !self.isMicrophoneMuted && !self.isOnLocalHold)
+            result = [agent connectAudioSource:0 destination:_localRecorderPort];
+        return result;
+    } completion:nil];
 }
 
 @end

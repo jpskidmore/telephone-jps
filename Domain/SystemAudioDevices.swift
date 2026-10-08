@@ -32,6 +32,14 @@ public struct SystemAudioDevices {
         deviceNameToOutputDevice = deviceNameToDeviceMap(from: output)
     }
 
+    public func inputDevice(uniqueIdentifier: String) -> SystemAudioDevice {
+        uniqueDevice(in: input, matching: { $0.uniqueIdentifier == uniqueIdentifier })
+    }
+
+    public func outputDevice(uniqueIdentifier: String) -> SystemAudioDevice {
+        uniqueDevice(in: output, matching: { $0.uniqueIdentifier == uniqueIdentifier })
+    }
+
     public func inputDevice(named name: String) -> SystemAudioDevice {
         return deviceNameToInputDevice[name] ?? NullSystemAudioDevice()
     }
@@ -42,5 +50,11 @@ public struct SystemAudioDevices {
 }
 
 private func deviceNameToDeviceMap(from devices: [SystemAudioDevice]) -> [String: SystemAudioDevice] {
-    return devices.reduce(into: [:]) { $0[$1.name] = $1 }
+    let groups = Dictionary(grouping: devices, by: \.name)
+    return groups.compactMapValues { $0.count == 1 ? $0[0] : nil }
+}
+
+private func uniqueDevice(in devices: [SystemAudioDevice], matching predicate: (SystemAudioDevice) -> Bool) -> SystemAudioDevice {
+    let matches = devices.filter(predicate)
+    return matches.count == 1 ? matches[0] : NullSystemAudioDevice()
 }

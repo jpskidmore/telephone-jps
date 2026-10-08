@@ -25,40 +25,44 @@ public final class StoreEventTargets {
     }
 
     public func add(_ target: StoreEventTarget) {
+        prune()
         targets.append(target)
     }
+    private func prune() { targets.removeAll { ($0 as? WeakStoreEventTarget)?.isExpired == true } }
+    private var liveTargets: [StoreEventTarget] { prune(); return targets }
+    var count: Int { prune(); return targets.count }
 }
 
 extension StoreEventTargets: StoreEventTarget {
     public func didStartPurchasingProduct(withIdentifier identifier: String) {
-        targets.forEach { $0.didStartPurchasingProduct(withIdentifier: identifier) }
+        liveTargets.forEach { $0.didStartPurchasingProduct(withIdentifier: identifier) }
     }
 
     public func didPurchase() async {
-        for target in targets {
+        for target in liveTargets {
             await target.didPurchase()
         }
     }
 
     public func didFailPurchasing(error: String) {
-        targets.forEach { $0.didFailPurchasing(error: error) }
+        liveTargets.forEach { $0.didFailPurchasing(error: error) }
     }
 
     public func didCancelPurchasing() {
-        targets.forEach { $0.didCancelPurchasing() }
+        liveTargets.forEach { $0.didCancelPurchasing() }
     }
 
     public func didRestorePurchases() async {
-        for target in targets {
+        for target in liveTargets {
             await target.didRestorePurchases()
         }
     }
 
     public func didFailRestoringPurchases(error: String) {
-        targets.forEach { $0.didFailRestoringPurchases(error: error) }
+        liveTargets.forEach { $0.didFailRestoringPurchases(error: error) }
     }
 
     public func didCancelRestoringPurchases() {
-        targets.forEach { $0.didCancelRestoringPurchases() }
+        liveTargets.forEach { $0.didCancelRestoringPurchases() }
     }
 }

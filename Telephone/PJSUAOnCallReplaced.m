@@ -27,19 +27,30 @@
 
 void PJSUAOnCallReplaced(pjsua_call_id oldID, pjsua_call_id newID) {
     pjsua_call_info oldInfo, newInfo;
-    pjsua_call_get_info(oldID, &oldInfo);
-    pjsua_call_get_info(newID, &newInfo);
+    if (pjsua_call_get_info(oldID, &oldInfo) != PJ_SUCCESS ||
+        pjsua_call_get_info(newID, &newInfo) != PJ_SUCCESS) return;
 
     PJ_LOG(3, (THIS_FILE, "Call %d with %.*s is being replaced by call %d with %.*s",
                oldID, (int)oldInfo.remote_info.slen, oldInfo.remote_info.ptr,
                newID, (int)newInfo.remote_info.slen, newInfo.remote_info.ptr));
 
     AKSIPUserAgent *agent = [AKSIPUserAgent sharedUserAgent];
+    AKSIPAccount *capturedAccount = [agent accountWithIdentifier:newInfo.acc_id];
     PJSUACallInfo *newInfoWrapper = [[PJSUACallInfo alloc] initWithInfo:newInfo parser:agent.parser];
 
     dispatch_async(dispatch_get_main_queue(), ^{
         PJ_LOG(3, (THIS_FILE, "Creating AKSIPCall for call %d from replaced callback", newID));
         AKSIPAccount *account = [agent accountWithIdentifier:newInfoWrapper.accountIdentifier];
-        [account addCallWithInfo:newInfoWrapper];
+        if (account == nil || account != capturedAccount) return;
+        AKSIPCall *call = [account addCallWithInfo:newInfoWrapper];
+        if (call == nil) return;
+        if ([account.delegate respondsToSelector:@selector(SIPAccount:didReceiveReplacementCall:replacingIdentifier:)]) {
+            [account.delegate SIPAccount:account didReceiveReplacementCall:call replacingIdentifier:oldID];
+        } else {
+            [account.delegate SIPAccount:account didReceiveCall:call];
+        }
+        if (call.state == kAKSIPCallConfirmedState) {
+            [NSNotificationCenter.defaultCenter postNotificationName:AKSIPCallDidConfirmNotification object:call];
+        }
     });
 }

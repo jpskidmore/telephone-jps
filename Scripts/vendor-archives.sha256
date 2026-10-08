@@ -10,7 +10,7 @@ b7f8d2a1220a2596755e3bfd3a83d20e082a20c3b4944389744a2afa27ccb9ae  ThirdParty/PJS
 45127cea283d089d719e97fc8068abc489da9f838d59d020a7d3f979a08cfd31  ThirdParty/PJSIP/lib/libpj-arm-apple-darwin.a
 e3195a83d91625727f0c44845af099afa1fee9f286cc659006118dc2c416c1e4  ThirdParty/PJSIP/lib/libpjlib-util-arm-apple-darwin.a
 3a99dd1b3b5eae62dc3692da675d06e328b60fb861bcd5a169a71777a4d75f99  ThirdParty/PJSIP/lib/libpjmedia-arm-apple-darwin.a
-9d3dde2d759702a3fc61649b631fb9b761bc904e504a5b85035fef0c1b894510  ThirdParty/PJSIP/lib/libpjmedia-audiodev-arm-apple-darwin.a
+5f748d0db746d208bfd01190441adfaa67d27ec087fec4cffc9c9d2663c172e9  ThirdParty/PJSIP/lib/libpjmedia-audiodev-arm-apple-darwin.a
 f7ff5f49641c06e501b59e132d75bafb2fd423588b7a997e6583c8f8a742c80f  ThirdParty/PJSIP/lib/libpjmedia-codec-arm-apple-darwin.a
 950caa8aeb890b1a7d6975044753fbee5033ad15e0685163236b140f1e1823af  ThirdParty/PJSIP/lib/libpjmedia-videodev-arm-apple-darwin.a
 b775fa039d33846377478ededf4efdcafe1357397538f0e47e1139e64e9e30c2  ThirdParty/PJSIP/lib/libpjnath-arm-apple-darwin.a

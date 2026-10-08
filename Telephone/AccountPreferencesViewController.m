@@ -36,6 +36,17 @@ static const NSUInteger kAccountsMax = 32;
 
 @implementation AccountPreferencesViewController
 
+- (NSUserDefaults *)accountDefaults { return NSUserDefaults.standardUserDefaults; }
+
+- (NSString *)savedPasswordForService:(NSString *)service account:(NSString *)account {
+    return [AKKeychain passwordForService:service account:account];
+}
+
+- (BOOL)savePassword:(NSString *)password service:(NSString *)service account:(NSString *)account error:(NSError **)error {
+    return [AKKeychain addItemWithService:service account:account password:password error:error];
+}
+
+
 @synthesize accountSetupController = _accountSetupController;
 
 - (AccountSetupController *)accountSetupController {
@@ -56,6 +67,20 @@ static const NSUInteger kAccountsMax = 32;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    // Native accessibility exposes the cell; Interface Builder descriptions on
+    // its control view do not propagate into that unignored element.
+    self.accountDescriptionField.cell.accessibilityLabel = NSLocalizedString(@"Account description", @"Accessible control purpose.");
+    self.fullNameField.cell.accessibilityLabel = NSLocalizedString(@"Full name", @"Accessible control purpose.");
+    self.domainField.cell.accessibilityLabel = NSLocalizedString(@"Account domain", @"Accessible control purpose.");
+    self.usernameField.cell.accessibilityLabel = NSLocalizedString(@"Account username", @"Accessible control purpose.");
+    self.passwordField.cell.accessibilityLabel = NSLocalizedString(@"Account password", @"Accessible control purpose.");
+    self.reregistrationTimeField.cell.accessibilityLabel = NSLocalizedString(@"Registration interval", @"Accessible control purpose.");
+    self.plusCharacterSubstitutionField.cell.accessibilityLabel = NSLocalizedString(@"Plus character replacement", @"Accessible control purpose.");
+    self.proxyHostField.cell.accessibilityLabel = NSLocalizedString(@"Account proxy host", @"Accessible control purpose.");
+    self.proxyPortField.cell.accessibilityLabel = NSLocalizedString(@"Account proxy port", @"Accessible control purpose.");
+    self.SIPAddressField.cell.accessibilityLabel = NSLocalizedString(@"SIP address", @"Accessible control purpose.");
+    self.registrarField.cell.accessibilityLabel = NSLocalizedString(@"Registrar", @"Accessible control purpose.");
+
     NSString *connectionScope = NSLocalizedString(@"Connection settings for the selected account.", @"Account Connection tab scope.");
     NSView *connectionView = self.proxyHostField.superview;
     connectionView.accessibilityElement = YES;
@@ -432,6 +457,17 @@ static const NSUInteger kAccountsMax = 32;
     }
 }
 
+- (void)presentAccountEditError:(NSString *)message field:(NSTextField *)field {
+    self.accountEnabledCheckBox.state = NSControlStateValueOff;
+    field.accessibilityHelp = message;
+    [self.view.window makeFirstResponder:field];
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Account could not be enabled", @"Account edit validation error.");
+    alert.informativeText = message;
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", @"Dismiss error.")];
+    [alert beginSheetModalForWindow:self.view.window completionHandler:nil];
+}
+
 - (IBAction)changeAccountEnabled:(id)sender {
     NSInteger index = [[self accountsTable] selectedRow];
     if (index == -1) {
@@ -442,7 +478,7 @@ static const NSUInteger kAccountsMax = 32;
     
     userInfo[kAccountIndex] = @(index);
     
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [self accountDefaults];
     
     NSMutableArray *savedAccounts = [NSMutableArray arrayWithArray:[defaults arrayForKey:UserDefaultsKeys.accounts]];
     
@@ -463,6 +499,16 @@ static const NSUInteger kAccountsMax = 32;
         NSString *username = [[[self usernameField] stringValue] stringByTrimmingCharactersInSet:spacesSet];
         NSString *registrar = [[[self registrarField] stringValue] stringByTrimmingCharactersInSet:spacesSet];
         
+        NSString *sipAddress = [self.SIPAddressField.stringValue stringByTrimmingCharactersInSet:spacesSet];
+        // An explicit address and registrar support accounts with no default domain.
+        if (username.length == 0 || (domain.length == 0 && (sipAddress.length == 0 || registrar.length == 0))) {
+            NSTextField *field = username.length == 0 ? self.usernameField : self.domainField;
+            [self presentAccountEditError:username.length == 0
+                ? NSLocalizedString(@"Enter a username before enabling this account.", @"Account username required.")
+                : NSLocalizedString(@"Enter a domain, or provide both a SIP address and registrar.", @"Account domain or overrides required.") field:field];
+            return;
+        }
+
         accountDict[AKSIPAccountKeys.desc] = accountDescription;
         accountDict[AKSIPAccountKeys.fullName] = fullName;
         accountDict[AKSIPAccountKeys.domain] = domain;
@@ -477,13 +523,18 @@ static const NSUInteger kAccountsMax = 32;
         
         NSString *keychainAccount = username;
         
-        NSString *keychainPassword = [AKKeychain passwordForService:keychainService account:keychainAccount];
+        NSString *keychainPassword = [self savedPasswordForService:keychainService account:keychainAccount];
         
         NSString *currentPassword = [[self passwordField] stringValue];
         
         // Save password only if it's been changed.
         if (![keychainPassword isEqualToString:currentPassword]) {
-            [AKKeychain addItemWithService:keychainService account:keychainAccount password:currentPassword];
+            NSError *saveError;
+            if (![self savePassword:currentPassword service:keychainService account:keychainAccount error:&saveError]) {
+                [self presentAccountEditError:[NSString stringWithFormat:NSLocalizedString(@"Password could not be saved. %@", @"Credential save failure."), saveError.localizedDescription]
+                                        field:self.passwordField];
+                return;
+            }
         }
         
         accountDict[AKSIPAccountKeys.reregistrationTime] = @([[self reregistrationTimeField] integerValue]);
@@ -496,7 +547,6 @@ static const NSUInteger kAccountsMax = 32;
         accountDict[AKSIPAccountKeys.proxyHost] = proxyHost;
         accountDict[AKSIPAccountKeys.proxyPort] = @([[self proxyPortField] integerValue]);
         
-        NSString *sipAddress = [[[self SIPAddressField] stringValue] stringByTrimmingCharactersInSet:spacesSet];
         accountDict[AKSIPAccountKeys.sipAddress] = sipAddress;
         
         accountDict[AKSIPAccountKeys.registrar] = registrar;

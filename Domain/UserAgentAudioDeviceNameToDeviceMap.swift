@@ -18,6 +18,8 @@
 
 final class UserAgentAudioDeviceNameToDeviceMap {
     private var inputMap: [String: UserAgentAudioDevice] = [:]
+    private var devicesForInputName: [String: Int] = [:]
+    private var devicesForOutputName: [String: Int] = [:]
     private var outputMap: [String: UserAgentAudioDevice] = [:]
 
     init(devices: [UserAgentAudioDevice]) {
@@ -35,13 +37,17 @@ final class UserAgentAudioDeviceNameToDeviceMap {
 
     private func updateInputDeviceMap(with device: UserAgentAudioDevice) {
         if device.hasInputs {
-            inputMap[device.name] = device
+            let matches = devicesForInputName[device.name, default: 0] + 1
+            devicesForInputName[device.name] = matches
+            inputMap[device.name] = matches == 1 ? device : NullUserAgentAudioDevice()
         }
     }
 
     private func updateOutputDeviceMap(with device: UserAgentAudioDevice) {
         if device.hasOutputs {
-            outputMap[device.name] = device
+            let matches = devicesForOutputName[device.name, default: 0] + 1
+            devicesForOutputName[device.name] = matches
+            outputMap[device.name] = matches == 1 ? device : NullUserAgentAudioDevice()
         }
     }
 }

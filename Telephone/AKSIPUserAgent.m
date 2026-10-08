@@ -82,17 +82,27 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 // Read-write redeclaration.
 @property(nonatomic) AKSIPUserAgentState state;
 @property(nonatomic, strong) AKAudioDeviceController *audioDeviceController;
-@property(nonatomic) BOOL audioRecoveryPending;
-@property(nonatomic) pj_status_t audioFailureStatus;
+@property(atomic) BOOL audioRecoveryPending;
+@property(atomic) pj_status_t audioFailureStatus;
 @property(atomic, readwrite) NSUInteger audioGeneration;
 @property(nonatomic) NSInteger requestedInputDevice;
 @property(nonatomic) NSInteger requestedOutputDevice;
+@property(atomic) BOOL mediaEndpointReady;
+@property(atomic) BOOL audioCommandPending;
+@property(atomic) NSUInteger audioSelectionRevision;
+@property(atomic) NSUInteger audioSelectionGeneration;
+@property(atomic) BOOL ownsPJLIBReference;
+@property(atomic) NSUInteger codecRevision;
+@property(atomic) NSUInteger appliedCodecRevision;
+@property(atomic) NSUInteger lifecycleGeneration;
 - (void)restoreCurrentAudioConnections;
+- (NSArray<AKSIPAccount *> *)accountCollectionsSnapshot;
 - (void)audioDidFail:(int)status;
 
 @property(nonatomic) pj_pool_t *pool;
 
 @property(nonatomic, readonly) NSMutableArray *accounts;
+@property(nonatomic, readonly) NSMutableArray<AKSIPAccount *> *retiredAccounts;
 
 // Ringback slot.
 @property(nonatomic, assign) pjsua_conf_port_id ringbackSlot;
@@ -165,19 +175,25 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 
 - (NSInteger)activeCallsCount {
     NSInteger count = 0;
-    for (AKSIPAccount *account in self.accounts) {
+    for (AKSIPAccount *account in [self accountCollectionsSnapshot]) {
         count += [account activeCallsCount];
     }
     return count;
 }
 
 - (BOOL)hasUnansweredIncomingCalls {
-    for (AKSIPAccount *account in self.accounts) {
+    for (AKSIPAccount *account in [self accountCollectionsSnapshot]) {
         if (account.hasUnansweredIncomingCalls) {
             return YES;
         }
     }
     return NO;
+}
+
+- (NSArray<AKSIPAccount *> *)accountCollectionsSnapshot {
+    @synchronized(self) {
+        return [self.accounts arrayByAddingObjectsFromArray:self.retiredAccounts];
+    }
 }
 
 - (AKSIPUserAgentCallData *)callData {
@@ -232,7 +248,10 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 - (void)setUsesG711Only:(BOOL)usesG711Only {
     if (_usesG711Only != usesG711Only) {
         _usesG711Only = usesG711Only;
-        [self updateCodecs];
+        self.codecRevision++;
+        if (self.isStarted) {
+            [self performSIPOperation:^{ [self updateCodecs]; return PJ_SUCCESS; } completion:nil];
+        }
     }
 }
 
@@ -260,6 +279,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     
     [self setDelegate:aDelegate];
     _accounts = [[NSMutableArray alloc] init];
+    _retiredAccounts = [[NSMutableArray alloc] init];
     _requestedInputDevice = PJMEDIA_AUD_DEFAULT_CAPTURE_DEV;
     _requestedOutputDevice = PJMEDIA_AUD_DEFAULT_PLAYBACK_DEV;
     __weak AKSIPUserAgent *weakSelf = self;
@@ -316,14 +336,14 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     if (self.state != AKSIPUserAgentStateStopped) {
         return;
     }
-    if (pj_init() != PJ_SUCCESS) {
-        NSLog(@"Error initializing PJSIP");
-        return;
-    }
     self.audioGeneration++;
     self.state = AKSIPUserAgentStateStarting;
+    self.lifecycleGeneration++;
     void (^completion)(BOOL) = ^(BOOL didStart) {
         self.state = didStart ? AKSIPUserAgentStateStarted : AKSIPUserAgentStateStopped;
+        if (didStart && self.codecRevision != self.appliedCodecRevision) {
+            [self performSIPOperation:^{ [self updateCodecs]; return PJ_SUCCESS; } completion:nil];
+        }
         [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentDidFinishStartingNotification object:self];
     };
     [self performSelector:@selector(thread_startWithCompletion:) onThread:self.thread withObject:completion waitUntilDone:NO];
@@ -337,6 +357,14 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 
 - (void)thread_startInAutoreleasePoolWithCompletion:(void (^ _Nonnull)(BOOL didStart))completion {
     pj_status_t status;
+
+    status = pj_init();
+    if (status != PJ_SUCCESS) {
+        [self thread_callOnMain:completion withFlag:NO];
+        return;
+    }
+    self.ownsPJLIBReference = YES;
+    self.mediaEndpointReady = NO;
 
     if (!pj_thread_is_registered()) {
         pj_thread_t *thread;
@@ -445,6 +473,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
         [self thread_callOnMain:completion withFlag:NO];
         return;
     }
+    self.mediaEndpointReady = YES;
 
     // Create ringback tones.
     unsigned i, samplesPerFrame;
@@ -580,7 +609,40 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (void)thread_callOnMain:(void (^ _Nonnull)(BOOL))block withFlag:(BOOL)flag {
+    if (!flag && self.ownsPJLIBReference) {
+        self.mediaEndpointReady = NO;
+        self.ownsPJLIBReference = NO;
+        pj_shutdown();
+    }
     dispatch_async(dispatch_get_main_queue(), ^{ block(flag); });
+}
+
+- (void)performSIPOperation:(pj_status_t (^)(void))operation completion:(void (^)(pj_status_t))completion {
+    NSUInteger generation = self.audioGeneration;
+    void (^command)(void) = ^{
+        pj_status_t status = PJ_ECANCELLED;
+        if (generation == self.audioGeneration && self.isStarted) {
+            status = operation();
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion(generation == self.audioGeneration ? status : PJ_ECANCELLED);
+        });
+    };
+    [self performSelector:@selector(thread_performCommand:) onThread:self.thread withObject:[command copy] waitUntilDone:NO];
+}
+
+- (void)thread_performCommand:(void (^)(void))command {
+    @autoreleasepool { command(); }
+}
+
+- (void)performSIPCleanupOperation:(pj_status_t (^)(void))operation completion:(void (^)(pj_status_t))completion {
+    NSUInteger generation = self.lifecycleGeneration;
+    void (^command)(void) = ^{
+        pj_status_t status = generation == self.lifecycleGeneration && self.mediaEndpointReady
+            ? operation() : PJ_ECANCELLED;
+        dispatch_async(dispatch_get_main_queue(), ^{ if (completion) completion(status); });
+    };
+    [self performSelector:@selector(thread_performCommand:) onThread:self.thread withObject:[command copy] waitUntilDone:NO];
 }
 
 - (void)stop {
@@ -594,6 +656,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (void)stopAndWait {
+    if ([NSThread isMainThread]) { [self stop]; return; }
     if (self.state != AKSIPUserAgentStateStarted) {
          return;
     }
@@ -616,9 +679,20 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (void)thread_stopInAutoreleasePool {
-    if (self.ringbackPort && self.ringbackSlot != PJSUA_INVALID_ID) {
+    // Recorder destruction finalizes WAV tracks. Do this on the control worker
+    // before deleting conference ports/pools or the native media endpoint;
+    // window completions may arrive only after teardown has already queued.
+    for (AKSIPAccount *account in [self accountCollectionsSnapshot]) {
+        for (AKSIPCall *call in account.callsSnapshot) {
+            if (call.isRecording) [call stopRecording];
+        }
+    }
+    self.mediaEndpointReady = NO;
+    if (self.ringbackSlot != PJSUA_INVALID_ID) {
         pjsua_conf_remove_port(self.ringbackSlot);
         self.ringbackSlot = PJSUA_INVALID_ID;
+    }
+    if (self.ringbackPort) {
         pjmedia_port_destroy(self.ringbackPort);
         self.ringbackPort = NULL;
     }
@@ -635,31 +709,48 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     if (pjsua_destroy() != PJ_SUCCESS) {
         NSLog(@"Error stopping SIP user agent");
     }
+    if (self.ownsPJLIBReference) {
+        self.ownsPJLIBReference = NO;
+        pj_shutdown();
+    }
 }
 
 - (void)finishStopping {
-    pj_shutdown();
-    [self.accounts removeAllObjects];
+    for (AKSIPAccount *account in [self accountCollectionsSnapshot]) {
+        [account cancelPendingOutgoingCalls];
+        [account updateIdentifier:PJSUA_INVALID_ID];
+        account.registrationStatus = 0;
+        account.registrationExpireTime = kAKSIPAccountRegistrationExpireTimeNotSpecified;
+        account.registrationStatusText = @"";
+        for (AKSIPCall *call in account.callsSnapshot) {
+            call.identifier = PJSUA_INVALID_ID;
+            call.state = kAKSIPCallDisconnectedState;
+        }
+    }
+    @synchronized(self) {
+        [self.accounts removeAllObjects];
+        [self.retiredAccounts removeAllObjects];
+    }
+    memset(self.callData, 0, sizeof(AKSIPUserAgentCallData) * PJSUA_MAX_CALLS);
+    self.ringbackCount = 0;
     self.state = AKSIPUserAgentStateStopped;
     BOOL hadAudioFailure = self.hasAudioFailure;
     [self.audioDeviceController resetFailure];
     self.audioRecoveryPending = NO;
     self.audioFailureStatus = PJ_SUCCESS;
     if (hadAudioFailure) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentAudioStateDidChangeNotification object:self];
+        [self publishAudioState];
     }
     [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentDidFinishStoppingNotification object:self];
 }
 
-- (BOOL)addAccount:(AKSIPAccount *)anAccount withPassword:(NSString *)aPassword {
-    if ([[self delegate] respondsToSelector:@selector(SIPUserAgentShouldAddAccount:)]) {
-        if (![[self delegate] SIPUserAgentShouldAddAccount:anAccount]) {
-            return NO;
-        }
-    }
-    
+- (pj_status_t)thread_addAccount:(AKSIPAccount *)anAccount withPassword:(NSString *)aPassword identifier:(pjsua_acc_id *)identifier {
     pjsua_acc_config accountConfig;
     pjsua_acc_config_default(&accountConfig);
+    // Publish model ownership on main before REGISTER can produce callbacks.
+    // The desired availability is re-read after attachment, so Offline while
+    // native creation was pending cannot accidentally register the account.
+    accountConfig.register_on_acc_add = PJ_FALSE;
     
     accountConfig.id = anAccount.uri.stringValue.pjString;
 
@@ -726,42 +817,94 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     pj_status_t status = pjsua_acc_add(&accountConfig, PJ_FALSE, &accountIdentifier);
     if (status != PJ_SUCCESS) {
         NSLog(@"Error adding account %@ with status %d", anAccount, status);
-        return NO;
+        return status;
     }
     
-    [anAccount updateIdentifier:accountIdentifier];
-    [anAccount setThread:self.thread];
-    
-    [[self accounts] addObject:anAccount];
-    
-    [anAccount setOnline:YES];
-
-    return YES;
+    *identifier = accountIdentifier;
+    return PJ_SUCCESS;
 }
 
-- (BOOL)removeAccount:(AKSIPAccount *)anAccount {
-    if (![self isStarted] ||
-        [anAccount identifier] == kAKSIPUserAgentInvalidIdentifier) {
-        return NO;
-    }
+- (BOOL)addAccount:(AKSIPAccount *)account withPassword:(NSString *)password {
+    [self addAccount:account withPassword:password completion:^(BOOL added) {}];
+    return self.isStarted;
+}
 
-    [anAccount.delegate SIPAccountWillRemove:anAccount];
-    
-    [anAccount removeAllCalls];
-    
-    pj_status_t status = pjsua_acc_del((pjsua_acc_id)[anAccount identifier]);
-    if (status != PJ_SUCCESS) {
-        return NO;
+- (void)addAccount:(AKSIPAccount *)account withPassword:(NSString *)password completion:(void (^)(BOOL))completion {
+    if (!self.isStarted || ([self.delegate respondsToSelector:@selector(SIPUserAgentShouldAddAccount:)] &&
+                            ![self.delegate SIPUserAgentShouldAddAccount:account])) { completion(NO); return; }
+    NSUInteger generation = account.outgoingGeneration;
+    __block pjsua_acc_id identifier = PJSUA_INVALID_ID;
+    __block NSInteger registrationStatus = 0, registrationError = 0, registrationExpires = -1;
+    __block NSString *registrationText = @"";
+    [self performSIPOperation:^pj_status_t {
+        if (account.outgoingGeneration != generation) return PJ_ECANCELLED;
+        pj_status_t result = [self thread_addAccount:account withPassword:password identifier:&identifier];
+        pjsua_acc_info info;
+        if (result == PJ_SUCCESS && pjsua_acc_get_info(identifier, &info) == PJ_SUCCESS) {
+            registrationStatus = info.status; registrationError = info.reg_last_err; registrationExpires = info.expires;
+            registrationText = [NSString stringWithPJString:info.status_text];
+        }
+        return result;
+    } completion:^(pj_status_t status) {
+        if (status == PJ_SUCCESS && account.outgoingGeneration == generation) {
+            [account updateIdentifier:identifier];
+            account.thread = self.thread;
+            @synchronized(self) { if (![self.accounts containsObject:account]) [self.accounts addObject:account]; }
+            account.registrationStatus = registrationStatus;
+            account.registrationErrorCode = registrationError;
+            account.registrationExpireTime = registrationExpires;
+            account.registrationStatusText = registrationText;
+            account.online = account.desiredRegistered;
+            account.registered = account.desiredRegistered;
+            completion(YES);
+            if (registrationStatus > 0) [account.delegate SIPAccountRegistrationDidChange:account];
+        } else {
+            if (identifier != PJSUA_INVALID_ID) {
+                [self performSIPOperation:^pj_status_t { return pjsua_acc_del(identifier); } completion:nil];
+            }
+            completion(NO);
+        }
+    }];
+}
+
+- (BOOL)removeAccount:(AKSIPAccount *)account {
+    [self removeAccount:account completion:^(BOOL removed) {}];
+    return self.isStarted && account.identifier != kAKSIPUserAgentInvalidIdentifier;
+}
+
+- (void)removeAccount:(AKSIPAccount *)account completion:(void (^)(BOOL))completion {
+    [account cancelPendingOutgoingCalls];
+    if (!self.isStarted || account.identifier == kAKSIPUserAgentInvalidIdentifier) { completion(NO); return; }
+    [account.delegate SIPAccountWillRemove:account];
+    NSInteger identifier = account.identifier;
+    NSUInteger generation = account.outgoingGeneration;
+    // Retain call ownership independently from account registration/deletion.
+    @synchronized(self) { if (account.callsSnapshot.count > 0 && ![self.retiredAccounts containsObject:account]) [self.retiredAccounts addObject:account]; }
+    [self performSIPCleanupOperation:^pj_status_t {
+        if (account.identifier != identifier || account.outgoingGeneration != generation) return PJ_ECANCELLED;
+        for (AKSIPCall *call in account.callsSnapshot) {
+            if (call.isRecording) [call stopRecording];
+        }
+        return pjsua_acc_del((pjsua_acc_id)identifier);
     }
-    
-    [[self accounts] removeObject:anAccount];
-    [anAccount updateIdentifier:kAKSIPUserAgentInvalidIdentifier];
-    
-    return YES;
+                completion:^(pj_status_t status) {
+        if (status == PJ_SUCCESS && account.identifier == identifier) {
+            @synchronized(self) { [self.accounts removeObject:account]; }
+            [account updateIdentifier:kAKSIPUserAgentInvalidIdentifier];
+        }
+        [self forgetRetiredAccountIfUnused:account];
+        completion(status == PJ_SUCCESS);
+    }];
+}
+
+- (void)forgetRetiredAccountIfUnused:(AKSIPAccount *)account {
+    @synchronized(self) { if (account.callsSnapshot.count == 0) [self.retiredAccounts removeObject:account]; }
 }
 
 - (AKSIPAccount *)accountWithIdentifier:(NSInteger)identifier {
-    for (AKSIPAccount *account in self.accounts) {
+    NSArray *registry;
+    @synchronized(self) { registry = self.accounts.copy; }
+    for (AKSIPAccount *account in registry) {
         if (account.identifier == identifier) {
             return account;
         }
@@ -771,7 +914,9 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (AKSIPCall *)callWithIdentifier:(NSInteger)identifier {
-    for (AKSIPAccount *account in self.accounts) {
+    NSArray *registry;
+    @synchronized(self) { registry = [self.accounts arrayByAddingObjectsFromArray:self.retiredAccounts ?: @[]]; }
+    for (AKSIPAccount *account in registry) {
         AKSIPCall *call = [account callWithIdentifier:identifier];
         if (call) {
             return call;
@@ -781,11 +926,26 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     return nil;
 }
 
+- (AKSIPCall *)callWithIdentifier:(NSInteger)identifier dialogIdentifier:(NSString *)dialogIdentifier {
+    NSArray *registry;
+    @synchronized(self) { registry = [self.accounts arrayByAddingObjectsFromArray:self.retiredAccounts ?: @[]]; }
+    for (AKSIPAccount *account in registry) {
+        for (AKSIPCall *call in account.callsSnapshot) {
+            if (call.identifier == identifier && [call.dialogIdentifier isEqualToString:dialogIdentifier]) return call;
+        }
+    }
+    return nil;
+}
+
 - (void)hangUpAllCalls {
-    pjsua_call_hangup_all();
+    [self performSIPOperation:^{ pjsua_call_hangup_all(); return PJ_SUCCESS; } completion:nil];
 }
 
 - (void)startRingbackForCall:(AKSIPCall *)call {
+    if ([NSThread isMainThread]) {
+        [self performSIPOperation:^{ [self startRingbackForCall:call]; return PJ_SUCCESS; } completion:nil];
+        return;
+    }
     if (call.identifier < 0 || call.identifier >= PJSUA_MAX_CALLS) return;
     if (self.callData[call.identifier].ringbackOn) {
         return;
@@ -802,6 +962,10 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (void)stopRingbackForCall:(AKSIPCall *)call {
+    if ([NSThread isMainThread]) {
+        [self performSIPOperation:^{ [self stopRingbackForCall:call]; return PJ_SUCCESS; } completion:nil];
+        return;
+    }
     if (call.identifier < 0 || call.identifier >= PJSUA_MAX_CALLS) return;
     if (self.callData[call.identifier].ringbackOn) {
         self.callData[call.identifier].ringbackOn = PJ_FALSE;
@@ -816,26 +980,64 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     }
 }
 
+- (BOOL)isAudioSelectionCurrent:(NSUInteger)revision {
+    return self.isStarted && revision == self.audioSelectionRevision &&
+        self.audioSelectionGeneration == self.audioGeneration;
+}
+
+- (BOOL)performAudioSelection:(pj_status_t (^)(NSUInteger))operation {
+    NSAssert(NSThread.isMainThread, @"Audio selection must be admitted on the main thread.");
+    if (!self.isStarted) return NO;
+    NSUInteger revision = ++self.audioSelectionRevision;
+    self.audioSelectionGeneration = self.audioGeneration;
+    self.audioCommandPending = YES;
+    [self publishAudioState];
+    [self performSIPOperation:^{
+        if (![self isAudioSelectionCurrent:revision]) return PJ_ECANCELLED;
+        return operation(revision);
+    } completion:^(pj_status_t status) {
+        // An older completion must not unlock a newer queued device selection.
+        if (revision == self.audioSelectionRevision) {
+            self.audioCommandPending = NO;
+            [self publishAudioState];
+        }
+    }];
+    return YES;
+}
+
 - (BOOL)setSoundInputDevice:(NSInteger)input soundOutputDevice:(NSInteger)output {
+    if ([NSThread isMainThread]) {
+        if (!self.isStarted || self.audioDeviceController.hasFailed) return NO;
+        return [self performAudioSelection:^pj_status_t(NSUInteger revision) {
+            if (![self isAudioSelectionCurrent:revision]) return PJ_ECANCELLED;
+            return [self setSoundInputDevice:input soundOutputDevice:output] ? PJ_SUCCESS : PJ_EUNKNOWN;
+        }];
+    }
     if (![self isStarted]) {
         return NO;
     }
 
+    NSUInteger generation = self.audioGeneration;
+    NSUInteger revision = self.audioSelectionRevision;
     self.requestedInputDevice = input;
     self.requestedOutputDevice = output;
     pj_status_t status = [self.audioDeviceController selectInput:[self inputDeviceIDWithID:input]
                                                         output:[self outputDeviceIDWithID:output]];
+    // Native device opening can block while main admits a newer selection or
+    // stops this endpoint. Its completion must not clear errors or reconnect
+    // conference routes that belong to the new request/lifecycle.
+    if (!self.isStarted || generation != self.audioGeneration || revision != self.audioSelectionRevision) return NO;
     if (status == PJ_SUCCESS && self.audioRecoveryPending) {
         self.audioRecoveryPending = NO;
         self.audioFailureStatus = PJ_SUCCESS;
-        [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentAudioStateDidChangeNotification object:self];
+        [self publishAudioState];
         [self restoreCurrentAudioConnections];
     }
     return status == PJ_SUCCESS;
 }
 
 - (BOOL)beginOutgoingCall {
-    if (!self.isStarted || self.hasAudioFailure) return NO;
+    if (!self.isStarted || self.hasAudioFailure || self.audioCommandPending) return NO;
     return [self.audioDeviceController beginOutgoingCall];
 }
 
@@ -847,10 +1049,16 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     return self.audioRecoveryPending || self.audioDeviceController.hasFailed;
 }
 
+- (void)publishAudioState {
+    void (^publish)(void) = ^{ [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentAudioStateDidChangeNotification object:self]; };
+    if ([NSThread isMainThread]) publish();
+    else dispatch_async(dispatch_get_main_queue(), publish);
+}
+
 - (void)audioDidFail:(int)status {
     self.audioRecoveryPending = YES;
     self.audioFailureStatus = status;
-    [[NSNotificationCenter defaultCenter] postNotificationName:AKSIPUserAgentAudioStateDidChangeNotification object:self];
+    [self publishAudioState];
 }
 
 - (void)resetAudioFailure {
@@ -860,6 +1068,32 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (BOOL)retrySoundAfterFailure {
+    if ([NSThread isMainThread]) {
+        if (!self.isStarted || !self.hasAudioFailure || self.audioCommandPending) return NO;
+        NSUInteger revision = ++self.audioSelectionRevision;
+        self.audioSelectionGeneration = self.audioGeneration;
+        self.audioCommandPending = YES;
+        [self publishAudioState];
+        [self performSIPOperation:^{
+            if (![self isAudioSelectionCurrent:revision]) return PJ_ECANCELLED;
+            [self resetAudioFailure];
+            [self updateAudioDevices];
+            if (![self isAudioSelectionCurrent:revision]) return PJ_ECANCELLED;
+            return self.audioDeviceController.hasFailed ? PJ_EUNKNOWN : PJ_SUCCESS;
+        } completion:^(pj_status_t status) {
+            if (revision != self.audioSelectionRevision) return;
+            self.audioCommandPending = NO;
+            if (![self isAudioSelectionCurrent:revision]) {
+                [self publishAudioState];
+                return;
+            }
+            if (status == PJ_SUCCESS && self.soundIOSelectionRetry) {
+                if (!self.soundIOSelectionRetry()) [self reportAudioSelectionFailure];
+            }
+            [self publishAudioState];
+        }];
+        return YES;
+    }
     if (!self.isStarted || !self.hasAudioFailure) {
         return NO;
     }
@@ -886,12 +1120,37 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (pj_status_t)connectAudioSource:(pjsua_conf_port_id)source destination:(pjsua_conf_port_id)destination {
+    if ([NSThread isMainThread]) {
+        if (!self.isStarted || self.hasAudioFailure) return PJ_EINVALIDOP;
+        [self performSIPOperation:^{ return [self connectAudioSource:source destination:destination]; } completion:nil];
+        return PJ_SUCCESS;
+    }
     if (!self.isStarted) return PJ_EINVALIDOP;
     if (self.audioRecoveryPending && !self.audioDeviceController.hasFailed) return self.audioFailureStatus;
     return [self.audioDeviceController connectSource:source destination:destination];
 }
 
+- (void)reportAudioSelectionFailure {
+    if (!self.isStarted) return;
+    self.audioRecoveryPending = YES;
+    self.audioFailureStatus = PJ_EUNKNOWN;
+    [self publishAudioState];
+    [self performSIPOperation:^{
+        [self.audioDeviceController reportDeviceFailure:PJ_EUNKNOWN operation:@"retry-selection"];
+        return PJ_EUNKNOWN;
+    } completion:nil];
+}
+
 - (void)reportAudioFailure:(pj_status_t)status operation:(NSString *)operation {
+    if ([NSThread isMainThread]) {
+        if ([AKAudioDeviceController isAudioDeviceFailure:status] && self.isStarted) {
+            self.audioRecoveryPending = YES;
+            self.audioFailureStatus = status;
+            [self publishAudioState];
+        }
+        [self performSIPOperation:^{ [self reportAudioFailure:status operation:operation]; return status; } completion:nil];
+        return;
+    }
     if (!self.isStarted) return;
     [self.audioDeviceController reportAudioFailure:status operation:operation];
 }
@@ -899,7 +1158,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 - (void)restoreCurrentAudioConnections {
     // The callback snapshots the native dialog identity and verifies it again
     // on main; numeric call slots alone are not safe across redial/replacement.
-    for (AKSIPAccount *account in [self.accounts copy]) {
+    for (AKSIPAccount *account in [self accountCollectionsSnapshot]) {
         for (AKSIPCall *call in [account callsSnapshot]) {
             if (call.state != kAKSIPCallDisconnectedState && call.isActive) {
                 pjsua_call_info info;
@@ -932,6 +1191,11 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (BOOL)stopSound {
+    if ([NSThread isMainThread]) {
+        if (!self.isStarted) return NO;
+        [self performSIPOperation:^{ return [self stopSound] ? PJ_SUCCESS : PJ_EUNKNOWN; } completion:nil];
+        return YES;
+    }
     if (![self isStarted]) {
         return NO;
     }
@@ -944,6 +1208,10 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 // method to set sound IO. Usually application controller is responsible of sending
 // |setSoundInputDevice:soundOutputDevice:| to set sound IO after this method is called.
 - (void)updateAudioDevices {
+    if ([NSThread isMainThread]) {
+        [self performSIPOperation:^{ [self updateAudioDevices]; return PJ_SUCCESS; } completion:nil];
+        return;
+    }
     if (![self isStarted]) {
         return;
     }
@@ -961,7 +1229,8 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 }
 
 - (void)updateCodecs {
-    if (self.state == AKSIPUserAgentStateStopped || self.state == AKSIPUserAgentStateStopping) {
+    if (!self.mediaEndpointReady || [NSThread isMainThread] ||
+        self.state == AKSIPUserAgentStateStopped || self.state == AKSIPUserAgentStateStopping) {
         return;
     }
     enum { kCodecInfoSize = 64 };
@@ -971,6 +1240,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     if (status != PJ_SUCCESS) {
         NSLog(@"Error getting list of codecs");
     } else {
+        NSUInteger revision = self.codecRevision;
         static NSString * const kPCMU = @"PCMU/8000/1";
         static NSString * const kPCMA = @"PCMA/8000/1";
         for (NSUInteger i = 0; i < codecCount; i++) {
@@ -992,6 +1262,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
                 }
             }
         }
+        self.appliedCodecRevision = revision;
     }
 }
 

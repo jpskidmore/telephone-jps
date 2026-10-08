@@ -31,9 +31,9 @@ final class SystemDefaultingSoundIOTests: XCTestCase {
 
         let sut = SystemDefaultingSoundIO(SimpleSoundIO(input: input, output: output, ringtoneOutput: ringtoneOutput))
 
-        XCTAssertEqual(sut.input, .device(name: input.name))
-        XCTAssertEqual(sut.output, .device(name: output.name))
-        XCTAssertEqual(sut.ringtoneOutput, .device(name: ringtoneOutput.name))
+        XCTAssertEqual(sut.input, .device(name: input.name, uniqueIdentifier: input.uniqueIdentifier))
+        XCTAssertEqual(sut.output, .device(name: output.name, uniqueIdentifier: output.uniqueIdentifier))
+        XCTAssertEqual(sut.ringtoneOutput, .device(name: ringtoneOutput.name, uniqueIdentifier: ringtoneOutput.uniqueIdentifier))
     }
 
     func testSoundIOIsSystemDefaultsWhenDevicesAreNil() {

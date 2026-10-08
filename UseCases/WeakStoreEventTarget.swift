@@ -19,6 +19,7 @@
 @MainActor
 public final class WeakStoreEventTarget {
     private weak let origin: StoreEventTarget?
+    var isExpired: Bool { origin == nil }
 
     public init(origin: StoreEventTarget) {
         self.origin = origin

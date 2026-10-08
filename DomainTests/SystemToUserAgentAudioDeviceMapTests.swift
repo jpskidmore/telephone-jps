@@ -67,3 +67,21 @@ final class SystemToUserAgentAudioDeviceMapTests: XCTestCase {
         XCTAssertTrue(result.isNil)
     }
 }
+
+extension SystemToUserAgentAudioDeviceMapTests {
+    func testUIDMappingSurvivesDuplicateNamesAndDifferentEnumerationOrder() {
+        let first = SimpleSystemAudioDevice(identifier: 1, uniqueIdentifier: "USB-A", name: "USB Headset", inputs: 1, outputs: 1, isBuiltIn: false)
+        let second = SimpleSystemAudioDevice(identifier: 2, uniqueIdentifier: "USB-B", name: "USB Headset", inputs: 1, outputs: 1, isBuiltIn: false)
+        let native = [
+            SimpleUserAgentAudioDevice(identifier: 8, name: "USB Headset", inputs: 1, outputs: 1, uniqueIdentifier: "USB-B"),
+            SimpleUserAgentAudioDevice(identifier: 9, name: "Renamed in driver", inputs: 1, outputs: 1, uniqueIdentifier: "USB-A")
+        ]
+        let map = SystemToUserAgentAudioDeviceMap(systemDevices: [first, second], userAgentDevices: native)
+        XCTAssertEqual(map.userAgentDevice(for: first).identifier, 9)
+        XCTAssertEqual(map.userAgentDevice(for: second).identifier, 8)
+        let ambiguousLegacy = [SimpleUserAgentAudioDevice(identifier: 8, name: "USB Headset", inputs: 1, outputs: 1)]
+        let legacyMap = SystemToUserAgentAudioDeviceMap(systemDevices: [first, second], userAgentDevices: ambiguousLegacy)
+        XCTAssertTrue(legacyMap.userAgentDevice(for: first).isNil)
+        XCTAssertTrue(legacyMap.userAgentDevice(for: second).isNil)
+    }
+}

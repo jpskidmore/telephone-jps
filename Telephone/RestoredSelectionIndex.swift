@@ -20,14 +20,13 @@ struct RestoredSelectionIndex<T> where T: Equatable {
     let value: Int
 
     init(indexBefore: Int, before: Array<T>, after: Array<T>) {
-        if indexBefore == -1 || after.isEmpty {
+        if !before.indices.contains(indexBefore) || after.isEmpty {
             value = 0
-        } else if case .prepended(count: let count) = ArrayDifference(before: before, after: after) {
-            value = indexBefore + count
-        } else if indexBefore < after.endIndex {
-            value = indexBefore
+        } else if let index = after.firstIndex(of: before[indexBefore]) {
+            value = index
         } else {
-            value = after.endIndex - 1
+            // The selected item was removed: retain the nearest surviving row.
+            value = min(indexBefore, after.endIndex - 1)
         }
     }
 }

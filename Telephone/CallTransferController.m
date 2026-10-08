@@ -18,7 +18,6 @@
 
 #import "CallTransferController.h"
 
-#import "AKNSWindow+Resizing.h"
 #import "AKSIPCall.h"
 
 #import "AccountController.h"
@@ -37,6 +36,11 @@
 
 // A Boolean value indicating whether the source call has been transferred.
 @property(nonatomic, assign) BOOL sourceCallTransferred;
+@property(nonatomic, strong) AKSIPCall *observedSourceCall;
+@property(nonatomic) BOOL introducedSourceHold;
+@property(nonatomic) BOOL sourceHoldRequestPending;
+@property(nonatomic) BOOL restoreSourceHoldWhenConfirmed;
+- (void)sourceHoldDidConfirm:(NSNotification *)notification;
 
 @end
 
@@ -44,28 +48,63 @@
 @implementation CallTransferController
 
 - (void)setSourceCallController:(CallController *)callController {
-    if (_sourceCallController == callController) {
-        return;
-    }
-    
-    NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
-    
-    if (_sourceCallController != nil) {
-        [nc removeObserver:self
-                      name:AKSIPCallTransferStatusDidChangeNotification
-                    object:[_sourceCallController call]];
-    }
-    
-    if (callController != nil) {
-        [nc addObserver:self
-               selector:@selector(sourceCallControllerSIPCallTransferStatusDidChange:)
-                   name:AKSIPCallTransferStatusDidChangeNotification
-                 object:[callController call]];
-    }
-    
-    [self setSourceCallTransferred:NO];
-    
     _sourceCallController = callController;
+    [self refreshSourceCallBinding];
+}
+
+- (void)refreshSourceCallBinding {
+    AKSIPCall *current = self.sourceCallController.call;
+    if (self.observedSourceCall == current) return;
+    NSNotificationCenter *nc = NSNotificationCenter.defaultCenter;
+    if (self.observedSourceCall != nil) {
+        [nc removeObserver:self name:AKSIPCallTransferStatusDidChangeNotification object:self.observedSourceCall];
+        [nc removeObserver:self name:AKSIPCallDidLocalHoldNotification object:self.observedSourceCall];
+    }
+    self.observedSourceCall = current;
+    self.sourceCallTransferred = NO;
+    self.introducedSourceHold = NO;
+    self.sourceHoldRequestPending = NO;
+    self.restoreSourceHoldWhenConfirmed = NO;
+    if (current != nil) {
+        [nc addObserver:self selector:@selector(sourceCallControllerSIPCallTransferStatusDidChange:)
+                   name:AKSIPCallTransferStatusDidChangeNotification object:current];
+        [nc addObserver:self selector:@selector(sourceHoldDidConfirm:)
+                   name:AKSIPCallDidLocalHoldNotification object:current];
+    }
+}
+
+- (void)beginTransferSetup {
+    [self refreshSourceCallBinding];
+    self.restoreSourceHoldWhenConfirmed = NO;
+    if (self.sourceHoldRequestPending) return;
+    self.introducedSourceHold = !self.sourceCallController.isCallOnHold && !self.sourceCallController.call.isOnLocalHold;
+    if (!self.introducedSourceHold) return;
+    AKSIPCall *source = self.observedSourceCall;
+    self.sourceHoldRequestPending = YES;
+    [self.sourceCallController requestToggleCallHoldWithCompletion:^(BOOL accepted) {
+        if (self.observedSourceCall != source) return;
+        if (!accepted) {
+            self.sourceHoldRequestPending = NO;
+            self.introducedSourceHold = NO;
+            self.restoreSourceHoldWhenConfirmed = NO;
+            [self.sourceCallController setIntermediateStatus:NSLocalizedString(@"Could not change hold. Try again.", @"Rejected transfer setup hold.")];
+        } else if (source.isOnLocalHold) {
+            [self sourceHoldDidConfirm:nil];
+        }
+    }];
+}
+
+- (void)sourceHoldDidConfirm:(NSNotification *)notification {
+    self.sourceHoldRequestPending = NO;
+    if (self.restoreSourceHoldWhenConfirmed && self.introducedSourceHold && self.sourceCallController.isCallActive && self.observedSourceCall.isOnLocalHold) {
+        self.restoreSourceHoldWhenConfirmed = NO;
+        self.introducedSourceHold = NO;
+        [self.sourceCallController toggleCallHold];
+    }
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self];
 }
 
 - (instancetype)initWithSourceCallController:(CallController *)callController userAgent:(AKSIPUserAgent *)userAgent {
@@ -89,8 +128,17 @@
 }
 
 - (IBAction)closeSheet:(id)sender {
-    if ([[self sourceCallController] isCallActive] && [[self sourceCallController] isCallOnHold]) {
-        [[self sourceCallController] toggleCallHold];
+    if (self.introducedSourceHold && self.sourceCallController.isCallActive) {
+        if (self.sourceCallController.isCallOnHold || self.observedSourceCall.isOnLocalHold) {
+            [self.sourceCallController toggleCallHold];
+            self.introducedSourceHold = NO;
+        } else if (self.sourceHoldRequestPending) {
+            // Closing before the asynchronous hold acknowledgement must still
+            // undo the hold this sheet introduced when its media callback arrives.
+            self.restoreSourceHoldWhenConfirmed = YES;
+        }
+    } else {
+        self.introducedSourceHold = NO;
     }
     [[[self window] sheetParent] endSheet:[self window]];
 }

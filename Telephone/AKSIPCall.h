@@ -82,6 +82,10 @@ typedef NS_ENUM(NSUInteger, AKSIPCallState) {
 
 - (void)answer;
 - (void)hangUp;
+- (void)requestHangUpWithCompletion:(void (^)(BOOL accepted))completion;
+- (void)requestToggleHoldWithCompletion:(void (^)(BOOL accepted))completion;
+@property(nonatomic) BOOL localHold;
+@property(nonatomic) BOOL remoteHold;
 
 - (void)attendedTransferToCall:(AKSIPCall *)destinationCall;
 
@@ -91,6 +95,7 @@ typedef NS_ENUM(NSUInteger, AKSIPCallState) {
 
 - (void)sendDTMFDigits:(NSString *)digits;
 - (void)toggleMicrophoneMute;
+- (void)requestToggleMicrophoneMuteWithCompletion:(void (^)(BOOL))completion;
 - (void)toggleHold;
 
 // Starts synchronized mono recordings of the local and remote sides of the active call.
@@ -101,6 +106,7 @@ typedef NS_ENUM(NSUInteger, AKSIPCallState) {
 // URL must be an owned empty reservation; failed setup removes it before release.
 // Pass nil when the destination did not require security-scoped access.
 - (BOOL)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(nullable NSURL *)directoryURL;
+- (void)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(nullable NSURL *)directoryURL completion:(void (^)(BOOL))completion;
 
 // Stops the mono recorders and finalizes the selected stereo format off the main thread.
 - (void)stopRecording;

@@ -55,3 +55,16 @@ final class SystemAudioDevicesTests: XCTestCase {
         XCTAssertTrue(sut.outputDevice(named: "nonexistent").isNil)
     }
 }
+
+extension SystemAudioDevicesTests {
+    func testDuplicateNamesResolveOnlyByPhysicalIdentity() {
+        let first = SimpleSystemAudioDevice(identifier: 1, uniqueIdentifier: "USB-A", name: "USB Headset", inputs: 1, outputs: 1, isBuiltIn: false)
+        let second = SimpleSystemAudioDevice(identifier: 2, uniqueIdentifier: "USB-B", name: "USB Headset", inputs: 1, outputs: 1, isBuiltIn: false)
+        let devices = SystemAudioDevices(devices: [first, second])
+        XCTAssertTrue(devices.inputDevice(named: "USB Headset").isNil)
+        XCTAssertTrue(devices.outputDevice(named: "USB Headset").isNil)
+        XCTAssertEqual(devices.inputDevice(uniqueIdentifier: "USB-A").identifier, 1)
+        XCTAssertEqual(devices.outputDevice(uniqueIdentifier: "USB-B").identifier, 2)
+        XCTAssertTrue(devices.inputDevice(uniqueIdentifier: "missing").isNil)
+    }
+}

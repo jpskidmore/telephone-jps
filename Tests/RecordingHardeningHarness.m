@@ -4,6 +4,14 @@
 #import "AKStereoRecording.h"
 
 #include <math.h>
+#import <objc/runtime.h>
+
+// Redirect only the two NSURL scope-token boundaries while the scratch retry
+// cases run. The actual file conversion stays real; no sandbox grant is requested.
+static NSUInteger ScopeStarts, ScopeStops;
+static BOOL ScopeGrant;
+static BOOL ScopeStart(NSURL *URL, SEL selector) { ScopeStarts++; return ScopeGrant; }
+static void ScopeStop(NSURL *URL, SEL selector) { ScopeStops++; }
 
 static AudioStreamBasicDescription FloatPCM(Float64 rate, UInt32 channels) {
     AudioStreamBasicDescription format = {0};
@@ -180,6 +188,132 @@ int main(void) {
             [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
         }
         if (!emptyDrain) return 16;
+
+        // Recovery stays durable across a reload and can be exported elsewhere
+        // after a real conversion failure. Every path is in this scratch root.
+        NSURL *recoveryRoot = [directory URLByAppendingPathComponent:@"Recovery" isDirectory:YES];
+        NSURL *jobDirectory = AKCreateRecordingRecoveryDirectoryAtRoot(recoveryRoot, &error);
+        NSURL *jobLocal = [jobDirectory URLByAppendingPathComponent:@"local.wav"];
+        NSURL *jobRemote = [jobDirectory URLByAppendingPathComponent:@"remote.wav"];
+        NSURL *failedDirectory = [directory URLByAppendingPathComponent:@"denied-destination" isDirectory:YES];
+        if (![manager createDirectoryAtURL:failedDirectory withIntermediateDirectories:NO attributes:nil error:nil]) return 17;
+        NSURL *failedOutput = AKReserveRecordingURL(failedDirectory, @"failed", @"wav", &error);
+        if (!failedOutput || ![manager setAttributes:@{NSFilePosixPermissions: @0400} ofItemAtPath:failedOutput.path error:nil] ||
+            ![manager setAttributes:@{NSFilePosixPermissions: @0500} ofItemAtPath:failedDirectory.path error:nil]) return 17;
+        if (!jobDirectory || !WriteTrack(jobLocal, 16000, YES) || !WriteTrack(jobRemote, 16000, NO) ||
+            !AKPersistRecordingRecoveryJob(jobDirectory, jobLocal, jobRemote, failedOutput, &error)) return 17;
+        NSNumber *permissions = [manager attributesOfItemAtPath:jobDirectory.path error:nil][NSFilePosixPermissions];
+        NSNumber *manifestPermissions = [manager attributesOfItemAtPath:
+            [jobDirectory URLByAppendingPathComponent:@"recovery.plist"].path error:nil][NSFilePosixPermissions];
+        if (permissions.unsignedIntegerValue != 0700 || manifestPermissions.unsignedIntegerValue != 0600) return 18;
+        __block BOOL failedExport = NO;
+        AKMergeMonoRecordingsIntoStereoAsync(jobLocal, jobRemote, failedOutput, ^(BOOL succeeded) {
+            failedExport = !succeeded;
+            if (!succeeded) AKReportRecordingExportFailure(jobDirectory, failedOutput, nil);
+        });
+        __block BOOL visibleFailure = NO;
+        id observer = [NSNotificationCenter.defaultCenter addObserverForName:AKRecordingExportDidFailNotification
+            object:nil queue:nil usingBlock:^(NSNotification *note) {
+                visibleFailure = NSThread.isMainThread && [note.userInfo[@"recoveryDirectoryURL"] isEqual:jobDirectory];
+            }];
+        deadline = [NSDate dateWithTimeIntervalSinceNow:10];
+        while ((!failedExport || !visibleFailure) && [deadline timeIntervalSinceNow] > 0)
+            [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        [NSNotificationCenter.defaultCenter removeObserver:observer];
+        [manager setAttributes:@{NSFilePosixPermissions: @0700} ofItemAtPath:failedDirectory.path error:nil];
+        NSArray *reloadedJobs = AKRecordingRecoveryJobsAtRoot(recoveryRoot);
+        if (!failedExport || !visibleFailure || reloadedJobs.count != 1 ||
+            ![manager fileExistsAtPath:jobLocal.path] || ![manager fileExistsAtPath:jobRemote.path]) return 19;
+        __block BOOL recovered = NO;
+        NSURL *recoveredOutput = [directory URLByAppendingPathComponent:@"recovered.wav"];
+        AKRetryRecordingRecoveryJob(reloadedJobs.firstObject, recoveredOutput, ^(BOOL succeeded) {
+            recovered = succeeded && NSThread.isMainThread;
+        });
+        deadline = [NSDate dateWithTimeIntervalSinceNow:10];
+        while (!recovered && [deadline timeIntervalSinceNow] > 0)
+            [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        if (!recovered || !CheckWaveChannels(recoveredOutput) || [manager fileExistsAtPath:jobDirectory.path] ||
+            AKRecordingRecoveryJobsAtRoot(recoveryRoot).count != 0) return 20;
+
+        // An absent, malformed or unsafe destination must require a new filename.
+        // Never export into the raw folder that successful cleanup removes.
+        NSURL *orphan = AKCreateRecordingRecoveryDirectoryAtRoot(recoveryRoot, &error);
+        NSURL *orphanLocal = [orphan URLByAppendingPathComponent:@"local.wav"];
+        NSURL *orphanRemote = [orphan URLByAppendingPathComponent:@"remote.wav"];
+        if (!orphan || !WriteTrack(orphanLocal, 16000, YES) || !WriteTrack(orphanRemote, 16000, NO)) return 21;
+        NSDictionary *orphanJob = AKRecordingRecoveryJobsAtRoot(recoveryRoot).firstObject;
+        if (![orphanJob[@"needsNewDestination"] boolValue] ||
+            [[orphanJob[@"destinationURL"] path] hasPrefix:[orphan.path stringByAppendingString:@"/"]]) return 22;
+        NSURL *unsafeOutput = [orphan URLByAppendingPathComponent:@"would-be-deleted.wav"];
+        if (AKPersistRecordingRecoveryJob(orphan, orphanLocal, orphanRemote, unsafeOutput, &error) ||
+            ![manager fileExistsAtPath:orphanLocal.path] || ![manager fileExistsAtPath:orphanRemote.path]) return 23;
+        for (NSString *badDestination in @[@"relative.wav", unsafeOutput.path]) {
+            NSDictionary *badManifest = @{@"local": @"local.wav", @"remote": @"remote.wav", @"destination": badDestination};
+            NSData *manifestData = [NSPropertyListSerialization dataWithPropertyList:badManifest
+                format:NSPropertyListBinaryFormat_v1_0 options:0 error:nil];
+            BOOL wrote = [manifestData writeToURL:[orphan URLByAppendingPathComponent:@"recovery.plist"] atomically:YES];
+            if (!wrote || ![AKRecordingRecoveryJobsAtRoot(recoveryRoot).firstObject[@"needsNewDestination"] boolValue]) {
+                NSLog(@"Recovery manifest guard failed: wrote=%d relative=%d", wrote, [badDestination isEqual:@"relative.wav"]);
+                return 24;
+            }
+        }
+
+        Method scopeStart = class_getInstanceMethod(NSURL.class, @selector(startAccessingSecurityScopedResource));
+        Method scopeStop = class_getInstanceMethod(NSURL.class, @selector(stopAccessingSecurityScopedResource));
+        IMP originalStart = method_setImplementation(scopeStart, (IMP)ScopeStart);
+        IMP originalStop = method_setImplementation(scopeStop, (IMP)ScopeStop);
+        // Existing-output failure must release a granted scope before completion.
+        ScopeGrant = YES; ScopeStarts = ScopeStops = 0;
+        __block BOOL scopeFinished = NO;
+        __block BOOL scopeBalanced = NO;
+        AKRetryRecordingRecoveryJob(orphanJob, recoveredOutput, ^(BOOL succeeded) {
+            scopeFinished = YES; scopeBalanced = !succeeded && ScopeStarts == 1 && ScopeStops == 1;
+        });
+        deadline = [NSDate dateWithTimeIntervalSinceNow:2];
+        while (!scopeFinished && [deadline timeIntervalSinceNow] > 0)
+            [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        if (!scopeBalanced) return 25;
+        // An actual asynchronous converter failure also releases its grant,
+        // while keeping both raw tracks available for another destination.
+        ScopeStarts = ScopeStops = 0; scopeFinished = scopeBalanced = NO;
+        [manager setAttributes:@{NSFilePosixPermissions: @0500} ofItemAtPath:failedDirectory.path error:nil];
+        NSURL *deniedScopeOutput = [failedDirectory URLByAppendingPathComponent:@"denied-scope-output.wav"];
+        AKRetryRecordingRecoveryJob(orphanJob, deniedScopeOutput, ^(BOOL succeeded) {
+            scopeFinished = YES; scopeBalanced = !succeeded && ScopeStarts == 1 && ScopeStops == 1;
+        });
+        if (ScopeStops != 0) return 30;
+        deadline = [NSDate dateWithTimeIntervalSinceNow:10];
+        while (!scopeFinished && [deadline timeIntervalSinceNow] > 0)
+            [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        [manager setAttributes:@{NSFilePosixPermissions: @0700} ofItemAtPath:failedDirectory.path error:nil];
+        if (!scopeBalanced || ![manager fileExistsAtPath:orphanLocal.path] || ![manager fileExistsAtPath:orphanRemote.path]) return 31;
+        // A refused scope is never stopped and does not prevent ordinary file IO.
+        ScopeGrant = NO; ScopeStarts = ScopeStops = 0; scopeFinished = scopeBalanced = NO;
+        NSURL *unscopedOutput = [directory URLByAppendingPathComponent:@"ordinary-recovered.wav"];
+        AKRetryRecordingRecoveryJob(orphanJob, unscopedOutput, ^(BOOL succeeded) {
+            scopeFinished = YES; scopeBalanced = succeeded && ScopeStarts == 1 && ScopeStops == 0;
+        });
+        deadline = [NSDate dateWithTimeIntervalSinceNow:10];
+        while (!scopeFinished && [deadline timeIntervalSinceNow] > 0)
+            [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        if (!scopeBalanced || !CheckWaveChannels(unscopedOutput)) return 26;
+        NSURL *scopedJob = AKCreateRecordingRecoveryDirectoryAtRoot(recoveryRoot, &error);
+        NSURL *scopedLocal = [scopedJob URLByAppendingPathComponent:@"local.wav"];
+        NSURL *scopedRemote = [scopedJob URLByAppendingPathComponent:@"remote.wav"];
+        NSURL *scopedOutput = [directory URLByAppendingPathComponent:@"scoped-recovered.wav"];
+        if (!WriteTrack(scopedLocal, 16000, YES) || !WriteTrack(scopedRemote, 16000, NO) ||
+            !AKPersistRecordingRecoveryJob(scopedJob, scopedLocal, scopedRemote, scopedOutput, &error)) return 27;
+        ScopeGrant = YES; ScopeStarts = ScopeStops = 0; scopeFinished = scopeBalanced = NO;
+        AKRetryRecordingRecoveryJob(AKRecordingRecoveryJobsAtRoot(recoveryRoot).firstObject, scopedOutput, ^(BOOL succeeded) {
+            scopeFinished = YES; scopeBalanced = succeeded && ScopeStarts == 1 && ScopeStops == 1;
+        });
+        if (ScopeStops != 0) return 28; // token must survive the async conversion
+        deadline = [NSDate dateWithTimeIntervalSinceNow:10];
+        while (!scopeFinished && [deadline timeIntervalSinceNow] > 0)
+            [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+        method_setImplementation(scopeStart, originalStart);
+        method_setImplementation(scopeStop, originalStop);
+        if (!scopeBalanced || !CheckWaveChannels(scopedOutput) || [manager fileExistsAtPath:scopedJob.path]) return 29;
 
         [manager removeItemAtURL:directory error:nil];
         printf("recording hardening harness passed\n");

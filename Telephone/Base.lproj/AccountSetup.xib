@@ -75,7 +75,9 @@
                                     <connections>
                                         <outlet property="nextKeyView" destination="68" id="72"/>
                                     </connections>
-                                </textField>
+
+                    <accessibility description="Full name"/>
+</textField>
                                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="68">
                                     <rect key="frame" x="172" y="131" width="212" height="21"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="example.com" drawsBackground="YES" id="69">
@@ -86,7 +88,9 @@
                                     <connections>
                                         <outlet property="nextKeyView" destination="24" id="73"/>
                                     </connections>
-                                </textField>
+
+                    <accessibility description="Domain"/>
+</textField>
                                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="24">
                                     <rect key="frame" x="172" y="100" width="212" height="21"/>
                                     <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="john" drawsBackground="YES" id="27">
@@ -100,7 +104,9 @@
                                     <connections>
                                         <outlet property="nextKeyView" destination="42" id="55"/>
                                     </connections>
-                                </textField>
+
+                    <accessibility description="Username"/>
+</textField>
                                 <secureTextField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="42">
                                     <rect key="frame" x="172" y="69" width="212" height="21"/>
                                     <secureTextFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" placeholderString="Required" drawsBackground="YES" id="43">
@@ -114,7 +120,9 @@
                                     <connections>
                                         <outlet property="nextKeyView" destination="10" id="56"/>
                                     </connections>
-                                </secureTextField>
+
+                    <accessibility description="Password"/>
+</secureTextField>
                                 <textField verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="16">
                                     <rect key="frame" x="98" y="165" width="68" height="16"/>
                                     <textFieldCell key="cell" lineBreakMode="truncatingTail" title="Full Name:" id="17">

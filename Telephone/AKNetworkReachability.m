@@ -41,6 +41,7 @@ static void AKReachabilityChanged(SCNetworkReachabilityRef target, SCNetworkConn
 @implementation AKNetworkReachability
 
 - (BOOL)isReachable {
+    if (!_reachability) return NO;
     SCNetworkConnectionFlags flags;
     Boolean flagsValid = SCNetworkReachabilityGetFlags(_reachability, &flags);
     
@@ -79,12 +80,10 @@ static void AKReachabilityChanged(SCNetworkReachabilityRef target, SCNetworkConn
         _reachability = SCNetworkReachabilityCreateWithName(kCFAllocatorDefault, [nameOrAddress UTF8String]);
     }
     
+    if (!_reachability) return nil;
     _context.info = (__bridge void *)(self);
     Boolean callbackSet = SCNetworkReachabilitySetCallback(_reachability, &AKReachabilityChanged, &_context);
     if (!callbackSet) {
-        if (_reachability) {
-            CFRelease(_reachability);
-        }
         return nil;
     }
     
@@ -92,9 +91,6 @@ static void AKReachabilityChanged(SCNetworkReachabilityRef target, SCNetworkConn
                                                                  CFRunLoopGetMain(),
                                                                  kCFRunLoopDefaultMode);
     if (!scheduled) {
-        if (_reachability) {
-            CFRelease(_reachability);
-        }
         return nil;
     }
     
@@ -104,8 +100,8 @@ static void AKReachabilityChanged(SCNetworkReachabilityRef target, SCNetworkConn
 }
 
 - (void)dealloc {
-    SCNetworkReachabilityUnscheduleFromRunLoop(_reachability, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
     if (_reachability) {
+        SCNetworkReachabilityUnscheduleFromRunLoop(_reachability, CFRunLoopGetMain(), kCFRunLoopDefaultMode);
         CFRelease(_reachability);
     }
 }

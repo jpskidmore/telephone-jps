@@ -55,6 +55,8 @@ NSString * const kEmailSIPLabel = @"sip";
 @property(nonatomic, readonly, getter=isAccountAdded) BOOL accountAdded;
 @property(nonatomic, strong) NSTimer *reRegistrationTimer;
 @property(nonatomic, copy) NSString *destinationToCall;
+@property(nonatomic) AccountWindowControllerAccountState desiredAvailability;
+@property(nonatomic) BOOL addingAccount;
 
 @end
 
@@ -95,62 +97,33 @@ NSString * const kEmailSIPLabel = @"sip";
 
 - (void)setAccountRegistered:(BOOL)flag {
     [self invalidateReRegistrationTimer];
-
-    if ([self isAccountAdded]) {
-        [self showConnectingState];
-        
-        [[self account] setRegistered:flag];
-        
-    } else {
-        NSString *serviceName = [NSString stringWithFormat:@"SIP: %@", [[self account] registrar]];
-        NSString *password = [AKKeychain passwordForService:serviceName account:[[self account] username]];
-        
-        [self showConnectingState];
-        
-        BOOL accountAdded = [[self userAgent] addAccount:[self account] withPassword:password];
-        
-        // Error connecting to registrar.
-        if (accountAdded &&
-            ![self isAccountRegistered] &&
-            [[self account] registrationExpireTime] == kAKSIPAccountRegistrationExpireTimeNotSpecified &&
-            [[self userAgent] isStarted]) {
-            
-            [self showUnavailableState];
-            
-            // Schedule account automatic re-registration timer.
-            if ([self reRegistrationTimer] == nil) {
-                NSTimeInterval reregistrationTimeInterval = (NSTimeInterval)[[self account] reregistrationTime];
-                
-                [self setReRegistrationTimer:
-                 [NSTimer scheduledTimerWithTimeInterval:reregistrationTimeInterval
-                                                  target:self
-                                                selector:@selector(reRegistrationTimerTick:)
-                                                userInfo:nil
-                                                 repeats:YES]];
-            }
-            
-            if ([self shouldPresentRegistrationError]) {
-                NSString *statusText = LocalizedStringForSIPResponseCode([[self account] registrationStatus])
-                    ?: [[self account] registrationStatusText];
-                
-                NSString *error;
-                if (statusText == nil) {
-                    error = [NSString stringWithFormat:
-                             NSLocalizedString(@"Error %ld", @"Error #."),
-                             [[self account] registrationStatus]];
-                    error = [error stringByAppendingString:@"."];
-                } else {
-                    error = [NSString stringWithFormat:
-                             NSLocalizedString(@"The error was: “%ld %@”.", @"Error description."),
-                             [[self account] registrationStatus], statusText];
-                }
-                
-                [self showRegistrarConnectionErrorSheetWithError:error];
-            }
-            
-            [self setShouldPresentRegistrationError:NO];
-        }
+    self.account.desiredRegistered = flag;
+    if (!self.userAgent.isStarted) {
+        self.attemptingToRegisterAccount = flag;
+        self.attemptingToUnregisterAccount = !flag && self.desiredAvailability == AccountWindowControllerAccountStateUnavailable;
+        return;
     }
+    if (self.isAccountAdded) {
+        if (self.desiredAvailability != AccountWindowControllerAccountStateOffline) [self showConnectingState];
+        self.account.registered = flag;
+        return;
+    }
+    if (self.addingAccount || self.desiredAvailability == AccountWindowControllerAccountStateOffline) return;
+    self.addingAccount = YES;
+    NSString *service = [NSString stringWithFormat:@"SIP: %@", self.account.registrar];
+    NSString *password = [AKKeychain passwordForService:service account:self.account.username];
+    [self showConnectingState];
+    [self.userAgent addAccount:self.account withPassword:password completion:^(BOOL added) {
+        self.addingAccount = NO;
+        if (self.desiredAvailability == AccountWindowControllerAccountStateOffline || !self.isEnabled) {
+            if (added) [self.userAgent removeAccount:self.account completion:^(BOOL removed) {}];
+            [self showOfflineState];
+        } else if (added) {
+            if (!flag) [self showUnavailableState];
+        } else {
+            [self showUnavailableState];
+        }
+    }];
 }
 
 - (BOOL)isAccountAdded {
@@ -193,6 +166,7 @@ NSString * const kEmailSIPLabel = @"sip";
     _callControllers = [[NSMutableArray alloc] init];
     _accountDescription = [accountDescription copy];
     _destinationToCall = @"";
+    _desiredAvailability = AccountWindowControllerAccountStateAvailable;
 
     _accountViewController
     = [[AccountViewController alloc] initWithActiveAccountViewController:[[ActiveAccountViewController alloc] initWithAccountController:self]
@@ -233,6 +207,8 @@ NSString * const kEmailSIPLabel = @"sip";
 }
 
 - (void)registerAccount {
+    self.desiredAvailability = AccountWindowControllerAccountStateAvailable;
+    self.accountUnavailable = NO;
     if (![[self userAgent] isStarted]) {
         [self setAttemptingToRegisterAccount:YES];
     }
@@ -246,11 +222,24 @@ NSString * const kEmailSIPLabel = @"sip";
     [self setAccountRegistered:NO];
 }
 
+- (void)resumeRegistrationIfDesired {
+    if (!self.isEnabled || self.desiredAvailability == AccountWindowControllerAccountStateOffline) return;
+    if (self.desiredAvailability == AccountWindowControllerAccountStateUnavailable) [self setAccountRegistered:NO];
+    else [self setAccountRegistered:YES];
+}
+
 - (void)removeAccountFromUserAgent {
-    NSAssert([self isEnabled], @"Account conroller must be enabled to remove account from the user agent.");
+    [self removeAccountFromUserAgentWithCompletion:^(BOOL removed) {}];
+}
+
+- (void)removeAccountFromUserAgentWithCompletion:(void (^)(BOOL))completion {
+    [self.account cancelPendingOutgoingCalls];
+    self.attemptingToRegisterAccount = NO;
+    self.attemptingToUnregisterAccount = NO;
     [self invalidateReRegistrationTimer];
     [self showOfflineState];
-    [[self userAgent] removeAccount:[self account]];
+    if (self.account.identifier == kAKSIPUserAgentInvalidIdentifier) { completion(YES); return; }
+    [self.userAgent removeAccount:self.account completion:completion];
 }
 
 - (void)makeCallToURI:(AKSIPURI *)destinationURI
@@ -357,6 +346,7 @@ NSString * const kEmailSIPLabel = @"sip";
     
     // Finally, make a call.
     [self.account makeCallTo:destinationURI completion:^(AKSIPCall *call) {
+        if (!aCallController.acceptsPendingCallResult || !self.isEnabled) { [call hangUp]; return; }
         if (call != nil) {
             [aCallController setCall:call];
             [aCallController setCallActive:YES];
@@ -416,11 +406,17 @@ NSString * const kEmailSIPLabel = @"sip";
 }
 
 - (void)changeAccountState:(AccountWindowControllerAccountState)state {
+    self.desiredAvailability = state;
+    self.attemptingToRegisterAccount = NO;
+    self.attemptingToUnregisterAccount = NO;
     [self invalidateReRegistrationTimer];
     switch (state) {
         case AccountWindowControllerAccountStateOffline:
             self.accountUnavailable = NO;
-            [self removeAccountFromUserAgent];
+            [self.account cancelPendingOutgoingCalls];
+            self.destinationToCall = @"";
+            self.account.registered = NO;
+            [self showOfflineState];
             break;
         case AccountWindowControllerAccountStateAvailable:
             self.accountUnavailable = NO;
@@ -428,11 +424,9 @@ NSString * const kEmailSIPLabel = @"sip";
             [self registerAccount];
             break;
         case AccountWindowControllerAccountStateUnavailable:
-            if (self.isAccountRegistered || !self.isAccountAdded) {
-                self.accountUnavailable = YES;
-                self.shouldPresentRegistrationError = YES;
-                [self unregisterAccount];
-            }
+            self.accountUnavailable = YES;
+            self.shouldPresentRegistrationError = YES;
+            [self unregisterAccount];
             break;
     }
 }
@@ -474,7 +468,7 @@ NSString * const kEmailSIPLabel = @"sip";
 }
 
 - (void)reRegistrationTimerTick:(NSTimer *)theTimer {
-    [[self account] setRegistered:YES];
+    [self resumeRegistrationIfDesired];
 }
 
 - (void)invalidateReRegistrationTimer {
@@ -500,12 +494,17 @@ NSString * const kEmailSIPLabel = @"sip";
         return;
     }
     
+    if (self.desiredAvailability == AccountWindowControllerAccountStateOffline) {
+        self.account.registered = NO;
+        [self showOfflineState];
+        return;
+    }
     if ([[self account] isRegistered]) {
         [self invalidateReRegistrationTimer];
 
         // If the account was offline and the user chose Unavailable state, -unregisterAccount will add the account
         // to the user agent. User agent will register the account. Set the account to Unavailable (unregister it) here.
-        if ([self attemptingToUnregisterAccount]) {
+        if (self.isAccountUnavailable || [self attemptingToUnregisterAccount]) {
             [self unregisterAccount];
             
         } else {
@@ -588,8 +587,27 @@ NSString * const kEmailSIPLabel = @"sip";
     [self invalidateReRegistrationTimer];
 }
 
+- (void)SIPAccount:(AKSIPAccount *)account didReceiveReplacementCall:(AKSIPCall *)call replacingIdentifier:(NSInteger)oldIdentifier {
+    CallController *controller = nil;
+    for (CallController *candidate in self.callControllers) {
+        if (candidate.call.identifier == oldIdentifier) { controller = candidate; break; }
+    }
+    if (controller == nil) {
+        controller = [[CallController alloc] initWithWindowNibName:@"Call" accountController:self
+                                                       userAgent:self.userAgent delegate:self];
+        [self.callControllers addObject:controller];
+    }
+    controller.call = call;
+    controller.callActive = YES;
+    AKSIPURIFormatter *formatter = [AKSIPURIFormatter new];
+    controller.displayedName = [formatter stringForObjectValue:call.remoteURI];
+    controller.title = call.remoteURI.SIPAddress;
+    controller.redialURI = call.remoteURI;
+    [controller showWindow:self];
+}
+
 - (void)SIPAccount:(AKSIPAccount *)account didReceiveCall:(AKSIPCall *)aCall {
-    if ([self isAccountUnavailable]) {
+    if (self.desiredAvailability == AccountWindowControllerAccountStateOffline || [self isAccountUnavailable]) {
         // Reply with 480 Temporarily Unavailable if the user selected Unavailable account state.
         [aCall replyWithTemporarilyUnavailable];
         
@@ -884,7 +902,7 @@ NSString * const kEmailSIPLabel = @"sip";
     }
     
     if ([self attemptingToRegisterAccount]) {
-        [self registerAccount];
+        [self resumeRegistrationIfDesired];
     } else if ([self attemptingToUnregisterAccount]) {
         [self unregisterAccount];
     }
@@ -896,7 +914,7 @@ NSString * const kEmailSIPLabel = @"sip";
 // This is the moment when the application starts doing its main job.
 - (void)networkReachabilityDidBecomeReachable:(NSNotification *)notification {
     if (!self.sleepStatus.isSleeping && !self.isAccountUnavailable && !self.isAccountRegistered) {
-        [self registerAccount];
+        [self resumeRegistrationIfDesired];
     }
 }
 

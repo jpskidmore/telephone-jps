@@ -46,7 +46,12 @@ extension NotifyingCallHistory: CallHistory {
         target?.didUpdate(self)
     }
 
+    public func invalidate() { origin.invalidate() }
+    public var persistenceError: String? { origin.persistenceError }
+    @discardableResult public func retryPersistence() -> Bool { origin.retryPersistence() }
+
     public func updateTarget(_ target: CallHistoryEventTarget) {
         self.target = target
+        origin.updateTarget(target)
     }
 }

@@ -17,7 +17,7 @@
 //
 
 import Testing
-import UseCases
+@testable import UseCases
 import UseCasesTestDoubles
 
 @MainActor
@@ -107,4 +107,20 @@ struct StoreEventTargetsTests {
         #expect(first.didCallDidCancelRestoring)
         #expect(second.didCallDidCancelRestoring)
     }
+    @Test func prunesExpiredSubscribersBeforeAddAndAsyncDispatch() async {
+        let sut = StoreEventTargets(targets: [])
+        for _ in 0..<100 {
+            let subscriber = StoreEventTargetSpy()
+            sut.add(WeakStoreEventTarget(origin: subscriber))
+        }
+        let live = StoreEventTargetSpy()
+        sut.add(WeakStoreEventTarget(origin: live))
+        #expect(sut.count == 1)
+        await sut.didPurchase()
+        await sut.didRestorePurchases()
+        #expect(sut.count == 1)
+        #expect(live.didCallDidPurchase)
+        #expect(live.didCallDidRestore)
+    }
+
 }

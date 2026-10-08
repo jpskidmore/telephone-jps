@@ -21,12 +21,24 @@ static BOOL AKIsEncodedCoreAudioStop(int status) {
     return status < 0 && (int64_t)AKCoreAudioErrorStart - (int64_t)status == AKCoreAudioNotRunning;
 }
 
+static BOOL AKIsEncodedCoreAudioFailure(int status) {
+    if (status >= 0) return NO;
+    int64_t raw = (int64_t)AKCoreAudioErrorStart - (int64_t)status;
+    // Exact AudioHardwareBase.h FourCC values, not a guess from the sign.
+    const uint32_t known[] = {'stop', 'what', 'who?', '!siz', 'nope', '!obj',
+                              '!dev', '!str', 'unop', 'nrdy', '!dat', '!hog'};
+    for (NSUInteger i = 0; i < sizeof(known) / sizeof(known[0]); i++) {
+        if (raw == known[i]) return YES;
+    }
+    return NO;
+}
+
 static BOOL AKIsAudioFailure(int status) {
     // Conference connects can fail for stale ports/PJ_EINVAL. Do not let those
     // poison working hardware. Nor is an arbitrary negative number enough to
-    // prove CoreAudio provenance: recognize the verified 'stop' encoding only.
+    // prove CoreAudio provenance: recognize only the audited CoreAudio status whitelist.
     // Add other negative codes only with an audited mapping and a regression test.
-    return (status >= AKAudioErrorStart && status <= AKAudioErrorEnd) || AKIsEncodedCoreAudioStop(status);
+    return (status >= AKAudioErrorStart && status <= AKAudioErrorEnd) || AKIsEncodedCoreAudioFailure(status);
 }
 
 static NSString *AKStatusDetails(int status) {
@@ -36,6 +48,10 @@ static NSString *AKStatusDetails(int status) {
         int64_t audioStatus = (int64_t)AKCoreAudioErrorStart - (int64_t)status;
         return [NSString stringWithFormat:@"class=coreaudio-stop coreaudio_osstatus=%lld coreaudio_fourcc='stop' coreaudio_symbol=kAudioHardwareNotRunningError",
                                           (long long)audioStatus];
+    }
+    if (AKIsEncodedCoreAudioFailure(status)) {
+        return [NSString stringWithFormat:@"class=coreaudio coreaudio_osstatus=%lld",
+                (long long)((int64_t)AKCoreAudioErrorStart - (int64_t)status)];
     }
     if (status >= AKAudioErrorStart && status <= AKAudioErrorEnd) {
         if (status >= AKCoreAudioErrorStart && status <= AKCoreAudioErrorEnd) {
@@ -52,8 +68,8 @@ static NSString *AKStatusDetails(int status) {
 @interface AKAudioDeviceController ()
 @property(nonatomic, strong) id<AKAudioDeviceBackend> backend;
 @property(nonatomic, copy) AKAudioDeviceLogger logger;
-@property(nonatomic, readwrite) BOOL hasFailed;
-@property(nonatomic, readwrite) int lastFailureStatus;
+@property(atomic, readwrite) BOOL hasFailed;
+@property(atomic, readwrite) int lastFailureStatus;
 @property(nonatomic, readwrite) BOOL outgoingCallPending;
 @property(nonatomic) BOOL selectionKnown;
 @property(nonatomic) int input;

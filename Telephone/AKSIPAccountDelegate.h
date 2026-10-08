@@ -32,4 +32,7 @@
 /// Sent when AKSIPAccount receives an incoming call.
 - (void)SIPAccount:(AKSIPAccount *)account didReceiveCall:(AKSIPCall *)aCall;
 
+@optional
+- (void)SIPAccount:(AKSIPAccount *)account didReceiveReplacementCall:(AKSIPCall *)call replacingIdentifier:(NSInteger)oldIdentifier;
+
 @end

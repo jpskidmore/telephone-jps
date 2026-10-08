@@ -32,7 +32,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property(nonatomic, readonly) NSArray<NSString *> *all;
 
-- (instancetype)initWithBundle:(NSBundle *)bundle target:(id <NameServersChangeEventTarget>)target;
+- (nullable instancetype)initWithBundle:(NSBundle *)bundle target:(id <NameServersChangeEventTarget>)target;
 
 @end
 

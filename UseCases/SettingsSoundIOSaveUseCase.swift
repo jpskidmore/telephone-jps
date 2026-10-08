@@ -31,6 +31,9 @@ public final class SettingsSoundIOSaveUseCase {
 
 extension SettingsSoundIOSaveUseCase: UseCase {
     public func execute() {
+        settings[SettingsKeys.soundInputUID] = soundIO.input.uniqueIdentifier
+        settings[SettingsKeys.soundOutputUID] = soundIO.output.uniqueIdentifier
+        settings[SettingsKeys.ringtoneOutputUID] = soundIO.ringtoneOutput.uniqueIdentifier
         settings[SettingsKeys.soundInput] = soundIO.input.name
         settings[SettingsKeys.soundOutput] = soundIO.output.name
         settings[SettingsKeys.ringtoneOutput] = soundIO.ringtoneOutput.name
@@ -38,11 +41,16 @@ extension SettingsSoundIOSaveUseCase: UseCase {
 }
 
 private extension SystemDefaultingSoundIO.Item {
+    var uniqueIdentifier: String? {
+        if case .device(name: _, uniqueIdentifier: let uid) = self { return uid }
+        return nil
+    }
+
     var name: String? {
         switch self {
         case .systemDefault:
             return nil
-        case .device(name: let name):
+        case .device(name: let name, uniqueIdentifier: _):
             return name
         }
     }

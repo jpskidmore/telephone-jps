@@ -17,6 +17,9 @@
 //
 
 public enum SettingsKeys {
+    public static let soundInputUID = "SoundInputUID"
+    public static let soundOutputUID = "SoundOutputUID"
+    public static let ringtoneOutputUID = "RingtoneOutputUID"
     public static let soundInput = "SoundInput"
     public static let soundOutput = "SoundOutput"
     public static let ringtoneOutput = "RingtoneOutput"

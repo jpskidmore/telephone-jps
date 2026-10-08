@@ -18,62 +18,162 @@
 
 import Foundation
 
+public let callHistoryPersistenceDidFailNotification = Notification.Name("AKCallHistoryPersistenceDidFailNotification")
+
 @CallHistoryActor
 public final class PersistentCallHistory {
-    private let origin: CallHistory
-    private let storage: PropertyListStorage
-
-    public init(origin: CallHistory, storage: PropertyListStorage) {
-        precondition(origin.allRecords.count == 0)
-        self.origin = origin
-        self.storage = storage
-        load()
+    private final class WeakHistory {
+        weak var value: PersistentCallHistory?
+        // A removed account has no cache owner. Retain only its outstanding
+        // durable deletion until retry commits, without permitting new writes.
+        var retainedForDeletion: PersistentCallHistory?
+        init(_ value: PersistentCallHistory) { self.value = value }
+    }
+    private static var failedHistories: [WeakHistory] = []
+    public static func retryFailedWrites() -> Bool {
+        failedHistories.removeAll { $0.value == nil }
+        for history in failedHistories.compactMap({ $0.value }) { _ = history.retryPersistence() }
+        failedHistories.removeAll { $0.value?.persistenceError == nil }
+        return failedHistories.isEmpty
     }
 
-    private func load() {
+    private let origin: CallHistory
+    private let storage: PropertyListStorage
+    private var loaded = false
+    private var valid = true
+    private var failedClear = false
+    private var performingMutation = false
+    private var target: CallHistoryEventTarget?
+    private var pending: [Mutation] = []
+    public private(set) var persistenceError: String?
+
+    private enum Mutation {
+        case add(CallHistoryRecord), remove(CallHistoryRecord)
+    }
+
+    public init(origin: CallHistory, storage: PropertyListStorage) {
+        precondition(origin.allRecords.isEmpty)
+        self.origin = origin
+        self.storage = storage
+        _ = load()
+    }
+
+    @discardableResult private func load() -> Bool {
         do {
-            try storage.load().forEach({ origin.add(CallHistoryRecord(dictionary: $0)) })
+            let records = try storage.load().map(CallHistoryRecord.init(dictionary:))
+            origin.removeAll()
+            records.forEach(origin.add)
+            loaded = true
+            for mutation in pending { apply(mutation) }
+            clearFailure()
+            return true
         } catch {
-            print("Could not read call history from file: \(error)")
+            fail("read", error)
+            return false
         }
+    }
+
+    private func apply(_ mutation: Mutation) {
+        switch mutation {
+        case .add(let record): origin.add(record)
+        case .remove(let record): origin.remove(record)
+        }
+    }
+
+    private func fail(_ operation: String, _ error: Error) {
+        persistenceError = error.localizedDescription
+        Self.failedHistories.removeAll { $0.value == nil }
+        if !Self.failedHistories.contains(where: { $0.value === self }) {
+            Self.failedHistories.append(WeakHistory(self))
+        }
+        let info: [String: Any] = ["operation": operation, "error": error as NSError]
+        // Delivery outlives individual windows and never blocks the history actor.
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: callHistoryPersistenceDidFailNotification, object: nil, userInfo: info)
+        }
+    }
+
+    private func clearFailure() {
+        persistenceError = nil
+        for entry in Self.failedHistories where entry.value === self { entry.retainedForDeletion = nil }
     }
 }
 
 extension PersistentCallHistory: CallHistory {
-    public var allRecords: [CallHistoryRecord] {
-        return origin.allRecords
-    }
+    public var allRecords: [CallHistoryRecord] { origin.allRecords }
 
-    public func add(_ record: CallHistoryRecord) {
-        origin.add(record)
-        save()
-    }
+    public func add(_ record: CallHistoryRecord) { mutate(.add(record)) }
+    public func remove(_ record: CallHistoryRecord) { mutate(.remove(record)) }
 
-    public func remove(_ record: CallHistoryRecord) {
-        origin.remove(record)
-        save()
+    private func mutate(_ mutation: Mutation) {
+        guard valid else { return }
+        performingMutation = true
+        defer { performingMutation = false }
+        failedClear = false
+        pending.append(mutation)
+        if loaded { apply(mutation) }
+        // A failed initial read must never be mistaken for an empty history.
+        _ = retryPersistence()
     }
 
     public func removeAll() {
-        origin.removeAll()
+        guard valid else { return }
+        _ = clearHistory()
+    }
+
+    @discardableResult private func clearHistory() -> Bool {
         do {
+            // Commit durable deletion before showing an empty history.
             try storage.delete()
+            origin.removeAll()
+            failedClear = false
+            pending.removeAll()
+            loaded = true
+            clearFailure()
+            return true
         } catch {
-            print("Could not delete call history file: \(error)")
+            failedClear = true
+            fail("clear", error)
+            return false
         }
     }
 
-    public func updateTarget(_ target: CallHistoryEventTarget) {
-        origin.updateTarget(target)
+    public func invalidate() {
+        valid = false
+        if failedClear {
+            for entry in Self.failedHistories where entry.value === self { entry.retainedForDeletion = self }
+        } else {
+            pending.removeAll()
+            clearFailure()
+        }
     }
 
-    private func save() {
+    @discardableResult public func retryPersistence() -> Bool {
+        let recovering = persistenceError != nil
+        let succeeded = persistPending()
+        if recovering && succeeded && !performingMutation { target?.didUpdate(self) }
+        return succeeded
+    }
+
+    private func persistPending() -> Bool {
+        // Removal invalidates additions immediately, but the deletion already
+        // requested must remain retryable after its cache owner disappears.
+        if failedClear { return clearHistory() }
+        guard valid else { return true }
+        if !loaded && !load() { return false }
+        guard !pending.isEmpty else { return persistenceError == nil }
         do {
             try storage.save(dictionaries(from: origin.allRecords))
+            pending.removeAll()
+            clearFailure()
+            return true
         } catch {
-            print("Could not save call history to file: \(error)")
+            fail("save", error)
+            return false
         }
     }
+
+    public func updateTarget(_ target: CallHistoryEventTarget) { self.target = target; origin.updateTarget(target) }
 }
 
 private extension CallHistoryRecord {

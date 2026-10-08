@@ -28,7 +28,9 @@
 @implementation AKSIPURI
 
 - (NSString *)SIPAddress {
-    return [[SIPAddress alloc] initWithUser:self.user host:self.host].stringValue;
+    NSString *port = self.port > 0 ? @(self.port).stringValue : @"";
+    NSString *address = [[ServiceAddress alloc] initWithHost:self.host port:port].stringValue;
+    return self.user.length ? [NSString stringWithFormat:@"%@@%@", self.user, address] : address;
 }
 
 
@@ -51,6 +53,7 @@
         _user = [user copy];
         _host = [host copy];
         _displayName = [displayName copy];
+        _port = port;
     }
     return self;
 }
@@ -66,7 +69,7 @@
 - (nullable instancetype)initWithString:(NSString *)SIPURIString {
     URI *uri = [[URI alloc] initWithString:SIPURIString];
     if (uri) {
-        return [self initWithUser:uri.user host:uri.host displayName:uri.displayName];
+        return [self initWithUser:uri.user host:uri.host displayName:uri.displayName port:uri.port.integerValue];
     } else {
         return nil;
     }

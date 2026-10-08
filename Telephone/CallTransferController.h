@@ -28,6 +28,11 @@
 // Designated initializer.
 - (instancetype)initWithSourceCallController:(CallController *)callController userAgent:(AKSIPUserAgent *)userAgent;
 
+// Refresh sender identity when a reusable source card redials.
+- (void)refreshSourceCallBinding;
+// Records whether this setup introduced source hold.
+- (void)beginTransferSetup;
+
 // Transfers source call controller's call to the receiver's call.
 - (void)transferCall;
 

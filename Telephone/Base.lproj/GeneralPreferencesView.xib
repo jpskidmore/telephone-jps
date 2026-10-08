@@ -91,7 +91,9 @@
                     <connections>
                         <action selector="recordingFormatChanged:" target="-2" id="rec-format-action"/>
                     </connections>
-                </popUpButton>
+
+                    <accessibility description="Recording format"/>
+</popUpButton>
                 <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rec-folder-label">
                     <rect key="frame" x="16" y="21" width="55" height="16"/>
                     <textFieldCell key="cell" lineBreakMode="clipping" title="Save to:" id="rec-folder-label-cell">
@@ -107,7 +109,9 @@
                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </textFieldCell>
-                </textField>
+
+                    <accessibility description="Call recordings folder"/>
+</textField>
                 <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="rec-folder-button">
                     <rect key="frame" x="338" y="12" width="94" height="32"/>
                     <buttonCell key="cell" type="push" title="Choose…" bezelStyle="rounded" alignment="center" borderStyle="border" inset="2" id="rec-folder-button-cell">

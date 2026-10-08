@@ -7,6 +7,20 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+FOUNDATION_EXPORT NSString *const AKRecordingExportDidFailNotification;
+// Captured tracks and an atomic retry manifest live in protected Application
+// Support rather than purgeable temporary storage. The AtRoot variants permit
+// synthetic, disposable file tests without touching the user's recovery folder.
+NSURL * _Nullable AKCreateRecordingRecoveryDirectory(NSError **error);
+NSURL * _Nullable AKCreateRecordingRecoveryDirectoryAtRoot(NSURL *root, NSError **error);
+BOOL AKPersistRecordingRecoveryJob(NSURL *directory, NSURL *local, NSURL *remote,
+                                   NSURL *destination, NSError **error);
+NSArray<NSDictionary *> *AKPendingRecordingRecoveryJobs(void);
+NSArray<NSDictionary *> *AKRecordingRecoveryJobsAtRoot(NSURL *root);
+void AKReportRecordingExportFailure(NSURL *directory, NSURL *destination, NSError * _Nullable error);
+void AKRetryRecordingRecoveryJob(NSDictionary *job, NSURL *destination,
+                                 void (^completion)(BOOL succeeded));
+
 // Atomically reserves a collision-free file in directoryURL. The caller owns the
 // empty file and should remove it if recording cannot be started.
 NSURL * _Nullable AKReserveRecordingURL(NSURL *directoryURL,

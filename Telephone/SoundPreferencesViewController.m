@@ -33,6 +33,7 @@ static NSMenuItem *MenuItemForDevice(PresentationAudioDevice *device);
 
 @property(nonatomic, readonly) SoundPreferencesViewEventTarget *eventTarget;
 @property(nonatomic, readonly) AKSIPUserAgent *userAgent;
+@property(nonatomic) BOOL failedSoundIOLoad;
 
 @property(nonatomic, weak) IBOutlet NSPopUpButton *soundInputPopUp;
 @property(nonatomic, weak) IBOutlet NSPopUpButton *soundOutputPopUp;
@@ -60,6 +61,13 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)awakeFromNib {
+    // Native accessibility exposes the cell; Interface Builder descriptions on
+    // its control view do not propagate into that unignored element.
+    self.soundInputPopUp.cell.accessibilityLabel = NSLocalizedString(@"Microphone", @"Accessible control purpose.");
+    self.soundOutputPopUp.cell.accessibilityLabel = NSLocalizedString(@"Call output", @"Accessible control purpose.");
+    self.ringtoneOutputPopUp.cell.accessibilityLabel = NSLocalizedString(@"Ringtone output", @"Accessible control purpose.");
+    self.ringtonePopUp.cell.accessibilityLabel = NSLocalizedString(@"Ringtone", @"Accessible control purpose.");
+
     NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
     
     [notificationCenter addObserver:self
@@ -76,11 +84,24 @@ NS_ASSUME_NONNULL_END
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+- (void)viewWillAppear {
+    [super viewWillAppear];
+    if (self.failedSoundIOLoad) {
+        [self updateSoundIO];
+    }
+}
+
 - (void)viewWillDisappear {
+    [super viewWillDisappear];
     [self.eventTarget viewWillDisappear:self];
 }
 
 - (IBAction)changeSoundIO:(id)sender {
+    if (!self.soundInputPopUp.selectedItem.representedObject || !self.soundOutputPopUp.selectedItem.representedObject ||
+        !self.ringtoneOutputPopUp.selectedItem.representedObject) {
+        [self updateSoundIO];
+        return;
+    }
     [self.eventTarget viewDidChangeSoundIO:
      [[PresentationSoundIO alloc] initWithInput:self.soundInputPopUp.selectedItem.representedObject
                                          output:self.soundOutputPopUp.selectedItem.representedObject
@@ -117,13 +138,43 @@ NS_ASSUME_NONNULL_END
 
 #pragma mark - SoundPreferencesView
 
+- (void)showSoundIOLoadError:(NSString *)message {
+    self.failedSoundIOLoad = YES;
+    for (NSPopUpButton *popup in @[self.soundInputPopUp, self.soundOutputPopUp, self.ringtoneOutputPopUp]) {
+        popup.toolTip = message;
+        popup.accessibilityHelp = message;
+        if (popup.numberOfItems == 0) {
+            [popup addItemWithTitle:NSLocalizedString(@"Unavailable — reopen to retry", @"Audio devices load failed.")];
+            popup.enabled = NO;
+        }
+        NSAccessibilityPostNotification(popup, NSAccessibilityValueChangedNotification);
+    }
+}
+
 - (void)updateWithSoundIO:(PresentationSoundIO *)soundIO devices:(PresentationAudioDevices *)devices {
+    self.failedSoundIOLoad = NO;
+    for (NSPopUpButton *popup in @[self.soundInputPopUp, self.soundOutputPopUp, self.ringtoneOutputPopUp]) {
+        popup.enabled = YES;
+        popup.toolTip = nil;
+        popup.accessibilityHelp = nil;
+    }
     self.soundInputPopUp.menu = MenuForDevices(devices.input);
     self.soundOutputPopUp.menu = MenuForDevices(devices.output);
     self.ringtoneOutputPopUp.menu = MenuForDevices(devices.ringtoneOutput);
-    [self.soundInputPopUp selectItemWithTitle:soundIO.input.name];
-    [self.soundOutputPopUp selectItemWithTitle:soundIO.output.name];
-    [self.ringtoneOutputPopUp selectItemWithTitle:soundIO.ringtoneOutput.name];
+    [self selectDevice:soundIO.input inPopUp:self.soundInputPopUp];
+    [self selectDevice:soundIO.output inPopUp:self.soundOutputPopUp];
+    [self selectDevice:soundIO.ringtoneOutput inPopUp:self.ringtoneOutputPopUp];
+}
+
+- (void)selectDevice:(PresentationAudioDevice *)device inPopUp:(NSPopUpButton *)popup {
+    for (NSMenuItem *item in popup.itemArray) {
+        PresentationAudioDevice *candidate = item.representedObject;
+        if (![candidate isKindOfClass:PresentationAudioDevice.class]) { continue; }
+        BOOL matches = device.isSystemDefault ? candidate.isSystemDefault :
+            device.uniqueIdentifier.length > 0 ? [candidate.uniqueIdentifier isEqualToString:device.uniqueIdentifier] :
+            [candidate.name isEqualToString:device.name];
+        if (matches) { [popup selectItem:item]; return; }
+    }
 }
 
 #pragma mark -
@@ -182,7 +233,26 @@ static NSMenu *MenuForDevices(NSArray<PresentationAudioDevice *> *devices) {
 static NSArray<NSMenuItem *> *MenuItemsForDevices(NSArray<PresentationAudioDevice *> *devices) {
     NSMutableArray<NSMenuItem *> *items = [[NSMutableArray alloc] init];
     for (PresentationAudioDevice *device in devices) {
-        [items addObject:MenuItemForDevice(device)];
+        NSMenuItem *item = MenuItemForDevice(device);
+        NSUInteger duplicates = [devices indexesOfObjectsPassingTest:^BOOL(PresentationAudioDevice *other, NSUInteger index, BOOL *stop) {
+            return !other.isSystemDefault && [other.name isEqualToString:device.name];
+        }].count;
+        if (!device.isSystemDefault && duplicates > 1) {
+            NSUInteger suffixLength = MIN((NSUInteger)8, device.uniqueIdentifier.length);
+            NSString *suffix;
+            while (YES) {
+                suffix = [device.uniqueIdentifier substringFromIndex:device.uniqueIdentifier.length - suffixLength];
+                NSUInteger sameSuffix = [devices indexesOfObjectsPassingTest:^BOOL(PresentationAudioDevice *other, NSUInteger index, BOOL *stop) {
+                    return !other.isSystemDefault && [other.name isEqualToString:device.name] && [other.uniqueIdentifier hasSuffix:suffix];
+                }].count;
+                if (sameSuffix <= 1 || suffixLength >= device.uniqueIdentifier.length) { break; }
+                suffixLength++;
+            }
+            item.title = [NSString stringWithFormat:@"%@ (%@)", device.name, suffix];
+            item.toolTip = device.uniqueIdentifier;
+            item.accessibilityLabel = item.title;
+        }
+        [items addObject:item];
     }
     if (devices.count > 1 && devices.firstObject.isSystemDefault) {
         [items insertObject:[NSMenuItem separatorItem] atIndex:1];

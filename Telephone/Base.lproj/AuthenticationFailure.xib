@@ -53,7 +53,9 @@
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
-                    </textField>
+
+                    <accessibility description="Username"/>
+</textField>
                     <textField verticalHuggingPriority="750" id="9">
                         <rect key="frame" x="27" y="116" width="77" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -119,7 +121,9 @@ Gw
                                 <string>NSAllRomanInputSourcesLocaleIdentifier</string>
                             </allowedInputSourceLocales>
                         </secureTextFieldCell>
-                    </secureTextField>
+
+                    <accessibility description="Password"/>
+</secureTextField>
                 </subviews>
             </view>
             <connections>

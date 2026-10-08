@@ -16,7 +16,7 @@
 //  GNU General Public License for more details.
 //
 
-public final class CallHistoryRecordRemoveUseCase {
+public final class CallHistoryRecordRemoveUseCase: Sendable {
     private let identifier: String
     private let history: CallHistory
 
@@ -28,7 +28,7 @@ public final class CallHistoryRecordRemoveUseCase {
 
 extension CallHistoryRecordRemoveUseCase: UseCase {
     public func execute() {
-        Task { @CallHistoryActor [history, identifier] in
+        CallHistoryWork.shared.submit { @CallHistoryActor [history, identifier] in
             if let record = history.record(withIdentifier: identifier) {
                 history.remove(record)
             }

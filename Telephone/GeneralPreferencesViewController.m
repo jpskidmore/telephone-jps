@@ -45,6 +45,11 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    // Native accessibility exposes the cell; Interface Builder descriptions on
+    // its control view do not propagate into that unignored element.
+    self.recordingFormatPopUpButton.cell.accessibilityLabel = NSLocalizedString(@"Recording format", @"Accessible control purpose.");
+    self.recordingFolderPathField.cell.accessibilityLabel = NSLocalizedString(@"Recording folder", @"Accessible control purpose.");
+
 
     [self.recordingFormatPopUpButton removeAllItems];
     [self.recordingFormatPopUpButton addItemsWithTitles:@[
