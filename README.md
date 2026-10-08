@@ -1,4 +1,4 @@
-Version **3.5.1/build 163** is being prepared locally to fix the crash in **More → Guided routes…**. See [hotfix notes](docs/releases/3.5.1.md). Published 3.5 remains available until the correction is packaged and verified.
+Version **3.5.1/build 163** fixes the crash in **More → Guided routes…**. It is built and installed locally and published as [private GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1). The owner tested it and accepted it. Read [hotfix notes](docs/releases/3.5.1.md) and [completion proof](docs/releases/3.5.1-verification.md).
 
 Version **3.5/build 162** adds one compact dialler, configurable Guided routes and combined call history. It was built, tested, installed and published locally. Read [the dial-plan guide](docs/DIAL_PLANS.md) and [3.5 release notes](docs/releases/3.5.md).
 
@@ -14,7 +14,7 @@ Version **3.5/build 162** adds one compact dialler, configurable Guided routes a
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5">Latest release: 3.5 (162)</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1">Latest release: 3.5.1 (163)</a>
   <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained baseline: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
@@ -22,7 +22,7 @@ Version **3.5/build 162** adds one compact dialler, configurable Guided routes a
 </p>
 
 > [!IMPORTANT]
-> **3.5 is published and installed locally.** One compact dialler, Guided routes and combined history are ready. All four current local suites passed **664 test cases**, plus the separate **170-case dial-plan harness**, with zero failures. Built from [`cbfd3a0`](https://github.com/jpskidmore/telephone-jps/commit/cbfd3a0bbbca094f2f17e18b82e2904beb7e051a), installed at `/Applications/jps Telephone.app`, and published as [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5). All seven uploaded assets match their local sizes and SHA-256 digests. Read [3.5 verification](docs/releases/3.5-verification.md).
+> **3.5.1 is published and installed locally.** The Guided routes menu crash is fixed; the compact dialler, routing and combined history remain unchanged. All four fresh local suites passed **665 test cases, zero failures**. Built from [`e111e5d`](https://github.com/jpskidmore/telephone-jps/commit/e111e5daee9e57f26c66c9a42d40b6f1f4f25edc), installed at `/Applications/jps Telephone.app`, and published as [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1). All seven uploads match local sizes and SHA-256 digests. The owner reported “tested - looks good”. Read [3.5.1 verification](docs/releases/3.5.1-verification.md). The separate 170 routing cases remain historical 3.5 evidence bound to unchanged inputs.
 >
 > Read [the verified repair map](docs/REPAIR_VERIFICATION.md), [tracked evidence](docs/audit-2.1.8/repair-progress.json), [3.0 notes](docs/releases/3.0.md) and [maintenance handover](docs/BUG_FIX_HANDOVER.md). The repository stays private, work stays on main, and all builds remain local with `[skip ci]` commits and no cloud dispatch.
 >

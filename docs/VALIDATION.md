@@ -19,7 +19,9 @@ snapshot. Its separate 170 routing cases and component checks remain historical
 unchanged-source evidence and were not rerun. Fresh dependency inventory and
 the 50-entry baseline repair gate passed. No routing/data/layout change is made.
 
-Release packaging, installation and private publication are still in progress.
+Release packaging, installation and private Latest publication are complete.
+The owner reported “tested - looks good” after normal-launch Keychain handoff;
+read [completion proof](releases/3.5.1-verification.md).
 Ad-hoc signing and controlled tests do not establish live SIP/audio, emergency
 calling, sandbox grants or proficient VoiceOver acceptance.
 

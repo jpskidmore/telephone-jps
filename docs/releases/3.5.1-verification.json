@@ -1,0 +1,276 @@
+{
+  "verifiedUTC": "2026-10-08T20:19:06.989Z",
+  "version": "3.5.1",
+  "build": "163",
+  "sourceCommit": "e111e5daee9e57f26c66c9a42d40b6f1f4f25edc",
+  "sourceTree": "f3141a1babe5a78bfcc69ef23c0d37134f6d2b7a",
+  "release": {
+    "id": 407227459,
+    "url": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1",
+    "tag": "v3.5.1",
+    "draft": false,
+    "prerelease": false,
+    "publishedUTC": "2026-10-08T20:18:21Z",
+    "latest": true,
+    "repositoryPrivate": true
+  },
+  "localPackage": {
+    "verifiedUTC": "2026-10-08T20:16:03.903274+00:00",
+    "version": "3.5.1",
+    "build": "163",
+    "sourceCommit": "e111e5daee9e57f26c66c9a42d40b6f1f4f25edc",
+    "sourceTree": "f3141a1babe5a78bfcc69ef23c0d37134f6d2b7a",
+    "installedApp": "/Applications/jps Telephone.app",
+    "previousAppBackup": "/private/tmp/jps-telephone-3.5-backup-20261008/jps Telephone.app",
+    "normalMainNib": "MainMenu",
+    "upstreamVersionPreserved": "1.6",
+    "appRegularFilePayloads": 57,
+    "appSymlinks": 6,
+    "sourceFilePayloads": 1421,
+    "mainExecutableSHA256": "395fd7788892991ce4c66c9de20bb1e1d874e47537b189a77238ddb295d91f94",
+    "assets": [
+      {
+        "name": "jps-Telephone-3.5.1-macOS-arm64.zip",
+        "bytes": 3391454,
+        "sha256": "4e4916e3075dad675fae45bee87ba1d3df420786a3e6bc745cb669654499125c"
+      },
+      {
+        "name": "jps-Telephone-3.5.1-source.zip",
+        "bytes": 39965230,
+        "sha256": "63f88c3443eb49309545f1febd9042dc231f99b016e620c29295f54fb70294dc"
+      }
+    ],
+    "checks": {
+      "cleanExactSource": true,
+      "sourceAllGitBlobs": true,
+      "appZipAllFilesAndSymlinks": true,
+      "installedAllFilesAndSymlinks": true,
+      "signaturesBuiltExtractedInstalled": true,
+      "productionMetadataRetained": true
+    },
+    "limits": "Ad-hoc signed and unnotarised; no live SIP, physical audio, emergency call or proficient VoiceOver acceptance claimed."
+  },
+  "tests": {
+    "freshCases": 665,
+    "failures": 0,
+    "proof": "docs/releases/3.5.1-tests.json",
+    "historicalUnchangedRoutingCases": 170,
+    "historicalRoutingRerunForHotfix": false
+  },
+  "cloudWorkflowRunsAtReleaseCommit": 0,
+  "uploadedAssets": [
+    {
+      "id": 622900668,
+      "name": "BUILD-VERIFICATION.md",
+      "bytes": 2789,
+      "sha256": "2c47d01a2b3a073e6f0897c4209934f2cd02f83dd4654b5fc8d99966ba80f4cb",
+      "state": "uploaded",
+      "localSizeAndDigestMatch": true
+    },
+    {
+      "id": 622900701,
+      "name": "DIAL-PLAN-NUMBERING.md",
+      "bytes": 7616,
+      "sha256": "39f167717c00ba1e10e5f3e1536379ecbdc771a8d15d03311160084a6dd4f11d",
+      "state": "uploaded",
+      "localSizeAndDigestMatch": true
+    },
+    {
+      "id": 622900718,
+      "name": "DIAL-PLANS.md",
+      "bytes": 7550,
+      "sha256": "81f8145d46bd586b97455fbe886d8e240cad0870f14786a7a444d1b2f8d2c3b0",
+      "state": "uploaded",
+      "localSizeAndDigestMatch": true
+    },
+    {
+      "id": 622900778,
+      "name": "jps-Telephone-3.5.1-macOS-arm64.zip",
+      "bytes": 3391454,
+      "sha256": "4e4916e3075dad675fae45bee87ba1d3df420786a3e6bc745cb669654499125c",
+      "state": "uploaded",
+      "localSizeAndDigestMatch": true
+    },
+    {
+      "id": 622900824,
+      "name": "jps-Telephone-3.5.1-source.zip",
+      "bytes": 39965230,
+      "sha256": "63f88c3443eb49309545f1febd9042dc231f99b016e620c29295f54fb70294dc",
+      "state": "uploaded",
+      "localSizeAndDigestMatch": true
+    },
+    {
+      "id": 622900752,
+      "name": "RELEASE-NOTES.md",
+      "bytes": 1135,
+      "sha256": "09ae1ae6d417a89a558b66f3bf92d7e039ecc2ac0ff2dd1aab0dab7d7977b71a",
+      "state": "uploaded",
+      "localSizeAndDigestMatch": true
+    },
+    {
+      "id": 622900767,
+      "name": "SHA256SUMS.txt",
+      "bytes": 539,
+      "sha256": "520fef78918a81c8fede5b9378ee1dcf277d06af3bc19e1269b2304e7da66587",
+      "state": "uploaded",
+      "localSizeAndDigestMatch": true
+    }
+  ],
+  "retainedTags": [
+    {
+      "tag": "v3.5",
+      "source": "cbfd3a0bbbca094f2f17e18b82e2904beb7e051a"
+    },
+    {
+      "tag": "v3.0",
+      "source": "6363412d56e2bc142a54058321b7873a69068c62"
+    },
+    {
+      "tag": "v2.1.8",
+      "source": "9a32ae825e4d3bb380cb52b8452ddf7526764a25"
+    }
+  ],
+  "retainedReleases": [
+    {
+      "id": 407022952,
+      "tag": "v3.5",
+      "assets": [
+        {
+          "id": 622314255,
+          "name": "BUILD-VERIFICATION.md",
+          "size": 3798,
+          "digest": "sha256:20470ae73bc3465f25cb8f99417d11c253461e55323ff42b1075fe9af927ad53"
+        },
+        {
+          "id": 622314298,
+          "name": "DIAL-PLAN-NUMBERING.md",
+          "size": 7616,
+          "digest": "sha256:39f167717c00ba1e10e5f3e1536379ecbdc771a8d15d03311160084a6dd4f11d"
+        },
+        {
+          "id": 622314270,
+          "name": "DIAL-PLANS.md",
+          "size": 6862,
+          "digest": "sha256:d1e6f605a6560420526ca7fcd0dc34ed4d59453166f646f958ac7177259f0259"
+        },
+        {
+          "id": 622313988,
+          "name": "jps-Telephone-3.5-macOS-arm64.zip",
+          "size": 3391211,
+          "digest": "sha256:1a4f4fa5e5bb9fa0cded6ff1b1a871f19ccc3396b05277bdc90edb9c207ef91b"
+        },
+        {
+          "id": 622314044,
+          "name": "jps-Telephone-3.5-source.zip",
+          "size": 39947376,
+          "digest": "sha256:c6fdab39e22e12a237d331b051447de79a18058394f07100b088d4086b0b9736"
+        },
+        {
+          "id": 622314247,
+          "name": "RELEASE-NOTES.md",
+          "size": 2133,
+          "digest": "sha256:a5c78b1ad6cc486b92ba228d510b642ce83e84567b210029cf80bef231cbac2d"
+        },
+        {
+          "id": 622314312,
+          "name": "SHA256SUMS.txt",
+          "size": 535,
+          "digest": "sha256:05b89ce912dfe82ebccd4503be974dde53975f45234f314dea8248265a2ec924"
+        }
+      ]
+    },
+    {
+      "id": 406277128,
+      "tag": "v3.0",
+      "assets": [
+        {
+          "id": 620222128,
+          "name": "BUILD-VERIFICATION.md",
+          "size": 3794,
+          "digest": "sha256:7f877d24b897640bce14d2b3a19ea6f905a8c6417824632854420d3634c27bed"
+        },
+        {
+          "id": 620221939,
+          "name": "jps-Telephone-3.0-arm64.zip",
+          "size": 3255491,
+          "digest": "sha256:31d965ec457a83ef9d8573e15945361f2402252b102dc96efb326b0c73e3de0c"
+        },
+        {
+          "id": 620221963,
+          "name": "jps-Telephone-3.0-source.zip",
+          "size": 39852753,
+          "digest": "sha256:e3b4e202da2d100c0094abce00d211bbc849ef6d2adde52eed4946f4159e60cc"
+        },
+        {
+          "id": 620222142,
+          "name": "RELEASE-NOTES.md",
+          "size": 4951,
+          "digest": "sha256:9ff1bf0e58c24b174ece12864fd9d15e30e80a77500c42ba90d4a5c26c2cff7c"
+        },
+        {
+          "id": 620222169,
+          "name": "REPAIR-PROGRESS.json",
+          "size": 77963,
+          "digest": "sha256:de900e1126dbf2ed53a811b749ec97b634e5dfd4e0a56a15954b620e72919ca1"
+        },
+        {
+          "id": 620222152,
+          "name": "REPAIR-VERIFICATION.md",
+          "size": 30864,
+          "digest": "sha256:6b19b61d37e3b03f8b975811de96096b5947b4c0cee72d957e220d31475ea5bf"
+        },
+        {
+          "id": 620222188,
+          "name": "SHA256SUMS.txt",
+          "size": 536,
+          "digest": "sha256:72d7e9610f94b2306956cf87e5214781d7efe454a6f93aa9e3b4e6a7b99fac60"
+        }
+      ]
+    },
+    {
+      "id": 405986007,
+      "tag": "v2.1.8",
+      "assets": [
+        {
+          "id": 619289262,
+          "name": "BUILD-VERIFICATION.md",
+          "size": 4365,
+          "digest": "sha256:1c8834ce3f5f8ab387648f191bcb0d86c8b7515603c98fb3838dd670500baf7d"
+        },
+        {
+          "id": 619288990,
+          "name": "jps-Telephone-2.1.8-arm64.zip",
+          "size": 3184132,
+          "digest": "sha256:91195ed59780f1d4c657476ca50bd61e78eb187fd817458240ddd610ad245741"
+        },
+        {
+          "id": 619289048,
+          "name": "jps-Telephone-2.1.8-source.zip",
+          "size": 39660870,
+          "digest": "sha256:d82fce8f93455f0d026ed24120cb597af4e16975bcd086877ecaeea7b649c067"
+        },
+        {
+          "id": 619289272,
+          "name": "RELEASE-NOTES.md",
+          "size": 1300,
+          "digest": "sha256:e715f10d7948c3ca0e3e7b12f946a17edd20dbd3683c3f329bb8feeb030e06f2"
+        },
+        {
+          "id": 619289280,
+          "name": "SHA256SUMS.txt",
+          "size": 364,
+          "digest": "sha256:6621fb30d55a58121e62eb7ede4b7596f9c8053a9a1337291e8fab437d4fc37d"
+        }
+      ]
+    }
+  ],
+  "installedSmoke": {
+    "state": "owner_tested_accepted",
+    "acceptedUTC": "2026-10-08T20:21:24.307Z",
+    "ownerReport": "tested - looks good",
+    "sourceOfAcceptance": "Direct owner message after local installation and Keychain handoff; no independent post-authentication GUI claim.",
+    "liveCallMadeByAgent": false,
+    "credentialsChangedByAgent": false
+  },
+  "limits": "Ad-hoc signed and unnotarised; controlled synthetic tests and package parity do not certify live SIP/audio, sandbox grants, emergency support or proficient VoiceOver. Focus-dependent fixture failures remain diagnostics."
+}

@@ -1,11 +1,11 @@
 # jps Telephone maintenance instructions
 
-The owner reported a 3.5 crash in More → Guided routes… on 8 October. The 3.5.1/build 163 hotfix is in local verification: explicit app-delegate action forwarding plus a native generated-menu dispatch regression. Preserve all previous release tags/assets and all routing/data/layout behaviour. Read [3.5.1 notes](docs/releases/3.5.1.md).
+The owner's 3.5 crash in More → Guided routes… is fixed in **3.5.1/build 163**. Fresh local verification passed 665 cases; the app is built, installed and published as private Latest from immutable source `e111e5daee9e57f26c66c9a42d40b6f1f4f25edc`. The owner reported “tested - looks good”. Read [hotfix notes](docs/releases/3.5.1.md), [fresh tests](docs/releases/3.5.1-tests.json) and [publication proof](docs/releases/3.5.1-verification.md). Preserve all previous release tags/assets and all routing/data/layout behaviour. The 170 routing cases and unrelated component checks remain historical 3.5 unchanged-input evidence; no fresh rerun is claimed.
 
 Read [the maintenance handover](docs/BUG_FIX_HANDOVER.md),
 [verified repair map](docs/REPAIR_VERIFICATION.md) and
 [tracked issue evidence](docs/audit-2.1.8/repair-progress.json) before implementation.
-The repository remains private. The owner authorised 3.5/build 162 Guided routes after the published 3.0 repair baseline and requires main, local builds and no cloud workflows. Read [DIAL_PLANS.md](docs/DIAL_PLANS.md) and [offline numbering coverage](docs/DIAL_PLAN_NUMBERING.md) before changing routing. 3.5 is built, installed and published as Latest from immutable source `cbfd3a0bbbca094f2f17e18b82e2904beb7e051a`; 664 complete-suite cases plus 170 separately counted dial-plan cases passed locally. Read [3.5 publication proof](docs/releases/3.5-verification.md) and its JSON record. Preserve v3.5, v3.0 and v2.1.8 tags/assets; later documentation commits do not replace a release archive.
+The repository remains private. The owner authorised 3.5/build 162 Guided routes after the published 3.0 repair baseline and requires main, local builds and no cloud workflows. Read [DIAL_PLANS.md](docs/DIAL_PLANS.md) and [offline numbering coverage](docs/DIAL_PLAN_NUMBERING.md) before changing routing. Historical 3.5 was built, installed and published as then-Latest from immutable source `cbfd3a0bbbca094f2f17e18b82e2904beb7e051a`; 664 complete-suite cases plus 170 separately counted dial-plan cases passed locally. Read [3.5 publication proof](docs/releases/3.5-verification.md) and its JSON record. Preserve v3.5, v3.0 and v2.1.8 tags/assets; later documentation commits do not replace a release archive.
 
 ## Retained verified 3.0 repair baseline
 
