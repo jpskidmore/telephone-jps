@@ -4,7 +4,7 @@
 
 One compact dialler now uses configurable country/area expansion and guided outgoing routes, with precise longest-prefix exceptions and Block rules. All accounts share one incoming/outgoing/missed-call history; callbacks use the current plan and account badges derive automatically from account names. Native compact Settings gains a Dial plan pane with route testing.
 
-See [3.5 notes](docs/releases/3.5.md) and [dialling plans](docs/DIAL_PLANS.md). Local build, install and publication verification is in progress. Historical releases remain immutable.
+See [3.5 notes](docs/releases/3.5.md) and [dialling plans](docs/DIAL_PLANS.md). Built, signed, installed and published locally as Latest. All four suites passed 664 cases; the separate dial-plan harness passed 170 cases. Seven uploaded asset sizes/digests match local packages. Read [publication proof](docs/releases/3.5-verification.md). Historical releases remain immutable.
 
 ## jps Telephone 3.0 (build 161) — verified repairs, published
 

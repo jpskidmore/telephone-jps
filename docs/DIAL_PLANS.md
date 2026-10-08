@@ -47,3 +47,14 @@ The merged list reads existing per-account history files without rewriting them.
 `DialPlan.swift` contains the pure Foundation normaliser, resolver and versioned persisted model. `DialPlanCoordinator.swift` is the main-thread admission point; `SharedDialerController` owns the sole main window. Account controllers own registration and call sessions independently of a visible dialler. `GlobalCallHistory` projects existing UUID stores and delegates durable mutations.
 
 All builds and tests run locally. Synthetic routing, persistence and native interface fixtures do not load the normal app profile, Contacts, credentials or real call history. Published validation must report actual results separately from live SIP/audio, VoiceOver and provider-specific acceptance. Do not place emergency calls as a test.
+
+## Native macOS design references
+
+The interface keeps AppKit controls, native titlebar close buttons and the accepted
+compact geometry. Apple describes small/mini/medium macOS control sizes for dense
+interfaces in [WWDC25: Get to know the new design system](https://developer.apple.com/videos/play/wwdc2025/356/)
+and explains semantic/native materials in the
+[Human Interface Guidelines: Materials](https://developer.apple.com/design/human-interface-guidelines/materials).
+The build uses the macOS27 SDK; synthetic native Light/Dark checks verify the
+selected geometry and colours on this host, without claiming complete visual or
+VoiceOver acceptance on every supported macOS release.

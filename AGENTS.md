@@ -3,9 +3,9 @@
 Read [the maintenance handover](docs/BUG_FIX_HANDOVER.md),
 [verified repair map](docs/REPAIR_VERIFICATION.md) and
 [tracked issue evidence](docs/audit-2.1.8/repair-progress.json) before implementation.
-The repository remains private. The owner authorised 3.5/build 162 Guided routes after the published 3.0 repair baseline and requires main, local builds and no cloud workflows. Read [DIAL_PLANS.md](docs/DIAL_PLANS.md) and [offline numbering coverage](docs/DIAL_PLAN_NUMBERING.md) before changing routing. Current 3.5 build, tests, install and publication are in progress; preserve the historical verification below.
+The repository remains private. The owner authorised 3.5/build 162 Guided routes after the published 3.0 repair baseline and requires main, local builds and no cloud workflows. Read [DIAL_PLANS.md](docs/DIAL_PLANS.md) and [offline numbering coverage](docs/DIAL_PLAN_NUMBERING.md) before changing routing. 3.5 is built, installed and published as Latest from immutable source `cbfd3a0bbbca094f2f17e18b82e2904beb7e051a`; 664 complete-suite cases plus 170 separately counted dial-plan cases passed locally. Read [3.5 publication proof](docs/releases/3.5-verification.md) and its JSON record. Preserve v3.5, v3.0 and v2.1.8 tags/assets; later documentation commits do not replace a release archive.
 
-## Current verified baseline and published release
+## Retained verified 3.0 repair baseline
 
 - Baseline issues **#2–51**, all 50 items, are recorded **fixed_verified**.
   The repair gate passed on 8 October 2026 with 617 local automated cases, zero
@@ -14,7 +14,7 @@ The repository remains private. The owner authorised 3.5/build 162 Guided routes
   Read each item's root cause, regression and practical limit in the progress file.
 - **3.0/build 161** was built, ad-hoc signed, packaged and installed locally at
   `/Applications/jps Telephone.app`, then published as
-  [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0)
+  [then GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0)
   on 8 October 2026. The immutable release/source revision is
   `6363412d56e2bc142a54058321b7873a69068c62`; all seven uploaded assets have
   verified sizes and SHA-256 matches. Read the

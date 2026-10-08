@@ -37,8 +37,9 @@ source/object hashes and ten native UI snapshots are under local
 transport reproduction initially failed and then passed after preserving the
 native parser's explicit transport; prior failures are diagnostic history.
 
-Release signing, ZIP/source parity, installation and publication are recorded
-from actual results in the release proof after they complete. Live provider
+Release compilation, nested signatures, ZIP/source parity, installation and
+private Latest publication completed. All seven uploads match local sizes and
+SHA-256 digests; see [3.5 proof](releases/3.5-verification.md). Live provider
 routing/negotiation, physical audio/hotplug, actual capture, sandbox grants and
 proficient VoiceOver remain manual acceptance boundaries. No emergency call is
 placed by a test. Offline classification is not a tariff or live allocation

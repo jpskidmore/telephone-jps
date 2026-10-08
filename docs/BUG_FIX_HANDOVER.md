@@ -1,19 +1,19 @@
 # Maintenance handover — 3.5 Guided routes
 
-The owner authorised **3.5/build 162 Guided routes** on 8 October: one dialler, configurable country/area expansion, account routing and consolidated history. Implementation and local validation are in progress on main. Read [DIAL_PLANS.md](DIAL_PLANS.md) and [3.5 notes](releases/3.5.md) before continuing. The previous 3.0 publication proof below is historical and remains immutable; no completed 3.5 publication is claimed yet.
+The owner authorised **3.5/build 162 Guided routes** on 8 October: one dialler, configurable country/area expansion, account routing and consolidated history. Implementation, 664 complete-suite cases, the separate 170-case routing harness, local build/sign/package/install and private GitHub Latest publication are complete. Immutable source/tag: `cbfd3a0bbbca094f2f17e18b82e2904beb7e051a`; build 162 installed at `/Applications/jps Telephone.app`. All seven uploads match local sizes/digests. Read [3.5 publication proof](releases/3.5-verification.md) and its JSON record. Read [DIAL_PLANS.md](DIAL_PLANS.md) and [3.5 notes](releases/3.5.md) before continuing. The previous 3.0 publication proof below is historical and remains immutable; future work must preserve v3.5 as well as v3.0/v2.1.8 tags/assets.
 
 The owner's 7 October privacy/repair gate is complete. All 50 baseline findings
 #2–51 are recorded **fixed_verified**, documented and closed on GitHub; current
 verification found **zero open issues** and the repository is **private**. The
-owner's **3.0/build 161** is built, ad-hoc signed, packaged and installed locally
+owner's historical **3.0/build 161** was built, ad-hoc signed, packaged and installed locally
 at `/Applications/jps Telephone.app`, and published as
-[GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0).
+[then GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0).
 The [publication/package record](releases/3.0-verification.md) and
 [JSON proof](releases/3.0-verification.json) bind the exact release revision,
 installed payloads and seven uploaded assets. This closes the finite baseline;
 it does not establish that every possible future bug is eliminated.
 
-## Current state and preserved baseline
+## Historical 3.0 state and preserved repair baseline
 
 - Source repair commit: [`01ae573`](https://github.com/jpskidmore/telephone-jps/commit/01ae5734bfd933c9048f00ef4c3ebe035fabeb0b),
   published on main. Documentation issue #39 was fixed earlier at
@@ -32,7 +32,7 @@ it does not establish that every possible future bug is eliminated.
   checksums and verification files remain
   [unchanged](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8).
   Do not move that tag or replace its assets with 3.0 content.
-- Published Latest: [v3.0](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0),
+- Historical published Latest: [v3.0](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0),
   release ID `406277128`, published 8 October 2026 at 00:33 UTC. All seven asset
   sizes/SHA-256 digests match the verified local files. The installed app matches
   all 59 extracted app payloads; the source ZIP matches all 1,400 release-commit
@@ -53,7 +53,7 @@ it does not establish that every possible future bug is eliminated.
    outstanding repairs to repeat.
 2. Confirm private GitHub visibility, current main/working-tree state, live issue
    states, installed app and published/downloadable release against the recorded
-   3.0 proof. Preserve unrelated user changes. The publication/install steps are
+   3.5 proof. Preserve unrelated user changes. The publication/install steps are
    complete; verify current state before later work rather than rebuilding or
    replacing immutable release assets to repeat those steps.
 3. Work on main locally, with `[skip ci]` pushed commits and no workflow dispatch.
@@ -67,7 +67,7 @@ it does not establish that every possible future bug is eliminated.
 5. For a later authorised release, rerun affected and required complete checks,
    build/sign/package locally, install and inspect the exact packaged app, upload
    those same bytes plus source/docs/checksums, then verify publication and
-   uploaded asset hashes/sizes. Preserve v2.1.8 and v3.0 unchanged. Their historical
+   uploaded asset hashes/sizes. Preserve v3.5, v3.0 and v2.1.8 unchanged. Their historical
    passes do not certify changed code.
 
 ## Local tests and user-data safeguards

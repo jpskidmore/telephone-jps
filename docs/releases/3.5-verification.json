@@ -1,0 +1,162 @@
+{
+  "verifiedUTC": "2026-10-08T16:09:59.787597+00:00",
+  "release": {
+    "id": 407022952,
+    "tag_name": "v3.5",
+    "name": "jps Telephone 3.5 (162) \u2014 Guided routes",
+    "html_url": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-10-08T16:07:29Z",
+    "target_commitish": "main"
+  },
+  "latestReleaseID": 407022952,
+  "sourceCommit": "cbfd3a0bbbca094f2f17e18b82e2904beb7e051a",
+  "sourceTree": "75756260b1f8815bacbdbfc6f69cb377e28d3d6c",
+  "repositoryPrivate": true,
+  "defaultBranch": "main",
+  "sourceWorkflowRuns": 0,
+  "assets": [
+    {
+      "id": 622314255,
+      "name": "BUILD-VERIFICATION.md",
+      "size": 3798,
+      "digest": "sha256:20470ae73bc3465f25cb8f99417d11c253461e55323ff42b1075fe9af927ad53",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.5/BUILD-VERIFICATION.md"
+    },
+    {
+      "id": 622314298,
+      "name": "DIAL-PLAN-NUMBERING.md",
+      "size": 7616,
+      "digest": "sha256:39f167717c00ba1e10e5f3e1536379ecbdc771a8d15d03311160084a6dd4f11d",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.5/DIAL-PLAN-NUMBERING.md"
+    },
+    {
+      "id": 622314270,
+      "name": "DIAL-PLANS.md",
+      "size": 6862,
+      "digest": "sha256:d1e6f605a6560420526ca7fcd0dc34ed4d59453166f646f958ac7177259f0259",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.5/DIAL-PLANS.md"
+    },
+    {
+      "id": 622313988,
+      "name": "jps-Telephone-3.5-macOS-arm64.zip",
+      "size": 3391211,
+      "digest": "sha256:1a4f4fa5e5bb9fa0cded6ff1b1a871f19ccc3396b05277bdc90edb9c207ef91b",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.5/jps-Telephone-3.5-macOS-arm64.zip"
+    },
+    {
+      "id": 622314044,
+      "name": "jps-Telephone-3.5-source.zip",
+      "size": 39947376,
+      "digest": "sha256:c6fdab39e22e12a237d331b051447de79a18058394f07100b088d4086b0b9736",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.5/jps-Telephone-3.5-source.zip"
+    },
+    {
+      "id": 622314247,
+      "name": "RELEASE-NOTES.md",
+      "size": 2133,
+      "digest": "sha256:a5c78b1ad6cc486b92ba228d510b642ce83e84567b210029cf80bef231cbac2d",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.5/RELEASE-NOTES.md"
+    },
+    {
+      "id": 622314312,
+      "name": "SHA256SUMS.txt",
+      "size": 535,
+      "digest": "sha256:05b89ce912dfe82ebccd4503be974dde53975f45234f314dea8248265a2ec924",
+      "state": "uploaded",
+      "browser_download_url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.5/SHA256SUMS.txt"
+    }
+  ],
+  "package": {
+    "verifiedUTC": "2026-10-08T16:04:24.381196+00:00",
+    "version": "3.5",
+    "build": "162",
+    "sourceCommit": "cbfd3a0bbbca094f2f17e18b82e2904beb7e051a",
+    "sourceTree": "75756260b1f8815bacbdbfc6f69cb377e28d3d6c",
+    "installedApp": "/Applications/jps Telephone.app",
+    "previousAppBackup": "/private/tmp/jps-telephone-3.0-backup-20261008/jps Telephone.app",
+    "normalMainNib": "MainMenu",
+    "upstreamVersionPreserved": "1.6",
+    "appRegularFilePayloads": 57,
+    "appSymlinks": 6,
+    "sourceFilePayloads": 1417,
+    "mainExecutableSHA256": "356e0dbdbf4a3da508f3641832e67d34f374ed01d6ddb33ad391c409f1c37efa",
+    "assets": [
+      {
+        "name": "jps-Telephone-3.5-macOS-arm64.zip",
+        "bytes": 3391211,
+        "sha256": "1a4f4fa5e5bb9fa0cded6ff1b1a871f19ccc3396b05277bdc90edb9c207ef91b"
+      },
+      {
+        "name": "jps-Telephone-3.5-source.zip",
+        "bytes": 39947376,
+        "sha256": "c6fdab39e22e12a237d331b051447de79a18058394f07100b088d4086b0b9736"
+      }
+    ],
+    "checks": {
+      "cleanExactSource": true,
+      "sourceAllGitBlobs": true,
+      "appZipAllFilesAndSymlinks": true,
+      "installedAllFilesAndSymlinks": true,
+      "signaturesBuiltExtractedInstalled": true,
+      "productionMetadataRetained": true
+    },
+    "limits": "Ad-hoc signed and unnotarised; no live SIP, physical audio, emergency call or proficient VoiceOver acceptance claimed."
+  },
+  "tests": {
+    "verifiedUTC": "2026-10-08T16:00:02.029235+00:00",
+    "suiteCases": 664,
+    "failures": 0,
+    "suites": {
+      "Domain": {
+        "XCTest": 28
+      },
+      "UseCases": {
+        "XCTest": 201,
+        "SwiftTesting": 131
+      },
+      "ReceiptValidation": {
+        "XCTest": 5
+      },
+      "Telephone": {
+        "XCTest": 251,
+        "SwiftTesting": 48
+      }
+    },
+    "dialPlanCases": 170,
+    "dialPlanCountSeparate": true,
+    "host": "unique-identity nib-free Debug host in /private/tmp",
+    "manualLimits": [
+      "live SIP/provider interoperability",
+      "physical audio/hotplug and capture",
+      "sandbox grants",
+      "proficient VoiceOver"
+    ]
+  },
+  "retained": {
+    "v3.0": {
+      "releaseID": 406277128,
+      "tagCommit": "6363412d56e2bc142a54058321b7873a69068c62",
+      "assetsUnchanged": true
+    },
+    "v2.1.8": {
+      "releaseID": 405986007,
+      "tagCommit": "9a32ae825e4d3bb380cb52b8452ddf7526764a25",
+      "assetsUnchanged": true
+    }
+  },
+  "normalProfileLaunchedByRegressions": false,
+  "manualLimits": [
+    "live SIP/provider interoperability",
+    "physical audio/hotplug and capture",
+    "sandbox grants",
+    "proficient VoiceOver"
+  ]
+}

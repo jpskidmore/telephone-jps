@@ -1,4 +1,4 @@
-Version **3.5/build 162** adds one compact dialler, configurable Guided routes and combined call history. Its local release preparation is in progress. Read [the dial-plan guide](docs/DIAL_PLANS.md) and [3.5 release notes](docs/releases/3.5.md).
+Version **3.5/build 162** adds one compact dialler, configurable Guided routes and combined call history. It was built, tested, installed and published locally. Read [the dial-plan guide](docs/DIAL_PLANS.md) and [3.5 release notes](docs/releases/3.5.md).
 
 <p align="center">
 
@@ -12,7 +12,7 @@ Version **3.5/build 162** adds one compact dialler, configurable Guided routes a
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0">Latest release: 3.0 (161)</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5">Latest release: 3.5 (162)</a>
   <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained baseline: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
@@ -20,12 +20,31 @@ Version **3.5/build 162** adds one compact dialler, configurable Guided routes a
 </p>
 
 > [!IMPORTANT]
-> **3.0 is published and installed locally.** All 50 baseline audit findings are fixed, verified, documented and closed; 617 complete-suite cases passed locally with zero failures. Release/build 3.0 (161) was built, signed and packaged locally from [`6363412`](https://github.com/jpskidmore/telephone-jps/commit/6363412d56e2bc142a54058321b7873a69068c62), installed at `/Applications/jps Telephone.app` and published as GitHub Latest. All seven uploaded assets match their verified local sizes and SHA-256 digests. Read [the release verification record](docs/releases/3.0-verification.md).
+> **3.5 is published and installed locally.** One compact dialler, Guided routes and combined history are ready. All four current local suites passed **664 test cases**, plus the separate **170-case dial-plan harness**, with zero failures. Built from [`cbfd3a0`](https://github.com/jpskidmore/telephone-jps/commit/cbfd3a0bbbca094f2f17e18b82e2904beb7e051a), installed at `/Applications/jps Telephone.app`, and published as [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5). All seven uploaded assets match their local sizes and SHA-256 digests. Read [3.5 verification](docs/releases/3.5-verification.md).
 >
 > Read [the verified repair map](docs/REPAIR_VERIFICATION.md), [tracked evidence](docs/audit-2.1.8/repair-progress.json), [3.0 notes](docs/releases/3.0.md) and [maintenance handover](docs/BUG_FIX_HANDOVER.md). The repository stays private, work stays on main, and all builds remain local with `[skip ci]` commits and no cloud dispatch.
 >
 > [Audio recovery](docs/AUDIO_RECOVERY.md) keeps repeated failures gated and moves native work off the interface thread. One native driver operation can still stall its worker; real SIP/audio and VoiceOver remain manual acceptance limits. [Recording recovery](docs/RECORDING_RECOVERY.md) retains captured audio after export failure.
 > Call recording is disabled by default. Only enable it when recording is lawful and everyone whose consent is required has consented.
+
+## 3.5 release and Guided routes
+
+Open **Settings → Dial plan** to set country/area defaults and assign outgoing
+connections or blocks by number category. Add precise prefix exceptions and use
+Test to preview the winning route without calling. Incoming, outgoing and missed
+calls are consolidated across accounts; callbacks resolve today's plan and the
+origin badge derives from the configured account name. Emergency routing stays
+unset until a suitable provider is explicitly selected.
+
+The [3.5 download page](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5)
+contains verified app/source ZIPs, guides, release notes, BUILD-VERIFICATION and
+checksums. All 57 app file payloads and six symlinks match the signed/extracted/
+installed copies; all 1,417 source ZIP payloads match the tagged commit. Read
+[publication proof](docs/releases/3.5-verification.md), its
+[JSON record](docs/releases/3.5-verification.json) and
+[the user/maintenance guide](docs/DIAL_PLANS.md). The package is ad-hoc signed and
+unnotarised; provider/physical-device and proficient VoiceOver acceptance remain
+manual boundaries. Repository access and downloads require authorised GitHub access.
 
 ## Historical 3.0 release and private access
 
@@ -35,7 +54,7 @@ findings #2–51 have recorded verified repairs; the full four-suite local run p
 manual limits are recorded separately in [VALIDATION.md](docs/VALIDATION.md).
 The [3.0 download page](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0)
 contains the verified app/source ZIPs, release notes, repair records,
-BUILD-VERIFICATION and checksums. The installed app matches all 59 extracted app
+BUILD-VERIFICATION and checksums. The historical 3.0 installed app matched all 59 extracted app
 file payloads; all 1,400 source ZIP file payloads match the release commit.
 See [publication and package proof](docs/releases/3.0-verification.md) and its
 [JSON record](docs/releases/3.0-verification.json).
@@ -48,7 +67,7 @@ Settings with Titled sections and one Accounts-sized window, Dial bar with one
 recent call, Pocket call cards, native close controls, UK English, Light/Dark,
 green Online and red Offline.
 
-Both release tags and their uploaded assets are immutable. The v3.0 source ZIP
+All retained release tags and their uploaded assets are immutable. The v3.0 source ZIP
 retains the preparation-time documentation snapshot at `6363412`; current main
 documentation records completed publication without replacing that archive.
 
@@ -139,7 +158,7 @@ Run the ordinary (unsanitized) focused recording tests and dependency checks:
 For the recording harness, four native test bundles and an unsigned Release
 build, the combined entrypoint is `./Scripts/run-macos-validation.sh`. Keep its
 hosted test environment isolated; normal app startup can load real user data.
-The current four-suite run passed locally using a synthetic nib-free Debug host.
+The current 3.5 four-suite run passed 664 cases locally using a synthetic nib-free Debug host.
 See [VALIDATION.md](docs/VALIDATION.md) for exact reproduction, observed checks and
 completed package/publication checks and remaining manual acceptance.
 
