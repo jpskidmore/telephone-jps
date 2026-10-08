@@ -2,11 +2,63 @@
 #import "SharedDialerController.h"
 #import "AccountControllers.h"
 #import "AKSIPURI.h"
+#import <objc/runtime.h>
 
 @interface SharedDialerController (NativeRegression)
 - (void)toggleHistory:(id)sender;
 - (void)rebuildAvailability;
+- (NSMenu *)moreActionsMenu;
+- (void)showGuidedRoutes:(id)sender;
 @end
+
+@interface JPSSharedGuidedRoutesPreferences : NSObject
+@property(nonatomic) NSUInteger shows;
+@property(nonatomic) NSUInteger dialPlanShows;
+- (void)showWindowCentered;
+- (void)showDialPlan;
+@end
+@implementation JPSSharedGuidedRoutesPreferences
+- (void)showWindowCentered { self.shows++; }
+- (void)showDialPlan { self.dialPlanShows++; }
+@end
+
+@interface JPSSharedGuidedRoutesDelegate : NSObject <NSApplicationDelegate>
+@property(nonatomic) NSUInteger deliveries;
+@property(nonatomic) id lastSender;
+@property(nonatomic) JPSSharedGuidedRoutesPreferences *preferences;
+- (void)showGuidedRoutes:(id)sender;
+@end
+@implementation JPSSharedGuidedRoutesDelegate
+- (void)showGuidedRoutes:(id)sender {
+    self.deliveries++;
+    self.lastSender = sender;
+    [self.preferences showWindowCentered];
+    [self.preferences showDialPlan];
+}
+@end
+
+@interface JPSSharedGuidedRoutesDispatchBoundary : SharedDialerController
+@property(nonatomic) NSUInteger actionEntries;
+@property(nonatomic) BOOL interceptedLoop;
+@end
+@implementation JPSSharedGuidedRoutesDispatchBoundary
+- (void)showGuidedRoutes:(id)sender {
+    self.actionEntries++;
+    if (self.actionEntries > 1) { self.interceptedLoop = YES; return; }
+    [super showGuidedRoutes:sender];
+}
+@end
+
+// Observe the target boundary while preserving AppKit's actual lookup and
+// dispatch. The host need not acquire desktop focus to detect a nil-target
+// regression; the bounded controller also prevents a stack overflow if it does.
+static IMP JPSOriginalApplicationSendAction;
+static NSMutableArray *JPSGuidedRouteDispatchTargets;
+static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL action, id target, id sender) {
+    if (action == @selector(showGuidedRoutes:))
+        [JPSGuidedRouteDispatchTargets addObject:target ?: NSNull.null];
+    return ((BOOL (*)(id, SEL, SEL, id, id))JPSOriginalApplicationSendAction)(application,command,action,target,sender);
+}
 
 // Only menu/display data is supplied; no native SIP account, defaults or
 // production AccountController initializer is used by the status fixture.
@@ -134,5 +186,53 @@
     XCTAssertEqualObjects(availability.toolTip,@"Offline");
     XCTAssertEqualObjects(availability.accessibilityValue,@"Offline");
     [controller.window orderOut:nil];
+}
+- (void)testGuidedRoutesMenuExplicitlyTargetsApplicationDelegateOnce {
+    [NSApplication sharedApplication];
+    JPSSharedGuidedRoutesDispatchBoundary *controller = [[JPSSharedGuidedRoutesDispatchBoundary alloc] initWithAccounts:[AccountControllers new] historyFactory:nil];
+    JPSSharedGuidedRoutesDelegate *delegate = [JPSSharedGuidedRoutesDelegate new];
+    delegate.preferences = [JPSSharedGuidedRoutesPreferences new];
+    id previousDelegate = NSApp.delegate;
+    Method dispatch = class_getInstanceMethod(NSApplication.class,@selector(sendAction:to:from:));
+    JPSOriginalApplicationSendAction = method_getImplementation(dispatch);
+    JPSGuidedRouteDispatchTargets = [NSMutableArray new];
+    method_setImplementation(dispatch,(IMP)JPSObserveApplicationSendAction);
+    @try {
+        NSApp.delegate = delegate;
+        NSMenu *menu = [controller moreActionsMenu];
+        NSMenuItem *guidedRoutes = nil;
+        for (NSMenuItem *item in menu.itemArray) {
+            if (item.action == @selector(showGuidedRoutes:)) { guidedRoutes = item; break; }
+        }
+        XCTAssertNotNil(guidedRoutes);
+        XCTAssertEqualObjects(guidedRoutes.title,@"Guided routes…");
+        XCTAssertEqual(guidedRoutes.target,controller);
+        XCTAssertTrue([NSApp sendAction:guidedRoutes.action to:guidedRoutes.target from:guidedRoutes]);
+        XCTAssertEqualObjects(JPSGuidedRouteDispatchTargets,(@[controller,delegate]));
+        XCTAssertFalse(controller.interceptedLoop);
+        XCTAssertEqual(controller.actionEntries,1u);
+        XCTAssertEqual(delegate.deliveries,1u);
+        XCTAssertEqual(delegate.lastSender,guidedRoutes);
+        XCTAssertEqual(delegate.preferences.shows,1u);
+        XCTAssertEqual(delegate.preferences.dialPlanShows,1u);
+
+        // Missing ownership must not cause nil-target redispatch.
+        NSApp.delegate = nil;
+        [JPSGuidedRouteDispatchTargets removeAllObjects];
+        controller.actionEntries = 0;
+        controller.interceptedLoop = NO;
+        XCTAssertTrue([NSApp sendAction:guidedRoutes.action to:guidedRoutes.target from:guidedRoutes]);
+        XCTAssertEqualObjects(JPSGuidedRouteDispatchTargets,(@[controller]));
+        XCTAssertFalse(controller.interceptedLoop);
+        XCTAssertEqual(controller.actionEntries,1u);
+        XCTAssertEqual(delegate.deliveries,1u);
+        XCTAssertEqual(delegate.preferences.shows,1u);
+        XCTAssertEqual(delegate.preferences.dialPlanShows,1u);
+    } @finally {
+        method_setImplementation(dispatch,JPSOriginalApplicationSendAction);
+        JPSGuidedRouteDispatchTargets = nil;
+        NSApp.delegate = previousDelegate;
+        [controller.window orderOut:nil];
+    }
 }
 @end

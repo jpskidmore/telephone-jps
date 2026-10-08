@@ -1,5 +1,9 @@
 # Changelog
 
+## jps Telephone 3.5.1 (build 163) — Guided routes crash repair
+
+Fix a responder-chain loop when selecting More → Guided routes… by forwarding to the explicit application delegate. Add a native generated-menu regression proving explicit delegate targeting, one delivery and no nil-owner fallback. Routing, calls, stored data and compact geometry are unchanged. Fresh local validation passed 665 cases; packaging/install/publication are in progress; see [3.5.1 notes](docs/releases/3.5.1.md). Preserve all prior release tags/assets.
+
 ## jps Telephone 3.5 (build 162) — Guided routes
 
 One compact dialler now uses configurable country/area expansion and guided outgoing routes, with precise longest-prefix exceptions and Block rules. All accounts share one incoming/outgoing/missed-call history; callbacks use the current plan and account badges derive automatically from account names. Native compact Settings gains a Dial plan pane with route testing.

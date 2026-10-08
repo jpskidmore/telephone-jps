@@ -1,3 +1,5 @@
+Version **3.5.1/build 163** is being prepared locally to fix the crash in **More → Guided routes…**. See [hotfix notes](docs/releases/3.5.1.md). Published 3.5 remains available until the correction is packaged and verified.
+
 Version **3.5/build 162** adds one compact dialler, configurable Guided routes and combined call history. It was built, tested, installed and published locally. Read [the dial-plan guide](docs/DIAL_PLANS.md) and [3.5 release notes](docs/releases/3.5.md).
 
 <p align="center">

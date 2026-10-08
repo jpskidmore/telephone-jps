@@ -177,7 +177,7 @@
     self.expanded = !self.expanded; [self.history setHistoryExpanded:self.expanded];
     [self.dialler updateHistoryExpanded:self.expanded]; [self resizeForHistory:self.expanded];
 }
-- (void)showActions:(NSView *)sender {
+- (NSMenu *)moreActionsMenu {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@""];
     for (NSMenuItem *item in self.history.actionsMenu.itemArray) if (item.action == NSSelectorFromString(@"deleteAll:")) [menu addItem:[item copy]];
     for (AccountController *account in self.accounts.all) if (account.hasPendingRoutedCalls) {
@@ -187,10 +187,20 @@
     [menu addItem:NSMenuItem.separatorItem];
     NSMenuItem *settings = [[NSMenuItem alloc] initWithTitle:@"Guided routes…" action:@selector(showGuidedRoutes:) keyEquivalent:@""];
     settings.target = self; [menu addItem:settings];
+    return menu;
+}
+- (void)showActions:(NSView *)sender {
+    NSMenu *menu = [self moreActionsMenu];
     [menu popUpMenuPositioningItem:nil atLocation:NSMakePoint(0,NSMaxY(sender.bounds)) inView:sender];
 }
 - (void)cancelPendingCalls:(id)sender { for (AccountController *account in self.accounts.all) [account cancelPendingRoutedCalls]; }
-- (void)showGuidedRoutes:(id)sender { [NSApp sendAction:NSSelectorFromString(@"showGuidedRoutes:") to:nil from:self]; }
+- (void)showGuidedRoutes:(id)sender {
+    // This window handles the same action. A nil target would find it again in
+    // the responder chain instead of reaching the application-owned Settings.
+    id delegate = NSApp.delegate;
+    SEL action = NSSelectorFromString(@"showGuidedRoutes:");
+    if ([delegate respondsToSelector:action]) [NSApp sendAction:action to:delegate from:sender];
+}
 - (void)presentFailure:(NSString *)message {
     [self showWindow:self];
     NSAlert *alert = [[NSAlert alloc] init]; alert.messageText = @"Call could not be placed"; alert.informativeText = message;

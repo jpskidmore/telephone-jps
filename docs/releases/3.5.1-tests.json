@@ -1,0 +1,76 @@
+{
+  "verifiedUTC": "2026-10-08T20:14:02.112909+00:00",
+  "version": "3.5.1",
+  "build": "163",
+  "suiteCases": 665,
+  "failures": 0,
+  "suites": {
+    "Domain": {
+      "XCTest": 28
+    },
+    "UseCases": {
+      "XCTest": 201,
+      "SwiftTesting": 131
+    },
+    "ReceiptValidation": {
+      "XCTest": 5
+    },
+    "Telephone": {
+      "XCTest": 252,
+      "SwiftTesting": 48
+    }
+  },
+  "host": "unique-identity nib-free isolated Debug host in /private/tmp",
+  "regression": "testGuidedRoutesMenuExplicitlyTargetsApplicationDelegateOnce",
+  "regressionBoundary": "Generated More menu; real native dispatch preserved under scoped target observer; exactly one explicit delegate delivery; correct sender; no nil-owner fallback. No focused-window collision reproduction claim.",
+  "sourceSHA256": {
+    "TelephoneTests/SharedDialerControllerTests.m": "5c18d337cb8c7e7e7e049289db310f9f83a780a522aa63ba2ede48eba9902af0",
+    "Telephone/SharedDialerController.m": "1b124ce4971ad7108102e6fc4370497d6211c105c6f0317155574f9f80e824bc"
+  },
+  "unchangedPriorInputs": 1088,
+  "priorCoreCases": {
+    "version": "3.5",
+    "cases": 170,
+    "rerunForHotfix": false,
+    "unchangedInputHashesVerified": true
+  },
+  "freshCheapGates": {
+    "dependencies": {
+      "command": [
+        "python3",
+        "Scripts/verify-dependency-manifests.py"
+      ],
+      "exitCode": 0,
+      "startedAtUTC": "2026-10-08T18:22:25.046972+00:00",
+      "finishedAtUTC": "2026-10-08T18:22:25.133900+00:00",
+      "sourceSHA256": {
+        "Scripts/verify-dependency-manifests.py": "9d9047971cdafa8e388373e94e6d18df2bb2b22b62ee2e8dc32718c6cf027151",
+        "ThirdParty Sources/SHA256SUMS.txt": "6af521e825e073a8c9d4dea2ffd1cf9fda0f04792c07ba388a0baab5382a8e43",
+        "Scripts/vendor-archives.sha256": "3015eb9b9afb4257e6216e7b2f0b19e153f176a9dbc2e0002907b70828273a63",
+        "Telephone.xcodeproj/project.pbxproj": "5fefca7f7eb20672de14cac08ed32ef73a40deb2ed4dd1f5bd42b4f620f3c077"
+      }
+    },
+    "repair-gate": {
+      "command": [
+        "python3",
+        "Scripts/verify-repair-gate.py"
+      ],
+      "exitCode": 0,
+      "startedAtUTC": "2026-10-08T18:22:25.134645+00:00",
+      "finishedAtUTC": "2026-10-08T18:22:25.175451+00:00",
+      "sourceSHA256": {
+        "Scripts/verify-repair-gate.py": "399728c92d7ce81a8193593aa249ecdf5dce0715c7e1403316e868e981b89dec",
+        "docs/audit-2.1.8/repair-progress.json": "3eb8d2ea491b7b33dc7e9726f71e7c8b6b6e5cf8941de2263c992b37e62ed401"
+      }
+    }
+  },
+  "logSHA256": {
+    "telephone-tests-final.log": "833690bdcd86cb18b3e3453764e839ac6266da8b9ea2c3b469994bd0130e3b05",
+    "guided-routes-dispatch-boundary.log": "c4d2375f56cb370e713ca8589a7c5660ac8c936f01f6182a78702cf0cdc7002a",
+    "Domain.log": "48f60497b5c66c2976d148cea711b44acd594c8a9c7831c9dee1ef3126544b01",
+    "UseCasesTests.log": "81c726607638b3f2e6610f053d13527905ee7d8de809b3e63e4071f569884ac3",
+    "ReceiptValidationTests.log": "3359a62ca0f67821e2e18de1a8dc6d3d446cf646c75271f597a4a41ac82ee338"
+  },
+  "diagnostics": "Earlier focus/responder fixture failures retained in local outputs; not passing evidence. User crash reports confirm stack-overflow dispatch failure.",
+  "limits": "Controlled synthetic tests, no real profile; live SIP/audio, sandbox grants and proficient VoiceOver remain manual acceptance."
+}

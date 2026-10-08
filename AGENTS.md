@@ -1,5 +1,7 @@
 # jps Telephone maintenance instructions
 
+The owner reported a 3.5 crash in More → Guided routes… on 8 October. The 3.5.1/build 163 hotfix is in local verification: explicit app-delegate action forwarding plus a native generated-menu dispatch regression. Preserve all previous release tags/assets and all routing/data/layout behaviour. Read [3.5.1 notes](docs/releases/3.5.1.md).
+
 Read [the maintenance handover](docs/BUG_FIX_HANDOVER.md),
 [verified repair map](docs/REPAIR_VERIFICATION.md) and
 [tracked issue evidence](docs/audit-2.1.8/repair-progress.json) before implementation.

@@ -1,5 +1,28 @@
 # Validation and release checks
 
+## 3.5.1 Guided routes crash repair — 8 October 2026
+
+Fresh serial local validation passed **665 test cases, zero failures**: Domain
+28 XCTest; UseCases 201 XCTest + 131 Swift Testing; ReceiptValidation 5 XCTest;
+isolated Telephone 252 XCTest + 48 Swift Testing. The generated More-menu
+regression preserves real AppKit dispatch while observing the actual target,
+requiring explicit delegate delivery once, the original sender and no fallback
+when the delegate is absent. Inactive-host window-focus fixtures failed and
+remain diagnostics; no runtime collision reproduction is claimed for them.
+The owner's 3.5 crash reports supply the observed stack-overflow evidence.
+
+The uniquely identified nib-free Debug host avoids production startup/profile
+access. Tests/build products remain under `/private/tmp`. Current source hashes,
+case counts and final log digests are in [test proof](releases/3.5.1-tests.json).
+All 1,088 other source/test/script inputs match the previously tested 3.5
+snapshot. Its separate 170 routing cases and component checks remain historical
+unchanged-source evidence and were not rerun. Fresh dependency inventory and
+the 50-entry baseline repair gate passed. No routing/data/layout change is made.
+
+Release packaging, installation and private publication are still in progress.
+Ad-hoc signing and controlled tests do not establish live SIP/audio, emergency
+calling, sandbox grants or proficient VoiceOver acceptance.
+
 ## 3.5 Guided routes local validation — 8 October 2026
 
 The complete current four-bundle run passed **664 test cases, zero failures**:

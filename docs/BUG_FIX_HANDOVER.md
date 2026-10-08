@@ -1,4 +1,7 @@
-# Maintenance handover — 3.5 Guided routes
+# Maintenance handover — 3.5.1 Guided routes crash repair
+
+3.5.1/build 163 is being prepared locally for the owner-reported More → Guided routes… crash. The root cause is same-selector nil-target redispatch selecting the originating shared controller. Read [hotfix notes](releases/3.5.1.md). Prior 3.5 publication/testing proof is historical and remains intact; the earlier suite did not cover this action-dispatch path.
+
 
 The owner authorised **3.5/build 162 Guided routes** on 8 October: one dialler, configurable country/area expansion, account routing and consolidated history. Implementation, 664 complete-suite cases, the separate 170-case routing harness, local build/sign/package/install and private GitHub Latest publication are complete. Immutable source/tag: `cbfd3a0bbbca094f2f17e18b82e2904beb7e051a`; build 162 installed at `/Applications/jps Telephone.app`. All seven uploads match local sizes/digests. Read [3.5 publication proof](releases/3.5-verification.md) and its JSON record. Read [DIAL_PLANS.md](DIAL_PLANS.md) and [3.5 notes](releases/3.5.md) before continuing. The previous 3.0 publication proof below is historical and remains immutable; future work must preserve v3.5 as well as v3.0/v2.1.8 tags/assets.
 
