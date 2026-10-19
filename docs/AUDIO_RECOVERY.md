@@ -1,9 +1,13 @@
 # Audio failure containment and recovery
 
-The 3.0 repair passed all controlled local suites: 617 automated cases, zero
-failures. Release packaging, installation and publication remain pending; consult [the repair progress](audit-2.1.8/repair-progress.json)
-and [validation requirements](VALIDATION.md). The accepted compact windows and
-calling functions remain in place. All current build and test work runs locally.
+The audio repairs were published in **3.0/build 161**, whose controlled local
+suites passed 617 automated cases with zero failures. The current published
+release is **3.5.1/build 163**; local packaging, installation and private
+publication are complete. Start with [current maintenance and release status](MAINTENANCE.md)
+and [3.5.1 verification](releases/3.5.1-verification.md). The recorded checks below
+retain their original scopes; this documentation update adds no test result.
+The accepted compact windows and calling functions remain in place. All later
+authorised build and test work runs locally under [VALIDATION.md](VALIDATION.md).
 
 ## What changes
 
@@ -114,13 +118,14 @@ reproduces calls or changes device settings for this investigation.
 
 ## Validation
 
-Current local component checks include 309 assertions against the production
+Recorded 3.0 component evidence includes 309 assertions against the production
 audio gate with fake backend operations, 18 assertions from the exact patched
 CoreAudio UID source with synthetic factory/device records, the real synthetic
 recording encoder/recovery harness, and ordered mapping/worker regression tests.
-Keep assertion counts separate from XCTest/Swift Testing test counts. The full isolated
-hosted suite also passed; [VALIDATION.md](VALIDATION.md) records the current
-boundary and release gate. No physical device or provider outcome is implied.
+Keep assertion counts separate from XCTest/Swift Testing test counts. The full
+isolated 3.0 hosted suite also passed; [the repair map](REPAIR_VERIFICATION.md)
+records that evidence, while [VALIDATION.md](VALIDATION.md) defines requirements
+for later changes. No physical device or provider outcome is implied.
 
 The following CI result is historical evidence of the earlier synchronous gate:
 Native CI passed on 2 October 2026: [run 37037958671](https://github.com/jpskidmore/telephone-jps/actions/runs/37037958671)
@@ -164,9 +169,10 @@ Objective-C/PJSIP. The historical combined runner below also compiles Release:
 ./Scripts/run-isolated-audio-validation.sh
 ```
 
-Do not run that combined runner while the 50-issue repair gate is closed. Use the
-individual component runners and isolated Debug host described in
-[VALIDATION.md](VALIDATION.md). The normal `TelephoneTests` host can load real
+The 50-issue repair gate completed in 3.0. For later authorised work, select the
+required component runners and isolated Debug host through
+[VALIDATION.md](VALIDATION.md); the historical combined runner is not the full
+current release gate. The normal `TelephoneTests` host can load real
 preferences and start the app; test-host isolation must remove its main nib,
 use a synthetic bundle/defaults identity and preserve production metadata. A
 development build does not establish installation or real-device acceptance.

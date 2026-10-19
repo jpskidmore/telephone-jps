@@ -1,5 +1,15 @@
 # Unreleased — 50-item repair gate after 2.1.8
 
+> **Historical note — superseded.** This page preserves the pre-3.0 repair-gate
+> instructions and earlier cleanup notes below; their “next task”, pending and
+> 2.0.3 statements describe their original preparation state. All 50 baseline
+> issues were repaired and verified in the published 3.0/build 161 release.
+> The current published release is **3.5.1/build 163**, with local packaging,
+> installation and private publication complete. Start with [current maintenance
+> and release status](../MAINTENANCE.md) and [3.5.1 verification](3.5.1-verification.md).
+> This historical page does not authorise builds, publication or a new repair gate;
+> retained release tags and uploaded assets remain immutable.
+
 The retained binary is **2.1.8/build 160**, tag v2.1.8 at `9a32ae8`.
 This handover changes documentation only; it makes no application fix, new build,
 version bump or replacement release. Repository access is now private.

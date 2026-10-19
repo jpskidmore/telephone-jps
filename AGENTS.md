@@ -1,5 +1,14 @@
 # jps Telephone maintenance instructions
 
+Start with [the current maintenance entry point](docs/MAINTENANCE.md). The owner
+authorised the ranked roadmap on 19 October 2026, **one issue at a time in order**.
+Read actual five-hour usage before/between issues and during long work; below
+10% remaining, stop at a recoverable point and schedule this chat five minutes
+after the reported reset. Keep the weekly allowance separate. See the entry
+point for current baseline, execution controls and evidence boundaries.
+
+## Released application baseline — 8 October 2026
+
 The owner's 3.5 crash in More → Guided routes… is fixed in **3.5.1/build 163**. Fresh local verification passed 665 cases; the app is built, installed and published as private Latest from immutable source `e111e5daee9e57f26c66c9a42d40b6f1f4f25edc`. The owner reported “tested - looks good”. Read [hotfix notes](docs/releases/3.5.1.md), [fresh tests](docs/releases/3.5.1-tests.json) and [publication proof](docs/releases/3.5.1-verification.md). Preserve all previous release tags/assets and all routing/data/layout behaviour. The 170 routing cases and unrelated component checks remain historical 3.5 unchanged-input evidence; no fresh rerun is claimed.
 
 Read [the maintenance handover](docs/BUG_FIX_HANDOVER.md),

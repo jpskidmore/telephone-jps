@@ -1,5 +1,9 @@
 # Maintenance handover — 3.5.1 Guided routes crash repair
 
+Start with [Current maintenance](MAINTENANCE.md) for the live roadmap, current
+baseline and owner's execution controls. The detailed release/repair records
+below retain their original dates and verification limits.
+
 The owner authorised the ranked roadmap on **19 October 2026**, one issue at a
 time. **Issue #53 is verified:** private repository visibility is restored;
 authenticated access, all 11 releases/60 asset records and 11 remote tags are
@@ -13,8 +17,10 @@ This is a repository-settings/documentation change; the installed app remains
 The owner authorised **3.5/build 162 Guided routes** on 8 October: one dialler, configurable country/area expansion, account routing and consolidated history. Implementation, 664 complete-suite cases, the separate 170-case routing harness, local build/sign/package/install and private GitHub Latest publication are complete. Immutable source/tag: `cbfd3a0bbbca094f2f17e18b82e2904beb7e051a`; build 162 was then installed at `/Applications/jps Telephone.app`. All seven uploads match local sizes/digests. Read [3.5 publication proof](releases/3.5-verification.md) and its JSON record. Read [DIAL_PLANS.md](DIAL_PLANS.md) and [3.5 notes](releases/3.5.md) before continuing. The previous 3.0 publication proof below is historical and remains immutable; future work must preserve v3.5 as well as v3.0/v2.1.8 tags/assets.
 
 The owner's 7 October privacy/repair gate is complete. All 50 baseline findings
-#2–51 are recorded **fixed_verified**, documented and closed on GitHub; current
-verification found **zero open issues** and the repository is **private**. The
+#2–51 are recorded **fixed_verified**, documented and closed on GitHub; the
+8 October verification found **zero open issues** and a **private** repository.
+New roadmap issues are tracked separately; that historical count is not today's
+open-issue count. The
 owner's historical **3.0/build 161** was built, ad-hoc signed, packaged and installed locally
 at `/Applications/jps Telephone.app`, and published as
 [then GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.0).

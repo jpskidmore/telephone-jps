@@ -1,10 +1,13 @@
 # Recording and call-history recovery
 
-This documents the 3.0 repair, which passed controlled local component and hosted
-validation. Release packaging, installation and publication remain pending; [repair progress](audit-2.1.8/repair-progress.json) and
-[VALIDATION.md](VALIDATION.md) record the current status. Recovery adds compact
-native alerts and menu actions without expanding the accepted call or Settings
-layouts.
+This describes recovery behaviour introduced by the published **3.0/build 161**
+repair and retained in **3.5.1/build 163**. Current local packaging, installation
+and private publication are complete; start with [current maintenance and release
+status](MAINTENANCE.md) and [3.5.1 verification](releases/3.5.1-verification.md).
+The [repair map](REPAIR_VERIFICATION.md) preserves the controlled 3.0 evidence;
+[VALIDATION.md](VALIDATION.md) defines checks for later authorised changes. This
+documentation update adds no test result. Recovery uses compact native alerts
+and menu actions without expanding the accepted call or Settings layouts.
 
 ## Recovering a recording
 
@@ -57,8 +60,9 @@ treated as an empty file and replaced by the next call. Pending mutations wait
 for a successful reload, then merge over the existing history before saving.
 Only a genuinely missing file starts empty.
 
-**Clear Call History…** commits durable deletion before clearing the displayed
-records. Failed deletion retains the records and offers retry. Removed accounts
+**More → Clear Call History…** clears the combined history across configured
+accounts and commits durable deletion before clearing the displayed records.
+Failed deletion retains the records and offers retry. Removed accounts
 reject held or delayed additions and cannot lazily recreate their history. An
 already-failed account deletion remains retained for deletion-only retry after
 its cache owner disappears, then releases after success.
