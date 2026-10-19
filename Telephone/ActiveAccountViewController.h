@@ -46,6 +46,7 @@ extern NSString * const kPhoneLabel;
 @property(nonatomic, copy, nullable) void (^callDestinationHandler)(AKSIPURI *uri, NSString *phoneLabel);
 @property(nonatomic, copy, nullable) NSString * (^callRoutePreviewHandler)(AKSIPURI * _Nullable uri, NSString *text);
 - (void)refreshCallRoutePreview;
+- (void)setCallRouteStatus:(NSString *)status detail:(NSString *)detail;
 
 - (instancetype)initWithAccountController:(AccountController *)accountController NS_DESIGNATED_INITIALIZER;
 - (instancetype)initWithNibName:(NSNibName)name bundle:(NSBundle *)bundle NS_DESIGNATED_INITIALIZER;

@@ -28,6 +28,15 @@
 
 @implementation SharedDialerController
 - (instancetype)initWithAccounts:(AccountControllers *)accounts historyFactory:(AsyncCallHistoryViewEventTargetFactory *)factory {
+    SharedDialerRouteResolver resolver = nil;
+    if (factory != nil) resolver = ^DialPlanRoute *(NSString *input) {
+        return [DialPlanStore.shared resolveDestination:input accounts:[DialPlanCoordinator.shared accountSnapshots]];
+    };
+    return [self initWithAccounts:accounts historyFactory:factory routeResolver:resolver];
+}
+- (instancetype)initWithAccounts:(AccountControllers *)accounts
+                 historyFactory:(AsyncCallHistoryViewEventTargetFactory *)factory
+                  routeResolver:(SharedDialerRouteResolver)routeResolver {
     NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0,0,368,104)
         styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskMiniaturizable|NSWindowStyleMaskResizable
         backing:NSBackingStoreBuffered defer:NO];
@@ -62,12 +71,32 @@
         _dialler.callDestinationHandler = ^(AKSIPURI *uri, NSString *label) {
             [DialPlanCoordinator.shared routeURI:uri phoneLabel:label];
         };
-        if (factory != nil) _dialler.callRoutePreviewHandler = ^NSString *(AKSIPURI *uri, NSString *text) {
-            if (text.length == 0) return @"Call";
+        if (routeResolver != nil) _dialler.callRoutePreviewHandler = ^NSString *(AKSIPURI *uri, NSString *text) {
+            SharedDialerController *owner = weakSelf;
+            if (text.length == 0) {
+                [owner.dialler setCallRouteStatus:@"Enter a number" detail:@"Enter a number to see its outgoing connection."];
+                return @"Call";
+            }
             AKSIPURI *address = [uri copy]; address.displayName = @"";
             NSString *input = address ? (address.host.length ? address.description : address.user) : text;
-            DialPlanRoute *route = [DialPlanStore.shared resolveDestination:input accounts:[DialPlanCoordinator.shared accountSnapshots]];
-            return [NSString stringWithFormat:@"%@\n%@", route.destination.destination,route.message];
+            DialPlanRoute *route = routeResolver(input);
+            NSString *detail = [NSString stringWithFormat:@"%@\n%@", route.destination.destination,route.message];
+            AccountController *selected = nil;
+            for (AccountController *account in owner.accounts.all) {
+                if ([account.account.uuid isEqualToString:route.accountUUID]) { selected = account; break; }
+            }
+            NSString *status;
+            if (route.blocked) status = @"Blocked by dial plan";
+            else if (!route.destination.valid) status = @"Check number";
+            else if (route.accountUUID.length == 0) status = route.message;
+            else if (selected == nil) status = @"Connection removed";
+            else {
+                NSString *state = route.requiresRegistration ? @"Waiting" : route.canDial ? @"Ready" :
+                    !selected.isEnabled ? @"Disabled" : [selected.routingAvailability isEqualToString:@"offline"] ? @"Offline" : @"Unavailable";
+                status = [NSString stringWithFormat:@"%@ · %@", state,selected.accountDescription];
+            }
+            [owner.dialler setCallRouteStatus:status detail:detail];
+            return detail;
         };
         (void)_dialler.view;
         [_dialler installCompactDialerWithAvailabilityView:_availability target:self historyAction:@selector(toggleHistory:) moreAction:@selector(showActions:)];
@@ -113,6 +142,7 @@
 - (void)refreshAccounts {
     [self.historyFactory updateGlobalAccounts:[self historyAccounts]];
     [self rebuildAvailability];
+    [self.dialler refreshCallRoutePreview];
 }
 - (void)accountStateChanged:(NSNotification *)notification { [self rebuildAvailability]; [self.dialler refreshCallRoutePreview]; }
 - (void)rebuildAvailability {

@@ -83,6 +83,7 @@ static NSDictionary *DestinationForToken(id token) {
 @property(nonatomic) NSButton *dialButton;
 @property(nonatomic) NSButton *historyButton;
 @property(nonatomic) NSTextField *offlineLabel;
+@property(nonatomic) NSTextField *routeStatusLabel;
 @property(nonatomic) BOOL observesDestinationValues;
 @property(nonatomic) NSView *compactLastKeyView;
 @end
@@ -177,7 +178,34 @@ static NSDictionary *DestinationForToken(id token) {
     NSButton *more = [self compactButtonWithSymbol:@"ellipsis"
                                              title:NSLocalizedString(@"More actions", @"Compact dialer actions menu.")
                                             target:target action:moreAction];
-    NSStackView *row = [NSStackView stackViewWithViews:@[availability, field, self.dialButton, self.historyButton, more]];
+    // The destination and its route share the existing 44-point slot. The
+    // controls and the compact window retain their original sizes.
+    NSView *destination = [[NSView alloc] initWithFrame:NSZeroRect];
+    destination.translatesAutoresizingMaskIntoConstraints = NO;
+    [destination addSubview:field];
+    self.routeStatusLabel = [NSTextField labelWithString:@"Enter a number"];
+    self.routeStatusLabel.identifier = @"CompactOutgoingRouteStatus";
+    self.routeStatusLabel.font = [NSFont systemFontOfSize:11];
+    self.routeStatusLabel.textColor = NSColor.secondaryLabelColor;
+    self.routeStatusLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+    self.routeStatusLabel.maximumNumberOfLines = 1;
+    self.routeStatusLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.routeStatusLabel.accessibilityLabel = @"Outgoing connection";
+    self.routeStatusLabel.cell.accessibilityLabel = @"Outgoing connection";
+    [self.routeStatusLabel setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+    [destination addSubview:self.routeStatusLabel];
+    [NSLayoutConstraint activateConstraints:@[
+        [destination.heightAnchor constraintEqualToConstant:44],
+        [destination.widthAnchor constraintGreaterThanOrEqualToConstant:160],
+        [field.leadingAnchor constraintEqualToAnchor:destination.leadingAnchor],
+        [field.trailingAnchor constraintEqualToAnchor:destination.trailingAnchor],
+        [field.topAnchor constraintEqualToAnchor:destination.topAnchor constant:2],
+        [self.routeStatusLabel.topAnchor constraintEqualToAnchor:field.bottomAnchor constant:1],
+        [self.routeStatusLabel.leadingAnchor constraintEqualToAnchor:destination.leadingAnchor constant:4],
+        [self.routeStatusLabel.trailingAnchor constraintEqualToAnchor:destination.trailingAnchor constant:-4],
+        [self.routeStatusLabel.heightAnchor constraintEqualToConstant:13]
+    ]];
+    NSStackView *row = [NSStackView stackViewWithViews:@[availability, destination, self.dialButton, self.historyButton, more]];
     row.orientation = NSUserInterfaceLayoutOrientationHorizontal;
     row.alignment = NSLayoutAttributeCenterY;
     row.spacing = 4;
@@ -190,8 +218,7 @@ static NSDictionary *DestinationForToken(id token) {
         [row.topAnchor constraintEqualToAnchor:bar.contentView.topAnchor],
         [row.bottomAnchor constraintEqualToAnchor:bar.contentView.bottomAnchor],
         [availability.widthAnchor constraintEqualToConstant:44],
-        [availability.heightAnchor constraintEqualToConstant:44],
-        [field.widthAnchor constraintGreaterThanOrEqualToConstant:160]
+        [availability.heightAnchor constraintEqualToConstant:44]
     ]];
     [field setContentHuggingPriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
 
@@ -202,7 +229,7 @@ static NSDictionary *DestinationForToken(id token) {
     [bar.contentView addSubview:self.offlineLabel];
     [NSLayoutConstraint activateConstraints:@[
         [self.offlineLabel.leadingAnchor constraintEqualToAnchor:field.leadingAnchor constant:4],
-        [self.offlineLabel.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+        [self.offlineLabel.centerYAnchor constraintEqualToAnchor:field.centerYAnchor],
         [self.offlineLabel.trailingAnchor constraintLessThanOrEqualToAnchor:field.trailingAnchor]
     ]];
     self.offlineLabel.hidden = !field.isHidden;
@@ -274,6 +301,17 @@ static NSDictionary *DestinationForToken(id token) {
     NSString *preview = self.callRoutePreviewHandler(self.callDestinationURI, self.callDestinationField.stringValue);
     self.dialButton.toolTip = preview.length ? preview : @"Call";
     self.dialButton.accessibilityHelp = self.dialButton.toolTip;
+}
+
+- (void)setCallRouteStatus:(NSString *)status detail:(NSString *)detail {
+    BOOL changed = ![self.routeStatusLabel.stringValue isEqualToString:status];
+    self.routeStatusLabel.stringValue = status;
+    self.routeStatusLabel.toolTip = detail;
+    self.routeStatusLabel.accessibilityValue = status;
+    self.routeStatusLabel.accessibilityHelp = detail;
+    self.routeStatusLabel.cell.accessibilityValue = status;
+    self.routeStatusLabel.cell.accessibilityHelp = detail;
+    if (changed) NSAccessibilityPostNotification(self.routeStatusLabel, NSAccessibilityValueChangedNotification);
 }
 
 - (IBAction)dialFromButton:(NSButton *)sender {

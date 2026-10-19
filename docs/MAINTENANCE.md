@@ -29,12 +29,21 @@ documentation or implementation commits; do not describe them as installed or
 released without separate evidence. The documentation corrections in issue #54
 do not change or rebuild the installed application.
 
+The [issue #55 route-status record](maintenance/2026-10-19-route-status.md)
+documents the verified source improvement and its separate delivery boundary.
+
 ## Owner's execution controls
 
 The owner authorised roadmap implementation on **19 October 2026**, strictly
 **one issue at a time, in ranked order**. Finish and verify the current item,
 record its evidence and update GitHub before starting the next. An independent
 review of the same item is allowed; do not work on later items in parallel.
+
+The owner subsequently chose **commit each verified fix; release after the
+roadmap**. Keep the installed application and published version at their verified
+baseline while these source changes proceed. Do not bump versions, install or
+publish a release for an individual issue. The final release needs its own full
+candidate, package, installation and publication verification.
 
 Read the actual five-hour usage window before work, between issues and during
 long-running work. If its remaining allowance falls **below 10%**, stop at a

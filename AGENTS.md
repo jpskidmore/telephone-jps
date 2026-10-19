@@ -6,6 +6,9 @@ Read actual five-hour usage before/between issues and during long work; below
 10% remaining, stop at a recoverable point and schedule this chat five minutes
 after the reported reset. Keep the weekly allowance separate. See the entry
 point for current baseline, execution controls and evidence boundaries.
+Commit and verify each fix, but **install and publish only after the roadmap is
+finished**, as the owner subsequently specified. Do not bump the app version or
+replace the installed app for each individual source fix.
 
 ## Released application baseline — 8 October 2026
 

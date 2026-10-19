@@ -1,0 +1,82 @@
+{
+  "date": "2026-10-19",
+  "issue": 55,
+  "scope": "Source implementation; release deferred until roadmap completion by owner instruction.",
+  "app_version_unchanged": "3.5.1/build 163",
+  "source_parent_commit": "c98535829897f4e6dc03b05acf8e712591119fde",
+  "suites": [
+    {
+      "suite": "Domain",
+      "xctest_cases": 28,
+      "swift_testing_cases": 0,
+      "failures": 0,
+      "log_sha256": "62b6717baf8122eeed85045b5230aeba69e5fef531deea595ab691e6136b5378"
+    },
+    {
+      "suite": "UseCases",
+      "xctest_cases": 201,
+      "swift_testing_cases": 131,
+      "failures": 0,
+      "log_sha256": "fcd34075b21b6c7b55134322bde47d0cd14eca2b9e90a342dbc9d16d4a02b8d9"
+    },
+    {
+      "suite": "ReceiptValidation",
+      "xctest_cases": 5,
+      "swift_testing_cases": 0,
+      "failures": 0,
+      "log_sha256": "bf60dfeab061402e944d398718b10607a039dfafdb90b17d757f0ded7e3f45f4"
+    },
+    {
+      "suite": "Telephone",
+      "xctest_cases": 254,
+      "swift_testing_cases": 48,
+      "failures": 0,
+      "log_sha256": "ce39aaac5bed5b91a740bfc80e0ae63de745543e30b4e3d9bfb50d4b6b6d9345"
+    }
+  ],
+  "total_cases": 667,
+  "failures": 0,
+  "input_sha256": {
+    "Telephone/ActiveAccountViewController.h": "337e435b0c7bc94eaf6cc32c2eb0e346d9d454bf71035ce537e7f24b10921c23",
+    "Telephone/ActiveAccountViewController.m": "561d962143c45a735876f20bdd3396b55ccf6ad509661227378d7f66d369f8ab",
+    "Telephone/SharedDialerController.h": "de5757a2083a21c3f37e0d7d3dec0b00ef9a94c1e3e3598d046b686ff81b579f",
+    "Telephone/SharedDialerController.m": "c19a87414f29ee5cd437ddecb6424909cabec39902d9a99df98ccf41306bc76b",
+    "TelephoneTests/SharedDialerControllerTests.m": "a50e0e86a34be86c53e2f741de1a67337c49b0a863e9d0be924a939f16e4f5b2",
+    "Telephone.xcodeproj/project.pbxproj": "5fefca7f7eb20672de14cac08ed32ef73a40deb2ed4dd1f5bd42b4f620f3c077"
+  },
+  "synthetic_captures": {
+    "light": {
+      "path": "docs/maintenance/assets/issue-55-light.png",
+      "sha256": "bf4a2147cc90c1015b4937d94bfa41f242f675ac85efb75eef7fb65a2fe5876b",
+      "same_as_inspected_image": true
+    },
+    "dark": {
+      "path": "docs/maintenance/assets/issue-55-dark.png",
+      "sha256": "56769be89aa5ed26c13dbfa7ba22a7505b2543b0274919445c4dc309dcb04598",
+      "same_as_inspected_image": true
+    }
+  },
+  "environment": {
+    "macOS": "27.0.1",
+    "macOS_build": "26A434",
+    "Xcode": "27.0 (27A266a)",
+    "SDK": "27.0",
+    "architecture": "arm64"
+  },
+  "host_isolation": "Unique Debug bundle identity and removed NSMainNibFile; raw-input fixtures detach the Contacts tokenisation delegate.",
+  "initial_fixture_note": "An initial fixture reached legacy Contacts authorisation and is retained as diagnostic evidence only; corrected fixtures were rerun under fresh isolated identities.",
+  "component_checks_passed": [
+    "vendor/dependency checks",
+    "audio-device harness",
+    "synthetic recording harness",
+    "Foundation regressions",
+    "audio integration checks",
+    "recording lifecycle model"
+  ],
+  "limits": [
+    "No installation or publication",
+    "No live SIP/provider call or physical audio validation",
+    "Native accessibility metadata checked; proficient VoiceOver speech not claimed"
+  ],
+  "local_run_basename": "jps-telephone-issue55-4_2f6xhg"
+}
