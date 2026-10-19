@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-19",
+  "issue": 57,
+  "source_parent_commit": "af3cbd335e7a64f583bb5f04e1e19f44f3213544",
+  "scope": "Source-only; release/install deferred until roadmap completion.",
+  "fresh_app_cases": {
+    "xctest": 262,
+    "swift_testing": 48,
+    "total": 310,
+    "failures": 0,
+    "new_xctest_cases": 3
+  },
+  "standalone": "Existing synthetic recording harness passed, with 102 newly counted ownership assertions; prior uncounted checks are not a case total.",
+  "separate_model_cases": {
+    "recording_lifecycle": 6,
+    "audio_integration": 11
+  },
+  "baseline_reproduction": "At source parent, open synthetic writers and queued finalisation each appeared as one recovery job before cleanup. This is isolated synthetic evidence, not real SIP capture or reproduced audio loss.",
+  "source_sha256": {
+    "Telephone/AKSIPCall.m": "c33986746a87d58cd2b1cd6299cf9738b48130c6b3c479b391a81c63bff03240",
+    "Telephone/AKStereoRecording.h": "f154b0ab547b85d4a79af16188204f80903fa574bc05d314b4625f3581154d0f",
+    "Telephone/AKStereoRecording.m": "43e874dd402d0b092e6880c7085d42a72448f372243453c7cb89cecac6b60517",
+    "TelephoneTests/CallControllerLifecycleTests.m": "7d8857efc6ea675d4ccc8b6440bc9cb87e7fdd535f563760bb2d0a8fc99e2914",
+    "Tests/RecordingHardeningHarness.m": "de318712c1b52e8a7b3a82018b31f5e3e37835dd3d3b3ecaa0705c669f5a1dd7"
+  },
+  "project_metadata_sha256": "5fefca7f7eb20672de14cac08ed32ef73a40deb2ed4dd1f5bd42b4f620f3c077",
+  "log_sha256": {
+    "TelephoneTests-final-ownership.log": "fcb3dc57db914211ec67fe11b0a961a1eb28064ff80ec8a151db674f1deed441",
+    "build-final-ownership.log": "59d59c4f455a85bdb5daadb9546d6047391ab13518e3cb750619cf2a2aa40510",
+    "recording-harness.log": "b1de99c3780647c1ac45c4e01633d07dfa5a1594d37e1e917f8a4ca39455e63e",
+    "lifecycle-model.log": "ca8111f316a876b54ea801ed91088aec79bfd65357bace3944a6df85203b00f9",
+    "audio-integration.log": "8de36857359122b2a415589d1964ba07ff2a338623760ffa906c5f323996f352",
+    "baseline-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "baseline-reproduction.log": "8283fedda9c467e5938fa5891ccab6c0726eb47530c21e795dc379bc9f4f8c82"
+  },
+  "isolation": "Fresh unique nib-free Debug identity; synthetic accounts/tracks/private scratch roots only. Separate NSTask processes own synthetic jobs; process termination validates automatic flock release.",
+  "app_version_unchanged": "3.5.1/build 163",
+  "environment": {
+    "macOS": "27.0.1",
+    "macOS_build": "26A434",
+    "Xcode": "Xcode 27.0\nBuild version 27A266a",
+    "SDK": "27.0"
+  },
+  "limits": [
+    "No physical capture/quit/reopen or real sandbox-grant acceptance.",
+    "No live SIP or physical audio claim.",
+    "No app install, publication, version bump or release asset/tag change."
+  ]
+}

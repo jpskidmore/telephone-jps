@@ -46,6 +46,7 @@
 @property(nonatomic, copy, nullable) NSURL *localRecordingURL;
 @property(nonatomic, copy, nullable) NSURL *remoteRecordingURL;
 @property(nonatomic, copy, nullable) NSURL *recordingTemporaryDirectoryURL;
+@property(nonatomic, strong, nullable) AKRecordingJobOwnership *recordingJobOwnership;
 @property(nonatomic, strong, nullable) NSURL *accessedRecordingDirectoryURL;
 
 - (BOOL)stopNativeRecorders;
@@ -378,7 +379,6 @@
         return NO;
     }
 
-    NSFileManager *fileManager = NSFileManager.defaultManager;
     NSError *directoryError = nil;
     NSURL *temporaryDirectoryURL = AKCreateRecordingRecoveryDirectory(&directoryError);
     if (temporaryDirectoryURL == nil) {
@@ -387,7 +387,11 @@
     }
     NSURL *localURL = [temporaryDirectoryURL URLByAppendingPathComponent:@"local.wav" isDirectory:NO];
     NSURL *remoteURL = [temporaryDirectoryURL URLByAppendingPathComponent:@"remote.wav" isDirectory:NO];
-    if (!AKPersistRecordingRecoveryJob(temporaryDirectoryURL, localURL, remoteURL, URL, &directoryError)) {
+    AKRecordingJobOwnership *ownership = AKClaimRecordingJob(temporaryDirectoryURL, &directoryError);
+    if (!ownership) return NO;
+    if (!AKPersistOwnedRecordingRecoveryJob(ownership, localURL, remoteURL, URL,
+                                           AKRecordingJobPhaseCapturing, &directoryError)) {
+        AKFinishRecordingRecoveryJob(ownership, NO);
         AKReportRecordingExportFailure(temporaryDirectoryURL, URL, directoryError);
         return NO;
     }
@@ -397,7 +401,7 @@
     pj_status_t status = pjsua_recorder_create(&localFilename, 0, NULL, 0, 0, &localRecorderIdentifier);
     if (status != PJ_SUCCESS) {
         NSLog(@"Could not create local call recorder (PJSIP error %d)", status);
-        [fileManager removeItemAtURL:temporaryDirectoryURL error:nil];
+        AKDiscardRecordingRecoveryJob(ownership);
         return NO;
     }
 
@@ -407,7 +411,7 @@
     if (status != PJ_SUCCESS) {
         NSLog(@"Could not create remote call recorder (PJSIP error %d)", status);
         pjsua_recorder_destroy(localRecorderIdentifier);
-        [fileManager removeItemAtURL:temporaryDirectoryURL error:nil];
+        AKDiscardRecordingRecoveryJob(ownership);
         return NO;
     }
 
@@ -418,7 +422,7 @@
         NSLog(@"Could not connect remote call audio to recorder (PJSIP error %d)", status);
         pjsua_recorder_destroy(localRecorderIdentifier);
         pjsua_recorder_destroy(remoteRecorderIdentifier);
-        [fileManager removeItemAtURL:temporaryDirectoryURL error:nil];
+        AKDiscardRecordingRecoveryJob(ownership);
         return NO;
     }
 
@@ -428,7 +432,7 @@
             NSLog(@"Could not connect microphone audio to recorder (PJSIP error %d)", status);
             pjsua_recorder_destroy(localRecorderIdentifier);
             pjsua_recorder_destroy(remoteRecorderIdentifier);
-            [fileManager removeItemAtURL:temporaryDirectoryURL error:nil];
+            AKDiscardRecordingRecoveryJob(ownership);
             return NO;
         }
     }
@@ -441,6 +445,7 @@
     self.localRecordingURL = localURL;
     self.remoteRecordingURL = remoteURL;
     self.recordingTemporaryDirectoryURL = temporaryDirectoryURL;
+    self.recordingJobOwnership = ownership;
     self.nativeRecordingActive = YES;
     NSLog(@"Recording separate local and remote call tracks");
     return YES;
@@ -470,6 +475,7 @@
     NSURL *remoteURL = self.remoteRecordingURL;
     NSURL *destinationURL = self.recordingURL;
     NSURL *temporaryDirectoryURL = self.recordingTemporaryDirectoryURL;
+    AKRecordingJobOwnership *ownership = self.recordingJobOwnership;
 
     if (![self stopNativeRecorders]) {
         if (completion != nil) {
@@ -485,6 +491,8 @@
     self.remoteRecordingURL = nil;
     self.recordingTemporaryDirectoryURL = nil;
     if (localURL == nil || remoteURL == nil || destinationURL == nil) {
+        self.recordingJobOwnership = nil;
+        if (ownership) AKFinishRecordingRecoveryJob(ownership, NO);
         [accessedDirectoryURL stopAccessingSecurityScopedResource];
         if (completion != nil) {
             completion(NO);
@@ -495,14 +503,18 @@
     NSError *recoveryError = nil;
     if (![self persistRecordingRecoveryJobAtDirectory:temporaryDirectoryURL localURL:localURL remoteURL:remoteURL
                                      destinationURL:destinationURL error:&recoveryError]) {
+        self.recordingJobOwnership = nil;
+        if (ownership) AKFinishRecordingRecoveryJob(ownership, NO);
         AKReportRecordingExportFailure(temporaryDirectoryURL, destinationURL, recoveryError);
         [accessedDirectoryURL stopAccessingSecurityScopedResource];
         if (completion) completion(NO);
         return;
     }
+    // Transfer the same claim to this finalizer before another segment starts.
+    self.recordingJobOwnership = nil;
     [self finalizeRecordingFromLocalURL:localURL remoteURL:remoteURL destinationURL:destinationURL completion:^(BOOL succeeded) {
+        AKFinishRecordingRecoveryJob(ownership, succeeded);
         if (succeeded) {
-            [NSFileManager.defaultManager removeItemAtURL:temporaryDirectoryURL error:nil];
             NSLog(@"Saved stereo call recording (local left, remote right)");
         } else {
             AKReportRecordingExportFailure(temporaryDirectoryURL, destinationURL, nil);
@@ -520,7 +532,9 @@
 // for a later stop request. The bundled PJSIP destroy has no transient retry case.
 - (BOOL)persistRecordingRecoveryJobAtDirectory:(NSURL *)directory localURL:(NSURL *)local
                                     remoteURL:(NSURL *)remote destinationURL:(NSURL *)destination error:(NSError **)error {
-    return AKPersistRecordingRecoveryJob(directory, local, remote, destination, error);
+    return self.recordingJobOwnership &&
+        AKPersistOwnedRecordingRecoveryJob(self.recordingJobOwnership, local, remote, destination,
+                                          AKRecordingJobPhaseFinalising, error);
 }
 
 - (BOOL)stopNativeRecorders {

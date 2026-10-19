@@ -13,10 +13,262 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/file.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 NSString *const AKRecordingExportDidFailNotification = @"AKRecordingExportDidFailNotification";
 static NSString *const RecoveryManifestName = @"recovery.plist";
+static NSString *const RecoveryLockName = @".owner.lock";
+
+static void RecordingPOSIXError(NSError **error, int code) {
+    if (error) *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+}
+
+@interface AKRecordingJobOwnership () {
+    int _directoryDescriptor;
+    int _lockDescriptor;
+}
+@property(nonatomic, readwrite, copy) NSURL *directoryURL;
+@property(nonatomic, readonly) int directoryDescriptor;
+- (instancetype)initWithDirectory:(NSURL *)directory directoryDescriptor:(int)directoryDescriptor
+                   lockDescriptor:(int)lockDescriptor;
+- (BOOL)isCurrent;
+- (void)releaseClaim;
+@end
+
+@implementation AKRecordingJobOwnership
+- (instancetype)initWithDirectory:(NSURL *)directory directoryDescriptor:(int)directoryDescriptor
+                   lockDescriptor:(int)lockDescriptor {
+    self = [super init];
+    if (self) {
+        _directoryURL = [directory copy];
+        _directoryDescriptor = directoryDescriptor;
+        _lockDescriptor = lockDescriptor;
+    }
+    return self;
+}
+- (int)directoryDescriptor { return _directoryDescriptor; }
+- (BOOL)isCurrent {
+    struct stat heldDirectory, currentDirectory, heldLock, currentLock;
+    return _directoryDescriptor >= 0 && _lockDescriptor >= 0 &&
+        fstat(_directoryDescriptor, &heldDirectory) == 0 &&
+        lstat(self.directoryURL.fileSystemRepresentation, &currentDirectory) == 0 &&
+        S_ISDIR(currentDirectory.st_mode) &&
+        heldDirectory.st_dev == currentDirectory.st_dev && heldDirectory.st_ino == currentDirectory.st_ino &&
+        fstat(_lockDescriptor, &heldLock) == 0 &&
+        fstatat(_directoryDescriptor, RecoveryLockName.fileSystemRepresentation, &currentLock, AT_SYMLINK_NOFOLLOW) == 0 &&
+        S_ISREG(currentLock.st_mode) && heldLock.st_dev == currentLock.st_dev && heldLock.st_ino == currentLock.st_ino;
+}
+- (void)releaseClaim {
+    if (_lockDescriptor >= 0) close(_lockDescriptor);
+    if (_directoryDescriptor >= 0) close(_directoryDescriptor);
+    _lockDescriptor = _directoryDescriptor = -1;
+}
+- (void)dealloc { [self releaseClaim]; }
+@end
+
+AKRecordingJobOwnership *AKClaimRecordingJob(NSURL *directory, NSError **error) {
+    if (![directory isKindOfClass:NSURL.class] || !directory.isFileURL || !directory.path.isAbsolutePath) {
+        RecordingPOSIXError(error, EINVAL);
+        return nil;
+    }
+    NSURL *canonical = directory.URLByResolvingSymlinksInPath.standardizedURL;
+    int directoryDescriptor = open(canonical.fileSystemRepresentation, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+    if (directoryDescriptor < 0) {
+        RecordingPOSIXError(error, errno);
+        return nil;
+    }
+    int descriptor = openat(directoryDescriptor, RecoveryLockName.fileSystemRepresentation,
+                            O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, 0600);
+    struct stat lockInfo;
+    int claimError = descriptor < 0 ? errno : 0;
+    if (!claimError && (fstat(descriptor, &lockInfo) != 0)) claimError = errno;
+    if (!claimError && (!S_ISREG(lockInfo.st_mode) || lockInfo.st_nlink != 1 || lockInfo.st_uid != geteuid())) claimError = EINVAL;
+    if (!claimError && fchmod(descriptor, 0600) != 0) claimError = errno;
+    if (!claimError && flock(descriptor, LOCK_EX | LOCK_NB) != 0) claimError = errno;
+    if (claimError) {
+        if (descriptor >= 0) close(descriptor);
+        close(directoryDescriptor);
+        RecordingPOSIXError(error, claimError);
+        return nil;
+    }
+    AKRecordingJobOwnership *owner = [[AKRecordingJobOwnership alloc] initWithDirectory:canonical
+        directoryDescriptor:directoryDescriptor lockDescriptor:descriptor];
+    if (![owner isCurrent]) {
+        [owner releaseClaim];
+        RecordingPOSIXError(error, ESTALE);
+        return nil;
+    }
+    // Never unlink a live lock file: replacing its inode would admit a second
+    // owner while this descriptor still holds the original exclusive flock.
+    return owner;
+}
+
+static BOOL ValidRecordingTrackName(NSString *name) {
+    return [name isKindOfClass:NSString.class] && name.length > 0 &&
+        ![@[@".", @"..", RecoveryManifestName, RecoveryLockName] containsObject:name] &&
+        [name isEqualToString:name.lastPathComponent];
+}
+
+static BOOL OwnedTrackIsRegular(AKRecordingJobOwnership *owner, NSString *name, BOOL allowMissing, NSError **error) {
+    struct stat info;
+    if (fstatat(owner.directoryDescriptor, name.fileSystemRepresentation, &info, AT_SYMLINK_NOFOLLOW) != 0) {
+        if (allowMissing && errno == ENOENT) return YES;
+        RecordingPOSIXError(error, errno);
+        return NO;
+    }
+    if (!S_ISREG(info.st_mode)) {
+        RecordingPOSIXError(error, EINVAL);
+        return NO;
+    }
+    return YES;
+}
+
+static NSDictionary *OwnedRecordingManifest(AKRecordingJobOwnership *owner) {
+    int descriptor = openat(owner.directoryDescriptor, RecoveryManifestName.fileSystemRepresentation,
+                            O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK);
+    if (descriptor < 0) return nil;
+    struct stat info;
+    NSMutableData *data = [NSMutableData data];
+    BOOL valid = fstat(descriptor, &info) == 0 && S_ISREG(info.st_mode) && info.st_size <= 1024 * 1024;
+    unsigned char bytes[4096];
+    while (valid) {
+        ssize_t count = read(descriptor, bytes, sizeof(bytes));
+        if (count < 0 && errno == EINTR) continue;
+        if (count < 0) valid = NO;
+        if (count <= 0) break;
+        [data appendBytes:bytes length:(NSUInteger)count];
+        if (data.length > 1024 * 1024) valid = NO;
+    }
+    close(descriptor);
+    id manifest = valid ? [NSPropertyListSerialization propertyListWithData:data options:0 format:nil error:nil] : nil;
+    return [manifest isKindOfClass:NSDictionary.class] ? manifest : nil;
+}
+
+static BOOL WriteOwnedRecordingManifest(AKRecordingJobOwnership *owner, NSDictionary *manifest, NSError **error) {
+    if (![owner isCurrent]) {
+        RecordingPOSIXError(error, ESTALE);
+        return NO;
+    }
+    NSData *data = [NSPropertyListSerialization dataWithPropertyList:manifest
+        format:NSPropertyListBinaryFormat_v1_0 options:0 error:error];
+    if (!data) return NO;
+    NSString *temporaryName = [@".manifest-" stringByAppendingString:NSUUID.UUID.UUIDString];
+    int descriptor = openat(owner.directoryDescriptor, temporaryName.fileSystemRepresentation,
+                            O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
+    if (descriptor < 0) {
+        RecordingPOSIXError(error, errno);
+        return NO;
+    }
+    const unsigned char *bytes = data.bytes;
+    NSUInteger remaining = data.length;
+    int writeError = 0;
+    while (remaining > 0) {
+        ssize_t count = write(descriptor, bytes, remaining);
+        if (count < 0 && errno == EINTR) continue;
+        if (count <= 0) { writeError = count < 0 ? errno : EIO; break; }
+        bytes += count;
+        remaining -= (NSUInteger)count;
+    }
+    if (!writeError && fsync(descriptor) != 0) writeError = errno;
+    if (close(descriptor) != 0 && !writeError) writeError = errno;
+    if (!writeError && ![owner isCurrent]) writeError = ESTALE;
+    if (!writeError && renameat(owner.directoryDescriptor, temporaryName.fileSystemRepresentation,
+                               owner.directoryDescriptor, RecoveryManifestName.fileSystemRepresentation) != 0) writeError = errno;
+    if (writeError) {
+        unlinkat(owner.directoryDescriptor, temporaryName.fileSystemRepresentation, 0);
+        RecordingPOSIXError(error, writeError);
+        return NO;
+    }
+    // The atomic rename publishes one complete state. Sync the directory where
+    // supported as well; the track retention rule does not depend on this call.
+    fsync(owner.directoryDescriptor);
+    return YES;
+}
+
+static BOOL IsCompletedRecordingManifest(NSDictionary *manifest) {
+    return [manifest[@"version"] isKindOfClass:NSNumber.class] && [manifest[@"version"] integerValue] >= 2 &&
+        [manifest[@"state"] isKindOfClass:NSString.class] && [manifest[@"state"] isEqualToString:@"completed"];
+}
+
+static BOOL RecordingDestinationIsOutsideDirectory(NSURL *destination, NSURL *directory) {
+    if (![destination isKindOfClass:NSURL.class] || !destination.isFileURL || !destination.path.isAbsolutePath) return NO;
+    NSString *path = destination.URLByResolvingSymlinksInPath.standardizedURL.path;
+    NSString *directoryPath = directory.path;
+    return ![path isEqualToString:directoryPath] && ![path hasPrefix:[directoryPath stringByAppendingString:@"/"]];
+}
+
+static BOOL PersistRecordingManifest(AKRecordingJobOwnership *owner, NSURL *local, NSURL *remote,
+                                      NSURL *destination, NSString *state, NSError **error) {
+    @synchronized (owner) {
+        NSString *localName = local.lastPathComponent;
+        NSString *remoteName = remote.lastPathComponent;
+        if (![owner isCurrent] || !local.isFileURL || !remote.isFileURL ||
+            !ValidRecordingTrackName(localName) || !ValidRecordingTrackName(remoteName) || [localName isEqualToString:remoteName] ||
+            ![local.URLByDeletingLastPathComponent.URLByResolvingSymlinksInPath.standardizedURL isEqual:owner.directoryURL] ||
+            ![remote.URLByDeletingLastPathComponent.URLByResolvingSymlinksInPath.standardizedURL isEqual:owner.directoryURL] ||
+            !RecordingDestinationIsOutsideDirectory(destination, owner.directoryURL)) {
+            if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteInvalidFileNameError userInfo:nil];
+            return NO;
+        }
+        if (!OwnedTrackIsRegular(owner, localName, YES, error) || !OwnedTrackIsRegular(owner, remoteName, YES, error)) return NO;
+        for (NSString *name in @[localName, remoteName]) {
+            int descriptor = openat(owner.directoryDescriptor, name.fileSystemRepresentation, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK);
+            if (descriptor < 0 && errno == ENOENT) continue;
+            if (descriptor < 0) { RecordingPOSIXError(error, errno); return NO; }
+            int chmodError = fchmod(descriptor, 0600) != 0 ? errno : 0;
+            close(descriptor);
+            if (chmodError) { RecordingPOSIXError(error, chmodError); return NO; }
+        }
+        NSDictionary *previous = OwnedRecordingManifest(owner);
+        NSMutableDictionary *manifest = [@{@"version": state ? @2 : @1, @"local": localName,
+            @"remote": remoteName, @"destination": destination.path,
+            @"created": [previous[@"created"] isKindOfClass:NSDate.class] ? previous[@"created"] : NSDate.date} mutableCopy];
+        if (state) manifest[@"state"] = state;
+        return WriteOwnedRecordingManifest(owner, manifest, error);
+    }
+}
+
+BOOL AKPersistOwnedRecordingRecoveryJob(AKRecordingJobOwnership *owner, NSURL *local, NSURL *remote,
+                                        NSURL *destination, AKRecordingJobPhase phase, NSError **error) {
+    if (phase != AKRecordingJobPhaseCapturing && phase != AKRecordingJobPhaseFinalising) {
+        RecordingPOSIXError(error, EINVAL);
+        return NO;
+    }
+    return PersistRecordingManifest(owner, local, remote, destination,
+        phase == AKRecordingJobPhaseCapturing ? @"capturing" : @"finalising", error);
+}
+
+static void RemoveOwnedRecordingDirectory(AKRecordingJobOwnership *owner) {
+    if (![owner isCurrent]) return;
+    // Atomically retire the discoverable name before recursively deleting it.
+    // A recursive removal could otherwise unlink the lock before the tracks,
+    // allowing another claimant to create a new lock inode during cleanup.
+    NSURL *retired = [owner.directoryURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:
+        [@".finished-" stringByAppendingString:NSUUID.UUID.UUIDString] isDirectory:YES];
+    if (rename(owner.directoryURL.fileSystemRepresentation, retired.fileSystemRepresentation) == 0)
+        [NSFileManager.defaultManager removeItemAtURL:retired error:nil];
+}
+
+void AKFinishRecordingRecoveryJob(AKRecordingJobOwnership *owner, BOOL succeeded) {
+    @synchronized (owner) {
+        if (![owner isCurrent]) { [owner releaseClaim]; return; }
+        NSMutableDictionary *manifest = [OwnedRecordingManifest(owner) mutableCopy] ?: [NSMutableDictionary dictionary];
+        manifest[@"version"] = @2;
+        manifest[@"state"] = succeeded ? @"completed" : @"failed";
+        WriteOwnedRecordingManifest(owner, manifest, nil);
+        if (succeeded) RemoveOwnedRecordingDirectory(owner);
+        [owner releaseClaim];
+    }
+}
+
+void AKDiscardRecordingRecoveryJob(AKRecordingJobOwnership *owner) {
+    @synchronized (owner) {
+        RemoveOwnedRecordingDirectory(owner);
+        [owner releaseClaim];
+    }
+}
 
 static NSURL *RecordingRecoveryRoot(void) {
     NSURL *support = [NSFileManager.defaultManager URLsForDirectory:NSApplicationSupportDirectory
@@ -42,66 +294,60 @@ NSURL *AKCreateRecordingRecoveryDirectory(NSError **error) {
 
 BOOL AKPersistRecordingRecoveryJob(NSURL *directory, NSURL *local, NSURL *remote,
                                    NSURL *destination, NSError **error) {
-    NSString *directoryPath = directory.URLByResolvingSymlinksInPath.standardizedURL.path;
-    NSString *destinationPath = destination.URLByResolvingSymlinksInPath.standardizedURL.path;
-    // Never persist paths that could escape the protected job directory.
-    // The exported file must survive removing the raw job after success.
-    if (![local.URLByDeletingLastPathComponent.standardizedURL isEqual:directory.standardizedURL] ||
-        ![remote.URLByDeletingLastPathComponent.standardizedURL isEqual:directory.standardizedURL] ||
-        !destination.isFileURL || !destinationPath.isAbsolutePath ||
-        [destinationPath isEqualToString:directoryPath] ||
-        [destinationPath hasPrefix:[directoryPath stringByAppendingString:@"/"]]) {
-        if (error) *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteInvalidFileNameError userInfo:nil];
-        return NO;
+    AKRecordingJobOwnership *owner = AKClaimRecordingJob(directory, error);
+    if (!owner) return NO;
+    BOOL persisted = PersistRecordingManifest(owner, local, remote, destination, nil, error);
+    [owner releaseClaim];
+    return persisted;
+}
+
+static NSDictionary *RecordingRecoveryJobForOwner(AKRecordingJobOwnership *owner) {
+    @synchronized (owner) {
+        if (![owner isCurrent]) return nil;
+        NSDictionary *manifest = OwnedRecordingManifest(owner);
+        if (IsCompletedRecordingManifest(manifest)) return nil;
+        NSString *localName = manifest[@"local"];
+        NSString *remoteName = manifest[@"remote"];
+        // Malformed metadata must not strand a safe pair of conventional raw
+        // tracks. Never follow a path or symlink supplied by the manifest.
+        if (!ValidRecordingTrackName(localName) || !ValidRecordingTrackName(remoteName) ||
+            [localName isEqualToString:remoteName] ||
+            !OwnedTrackIsRegular(owner, localName, NO, nil) || !OwnedTrackIsRegular(owner, remoteName, NO, nil)) {
+            localName = @"local.wav";
+            remoteName = @"remote.wav";
+        }
+        if (!OwnedTrackIsRegular(owner, localName, NO, nil) || !OwnedTrackIsRegular(owner, remoteName, NO, nil)) return nil;
+        NSString *destinationPath = [manifest[@"destination"] isKindOfClass:NSString.class] ? manifest[@"destination"] : nil;
+        NSURL *destination = destinationPath.isAbsolutePath ? [NSURL fileURLWithPath:destinationPath] : nil;
+        BOOL validDestination = RecordingDestinationIsOutsideDirectory(destination, owner.directoryURL);
+        if (!validDestination) destination = [owner.directoryURL.URLByDeletingLastPathComponent
+            URLByAppendingPathComponent:@"Recovered recording.wav"];
+        struct stat info;
+        if (fstat(owner.directoryDescriptor, &info) != 0) return nil;
+        NSString *identity = [NSString stringWithFormat:@"%llu:%llu", (unsigned long long)info.st_dev, (unsigned long long)info.st_ino];
+        return @{@"directoryURL": owner.directoryURL,
+                 @"localURL": [owner.directoryURL URLByAppendingPathComponent:localName],
+                 @"remoteURL": [owner.directoryURL URLByAppendingPathComponent:remoteName],
+                 @"destinationURL": destination, @"needsNewDestination": @(!validDestination), @"directoryIdentity": identity};
     }
-    NSDictionary *manifest = @{@"version": @1, @"local": local.lastPathComponent,
-                               @"remote": remote.lastPathComponent, @"destination": destination.path,
-                               @"created": NSDate.date};
-    NSData *data = [NSPropertyListSerialization dataWithPropertyList:manifest
-                                                            format:NSPropertyListBinaryFormat_v1_0
-                                                           options:0 error:error];
-    NSURL *manifestURL = [directory URLByAppendingPathComponent:RecoveryManifestName];
-    if (!data || ![data writeToURL:manifestURL options:NSDataWritingAtomic error:error]) return NO;
-    NSFileManager *manager = NSFileManager.defaultManager;
-    if (![manager setAttributes:@{NSFilePosixPermissions: @0600} ofItemAtPath:manifestURL.path error:error]) return NO;
-    for (NSURL *track in @[local, remote]) {
-        if ([manager fileExistsAtPath:track.path] &&
-            ![manager setAttributes:@{NSFilePosixPermissions: @0600} ofItemAtPath:track.path error:error]) return NO;
-    }
-    return YES;
 }
 
 NSArray<NSDictionary *> *AKRecordingRecoveryJobsAtRoot(NSURL *root) {
-    NSFileManager *manager = NSFileManager.defaultManager;
-    NSArray *directories = [manager contentsOfDirectoryAtURL:root includingPropertiesForKeys:@[NSURLIsDirectoryKey]
-                                                    options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
+    NSArray *directories = [NSFileManager.defaultManager contentsOfDirectoryAtURL:root includingPropertiesForKeys:nil
+        options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
     NSMutableArray *jobs = [NSMutableArray array];
     for (NSURL *directory in directories) {
-        NSNumber *isDirectory = nil;
-        [directory getResourceValue:&isDirectory forKey:NSURLIsDirectoryKey error:nil];
-        if (!isDirectory.boolValue) continue;
-        NSData *data = [NSData dataWithContentsOfURL:[directory URLByAppendingPathComponent:RecoveryManifestName]];
-        NSDictionary *manifest = data ? [NSPropertyListSerialization propertyListWithData:data options:0 format:nil error:nil] : nil;
-        if (![manifest isKindOfClass:NSDictionary.class]) manifest = nil;
-        NSString *localName = [manifest[@"local"] isKindOfClass:NSString.class] ? manifest[@"local"] : @"local.wav";
-        NSString *remoteName = [manifest[@"remote"] isKindOfClass:NSString.class] ? manifest[@"remote"] : @"remote.wav";
-        if (localName.length == 0 || remoteName.length == 0 ||
-            [@[@".", @".."] containsObject:localName] || [@[@".", @".."] containsObject:remoteName] ||
-            ![localName isEqual:localName.lastPathComponent] || ![remoteName isEqual:remoteName.lastPathComponent]) continue;
-        NSURL *local = [directory URLByAppendingPathComponent:localName];
-        NSURL *remote = [directory URLByAppendingPathComponent:remoteName];
-        if (![manager fileExistsAtPath:local.path] || ![manager fileExistsAtPath:remote.path]) continue;
-        NSString *destinationPath = [manifest[@"destination"] isKindOfClass:NSString.class] ? manifest[@"destination"] : nil;
-        NSString *directoryPath = directory.URLByResolvingSymlinksInPath.standardizedURL.path;
-        NSString *standardDestination = destinationPath.isAbsolutePath ?
-            [NSURL fileURLWithPath:destinationPath].URLByResolvingSymlinksInPath.standardizedURL.path : nil;
-        BOOL validDestination = destinationPath.isAbsolutePath &&
-            ![standardDestination isEqualToString:directoryPath] &&
-            ![standardDestination hasPrefix:[directoryPath stringByAppendingString:@"/"]];
-        NSURL *destination = validDestination ? [NSURL fileURLWithPath:destinationPath] :
-                            [directory.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"Recovered recording.wav"];
-        [jobs addObject:@{@"directoryURL": directory, @"localURL": local, @"remoteURL": remote,
-                         @"destinationURL": destination, @"needsNewDestination": @(!validDestination)}];
+        struct stat info;
+        if (lstat(directory.fileSystemRepresentation, &info) != 0 || !S_ISDIR(info.st_mode)) continue;
+        // A newly created capture directory has no pair of tracks yet. Do not
+        // take its first claim away from capture admission while scanning.
+        if ([NSFileManager.defaultManager contentsOfDirectoryAtURL:directory
+            includingPropertiesForKeys:nil options:0 error:nil].count < 2) continue;
+        AKRecordingJobOwnership *owner = AKClaimRecordingJob(directory, nil);
+        if (!owner) continue;
+        NSDictionary *job = RecordingRecoveryJobForOwner(owner);
+        [owner releaseClaim];
+        if (job) [jobs addObject:job];
     }
     return jobs;
 }
@@ -120,32 +366,41 @@ void AKReportRecordingExportFailure(NSURL *directory, NSURL *destination, NSErro
 }
 
 void AKRetryRecordingRecoveryJob(NSDictionary *job, NSURL *destination, void (^completion)(BOOL)) {
+    // The dictionary is a UI snapshot, never authority to convert/delete files.
+    // Acquire before reading tracks and retain this claim through main cleanup.
+    AKRecordingJobOwnership *owner = AKClaimRecordingJob(job[@"directoryURL"], nil);
+    NSDictionary *current = owner ? RecordingRecoveryJobForOwner(owner) : nil;
+    NSString *snapshotIdentity = job[@"directoryIdentity"];
+    if (!current || (snapshotIdentity && ![snapshotIdentity isEqual:current[@"directoryIdentity"]])) {
+        [owner releaseClaim];
+        dispatch_async(dispatch_get_main_queue(), ^{ if (completion) completion(NO); });
+        return;
+    }
+    NSURL *directory = owner.directoryURL;
+    NSURL *local = current[@"localURL"];
+    NSURL *remote = current[@"remoteURL"];
     BOOL accessGranted = [destination startAccessingSecurityScopedResource];
     void (^finish)(BOOL) = ^(BOOL succeeded) {
+        AKFinishRecordingRecoveryJob(owner, succeeded);
+        if (!succeeded) AKReportRecordingExportFailure(directory, destination, nil);
         if (accessGranted) [destination stopAccessingSecurityScopedResource];
         if (completion) completion(succeeded);
     };
-    NSURL *directory = job[@"directoryURL"];
-    NSURL *local = job[@"localURL"];
-    NSURL *remote = job[@"remoteURL"];
     NSError *error = nil;
     // A failed original export owns no successful output. Never silently erase a
     // different recording later created at its old destination.
     if ([NSFileManager.defaultManager fileExistsAtPath:destination.path] ||
-        !AKPersistRecordingRecoveryJob(directory, local, remote, destination, &error)) {
+        !AKPersistOwnedRecordingRecoveryJob(owner, local, remote, destination, AKRecordingJobPhaseFinalising, &error)) {
+        AKFinishRecordingRecoveryJob(owner, NO);
         AKReportRecordingExportFailure(directory, destination, error ?: [NSError errorWithDomain:NSCocoaErrorDomain
              code:NSFileWriteFileExistsError userInfo:@{NSLocalizedDescriptionKey: @"Choose a new filename to recover this recording."}]);
-        dispatch_async(dispatch_get_main_queue(), ^{ finish(NO); });
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (accessGranted) [destination stopAccessingSecurityScopedResource];
+            if (completion) completion(NO);
+        });
         return;
     }
-    AKMergeMonoRecordingsIntoStereoAsync(local, remote, destination, ^(BOOL succeeded) {
-        if (succeeded) {
-            [NSFileManager.defaultManager removeItemAtURL:directory error:nil];
-        } else {
-            AKReportRecordingExportFailure(directory, destination, nil);
-        }
-        finish(succeeded);
-    });
+    AKMergeMonoRecordingsIntoStereoAsync(local, remote, destination, finish);
 }
 
 typedef NS_ENUM(NSUInteger, AKRecordingEncoder) {

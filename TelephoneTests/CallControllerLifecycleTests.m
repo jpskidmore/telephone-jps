@@ -6,6 +6,7 @@
 #import <XCTest/XCTest.h>
 
 #import "AKSIPCall.h"
+#import "AKStereoRecording.h"
 #import "CallController.h"
 #import "AccountController.h"
 
@@ -130,6 +131,8 @@
 - (BOOL)stopNativeRecorders;
 - (void)finalizeRecordingFromLocalURL:(NSURL *)localURL remoteURL:(NSURL *)remoteURL
                      destinationURL:(NSURL *)destinationURL completion:(void (^)(BOOL))completion;
+- (BOOL)persistRecordingRecoveryJobAtDirectory:(NSURL *)directory localURL:(NSURL *)local
+                                    remoteURL:(NSURL *)remote destinationURL:(NSURL *)destination error:(NSError **)error;
 @end
 
 @interface AKScopeReleaseSpy : NSObject
@@ -151,9 +154,11 @@
 @property(nonatomic) BOOL recordingActive;
 @property(nonatomic) BOOL setupFails;
 @property(nonatomic) BOOL nativeStopFails;
+@property(nonatomic) BOOL manifestFails;
 @property(nonatomic) NSUInteger nativeStops;
 @property(nonatomic, copy) void (^pendingCompletion)(BOOL);
 @property(nonatomic, strong) NSURL *testDirectory;
+@property(nonatomic, strong) NSURL *testRoot;
 - (void)complete:(BOOL)succeeded;
 @end
 @implementation AKDeferredRecordingCall
@@ -161,10 +166,22 @@
 - (BOOL)requiresSIPControlThread { return NO; }
 - (BOOL)startRecordingToURL:(NSURL *)URL {
     if (self.setupFails) return NO;
-    self.recordingActive = YES;
-    self.testDirectory = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString]
+    self.testRoot = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString]
                                     isDirectory:YES];
-    [NSFileManager.defaultManager createDirectoryAtURL:self.testDirectory withIntermediateDirectories:YES attributes:nil error:nil];
+    NSError *error = nil;
+    self.testDirectory = AKCreateRecordingRecoveryDirectoryAtRoot(self.testRoot, &error);
+    AKRecordingJobOwnership *ownership = self.testDirectory ? AKClaimRecordingJob(self.testDirectory, &error) : nil;
+    NSURL *local = [self.testDirectory URLByAppendingPathComponent:@"local.wav"];
+    NSURL *remote = [self.testDirectory URLByAppendingPathComponent:@"remote.wav"];
+    NSData *raw = [@"Synthetic held capture" dataUsingEncoding:NSUTF8StringEncoding];
+    if (!ownership || !AKPersistOwnedRecordingRecoveryJob(ownership, local, remote, URL,
+                                                         AKRecordingJobPhaseCapturing, &error) ||
+        ![raw writeToURL:local atomically:YES] || ![raw writeToURL:remote atomically:YES]) {
+        if (ownership) AKDiscardRecordingRecoveryJob(ownership);
+        return NO;
+    }
+    self.recordingActive = YES;
+    [self setValue:ownership forKey:@"recordingJobOwnership"];
     [self setValue:URL forKey:@"recordingURL"];
     [self setValue:[self.testDirectory URLByAppendingPathComponent:@"local.wav"] forKey:@"localRecordingURL"];
     [self setValue:[self.testDirectory URLByAppendingPathComponent:@"remote.wav"] forKey:@"remoteRecordingURL"];
@@ -181,12 +198,14 @@
                      destinationURL:(NSURL *)destinationURL completion:(void (^)(BOOL))completion {
     self.pendingCompletion = completion;
 }
-- (BOOL)persistRecordingRecoveryJobAtDirectory:(NSURL *)directory localURL:(NSURL *)local remoteURL:(NSURL *)remote destinationURL:(NSURL *)destination error:(NSError **)error { return YES; }
+- (BOOL)persistRecordingRecoveryJobAtDirectory:(NSURL *)directory localURL:(NSURL *)local remoteURL:(NSURL *)remote destinationURL:(NSURL *)destination error:(NSError **)error {
+    return !self.manifestFails && [super persistRecordingRecoveryJobAtDirectory:directory localURL:local
+                                                                   remoteURL:remote destinationURL:destination error:error];
+}
 - (void)complete:(BOOL)succeeded {
     void (^completion)(BOOL) = self.pendingCompletion;
     self.pendingCompletion = nil;
     if (completion) completion(succeeded);
-    [NSFileManager.defaultManager removeItemAtURL:self.testDirectory error:nil];
 }
 @end
 
@@ -225,6 +244,8 @@
     XCTAssertEqual(scope.releases, 1u);
     [(firstCallFirst ? b : a) complete:NO]; // Failed conversion must also release.
     XCTAssertEqual(scope.releases, 2u);
+    [NSFileManager.defaultManager removeItemAtURL:a.testRoot error:nil];
+    [NSFileManager.defaultManager removeItemAtURL:b.testRoot error:nil];
 }
 - (void)testRedialStopsSecondRecordingWhileFirstConversionIsPending {
     [self checkReplacementCompletingFirstCallFirst:YES];
@@ -252,12 +273,14 @@
     [call stopRecordingWithCompletion:^(BOOL succeeded) { reportedFailure = !succeeded; }];
     XCTAssertTrue(reportedFailure);
     XCTAssertTrue(call.isRecording);
+    XCTAssertEqual(AKRecordingRecoveryJobsAtRoot(call.testRoot).count, 0u);
     XCTAssertEqual(scope.releases, 0u);
     XCTAssertNil(call.pendingCompletion);
     call.nativeStopFails = NO;
     [call stopRecording];
     [call complete:YES];
     XCTAssertEqual(scope.releases, 1u);
+    [NSFileManager.defaultManager removeItemAtURL:call.testRoot error:nil];
 }
 - (void)testControllerDeallocationStopsCurrentCallDuringEarlierConversion {
     AKDeferredRecordingCall *a = [[AKDeferredRecordingCall alloc] init];
@@ -279,6 +302,86 @@
     [a complete:YES];
     [b complete:YES];
     XCTAssertEqual(scope.releases, 2u);
+    [NSFileManager.defaultManager removeItemAtURL:a.testRoot error:nil];
+    [NSFileManager.defaultManager removeItemAtURL:b.testRoot error:nil];
+}
+
+- (void)testCaptureAndHeldEncoderCompletionStayOutOfRecovery {
+    AKDeferredRecordingCall *call = [[AKDeferredRecordingCall alloc] init];
+    NSURL *destination = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:
+                                               [NSUUID.UUID.UUIDString stringByAppendingString:@".wav"]]];
+    XCTAssertTrue([call startRecordingToURL:destination]);
+    NSURL *local = [call.testDirectory URLByAppendingPathComponent:@"local.wav"];
+    NSURL *remote = [call.testDirectory URLByAppendingPathComponent:@"remote.wav"];
+    NSData *original = [NSData dataWithContentsOfURL:local];
+    NSDictionary *staleJob = @{@"directoryURL": call.testDirectory, @"localURL": local,
+                               @"remoteURL": remote, @"destinationURL": destination};
+    __block NSUInteger failureNotifications = 0;
+    id observer = [NSNotificationCenter.defaultCenter addObserverForName:AKRecordingExportDidFailNotification
+        object:nil queue:nil usingBlock:^(NSNotification *note) { failureNotifications++; }];
+    for (NSUInteger phase = 0; phase < 2; phase++) {
+        XCTAssertEqual(AKRecordingRecoveryJobsAtRoot(call.testRoot).count, 0u);
+        XCTestExpectation *rejected = [self expectationWithDescription:@"Owned recovery rejected on main"];
+        __block BOOL returned = NO;
+        AKRetryRecordingRecoveryJob(staleJob, destination, ^(BOOL succeeded) {
+            XCTAssertTrue(NSThread.isMainThread);
+            XCTAssertFalse(succeeded);
+            XCTAssertTrue(returned);
+            [rejected fulfill];
+        });
+        returned = YES;
+        [self waitForExpectations:@[rejected] timeout:2];
+        XCTAssertEqual(failureNotifications, 0u);
+        XCTAssertEqualObjects([NSData dataWithContentsOfURL:local], original);
+        if (phase == 0) {
+            [call stopRecording];
+            XCTAssertFalse(call.isRecording);
+            XCTAssertNotNil(call.pendingCompletion); // Encoder completion is explicitly held.
+            NSDictionary *manifest = [NSDictionary dictionaryWithContentsOfURL:
+                                      [call.testDirectory URLByAppendingPathComponent:@"recovery.plist"]];
+            XCTAssertEqualObjects(manifest[@"state"], @"finalising");
+        }
+    }
+    [NSNotificationCenter.defaultCenter removeObserver:observer];
+    [call complete:NO];
+    XCTAssertEqual(AKRecordingRecoveryJobsAtRoot(call.testRoot).count, 1u);
+    XCTAssertEqualObjects([NSData dataWithContentsOfURL:local], original);
+    XCTAssertTrue([NSFileManager.defaultManager fileExistsAtPath:remote.path]);
+    [NSFileManager.defaultManager removeItemAtURL:call.testRoot error:nil];
+}
+
+- (void)testEarlierCompletedOwnerCannotRemoveANewerRecoveryClaim {
+    AKDeferredRecordingCall *call = [[AKDeferredRecordingCall alloc] init];
+    XCTAssertTrue([call startRecordingToURL:[NSURL fileURLWithPath:@"/unused/ownership.wav"]]);
+    AKRecordingJobOwnership *earlier = [call valueForKey:@"recordingJobOwnership"];
+    [call stopRecording];
+    [call complete:NO];
+    AKRecordingJobOwnership *current = AKClaimRecordingJob(call.testDirectory, nil);
+    XCTAssertNotNil(current);
+    AKFinishRecordingRecoveryJob(earlier, YES);
+    XCTAssertTrue([NSFileManager.defaultManager fileExistsAtPath:
+                   [call.testDirectory URLByAppendingPathComponent:@"local.wav"].path]);
+    XCTAssertEqual(AKRecordingRecoveryJobsAtRoot(call.testRoot).count, 0u);
+    AKFinishRecordingRecoveryJob(current, NO);
+    XCTAssertEqual(AKRecordingRecoveryJobsAtRoot(call.testRoot).count, 1u);
+    [NSFileManager.defaultManager removeItemAtURL:call.testRoot error:nil];
+}
+
+- (void)testFinalisationManifestFailureRetainsRawAndReleasesTheClaim {
+    AKDeferredRecordingCall *call = [[AKDeferredRecordingCall alloc] init];
+    AKScopeReleaseSpy *scope = [[AKScopeReleaseSpy alloc] init];
+    XCTAssertTrue([call startRecordingToURL:[NSURL fileURLWithPath:@"/unused/manifest.wav"]
+                       accessedDirectoryURL:(NSURL *)scope]);
+    call.manifestFails = YES;
+    __block BOOL failed = NO;
+    [call stopRecordingWithCompletion:^(BOOL succeeded) { failed = !succeeded; }];
+    XCTAssertTrue(failed);
+    XCTAssertEqual(scope.releases, 1u);
+    XCTAssertNil(call.pendingCompletion);
+    XCTAssertEqual(AKRecordingRecoveryJobsAtRoot(call.testRoot).count, 1u);
+    XCTAssertTrue([NSFileManager.defaultManager fileExistsAtPath:
+                   [call.testDirectory URLByAppendingPathComponent:@"local.wav"].path]);
+    [NSFileManager.defaultManager removeItemAtURL:call.testRoot error:nil];
 }
 @end
 

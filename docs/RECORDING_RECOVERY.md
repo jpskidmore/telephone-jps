@@ -48,6 +48,14 @@ export inside that job is rejected so cleanup cannot delete the recovered file.
 Successful export and failure both finish the session's ownership exactly once;
 failed export retains the job independently of a closed call window.
 
+The source fix for [#57](maintenance/2026-10-19-recording-ownership.md), awaiting
+the combined roadmap release, makes that ownership exclusive across discovery
+and retry. A per-job process lock spans capture through finalisation/cleanup;
+version 2 metadata records capturing, finalising, failed or completed. Owned
+jobs are hidden from failed recovery. After process death, unowned unfinished
+jobs and safe legacy/malformed jobs remain recoverable. Failed exports retain
+raw tracks; completed jobs are excluded even when cleanup was interrupted.
+
 If local audio fails during a call, the existing recording segment is stopped and
 finalized. A successful explicit audio retry can begin a new separately named
 segment under the existing recording preference. No captured audio is claimed

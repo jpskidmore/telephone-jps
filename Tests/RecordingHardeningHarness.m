@@ -4,6 +4,7 @@
 #import "AKStereoRecording.h"
 
 #include <math.h>
+#include <unistd.h>
 #import <objc/runtime.h>
 
 // Redirect only the two NSURL scope-token boundaries while the scratch retry
@@ -93,8 +94,266 @@ static BOOL CheckWaveChannels(NSURL *URL) {
            energy[0] > energy[1] * 25 && energy[3] > energy[2] * 25;
 }
 
-int main(void) {
+static NSUInteger OwnershipChecks;
+#define REQUIRE_OWNERSHIP(condition) do { \
+    OwnershipChecks++; \
+    if (!(condition)) { fprintf(stderr, "Recording ownership failed at line %d: %s\n", __LINE__, #condition); return NO; } \
+} while (0)
+
+static BOOL SpinUntil(BOOL (^condition)(void), NSTimeInterval timeout) {
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
+    while (!condition() && deadline.timeIntervalSinceNow > 0)
+        [NSRunLoop.mainRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
+    return condition();
+}
+
+static NSDictionary *ReadManifest(NSURL *directory) {
+    NSData *data = [NSData dataWithContentsOfURL:[directory URLByAppendingPathComponent:@"recovery.plist"]];
+    return data ? [NSPropertyListSerialization propertyListWithData:data options:0 format:nil error:nil] : nil;
+}
+
+static BOOL WriteManifest(NSURL *directory, NSDictionary *manifest) {
+    NSData *data = [NSPropertyListSerialization dataWithPropertyList:manifest
+        format:NSPropertyListBinaryFormat_v1_0 options:0 error:nil];
+    return [data writeToURL:[directory URLByAppendingPathComponent:@"recovery.plist"] atomically:YES];
+}
+
+static BOOL WriteJobTracks(NSURL *directory) {
+    return WriteTrack([directory URLByAppendingPathComponent:@"local.wav"], 16000, YES) &&
+        WriteTrack([directory URLByAppendingPathComponent:@"remote.wav"], 16000, NO);
+}
+
+static BOOL RunOwnershipCases(NSURL *scratch, NSURL *executable) {
+    NSFileManager *manager = NSFileManager.defaultManager;
+    NSURL *root = [scratch URLByAppendingPathComponent:@"Owned recovery" isDirectory:YES];
+    NSURL *directory = AKCreateRecordingRecoveryDirectoryAtRoot(root, nil);
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    REQUIRE_OWNERSHIP(![manager fileExistsAtPath:[directory URLByAppendingPathComponent:@".owner.lock"].path]);
+    NSURL *local = [directory URLByAppendingPathComponent:@"local.wav"];
+    NSURL *remote = [directory URLByAppendingPathComponent:@"remote.wav"];
+    NSURL *output = [scratch URLByAppendingPathComponent:@"owned-recovered.wav"];
+    REQUIRE_OWNERSHIP(directory && WriteJobTracks(directory));
+    REQUIRE_OWNERSHIP(AKPersistRecordingRecoveryJob(directory, local, remote, output, nil));
+    NSDictionary *snapshot = AKRecordingRecoveryJobsAtRoot(root).firstObject;
+    REQUIRE_OWNERSHIP(snapshot != nil);
+    AKRecordingJobOwnership *owner = AKClaimRecordingJob(directory, nil);
+    REQUIRE_OWNERSHIP(owner != nil);
+    REQUIRE_OWNERSHIP(AKPersistOwnedRecordingRecoveryJob(owner, local, remote, output, AKRecordingJobPhaseCapturing, nil));
+    REQUIRE_OWNERSHIP([ReadManifest(directory)[@"version"] isEqual:@2] &&
+        [ReadManifest(directory)[@"state"] isEqual:@"capturing"]);
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    REQUIRE_OWNERSHIP(AKClaimRecordingJob(directory, nil) == nil);
+    NSNumber *lockPermissions = [manager attributesOfItemAtPath:
+        [directory URLByAppendingPathComponent:@".owner.lock"].path error:nil][NSFilePosixPermissions];
+    REQUIRE_OWNERSHIP(lockPermissions.unsignedIntegerValue == 0600);
+    NSURL *alias = [scratch URLByAppendingPathComponent:@"owned-alias"];
+    REQUIRE_OWNERSHIP([manager createSymbolicLinkAtURL:alias withDestinationURL:directory error:nil]);
+    REQUIRE_OWNERSHIP(AKClaimRecordingJob(alias, nil) == nil);
+
+    __block NSUInteger failures = 0;
+    id observer = [NSNotificationCenter.defaultCenter addObserverForName:AKRecordingExportDidFailNotification
+        object:nil queue:nil usingBlock:^(NSNotification *note) { failures++; }];
+    __block NSUInteger rejectedCallbacks = 0;
+    __block BOOL rejectionOnMain = YES;
+    AKRetryRecordingRecoveryJob(snapshot, output, ^(BOOL succeeded) {
+        rejectedCallbacks++; rejectionOnMain &= !succeeded && NSThread.isMainThread;
+    });
+    REQUIRE_OWNERSHIP(rejectedCallbacks == 0);
+    REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return rejectedCallbacks == 1; }, 2));
+    REQUIRE_OWNERSHIP(rejectionOnMain && failures == 0 && ![manager fileExistsAtPath:output.path]);
+    // Ownership, rather than a readable manifest, hides a healthy recording.
+    REQUIRE_OWNERSHIP([@"malformed" writeToURL:[directory URLByAppendingPathComponent:@"recovery.plist"]
+        atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    REQUIRE_OWNERSHIP(AKPersistOwnedRecordingRecoveryJob(owner, local, remote, output, AKRecordingJobPhaseFinalising, nil));
+    REQUIRE_OWNERSHIP([ReadManifest(directory)[@"state"] isEqual:@"finalising"]);
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    REQUIRE_OWNERSHIP(!AKPersistRecordingRecoveryJob(directory, local, remote, output, nil));
+    AKRetryRecordingRecoveryJob(snapshot, output, ^(BOOL succeeded) {
+        rejectedCallbacks++; rejectionOnMain &= !succeeded && NSThread.isMainThread;
+    });
+    REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return rejectedCallbacks == 2; }, 2));
+    REQUIRE_OWNERSHIP(rejectionOnMain && failures == 0);
+    AKFinishRecordingRecoveryJob(owner, NO);
+    REQUIRE_OWNERSHIP([ReadManifest(directory)[@"state"] isEqual:@"failed"]);
+    AKFinishRecordingRecoveryJob(owner, YES);
+    AKDiscardRecordingRecoveryJob(owner);
+    REQUIRE_OWNERSHIP([manager fileExistsAtPath:local.path] && [manager fileExistsAtPath:remote.path]);
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 1);
+
+    // A snapshot's track URLs are ignored; the currently claimed manifest wins.
+    NSMutableDictionary *forgedTracks = [snapshot mutableCopy];
+    forgedTracks[@"localURL"] = [scratch URLByAppendingPathComponent:@"not-this-job.wav"];
+    forgedTracks[@"remoteURL"] = forgedTracks[@"localURL"];
+    __block NSUInteger successfulCallbacks = 0;
+    __block BOOL successfulOnMain = NO;
+    AKRetryRecordingRecoveryJob(forgedTracks, output, ^(BOOL succeeded) {
+        successfulCallbacks++; successfulOnMain = succeeded && NSThread.isMainThread;
+    });
+    // Main has not run the encoder completion, so finalisation is held even if
+    // the short synthetic conversion has already finished on its worker.
+    REQUIRE_OWNERSHIP([ReadManifest(directory)[@"state"] isEqual:@"finalising"]);
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    REQUIRE_OWNERSHIP(AKClaimRecordingJob(directory, nil) == nil);
+    AKRetryRecordingRecoveryJob(snapshot, [scratch URLByAppendingPathComponent:@"duplicate.wav"], ^(BOOL succeeded) {
+        rejectedCallbacks++; rejectionOnMain &= !succeeded && NSThread.isMainThread;
+    });
+    __block BOOL drained = NO;
+    AKWaitForPendingRecordingFinalizations(^{
+        drained = successfulCallbacks == 1 && ![manager fileExistsAtPath:directory.path] && NSThread.isMainThread;
+    });
+    REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return drained && rejectedCallbacks == 3; }, 10));
+    REQUIRE_OWNERSHIP(successfulOnMain && rejectionOnMain && failures == 0 && CheckWaveChannels(output));
+    REQUIRE_OWNERSHIP(![manager fileExistsAtPath:[scratch URLByAppendingPathComponent:@"duplicate.wav"].path]);
+    AKRetryRecordingRecoveryJob(snapshot, [scratch URLByAppendingPathComponent:@"stale.wav"], ^(BOOL succeeded) {
+        rejectedCallbacks++; rejectionOnMain &= !succeeded && NSThread.isMainThread;
+    });
+    REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return rejectedCallbacks == 4; }, 2));
+    REQUIRE_OWNERSHIP(rejectionOnMain && failures == 0);
+
+    // A real converter failure releases ownership, marks failed and keeps raw.
+    directory = AKCreateRecordingRecoveryDirectoryAtRoot(root, nil);
+    local = [directory URLByAppendingPathComponent:@"local.wav"];
+    remote = [directory URLByAppendingPathComponent:@"remote.wav"];
+    REQUIRE_OWNERSHIP(WriteJobTracks(directory));
+    snapshot = AKRecordingRecoveryJobsAtRoot(root).firstObject;
+    __block BOOL failedCallback = NO;
+    AKRetryRecordingRecoveryJob(snapshot, [scratch URLByAppendingPathComponent:@"bad-export.invalid"], ^(BOOL succeeded) {
+        failedCallback = !succeeded && NSThread.isMainThread;
+    });
+    REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return failedCallback && failures == 1; }, 10));
+    REQUIRE_OWNERSHIP([ReadManifest(directory)[@"state"] isEqual:@"failed"]);
+    REQUIRE_OWNERSHIP([manager fileExistsAtPath:local.path] && [manager fileExistsAtPath:remote.path]);
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 1);
+    owner = AKClaimRecordingJob(directory, nil);
+    REQUIRE_OWNERSHIP(owner != nil);
+    AKDiscardRecordingRecoveryJob(owner);
+    REQUIRE_OWNERSHIP(![manager fileExistsAtPath:directory.path]);
+    // Neither a stale UI snapshot nor a finished owner can remove a replacement
+    // directory which happens to reuse the old pathname.
+    REQUIRE_OWNERSHIP([manager createDirectoryAtURL:directory withIntermediateDirectories:NO attributes:nil error:nil]);
+    REQUIRE_OWNERSHIP(WriteJobTracks(directory));
+    NSDictionary *replacement = AKRecordingRecoveryJobsAtRoot(root).firstObject;
+    REQUIRE_OWNERSHIP(![snapshot[@"directoryIdentity"] isEqual:replacement[@"directoryIdentity"]]);
+    AKFinishRecordingRecoveryJob(owner, YES);
+    AKDiscardRecordingRecoveryJob(owner);
+    REQUIRE_OWNERSHIP([manager fileExistsAtPath:local.path] && [manager fileExistsAtPath:remote.path]);
+    AKRetryRecordingRecoveryJob(snapshot, [scratch URLByAppendingPathComponent:@"reused-stale.wav"], ^(BOOL succeeded) {
+        rejectedCallbacks++; rejectionOnMain &= !succeeded && NSThread.isMainThread;
+    });
+    REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return rejectedCallbacks == 5; }, 2));
+    REQUIRE_OWNERSHIP(rejectionOnMain && failures == 1 && [manager fileExistsAtPath:local.path]);
+    owner = AKClaimRecordingJob(directory, nil);
+    REQUIRE_OWNERSHIP(owner != nil);
+    AKDiscardRecordingRecoveryJob(owner);
+
+    // Missing, legacy and malformed metadata keep a safe conventional pair.
+    directory = AKCreateRecordingRecoveryDirectoryAtRoot(root, nil);
+    REQUIRE_OWNERSHIP(WriteJobTracks(directory));
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 1);
+    REQUIRE_OWNERSHIP([@"bad plist" writeToURL:[directory URLByAppendingPathComponent:@"recovery.plist"]
+        atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 1);
+    REQUIRE_OWNERSHIP(WriteManifest(directory, @{@"version": @2, @"state": @"capturing", @"local": @"../escape.wav", @"remote": @7}));
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 1);
+    REQUIRE_OWNERSHIP(AKPersistRecordingRecoveryJob(directory,
+        [directory URLByAppendingPathComponent:@"local.wav"], [directory URLByAppendingPathComponent:@"remote.wav"], output, nil));
+    REQUIRE_OWNERSHIP([ReadManifest(directory)[@"version"] isEqual:@1] && AKRecordingRecoveryJobsAtRoot(root).count == 1);
+    REQUIRE_OWNERSHIP(WriteManifest(directory, @{@"version": @2, @"state": @"completed"}));
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    AKRetryRecordingRecoveryJob(@{@"directoryURL": directory}, [scratch URLByAppendingPathComponent:@"completed.wav"], ^(BOOL succeeded) {
+        rejectedCallbacks++; rejectionOnMain &= !succeeded && NSThread.isMainThread;
+    });
+    REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return rejectedCallbacks == 6; }, 2));
+    REQUIRE_OWNERSHIP(rejectionOnMain && failures == 1);
+    owner = AKClaimRecordingJob(directory, nil);
+    REQUIRE_OWNERSHIP(owner != nil);
+    AKFinishRecordingRecoveryJob(owner, YES);
+    REQUIRE_OWNERSHIP(![manager fileExistsAtPath:directory.path]);
+
+    // Lock and raw-file symlinks are never followed.
+    directory = AKCreateRecordingRecoveryDirectoryAtRoot(root, nil);
+    REQUIRE_OWNERSHIP(WriteJobTracks(directory));
+    NSURL *outside = [scratch URLByAppendingPathComponent:@"outside-lock"];
+    REQUIRE_OWNERSHIP([@"unchanged" writeToURL:outside atomically:YES encoding:NSUTF8StringEncoding error:nil]);
+    REQUIRE_OWNERSHIP([manager createSymbolicLinkAtURL:[directory URLByAppendingPathComponent:@".owner.lock"]
+        withDestinationURL:outside error:nil]);
+    REQUIRE_OWNERSHIP(AKClaimRecordingJob(directory, nil) == nil && AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    REQUIRE_OWNERSHIP([[NSString stringWithContentsOfURL:outside encoding:NSUTF8StringEncoding error:nil] isEqual:@"unchanged"]);
+    REQUIRE_OWNERSHIP([manager removeItemAtURL:[directory URLByAppendingPathComponent:@".owner.lock"] error:nil]);
+    REQUIRE_OWNERSHIP([manager removeItemAtURL:[directory URLByAppendingPathComponent:@"local.wav"] error:nil]);
+    REQUIRE_OWNERSHIP([manager createSymbolicLinkAtURL:[directory URLByAppendingPathComponent:@"local.wav"]
+        withDestinationURL:outside error:nil]);
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    owner = AKClaimRecordingJob(directory, nil);
+    AKDiscardRecordingRecoveryJob(owner);
+
+    // A deallocated owner leaves abandoned capturing raw audio recoverable.
+    directory = AKCreateRecordingRecoveryDirectoryAtRoot(root, nil);
+    REQUIRE_OWNERSHIP(WriteJobTracks(directory));
     @autoreleasepool {
+        AKRecordingJobOwnership *abandoned = AKClaimRecordingJob(directory, nil);
+        REQUIRE_OWNERSHIP(abandoned != nil);
+        REQUIRE_OWNERSHIP(AKPersistOwnedRecordingRecoveryJob(abandoned,
+            [directory URLByAppendingPathComponent:@"local.wav"], [directory URLByAppendingPathComponent:@"remote.wav"],
+            output, AKRecordingJobPhaseCapturing, nil));
+        REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    }
+    REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 1);
+    owner = AKClaimRecordingJob(directory, nil);
+    AKDiscardRecordingRecoveryJob(owner);
+
+    // A separate process holds the claim while alive. Terminating it models an
+    // abrupt capture/finalisation exit, without running finish or deallocation.
+    for (NSString *phase in @[@"capturing", @"finalising"]) {
+        directory = AKCreateRecordingRecoveryDirectoryAtRoot(root, nil);
+        REQUIRE_OWNERSHIP(WriteJobTracks(directory));
+        snapshot = AKRecordingRecoveryJobsAtRoot(root).firstObject;
+        NSTask *child = [[NSTask alloc] init];
+        child.executableURL = executable;
+        child.arguments = @[@"--abandon-job", directory.path, phase];
+        REQUIRE_OWNERSHIP([child launchAndReturnError:nil]);
+        NSURL *ready = [directory URLByAppendingPathComponent:@"ready"];
+        BOOL readyToTest = SpinUntil(^BOOL { return [manager fileExistsAtPath:ready.path] || !child.isRunning; }, 5) && child.isRunning;
+        if (!readyToTest && child.isRunning) [child terminate];
+        REQUIRE_OWNERSHIP(readyToTest);
+        REQUIRE_OWNERSHIP([ReadManifest(directory)[@"state"] isEqual:phase]);
+        REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
+        REQUIRE_OWNERSHIP(AKClaimRecordingJob(directory, nil) == nil);
+        __block BOOL childRejection = NO;
+        AKRetryRecordingRecoveryJob(snapshot, [scratch URLByAppendingPathComponent:@"child-busy.wav"], ^(BOOL succeeded) {
+            childRejection = !succeeded && NSThread.isMainThread;
+        });
+        REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return childRejection; }, 2));
+        REQUIRE_OWNERSHIP(failures == 1);
+        [child terminate];
+        [child waitUntilExit];
+        REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 1);
+        REQUIRE_OWNERSHIP([ReadManifest(directory)[@"state"] isEqual:phase]);
+        NSURL *restartOutput = [scratch URLByAppendingPathComponent:[phase stringByAppendingString:@"-restart.wav"]];
+        __block BOOL restartRecovered = NO;
+        AKRetryRecordingRecoveryJob(snapshot, restartOutput, ^(BOOL succeeded) {
+            restartRecovered = succeeded && NSThread.isMainThread;
+        });
+        REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return restartRecovered; }, 10));
+        REQUIRE_OWNERSHIP(CheckWaveChannels(restartOutput) && ![manager fileExistsAtPath:directory.path]);
+    }
+    [NSNotificationCenter.defaultCenter removeObserver:observer];
+    REQUIRE_OWNERSHIP(failures == 1 && AKRecordingRecoveryJobsAtRoot(root).count == 0);
+    return YES;
+}
+
+int main(int argc, const char *argv[]) {
+    @autoreleasepool {
+        if (argc == 4 && strcmp(argv[1], "--abandon-job") == 0) {
+            NSURL *job = [NSURL fileURLWithPath:[NSString stringWithUTF8String:argv[2]] isDirectory:YES];
+            AKRecordingJobOwnership *owner = AKClaimRecordingJob(job, nil);
+            AKRecordingJobPhase phase = strcmp(argv[3], "capturing") == 0 ? AKRecordingJobPhaseCapturing : AKRecordingJobPhaseFinalising;
+            if (!owner || !AKPersistOwnedRecordingRecoveryJob(owner, [job URLByAppendingPathComponent:@"local.wav"],
+                [job URLByAppendingPathComponent:@"remote.wav"], [job.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"child.wav"], phase, nil)) return 41;
+            if (![@"ready" writeToURL:[job URLByAppendingPathComponent:@"ready"] atomically:YES encoding:NSUTF8StringEncoding error:nil]) return 42;
+            while (YES) { pause(); (void)owner.directoryURL; }
+        }
         NSFileManager *manager = NSFileManager.defaultManager;
         NSURL *directory = [manager.temporaryDirectory URLByAppendingPathComponent:NSUUID.UUID.UUIDString
                                                                         isDirectory:YES];
@@ -315,8 +574,10 @@ int main(void) {
         method_setImplementation(scopeStop, originalStop);
         if (!scopeBalanced || !CheckWaveChannels(scopedOutput) || [manager fileExistsAtPath:scopedJob.path]) return 29;
 
+        NSURL *executable = [NSURL fileURLWithPath:[NSString stringWithUTF8String:argv[0]]];
+        if (!RunOwnershipCases(directory, executable)) return 40;
         [manager removeItemAtURL:directory error:nil];
-        printf("recording hardening harness passed\n");
+        printf("recording hardening harness passed (%lu ownership assertions)\n", (unsigned long)OwnershipChecks);
     }
     return 0;
 }
