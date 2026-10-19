@@ -1,5 +1,12 @@
 # Maintenance handover — 3.5.1 Guided routes crash repair
 
+The owner authorised the ranked roadmap on **19 October 2026**, one issue at a
+time. **Issue #53 is verified:** private repository visibility is restored;
+authenticated access, all 11 releases/60 asset records and 11 remote tags are
+preserved. Read the [dated visibility record](maintenance/2026-10-19-visibility.md).
+This is a repository-settings/documentation change; the installed app remains
+3.5.1/build 163. Later roadmap items are separate work.
+
 **3.5.1/build 163 is complete**: the Guided routes menu crash is repaired, 665 fresh local cases passed, the verified app is installed, and private Latest/source/docs publication is complete. Immutable release source/tag: `e111e5daee9e57f26c66c9a42d40b6f1f4f25edc`; release ID 407227459. The owner reported “tested - looks good” after the Keychain handoff. Read [hotfix notes](releases/3.5.1.md) and [publication proof](releases/3.5.1-verification.md). Earlier focused-window fixtures were unsuccessful; the final regression observes explicit targeting while preserving native dispatch. No independent post-authentication live-call/GUI test is claimed. The 170 routing cases and unrelated component checks remain historical 3.5 evidence matched to unchanged hashes. Preserve all prior tags/assets and user data.
 
 

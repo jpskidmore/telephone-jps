@@ -1,0 +1,79 @@
+{
+  "captured_at": "2026-10-19T07:54:00.126203+00:00",
+  "checks": {
+    "releases": true,
+    "api_tags": true,
+    "collaborators": true,
+    "teams": true,
+    "pages": true,
+    "source_head": true,
+    "source_status": true,
+    "local_tags": true,
+    "remote_tags": true
+  },
+  "repository_metadata_changes": {
+    "private": {
+      "before": false,
+      "after": true
+    },
+    "visibility": {
+      "before": "public",
+      "after": "private"
+    }
+  },
+  "hashes_before": {
+    "release_records_sha256": "90d692b23c58f15277217e39f29f7ce9e213f5c85d7cd5d45049a9ca80a2b2c6",
+    "api_tag_records_sha256": "63e496c7e2d89af32d1f4f806701b5b54fea2b9b5ded016f4640ff9ce4a18168",
+    "remote_tag_lines_sha256": "11edc339a26f28253b7b124a7dff052fcaa1db48ee8ff0fe3657ce388f669a4e",
+    "local_tag_lines_sha256": "3f8a4cf0ba709664757416f10fa5c28f5e34dd2fcd80e1117602e51035579c0a",
+    "access_aggregate_sha256": "3f91a3b004c7bfbade3802a7ac48d89b65e566c1899f5fcb53c2db6beaa9d778"
+  },
+  "hashes_after": {
+    "release_records_sha256": "90d692b23c58f15277217e39f29f7ce9e213f5c85d7cd5d45049a9ca80a2b2c6",
+    "api_tag_records_sha256": "63e496c7e2d89af32d1f4f806701b5b54fea2b9b5ded016f4640ff9ce4a18168",
+    "remote_tag_lines_sha256": "11edc339a26f28253b7b124a7dff052fcaa1db48ee8ff0fe3657ce388f669a4e",
+    "local_tag_lines_sha256": "3f8a4cf0ba709664757416f10fa5c28f5e34dd2fcd80e1117602e51035579c0a",
+    "access_aggregate_sha256": "3f91a3b004c7bfbade3802a7ac48d89b65e566c1899f5fcb53c2db6beaa9d778"
+  },
+  "hashes_preserved": true,
+  "release_count": 11,
+  "asset_count": 60,
+  "remote_tag_ref_count": 11,
+  "local_tag_ref_count": 3,
+  "unauthenticated_visibility_checks": [
+    {
+      "url": "https://github.com/jpskidmore/telephone-jps",
+      "status": 404,
+      "final_url": "https://github.com/jpskidmore/telephone-jps",
+      "authenticated": false
+    },
+    {
+      "url": "https://api.github.com/repos/jpskidmore/telephone-jps",
+      "status": 404,
+      "final_url": "https://api.github.com/repos/jpskidmore/telephone-jps",
+      "authenticated": false
+    },
+    {
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1",
+      "status": 404,
+      "final_url": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1",
+      "authenticated": false
+    }
+  ],
+  "authenticated_small_asset_check": {
+    "release": "v3.5.1",
+    "id": 622900767,
+    "name": "SHA256SUMS.txt",
+    "expected_bytes": 539,
+    "downloaded_bytes": 539,
+    "expected_digest": "sha256:520fef78918a81c8fede5b9378ee1dcf277d06af3bc19e1269b2304e7da66587",
+    "actual_digest": "sha256:520fef78918a81c8fede5b9378ee1dcf277d06af3bc19e1269b2304e7da66587",
+    "exit": 0,
+    "size_matches": true,
+    "digest_matches": true,
+    "error": "",
+    "note": "Downloaded only this small textual asset in memory; no app archive downloaded or asset modified."
+  },
+  "access_comparison_limit": "Before and after store role/permission aggregates only, intentionally excluding collaborator/team identities.",
+  "passed": true
+}
