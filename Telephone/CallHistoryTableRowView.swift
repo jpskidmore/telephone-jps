@@ -44,12 +44,23 @@ private func makeSeparatorRect(bounds: NSRect) -> NSRect {
 /// Keeps the origin badge in the existing direction column, without widening the compact dialler.
 final class CallHistoryDirectionCellView: NSTableCellView {
     private let accountBadge = CallHistoryAccountBadgeView(frame: .zero)
+    private let callStatus = NSView(frame: .zero)
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        // NSTableView exposes the children of a view-based cell through its
+        // native AX cell. A non-drawing status child retains that hierarchy.
+        callStatus.identifier = NSUserInterfaceItemIdentifier("CallHistoryStatus")
+        callStatus.translatesAutoresizingMaskIntoConstraints = false
+        callStatus.setAccessibilityRole(.staticText)
+        addSubview(callStatus)
         accountBadge.translatesAutoresizingMaskIntoConstraints = false
         addSubview(accountBadge)
         NSLayoutConstraint.activate([
+            callStatus.centerXAnchor.constraint(equalTo: centerXAnchor),
+            callStatus.topAnchor.constraint(equalTo: topAnchor, constant: 9),
+            callStatus.widthAnchor.constraint(equalToConstant: 12),
+            callStatus.heightAnchor.constraint(equalToConstant: 12),
             accountBadge.centerXAnchor.constraint(equalTo: centerXAnchor),
             accountBadge.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -3),
             accountBadge.widthAnchor.constraint(equalToConstant: 18),
@@ -57,11 +68,25 @@ final class CallHistoryDirectionCellView: NSTableCellView {
         ])
     }
 
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        // The status child describes direction even when the incoming arrow is
+        // hidden. Its visual arrow must not announce the same information again.
+        for image in subviews.compactMap({ $0 as? NSImageView }) {
+            image.setAccessibilityElement(false)
+            image.cell?.setAccessibilityElement(false)
+        }
+    }
+
     override var objectValue: Any? {
         didSet {
             let record = objectValue as? PresentationCallHistoryRecord
             accountBadge.name = record?.accountName ?? ""
             accountBadge.glyph = record?.accountBadge ?? ""
+            callStatus.isHidden = record == nil
+            callStatus.setAccessibilityElement(record != nil)
+            callStatus.setAccessibilityLabel(record == nil ? nil : NSLocalizedString("Call status", comment: "Call history status purpose."))
+            callStatus.setAccessibilityValue(record?.status.accessibilityValue)
         }
     }
 }

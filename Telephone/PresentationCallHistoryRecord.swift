@@ -19,23 +19,37 @@
 import Cocoa
 import UseCases
 
+enum CallHistoryStatus: Hashable {
+    case missed, incoming, outgoing
+
+    var accessibilityValue: String {
+        switch self {
+        case .missed: return NSLocalizedString("Missed", comment: "Missed call history status.")
+        case .incoming: return NSLocalizedString("Incoming", comment: "Answered incoming call history status.")
+        case .outgoing: return NSLocalizedString("Outgoing", comment: "Outgoing call history status.")
+        }
+    }
+}
+
 final class PresentationCallHistoryRecord: NSObject {
     let identifier: String
     @objc let contact: PresentationContact
     @objc let date: String
     @objc let duration: String
     @objc let isIncoming: Bool
+    let status: CallHistoryStatus
     @objc let accountUUID: String?
     @objc let accountName: String
     @objc let accountBadge: String
 
     init(identifier: String, contact: PresentationContact, date: String, duration: String, isIncoming: Bool,
-         accountUUID: String? = nil, accountName: String = "") {
+         isMissed: Bool = false, accountUUID: String? = nil, accountName: String = "") {
         self.identifier = identifier
         self.contact = contact
         self.date = date
         self.duration = duration
         self.isIncoming = isIncoming
+        status = isMissed ? .missed : isIncoming ? .incoming : .outgoing
         self.accountUUID = accountUUID
         self.accountName = accountName
         accountBadge = accountName.trimmingCharacters(in: .whitespacesAndNewlines).first.map { String($0).uppercased() } ?? ""
@@ -55,6 +69,7 @@ extension PresentationCallHistoryRecord {
         hasher.combine(date)
         hasher.combine(duration)
         hasher.combine(isIncoming)
+        hasher.combine(status)
         hasher.combine(accountUUID)
         hasher.combine(accountName)
         return hasher.finalize()
@@ -67,6 +82,7 @@ extension PresentationCallHistoryRecord {
             date == record.date &&
             duration == record.duration &&
             isIncoming == record.isIncoming &&
+            status == record.status &&
             accountUUID == record.accountUUID && accountName == record.accountName
     }
 }

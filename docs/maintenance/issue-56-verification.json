@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-19",
+  "issue": 56,
+  "scope": "Source-only; commit each verified fix and release after roadmap by owner instruction.",
+  "source_parent_commit": "3cc27d539ff5827f0b312920c399476ec594466c",
+  "fresh_suites": [
+    {
+      "suite": "TelephoneTests",
+      "xctest_cases": 259,
+      "swift_testing_cases": 48,
+      "total_cases": 307,
+      "failures": 0,
+      "log_sha256": "b35e611a241c86afdcc5e6638f75fca1deeac74ab0cdabcd1b2be358bab3d34c"
+    }
+  ],
+  "new_xctest_cases": 5,
+  "input_sha256": {
+    "Telephone/CallHistoryTableRowView.swift": "288fb4e0433d2d25198326fcf2b8ea04316236472248c96b03a0951a12434e7d",
+    "Telephone/CallHistoryViewPresenter.swift": "f0917498323d19fedef1596a5bb5750f7ba3c756f31cd9a70b985a9b9daf8347",
+    "Telephone/PresentationCallHistoryRecord.swift": "2670902e07217c19238007273a2024157348f73e7186d840cf01db34a115113e",
+    "Telephone/en-GB.lproj/Localizable.strings": "6db1734229a620b20eb91a17671effb16fc1181270ff918c185c14497ee3b1f2",
+    "TelephoneTests/CallHistoryViewPresenterTests.swift": "bfdf322d9d21f97eec30bc86d4bcaadf9d6d669bc25c586ea5956664424102fc"
+  },
+  "app_project_metadata_sha256": "5fefca7f7eb20672de14cac08ed32ef73a40deb2ed4dd1f5bd42b4f620f3c077",
+  "build_log_sha256": "5966e71c5d5697d4734b7e7a17289a381763845767dd8d77488c589580580c07",
+  "host_isolation": "Fresh unique Debug bundle identity, NSMainNibFile removed, synthetic native history records. No production app launch or profile access.",
+  "diagnostic_note": "Earlier failed runs used test-module records in app-module native cells, skipped legacy-only AppKit AX wrappers, and crashed on a Swift typed selectedRows array containing legacy NSTableRow objects. Corrected native fixtures explicitly use Telephone app types and read modern/legacy public AX attributes without the incompatible typed-array cast. Reuse uses Objective-C/KVO setters; only adversarial foreign-value reset detaches the arrow binding. Earlier failed/restarted runs remain diagnostic evidence only.",
+  "historical_unchanged_framework_evidence": "Domain/UseCases/ReceiptValidation results in issue-55-verification.json are historical; not freshly rerun for this presentation-only change.",
+  "app_version_unchanged": "3.5.1/build 163",
+  "environment": {
+    "macOS": "27.0.1",
+    "macOS_build": "26A434",
+    "Xcode": "Xcode 27.0\nBuild version 27A266a",
+    "SDK": "27.0"
+  },
+  "limits": [
+    "Native accessibility metadata/tree tested, no proficient VoiceOver speech or manual keyboard acceptance claimed.",
+    "No live SIP/provider, physical audio, user permission or installed-candidate acceptance.",
+    "No installation, version bump or release publication."
+  ],
+  "local_run_basename": "jps-telephone-issue56"
+}

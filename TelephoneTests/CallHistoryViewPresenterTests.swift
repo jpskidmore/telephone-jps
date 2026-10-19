@@ -24,6 +24,34 @@ import Cocoa
 
 @MainActor
 final class CallHistoryViewPresenterTests: XCTestCase {
+    func testHistoryStatusComesFromMissedAndIncomingFlagsIndependentlyOfColour() async {
+        var displayed: [PresentationCallHistoryRecord] = []
+        let sut = CallHistoryViewPresenter(view: CallHistoryViewSpy { displayed = $0 },
+                                          dateFormatter: ShortRelativeDateTimeFormatter(), durationFormatter: DurationFormatter())
+        let flags = [(true, true), (true, false), (false, false), (false, true)]
+        let records = flags.map { incoming, missed in
+            ContactCallHistoryRecord(origin: CallHistoryRecord(
+                uri: URI(user: "synthetic", host: "example.invalid", displayName: "Synthetic"),
+                date: Date(), duration: 0, isIncoming: incoming, isMissed: missed), contact: makeContact(number: 1))
+        }
+
+        await sut.update(records: records)
+
+        XCTAssertEqual(displayed.map(\.status), [.missed, .incoming, .outgoing, .missed])
+        XCTAssertEqual(displayed.map { $0.status.accessibilityValue }, ["Missed", "Incoming", "Outgoing", "Missed"])
+        XCTAssertEqual(displayed.map(\.isIncoming), [true, true, false, false])
+        XCTAssertEqual(displayed.map { $0.contact.color }, [.systemRed, .controlTextColor, .controlTextColor, .systemRed])
+    }
+
+    func testStatusOnlyChangeRecomparesPresentationWithoutChangingHistoryIdentity() {
+        let contact = makePresentationContact(contact: makeContact(number: 1), color: .labelColor)
+        let incoming = PresentationCallHistoryRecord(identifier: "same", contact: contact, date: "Today", duration: "0 sec", isIncoming: true)
+        let missed = PresentationCallHistoryRecord(identifier: "same", contact: contact, date: "Today", duration: "0 sec", isIncoming: true, isMissed: true)
+        XCTAssertEqual(incoming.identifier, missed.identifier)
+        XCTAssertNotEqual(incoming, missed)
+        XCTAssertEqual(Set([incoming, missed]).count, 2)
+    }
+
     func testAccountBadgeUsesConfiguredFirstGraphemeAndFullNameInsteadOfHardcodedLetters() async {
         var displayed: [PresentationCallHistoryRecord] = []
         let sut = CallHistoryViewPresenter(view: CallHistoryViewSpy { displayed = $0 },
@@ -154,7 +182,8 @@ private func makePresentationCallHistoryRecord(contact: MatchedContact, record: 
         contact: makePresentationContact(contact: contact, color: contactColor(for: record)),
         date: ShortRelativeDateTimeFormatter().string(from: record.date),
         duration: DurationFormatter().string(from: TimeInterval(record.duration))!,
-        isIncoming: record.isIncoming
+        isIncoming: record.isIncoming,
+        isMissed: record.isMissed
     )
 }
 
@@ -438,6 +467,171 @@ final class GlobalHistoryNativePresentationTests: XCTestCase {
         Telephone.PresentationCallHistoryRecord(identifier: identifier,
             contact: Telephone.PresentationContact(title: "Contact", tooltip: "+441442123456", label: "home", color: .labelColor, address: "+441442123456"),
             date: "Today, 13:00", duration: "2 sec", isIncoming: false, accountUUID: uuid, accountName: name)
+    }
+}
+
+@MainActor
+final class CallHistoryStatusAccessibilityTests: XCTestCase {
+    func testNativeWindowTreeExposesOneStatusAndSeparateAccountPerVisibleRowInLightAndDark() throws {
+        let (controller, table, window) = try makeHistory()
+        defer { window.close() }
+        let records = [record("missed", incoming: true, missed: true, account: "First provider"),
+                       record("incoming", incoming: true, account: "Second provider"),
+                       record("outgoing", incoming: false, account: "Third provider")]
+        controller.show(records)
+        for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+            window.appearance = NSAppearance(named: appearance)
+            for expanded in [true, false] {
+                controller.setHistoryExpanded(expanded)
+                window.contentView?.layoutSubtreeIfNeeded()
+                for row in 0..<table.numberOfRows { _ = table.view(atColumn: 0, row: row, makeIfNecessary: true) }
+                let elements = accessibilityTree(from: window)
+                let statuses = elements.filter { $0.historyAXLabel() == "Call status" }
+                let accounts = elements.filter { $0.historyAXLabel() == "Call account" }
+                let visible = expanded ? records : Array(records.prefix(1))
+                XCTAssertEqual(statuses.compactMap { $0.historyAXValue() as? String }.sorted(), visible.map { $0.status.accessibilityValue }.sorted())
+                XCTAssertEqual(accounts.compactMap { $0.historyAXValue() as? String }.sorted(), visible.map(\.accountName).sorted())
+                XCTAssertEqual(statuses.count, visible.count)
+                XCTAssertEqual(accounts.count, visible.count)
+                XCTAssertFalse(statuses.contains { status in accounts.contains { ($0 as AnyObject) === (status as AnyObject) } })
+                let values = elements.compactMap { $0.historyAXValue() as? String }
+                for value in ["Synthetic contact", "Today, 13:00", "0 sec"] {
+                    XCTAssertTrue(values.contains(value), "Existing history content must remain reachable: \(value)")
+                }
+                XCTAssertEqual(table.tableColumns[0].width, 44)
+                let direction = try XCTUnwrap(table.view(atColumn: 0, row: 0, makeIfNecessary: true) as? Telephone.CallHistoryDirectionCellView)
+                direction.layoutSubtreeIfNeeded()
+                let semanticStatus = try XCTUnwrap(direction.subviews.first { $0.identifier?.rawValue == "CallHistoryStatus" })
+                XCTAssertEqual(semanticStatus.frame.size, NSSize(width: 12, height: 12))
+                XCTAssertEqual(semanticStatus.frame.midX, direction.bounds.midX, accuracy: 0.5)
+                let statusTop = direction.isFlipped ? semanticStatus.frame.minY : semanticStatus.frame.maxY
+                let expectedTop = direction.isFlipped ? direction.bounds.minY + 9 : direction.bounds.maxY - 9
+                XCTAssertEqual(statusTop, expectedTop, accuracy: 0.5)
+                let arrow = try XCTUnwrap(direction.subviews.compactMap { $0 as? NSImageView }.first)
+                XCTAssertTrue(arrow.isHidden)
+                XCTAssertFalse(arrow.isAccessibilityElement())
+                XCTAssertFalse(elements.contains { ($0 as AnyObject) === arrow || ($0 as AnyObject) === arrow.cell })
+                XCTAssertFalse(elements.contains { $0.historyAXRole() as? String == NSAccessibility.Role.image.rawValue }, "The decorative arrow must not add a second status announcement.")
+            }
+        }
+    }
+
+    func testReusedNativeDirectionCellClearsStatusForNilAndForeignValuesWithoutChangingItsRole() throws {
+        let (controller, table, window) = try makeHistory()
+        defer { window.close() }
+        controller.show([record("missed", incoming: true, missed: true, account: "First provider")])
+        let cell = try XCTUnwrap(table.view(atColumn: 0, row: 0, makeIfNecessary: true) as? Telephone.CallHistoryDirectionCellView)
+        let semanticStatus = try XCTUnwrap(cell.subviews.first { $0.identifier?.rawValue == "CallHistoryStatus" })
+        let nativeRole = cell.accessibilityRole()
+        for (incoming, missed, status) in [(true, true, "Missed"), (true, false, "Incoming"), (false, false, "Outgoing")] {
+            cell.setValue(record("reused", incoming: incoming, missed: missed, account: "Current provider"), forKey: "objectValue")
+            let tree = accessibilityTree(from: table)
+            XCTAssertEqual(tree.filter { $0.historyAXLabel() == "Call status" }.compactMap { $0.historyAXValue() as? String }, [status])
+            XCTAssertEqual(tree.filter { $0.historyAXLabel() == "Call account" }.compactMap { $0.historyAXValue() as? String }, ["Current provider"])
+            XCTAssertEqual(cell.accessibilityRole(), nativeRole)
+        }
+        // This adversarial reset is outside the table's model contract. Detach
+        // the native arrow binding before injecting a foreign object so AppKit's
+        // binding teardown does not retain KVO observations on that dictionary.
+        for arrow in cell.subviews.compactMap({ $0 as? NSImageView }) { arrow.unbind(.hidden) }
+        let resetValues: [Any?] = [nil, ["isIncoming": false] as NSDictionary]
+        for value in resetValues {
+            cell.setValue(value, forKey: "objectValue")
+            XCTAssertNil(semanticStatus.historyAXLabel())
+            XCTAssertNil(semanticStatus.historyAXValue())
+            XCTAssertFalse(semanticStatus.isAccessibilityElement())
+            XCTAssertTrue(semanticStatus.isHidden)
+            XCTAssertFalse(accessibilityTree(from: table).contains { $0.historyAXLabel() == "Call status" || $0.historyAXLabel() == "Call account" })
+        }
+        cell.setValue(record("restored", incoming: true, account: "Restored provider"), forKey: "objectValue")
+        XCTAssertEqual(accessibilityTree(from: table).filter { $0.historyAXLabel() == "Call status" }.compactMap { $0.historyAXValue() as? String }, ["Incoming"])
+    }
+
+    func testSameIdentityStatusUpdateAndPrependKeepSelectedCallSemanticsThroughCollapse() throws {
+        let (controller, table, window) = try makeHistory()
+        defer { window.close() }
+        let first = record("first", incoming: false, account: "First provider")
+        controller.show([first, record("selected", incoming: true, missed: true, account: "Second provider")])
+        table.selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+        let updated = record("selected", incoming: true, account: "Second provider")
+        controller.show([first, updated])
+        try assertSelectedStatus("Incoming", identifier: "selected", controller: controller, table: table)
+        controller.show([record("new", incoming: true, missed: true, account: "Third provider"), first, updated])
+        XCTAssertEqual(table.selectedRow, 2)
+        try assertSelectedStatus("Incoming", identifier: "selected", controller: controller, table: table)
+        controller.setHistoryExpanded(false)
+        try assertSelectedStatus("Missed", identifier: "new", controller: controller, table: table)
+        controller.setHistoryExpanded(true)
+        XCTAssertEqual(table.selectedRow, 2)
+        try assertSelectedStatus("Incoming", identifier: "selected", controller: controller, table: table)
+    }
+
+    private func assertSelectedStatus(_ status: String, identifier: String, controller: Telephone.CallHistoryViewController, table: NSTableView) throws {
+        let row = table.selectedRow
+        XCTAssertEqual((controller.tableView(table, objectValueFor: nil, row: row) as? Telephone.PresentationCallHistoryRecord)?.identifier, identifier)
+        _ = try XCTUnwrap(table.view(atColumn: 0, row: row, makeIfNecessary: true) as? Telephone.CallHistoryDirectionCellView)
+        let selectedRows = table.historyAXSelectedRows()
+        XCTAssertEqual(selectedRows.count, 1)
+        let selectedRow = try XCTUnwrap(selectedRows.first)
+        let statuses = accessibilityTree(from: selectedRow).filter { $0.historyAXLabel() == "Call status" }
+        XCTAssertEqual(statuses.compactMap { $0.historyAXValue() as? String }, [status])
+    }
+
+    private func makeHistory() throws -> (Telephone.CallHistoryViewController, NSTableView, NSWindow) {
+        let controller = Telephone.CallHistoryViewController()
+        let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 368, height: 141), styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = controller.view
+        window.contentView?.layoutSubtreeIfNeeded()
+        func table(in view: NSView) -> NSTableView? {
+            if let result = view as? NSTableView { return result }
+            return view.subviews.lazy.compactMap { table(in: $0) }.first
+        }
+        return (controller, try XCTUnwrap(table(in: controller.view)), window)
+    }
+
+    private func record(_ id: String, incoming: Bool, missed: Bool = false, account: String) -> Telephone.PresentationCallHistoryRecord {
+        Telephone.PresentationCallHistoryRecord(identifier: id,
+            contact: Telephone.PresentationContact(title: "Synthetic contact", tooltip: "", label: "home", color: missed ? .systemRed : .labelColor, address: "synthetic"),
+            date: "Today, 13:00", duration: "0 sec", isIncoming: incoming, isMissed: missed, accountUUID: account, accountName: account)
+    }
+
+    private func accessibilityTree(from root: Any) -> [any NSObjectProtocol] {
+        guard let unignoredRoot = NSAccessibility.unignoredDescendant(of: root) else { return [] }
+        var pending: [Any] = [unignoredRoot]
+        var visited = Set<ObjectIdentifier>()
+        var result: [any NSObjectProtocol] = []
+        while let candidate = pending.popLast() {
+            guard let element = candidate as? any NSObjectProtocol,
+                  visited.insert(ObjectIdentifier(element as AnyObject)).inserted else { continue }
+            result.append(element)
+            let children = element.historyAXChildren()
+            if ProcessInfo.processInfo.environment["JPS_HISTORY_STATUS_AX_DIAGNOSTICS"] == "1" {
+                print("History AX:", type(of: element), "role:", element.historyAXRole() as Any,
+                      "label:", element.historyAXLabel() as Any, "value:", element.historyAXValue() as Any,
+                      "children:", children.count, "formal AX:", element is any NSAccessibilityProtocol)
+            }
+            pending.append(contentsOf: NSAccessibility.unignoredChildren(from: children))
+        }
+        return result
+    }
+}
+
+private extension NSObjectProtocol {
+    func historyAXLabel() -> String? { historyAXValue(for: "accessibilityLabel", legacy: .description) as? String }
+    func historyAXValue() -> Any? { historyAXValue(for: "accessibilityValue", legacy: .value) }
+    func historyAXChildren() -> [Any] { historyAXValue(for: "accessibilityChildren", legacy: .children) as? [Any] ?? [] }
+    func historyAXSelectedRows() -> [Any] { historyAXValue(for: "accessibilitySelectedRows", legacy: .selectedRows) as? [Any] ?? [] }
+    func historyAXRole() -> Any? { historyAXValue(for: "accessibilityRole", legacy: .role) }
+
+    private func historyAXValue(for name: String, legacy attribute: NSAccessibility.Attribute) -> Any? {
+        let selector = NSSelectorFromString(name)
+        if responds(to: selector) { return perform(selector)?.takeUnretainedValue() }
+        // AppKit's native NSTableRow/NSTableColumn wrappers use the public
+        // attribute API. Do not skip those branches or bypass modern view labels.
+        let legacySelector = NSSelectorFromString("accessibilityAttributeValue:")
+        guard responds(to: legacySelector) else { return nil }
+        return perform(legacySelector, with: attribute.rawValue)?.takeUnretainedValue()
     }
 }
 

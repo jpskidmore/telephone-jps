@@ -56,6 +56,7 @@ private extension CallHistoryViewPresenter {
             date: dateFormatter.string(from: record.origin.date),
             duration: durationFormatter.string(from: TimeInterval(record.origin.duration)) ?? "",
             isIncoming: record.origin.isIncoming,
+            isMissed: record.origin.isMissed,
             accountUUID: record.origin.originAccountUUID,
             accountName: record.origin.originAccountName ?? ""
         )

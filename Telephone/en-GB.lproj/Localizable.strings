@@ -255,6 +255,9 @@
 "Availability" = "Availability";
 "Call history" = "Call history";
 "No recent calls" = "No recent calls";
+"Missed" = "Missed";
+"Incoming" = "Incoming";
+"Outgoing" = "Outgoing";
 
 /* Distinguish account-specific connection options from app-wide networking. */
 "Network — All Accounts" = "Network — All Accounts";
