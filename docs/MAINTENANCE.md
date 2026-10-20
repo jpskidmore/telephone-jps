@@ -38,6 +38,9 @@ documents individual cancellation, compact feedback and fresh local checks.
 The [issue #59 route-preview record](maintenance/2026-10-20-route-presentation.md)
 documents shared explanations and consistent account snapshots.
 
+The [issue #60 numbering record](maintenance/2026-10-20-numbering-transparency.md)
+documents visible coverage/version information and saved-versus-draft behaviour.
+
 ## Owner's execution controls
 
 The owner authorised roadmap implementation on **19 October 2026**, strictly

@@ -22,6 +22,7 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
     private let segments = NSSegmentedControl(labels: ["Numbers", "Routes", "Exceptions", "Test"], trackingMode: .selectOne, target: nil, action: nil)
     private let areaField = NSTextField(string: "")
     private let numberExampleLabel = NSTextField(labelWithString: "")
+    private let routeCoverageLabel = NSTextField(labelWithString: "")
     private let countryMenu = NSPopUpButton(frame: .zero, pullsDown: false)
     private let rulesTable = NSTableView()
     private let testField = NSTextField(string: "")
@@ -182,7 +183,12 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
             label(category.1, in: page, x: 0, y: y + 4, width: 148)
             installSelector(key: category.0, label: "\(category.1) outgoing connection", frame: NSRect(x: 154, y: y, width: 362, height: 26), in: page)
         }
-        label("The longest matching active prefix wins. Offline connections never silently fall back.", in: page, x: 0, y: 4, width: 516, secondary: true)
+        routeCoverageLabel.frame = NSRect(x: 0, y: 4, width: 516, height: 18)
+        routeCoverageLabel.font = .systemFont(ofSize: 11)
+        routeCoverageLabel.textColor = .secondaryLabelColor
+        routeCoverageLabel.identifier = NSUserInterfaceItemIdentifier("DialPlanRouteCoverage")
+        routeCoverageLabel.setAccessibilityLabel("Domestic number classification")
+        page.addSubview(routeCoverageLabel)
     }
 
     private func buildExceptionsPage(_ page: NSView) {
@@ -248,6 +254,7 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
         select(countryMenu, value: draft["countryCode"] as? String ?? "+44")
         areaField.stringValue = draft["areaCode"] as? String ?? "01442"
         refreshNumberExample()
+        refreshRouteCoverage()
         refreshAccountPresentation(forceControls: true)
         updateDirtyState()
         if !store.configurationError.isEmpty { showError("Saved plan needs repair. Review these fields and Save. \(store.configurationError)") }
@@ -324,6 +331,31 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
         numberExampleLabel.toolTip = numberExampleLabel.stringValue
     }
 
+    private func refreshRouteCoverage() {
+        let country = draft["countryCode"] as? String ?? "+44"
+        let coverage = country == "+44"
+            ? "Mobile/Landline/Premium: UK ranges. Longest active prefix wins."
+            : "UK-only Mobile/Landline/Premium; \(country) domestic telephone numbers use Other."
+        let help = countryCoverageDescription(country)
+            + " Numbers outside \(country) are International. Short/service codes and protected exact emergencies retain their separate rules."
+            + " The longest matching active prefix wins. Offline connections never silently fall back."
+        routeCoverageLabel.stringValue = coverage
+        routeCoverageLabel.toolTip = help
+        routeCoverageLabel.setAccessibilityValue(coverage)
+        routeCoverageLabel.setAccessibilityHelp(help)
+        for (key, menu) in selectors where categories.contains(where: { $0.0 == key }) {
+            menu.toolTip = help
+            menu.setAccessibilityHelp(help)
+            menu.cell?.setAccessibilityHelp(help)
+        }
+    }
+
+    private func countryCoverageDescription(_ country: String) -> String {
+        country == "+44"
+            ? "Domestic UK telephone ranges include Mobile, Landline and Premium classification."
+            : "Domestic telephone numbers in \(country) use Other. Mobile/Landline/Premium range classification is UK-only."
+    }
+
     private func installSelector(key: String, label: String, frame: NSRect, in page: NSView) {
         let menu = NSPopUpButton(frame: frame, pullsDown: false)
         menu.identifier = NSUserInterfaceItemIdentifier("DialPlanTarget.\(key)")
@@ -348,6 +380,7 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
     @objc private func countryChanged(_ sender: NSPopUpButton) {
         draft["countryCode"] = selectedValue(sender)
         refreshNumberExample()
+        refreshRouteCoverage()
         didChangeDraft()
     }
 
@@ -466,8 +499,10 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
 
     @objc private func showPrefixes(_ sender: Any?) {
         guard prefixesSheet == nil, let parent = view.window, parent.attachedSheet == nil else { return }
+        let country = store.configuration["countryCode"] as? String ?? "+44"
+        let needsRepair = !store.configurationError.isEmpty
         let panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 484, height: 244), styleMask: [.titled], backing: .buffered, defer: false)
-        panel.title = "Guided prefixes for \(store.configuration["countryCode"] as? String ?? "+44")"
+        panel.title = needsRepair ? "Guided prefixes for displayed \(country)" : "Guided prefixes for \(country)"
         guard let content = panel.contentView else { return }
         let scroll = NSScrollView(frame: NSRect(x: 16, y: 63, width: 452, height: 165))
         scroll.hasVerticalScroller = true
@@ -485,14 +520,24 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
         text.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         text.autoresizingMask = [.width]
         text.textContainer?.widthTracksTextView = true
-        text.setAccessibilityLabel("Actual guided route prefixes for the saved country")
-        text.string = categories.map { key, title in
+        text.identifier = NSUserInterfaceItemIdentifier("DialPlanPrefixDetails")
+        text.setAccessibilityLabel(needsRepair ? "Guided route prefixes for the displayed repair country" : "Actual guided route prefixes for the saved country")
+        text.setAccessibilityHelp(needsRepair ? "The saved plan needs repair. These prefixes describe the displayed country, not a valid saved plan." : "This list uses the saved country. Save country changes to update it.")
+        let countryStatus = needsRepair
+            ? "Displayed country: \(country)\nSaved plan needs repair. Routing is blocked until you repair and save it.\n\(store.configurationError)"
+            : "Saved country: \(country)"
+        let information = "\(DialPlanStore.metadataVersion)\n\(countryStatus)\n\(countryCoverageDescription(country))"
+            + " Short/service codes and protected exact emergencies retain their separate rules.\n"
+            + "Supported home-country profiles: \(DialPlanStore.supportedCountryCodes.joined(separator: ", ")).\n"
+            + "Offline numbering information; ranges do not establish provider prices, allocation or reachability."
+        let prefixes = categories.map { key, title in
             "\(title)\n\(store.categoryPrefixes(key).joined(separator: ", "))"
         }.joined(separator: "\n\n")
+        text.string = information + "\n\n" + prefixes
         text.sizeToFit()
         scroll.documentView = text
         content.addSubview(scroll)
-        label("Save country changes to update this list. Longest active prefix wins.", in: content, x: 16, y: 38, width: 452, secondary: true)
+        label(needsRepair ? "Repair and save the plan to update this list. Longest active prefix wins." : "Save country changes to update this list. Longest active prefix wins.", in: content, x: 16, y: 38, width: 452, secondary: true)
         let done = button("Done", action: #selector(closePrefixes(_:)), identifier: "CloseDialPlanPrefixes")
         done.frame = NSRect(x: 386, y: 5, width: 82, height: 26)
         done.keyEquivalent = "\r"

@@ -28,6 +28,66 @@ final class DialPlanPreferencesViewControllerTests: XCTestCase {
         }
     }
 
+    func testCountryCoverageFollowsAllFiveDraftProfilesInLightAndDarkWithoutResizingControls() throws {
+        let fixture = makeFixture()
+        defer { fixture.clean() }
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 548, height: 292),
+                              styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.contentViewController = fixture.controller
+        window.orderFront(nil)
+        defer { window.orderOut(nil) }
+        let page: NSSegmentedControl = try control("DialPlanPage", in: fixture.controller.view)
+        page.selectedSegment = 1
+        send(page)
+        let hint: NSTextField = try control("DialPlanRouteCoverage", in: fixture.controller.view)
+        let button: NSButton = try control("ShowDialPlanPrefixes", in: fixture.controller.view)
+        let routeKeys = ["mobile", "landline", "international", "premium", "other", "service"]
+        for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
+            window.appearance = NSAppearance(named: appearance)
+            for country in Telephone.DialPlanStore.supportedCountryCodes {
+                try pick(country, identifier: "DialPlanCountry", in: fixture.controller)
+                let expected = country == "+44"
+                    ? "Mobile/Landline/Premium: UK ranges. Longest active prefix wins."
+                    : "UK-only Mobile/Landline/Premium; \(country) domestic telephone numbers use Other."
+                XCTAssertEqual(hint.stringValue, expected)
+                XCTAssertEqual(hint.accessibilityValue() as? String, expected)
+                XCTAssertEqual(hint.accessibilityLabel(), "Domestic number classification")
+                let help = try XCTUnwrap(hint.toolTip)
+                XCTAssertEqual(hint.accessibilityHelp(), help)
+                XCTAssertTrue(help.contains("Numbers outside \(country) are International."))
+                XCTAssertTrue(help.contains("Short/service codes and protected exact emergencies retain their separate rules."))
+                XCTAssertTrue(help.contains("The longest matching active prefix wins."))
+                XCTAssertTrue(help.contains("Offline connections never silently fall back."))
+                if country != "+44" {
+                    XCTAssertTrue(help.contains("Domestic telephone numbers in \(country) use Other."))
+                    XCTAssertTrue(help.contains("Mobile/Landline/Premium range classification is UK-only."))
+                }
+                XCTAssertEqual(hint.frame, NSRect(x: 0, y: 4, width: 516, height: 18))
+                let renderedSize = (hint.stringValue as NSString).size(withAttributes: [.font: try XCTUnwrap(hint.font)])
+                XCTAssertLessThanOrEqual(renderedSize.width, hint.bounds.width)
+                XCTAssertLessThanOrEqual(renderedSize.height, hint.bounds.height)
+                XCTAssertEqual(button.frame, NSRect(x: 380, y: 193, width: 136, height: 26))
+                for (index, key) in routeKeys.enumerated() {
+                    let menu: NSPopUpButton = try control("DialPlanTarget.\(key)", in: fixture.controller.view)
+                    XCTAssertEqual(menu.frame, NSRect(x: 154, y: CGFloat(166 - index * 27), width: 362, height: 26))
+                    XCTAssertEqual(menu.toolTip, help)
+                    XCTAssertEqual(menu.accessibilityHelp(), help)
+                    XCTAssertEqual(menu.cell?.accessibilityHelp(), help)
+                }
+                for index in 0..<4 {
+                    page.selectedSegment = index
+                    send(page)
+                    XCTAssertEqual(fixture.controller.view.fittingSize, NSSize(width: 548, height: 292))
+                }
+                page.selectedSegment = 1
+                send(page)
+                try captureTransparencyIfRequested(fixture.controller.view, name: "routes-\(country.dropFirst())-\(name).png")
+            }
+        }
+        XCTAssertEqual(fixture.store.configuration["countryCode"] as? String, "+44")
+        XCTAssertNil(fixture.defaults.object(forKey: Telephone.DialPlanStore.settingsKey))
+    }
+
     func testSaveStoresStableDefaultAndExplicitEmergencyUUIDs() throws {
         let fixture = makeFixture()
         defer { fixture.clean() }
@@ -265,6 +325,37 @@ final class DialPlanPreferencesViewControllerTests: XCTestCase {
         XCTAssertNil(fixture.defaults.object(forKey: Telephone.DialPlanStore.settingsKey))
     }
 
+    func testLiteralPauseRecallGuidanceSurvivesReadyWaitingOfflineAndBlockedPreviews() throws {
+        var current = accounts
+        let fixture = makeFixture(accountProvider: { current })
+        defer { fixture.clean() }
+        try pick("local", identifier: "DialPlanTarget.defaultAccountUUID", in: fixture.controller)
+        let field: NSTextField = try control("DialPlanTestNumber", in: fixture.controller.view)
+        let route: NSTextField = try control("DialPlanRoutePreview", in: fixture.controller.view)
+        let explanation: NSTextField = try control("DialPlanPreviewExplanation", in: fixture.controller.view)
+        field.stringValue = "123R45P67"
+        let limitation = "Pause/recall syntax is preserved for the selected connection; it is not converted into post-connect DTMF."
+        for (state, message) in [("online", "Use Localphone."), ("registering", "Wait for Localphone to register."),
+                                 ("offline", "Localphone is Offline. Bring it online to make this call; no other connection will be used.")] {
+            current = [Telephone.DialPlanAccount(uuid: "local", name: "Localphone", enabled: true, availability: state), accounts[1]]
+            fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: field))
+            XCTAssertEqual(route.stringValue, "Localphone · Service / Default")
+            XCTAssertEqual(explanation.stringValue, "\(message) \(limitation)")
+            XCTAssertEqual(explanation.toolTip, explanation.stringValue)
+            XCTAssertEqual(explanation.accessibilityValue() as? String, explanation.stringValue)
+            XCTAssertEqual(route.toolTip, "123R45P67\n\(explanation.stringValue)")
+        }
+        try pick("block", identifier: "DialPlanTarget.service", in: fixture.controller)
+        XCTAssertEqual(route.stringValue, "Blocked · Service / Default")
+        XCTAssertEqual(explanation.stringValue, "Blocked by the dialling plan. \(limitation)")
+        XCTAssertEqual(explanation.toolTip, explanation.stringValue)
+        XCTAssertEqual(explanation.accessibilityValue() as? String, explanation.stringValue)
+        XCTAssertEqual(route.toolTip, "123R45P67\n\(explanation.stringValue)")
+        let canonical: NSTextField = try control("DialPlanCanonicalPreview", in: fixture.controller.view)
+        XCTAssertEqual(canonical.stringValue, "123R45P67")
+        XCTAssertNil(fixture.defaults.object(forKey: Telephone.DialPlanStore.settingsKey))
+    }
+
     func testBlockedDraftAppearsInPreviewWithoutChangingSavedPlan() throws {
         let fixture = makeFixture()
         defer { fixture.clean() }
@@ -431,9 +522,112 @@ final class DialPlanPreferencesViewControllerTests: XCTestCase {
         XCTAssertTrue(scroll.hasVerticalScroller)
         let text = try XCTUnwrap(scroll.documentView as? NSTextView)
         XCTAssertFalse(text.isEditable)
+        XCTAssertTrue(text.string.hasPrefix(Telephone.DialPlanStore.metadataVersion + "\nSaved country: +44\n"))
+        XCTAssertTrue(text.string.contains("Supported home-country profiles: \(Telephone.DialPlanStore.supportedCountryCodes.joined(separator: ", "))."))
+        XCTAssertTrue(text.string.contains("Offline numbering information; ranges do not establish provider prices, allocation or reachability."))
         for prefix in fixture.store.categoryPrefixes("mobile") { XCTAssertTrue(text.string.contains(prefix)) }
         let done: NSButton = try control("CloseDialPlanPrefixes", in: try XCTUnwrap(panel.contentView))
         done.performClick(nil)
+    }
+
+    func testPrefixDetailsUseEachSavedCountryDespiteAnUnsavedDraftAndWrapInBothAppearances() throws {
+        let countries = Telephone.DialPlanStore.supportedCountryCodes
+        for (index, country) in countries.enumerated() {
+            let fixture = makeFixture()
+            defer { fixture.clean() }
+            var settings = fixture.store.configuration
+            settings["countryCode"] = country
+            settings["areaCode"] = ""
+            try fixture.store.updateConfiguration(settings)
+            let draftCountry = countries[(index + 1) % countries.count]
+            try pick(draftCountry, identifier: "DialPlanCountry", in: fixture.controller)
+            XCTAssertTrue(fixture.controller.hasUnsavedChanges)
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 548, height: 292),
+                                  styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            window.contentViewController = fixture.controller
+            window.orderFront(nil)
+            defer { window.orderOut(nil) }
+            let button: NSButton = try control("ShowDialPlanPrefixes", in: fixture.controller.view)
+            button.performClick(nil)
+            let panel = try XCTUnwrap(window.attachedSheet)
+            let content = try XCTUnwrap(panel.contentView)
+            let scroll = try XCTUnwrap(content.subviews.compactMap { $0 as? NSScrollView }.first)
+            let text: NSTextView = try control("DialPlanPrefixDetails", in: content)
+            XCTAssertEqual(panel.title, "Guided prefixes for \(country)")
+            XCTAssertEqual(panel.contentLayoutRect.size, NSSize(width: 484, height: 244))
+            XCTAssertEqual(scroll.frame, NSRect(x: 16, y: 63, width: 452, height: 165))
+            XCTAssertTrue(text.string.hasPrefix(Telephone.DialPlanStore.metadataVersion + "\nSaved country: \(country)\n"))
+            XCTAssertFalse(text.string.contains("Saved country: \(draftCountry)"))
+            if country == "+44" {
+                XCTAssertTrue(text.string.contains("Domestic UK telephone ranges include Mobile, Landline and Premium classification."))
+            } else {
+                XCTAssertTrue(text.string.contains("Domestic telephone numbers in \(country) use Other. Mobile/Landline/Premium range classification is UK-only."))
+            }
+            XCTAssertTrue(text.string.contains("Short/service codes and protected exact emergencies retain their separate rules."))
+            let categories = [("mobile", "Mobile"), ("landline", "Landline"), ("international", "International"),
+                              ("premium", "Premium"), ("other", "Other numbers"), ("service", "Service codes")]
+            let expectedPrefixes = categories.map { key, title in
+                "\(title)\n\(fixture.store.categoryPrefixes(key).joined(separator: ", "))"
+            }.joined(separator: "\n\n")
+            XCTAssertTrue(text.string.hasSuffix(expectedPrefixes))
+            XCTAssertEqual(text.accessibilityLabel(), "Actual guided route prefixes for the saved country")
+            XCTAssertEqual(text.accessibilityHelp(), "This list uses the saved country. Save country changes to update it.")
+            XCTAssertTrue(text.isSelectable)
+            XCTAssertFalse(text.isEditable)
+            XCTAssertFalse(text.isHorizontallyResizable)
+            XCTAssertEqual(text.textContainer?.widthTracksTextView, true)
+            for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
+                panel.appearance = NSAppearance(named: appearance)
+                content.layoutSubtreeIfNeeded()
+                let container = try XCTUnwrap(text.textContainer)
+                let manager = try XCTUnwrap(text.layoutManager)
+                manager.ensureLayout(for: container)
+                XCTAssertLessThanOrEqual(manager.usedRect(for: container).width, container.size.width)
+                XCTAssertEqual(window.contentLayoutRect.size, NSSize(width: 548, height: 292))
+                try captureTransparencyIfRequested(content, name: "prefixes-\(country.dropFirst())-\(name).png")
+            }
+            XCTAssertEqual(fixture.store.configuration["countryCode"] as? String, country)
+            XCTAssertTrue(fixture.controller.hasUnsavedChanges)
+            let done: NSButton = try control("CloseDialPlanPrefixes", in: content)
+            done.performClick(nil)
+        }
+    }
+
+    func testPrefixDetailsDescribeDisplayedRepairCountryWithoutClaimingCorruptDataWasSaved() throws {
+        for stored in [Data("malformed saved plan".utf8), Data("{\"schemaVersion\":99,\"countryCode\":\"+33\",\"areaCode\":\"\",\"defaultAccountUUID\":\"local\",\"emergencyAccountUUID\":\"\",\"categoryTargets\":{},\"rules\":[]}".utf8)] {
+            let fixture = makeFixture(storedPlan: stored)
+            defer { fixture.clean() }
+            XCTAssertFalse(fixture.store.configurationError.isEmpty)
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 548, height: 292),
+                                  styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            window.contentViewController = fixture.controller
+            window.orderFront(nil)
+            defer { window.orderOut(nil) }
+            // Repair edits can already point elsewhere; the sheet still describes
+            // the fallback display country until a valid plan is saved.
+            try pick("+33", identifier: "DialPlanCountry", in: fixture.controller)
+            let coverage: NSTextField = try control("DialPlanRouteCoverage", in: fixture.controller.view)
+            XCTAssertTrue(coverage.stringValue.contains("+33"))
+            let button: NSButton = try control("ShowDialPlanPrefixes", in: fixture.controller.view)
+            button.performClick(nil)
+            let panel = try XCTUnwrap(window.attachedSheet)
+            let content = try XCTUnwrap(panel.contentView)
+            let text: NSTextView = try control("DialPlanPrefixDetails", in: content)
+            XCTAssertEqual(panel.title, "Guided prefixes for displayed +44")
+            XCTAssertTrue(text.string.hasPrefix(Telephone.DialPlanStore.metadataVersion + "\nDisplayed country: +44\nSaved plan needs repair."))
+            XCTAssertTrue(text.string.contains("Routing is blocked until you repair and save it."))
+            XCTAssertTrue(text.string.contains(fixture.store.configurationError))
+            XCTAssertFalse(text.string.contains("Saved country:"))
+            XCTAssertEqual(text.accessibilityLabel(), "Guided route prefixes for the displayed repair country")
+            XCTAssertEqual(text.accessibilityHelp(), "The saved plan needs repair. These prefixes describe the displayed country, not a valid saved plan.")
+            XCTAssertTrue(content.subviews.compactMap { $0 as? NSTextField }.contains {
+                $0.stringValue == "Repair and save the plan to update this list. Longest active prefix wins."
+            })
+            XCTAssertEqual(fixture.defaults.data(forKey: Telephone.DialPlanStore.settingsKey), stored)
+            XCTAssertFalse(fixture.store.resolveDestination("07799414799", accounts: accounts).canDial)
+            let done: NSButton = try control("CloseDialPlanPrefixes", in: content)
+            done.performClick(nil)
+        }
     }
 
     private struct Fixture {
@@ -444,13 +638,26 @@ final class DialPlanPreferencesViewControllerTests: XCTestCase {
         func clean() { defaults.removePersistentDomain(forName: domain) }
     }
 
-    private func makeFixture(accountProvider: (() -> [Telephone.DialPlanAccount])? = nil) -> Fixture {
+    private func makeFixture(accountProvider: (() -> [Telephone.DialPlanAccount])? = nil, storedPlan: Data? = nil) -> Fixture {
         let domain = "test.jps.guided-routes.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
+        if let storedPlan { defaults.set(storedPlan, forKey: Telephone.DialPlanStore.settingsKey) }
         let store = Telephone.DialPlanStore(defaults: defaults)
         let controller = Telephone.DialPlanPreferencesViewController(store: store, accountProvider: accountProvider ?? { self.accounts })
         _ = controller.view
         return Fixture(domain: domain, defaults: defaults, store: store, controller: controller)
+    }
+
+    private func captureTransparencyIfRequested(_ view: NSView, name: String) throws {
+        guard let path = ProcessInfo.processInfo.environment["JPS_ROUTING_TRANSPARENCY_CAPTURE_DIR"], !path.isEmpty else { return }
+        let directory = URL(fileURLWithPath: path, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        view.layoutSubtreeIfNeeded()
+        view.displayIfNeeded()
+        let representation = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+        view.cacheDisplay(in: view.bounds, to: representation)
+        let png = try XCTUnwrap(representation.representation(using: .png, properties: [:]))
+        try png.write(to: directory.appendingPathComponent(name))
     }
 
     private func pick(_ value: String, identifier: String, in controller: Telephone.DialPlanPreferencesViewController) throws {

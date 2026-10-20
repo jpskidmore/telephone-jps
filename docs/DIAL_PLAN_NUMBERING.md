@@ -25,6 +25,8 @@ come from Google's
 [libphonenumber metadata at d1457634c3d95e570dad433ee0ab400beb343a56](https://github.com/google/libphonenumber/blob/d1457634c3d95e570dad433ee0ab400beb343a56/resources/PhoneNumberMetadata.xml).
 The original XML SHA-256 is
 `9d3b07b53c7e8a437ddc316249620b51d4090987026f9e8ffb9743aab4e4d5a6`.
+Settings → Dial plan → Routes → Show prefixes starts with this exact bundled version, identifies the saved country and lists the supported home-country profiles. It describes offline range coverage rather than live tariffs or reachability. Unsaved country edits affect the contextual Routes hint and Test preview; the prefix sheet continues to show the saved country until Save.
+
 Domestic normalisation supports +44, +1, +33, +49 and +39 profiles. Italy's
 significant leading zero is retained. NANP uses 011 for international dialling;
 the other supported profiles use 00. Explicit international numbers for other

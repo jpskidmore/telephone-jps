@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-20",
+  "issue": 60,
+  "source_parent_commit": "1cb2e98297a4064b69f7781d2fdba75e581e6129",
+  "scope": "Source only; combined installation/publication deferred until entire roadmap completion.",
+  "fresh_app_cases": {
+    "xctest": 281,
+    "swift_testing": 48,
+    "total": 329,
+    "failures": 0,
+    "new_xctest_cases": 4
+  },
+  "focused_editor_cases": {
+    "cases": 21,
+    "failures": 0
+  },
+  "source_sha256": {
+    "Telephone/DialPlanPreferencesViewController.swift": "0016110f0d999151efd66a1cf7a198e170f036837f39cb1989225ea12ac73448",
+    "TelephoneTests/DialPlanPreferencesViewControllerTests.swift": "d4b26c94934551faf0280e57e0e878f23881e1d53588c038e0bab60324494ad3"
+  },
+  "unchanged_source_sha256": {
+    "Telephone/DialPlan.swift": "4299d631e2bfd634ecbc45b77a09f316d2339c553d5d06496037339311eb8a08",
+    "Telephone/DialPlanCoordinator.swift": "06860c2a0d5cfee0431ab297507d588b296c5127a20d456995979ab5a4e27efe",
+    "Telephone/SharedDialerController.m": "0472c3723ebdbe636cb8594e037e124742de2289470580e2380d9a2d9c9bfae2",
+    "Tests/DialPlanRegressionHarness.swift": "27dbcae3efb1de9f2717a6e519a870e61bd1614a4bcb49fdeeaa60962967d347",
+    "Telephone.xcodeproj/project.pbxproj": "5fefca7f7eb20672de14cac08ed32ef73a40deb2ed4dd1f5bd42b4f620f3c077"
+  },
+  "log_sha256": {
+    "build-focused.log": "cd9b4bfbd0448a6547d5599e898f1c63b75c94e535f36cd85e386710e8579ee4",
+    "TelephoneTests-focused.log": "fe901bdea33d4a482a883dec121bcf1113a17041e1d19237af0144a19cccc764",
+    "build-final-focused.log": "6a2aaf842f786a7c907b57e8851c21d2d2e77cf427cfb610ca3c8920d22dc22e",
+    "TelephoneTests-final-focused.log": "2c0190ac0fbfa17e981a7f0c61320e8f99460a39db5451df5a19a9c3b8e0aab3",
+    "build-final.log": "6fa7e5cd6e3f113aeb83b9c363aa58562c7184efc55391f0cac2ec57245d5c21",
+    "TelephoneTests-final.log": "61d9d946da6d00eed8cb7a65bb80dffc432ec97be0b50c89e9cbc9c1072eca11"
+  },
+  "log_directory": "/private/tmp/jps-telephone-issue60",
+  "evidence": [
+    "Exact metadataVersion starts the bounded native prefix text; saved country/profile list/offline range caveat use current source constants.",
+    "All five home-country draft profiles fit the existing Routes footer and expose native tooltip/accessibility explanations in Light/Dark.",
+    "Each saved country retains its actual prefix lists despite a different unsaved draft.",
+    "Corrupt/future-format stored bytes stay unchanged and routing blocked; the sheet truthfully describes displayed repair +44 even when the draft hint shows +33.",
+    "Literal R/P ready/wait/Offline/blocked previews preserve complete guidance from shared presenter."
+  ],
+  "geometry": "Editor 548x292 and sheet 484x244 unchanged; native clipping/wrapping/scroll assertions pass.",
+  "review": "Implementation and independent review subagents for the same issue; no remaining blockers. A final wording fix changed repair/save to update the list rather than apply displayed prefixes; repeated focused/full checks pass.",
+  "isolation": "Fresh unique nib-free Debug host; actual Telephone app-module native editor types; synthetic accounts and isolated defaults only.",
+  "capture_limits": "Reviewer inspected prefix +44 Light, prefix +1 Dark and Routes +49 Dark text fit. Routes +33 Light was blank and composited native button/menu titles are incomplete, so cache images are partial evidence only.",
+  "environment": {
+    "macOS": "27.0.1",
+    "macOS_build": "26A434",
+    "Xcode": "27.0 /27A266a",
+    "SDK": "27.0"
+  },
+  "app_version_unchanged": "3.5.1/build 163",
+  "limits": [
+    "No full visual, proficient VoiceOver or real provider/device/audio/permission acceptance claimed; retained under #62 and the final release.",
+    "The unchanged routing harness with 213 assertions and framework results remain historical evidence, not freshly rerun.",
+    "No metadata/routing model/admission change; no installation, version bump, publication, cloud workflow or tag/asset mutation."
+  ],
+  "official_docs_checked": "20 October 2026: OpenAI best practices, Apple macOS 27 notes and NSAccessibilityProtocol."
+}
