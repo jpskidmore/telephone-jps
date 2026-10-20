@@ -48,11 +48,13 @@ The owner authorised roadmap implementation on **19 October 2026**, strictly
 record its evidence and update GitHub before starting the next. An independent
 review of the same item is allowed; do not work on later items in parallel.
 
-The owner subsequently chose **commit each verified fix; release after the
-roadmap**. Keep the installed application and published version at their verified
-baseline while these source changes proceed. Do not bump versions, install or
-publish a release for an individual issue. The final release needs its own full
-candidate, package, installation and publication verification.
+The owner initially chose one verified source commit per fix with release after
+the roadmap. On **20 October 2026**, they changed that instruction: at **25%
+remaining in the actual five-hour allowance**, stop roadmap work, build and
+release the completed verified batch, and leave remaining issues for another
+day. This interim delivery contains #53–60 (eight of nineteen); #61–71 remain
+open. Version 3.6/build 164 is being prepared. Do not call it installed or
+published until the independent delivery checks succeed.
 
 Read the actual five-hour usage window before work, between issues and during
 long-running work. If its remaining allowance falls **below 10%**, stop at a

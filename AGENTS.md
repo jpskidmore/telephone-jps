@@ -6,9 +6,11 @@ Read actual five-hour usage before/between issues and during long work; below
 10% remaining, stop at a recoverable point and schedule this chat five minutes
 after the reported reset. Keep the weekly allowance separate. See the entry
 point for current baseline, execution controls and evidence boundaries.
-Commit and verify each fix, but **install and publish only after the roadmap is
-finished**, as the owner subsequently specified. Do not bump the app version or
-replace the installed app for each individual source fix.
+The owner updated delivery on **20 October 2026**: at **25% remaining in the
+actual five-hour allowance**, stop roadmap work, build and release the verified
+completed changes, and leave the rest for another day. This supersedes the
+earlier whole-roadmap release deferral. The interim batch is #53–60; #61–71
+remain open. Verify packaging, installation and private publication separately.
 
 ## Released application baseline — 8 October 2026
 
