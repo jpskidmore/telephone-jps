@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-20",
+  "issue": 59,
+  "source_parent_commit": "cf8458eb5edd92d3857a849c678568ce41c0b148",
+  "scope": "Source-only; installation/publication deferred until roadmap completion.",
+  "fresh_app_cases": {
+    "xctest": 277,
+    "swift_testing": 48,
+    "total": 325,
+    "failures": 0,
+    "new_xctest_cases": 8
+  },
+  "focused_native_cases": {
+    "editor": 17,
+    "shared_dialler": 13,
+    "total": 30,
+    "failures": 0
+  },
+  "standalone_routing_presentation_harness": {
+    "cases": 213,
+    "failures": 0,
+    "new_assertions": 43,
+    "boundary": "Production Foundation core with isolated synthetic account IDs/preferences; model/presentation assertions counted separately from app cases."
+  },
+  "source_sha256": {
+    "Telephone/DialPlan.swift": "4299d631e2bfd634ecbc45b77a09f316d2339c553d5d06496037339311eb8a08",
+    "Telephone/DialPlanPreferencesViewController.swift": "a4fef6bda4f780f67bd3f73f592a998126112e2a23fef833f7d9a35b37fa1d18",
+    "Telephone/SharedDialerController.h": "77cb507679a37ac2e39ce5c0fe2588e1f9cb8c2a5ad92f5bdc035f22fd5589cd",
+    "Telephone/SharedDialerController.m": "0472c3723ebdbe636cb8594e037e124742de2289470580e2380d9a2d9c9bfae2",
+    "TelephoneTests/DialPlanPreferencesViewControllerTests.swift": "c4d9231363025d5d9663668abc11800d266e38e92f628e328ddac4378769478e",
+    "TelephoneTests/SharedDialerControllerTests.m": "84507016f7431c36882d64f7dd7415652766801f6cc8995f47830c54196afcde",
+    "Tests/DialPlanRegressionHarness.swift": "27dbcae3efb1de9f2717a6e519a870e61bd1614a4bcb49fdeeaa60962967d347"
+  },
+  "unchanged_routing_sections_sha256": {
+    "DialPlanNormaliser": "fdeaaaa1c9315cc25ccbee10087ef777d09a07831291842789d58debe1e1ad35",
+    "DialPlanResolver": "8701df1f923fc2849f288c9a58dd219297e7a2fc87d694cdbf231af8df6f69a5"
+  },
+  "unchanged_coordinator_sha256": "06860c2a0d5cfee0431ab297507d588b296c5127a20d456995979ab5a4e27efe",
+  "project_metadata_sha256": "5fefca7f7eb20672de14cac08ed32ef73a40deb2ed4dd1f5bd42b4f620f3c077",
+  "log_sha256": {
+    "build-focused.log": "201e1c1caaab90e656f7eeba00233f306767c8e3221510d3cc568f3d7aee67b1",
+    "TelephoneTests-focused.log": "c8598947931cd3f1528c66e9765954a8ebab49386cec30d6ccf70b0f224e27dd",
+    "build-final.log": "f118afcde3eb6cd6f7990105dc29e7f17c08df1664a2391a9309d04ddb26e606",
+    "TelephoneTests-final.log": "923b34bc2b5e95790341f5fa6f0fae26632e8dc6ca0f6e1a1e95c8bb194868d7",
+    "dial-plan-harness.log": "9a90fb5dab79bd2305852f9ddfb9beb11eb567ae453716857319241349cde6c0"
+  },
+  "log_directory": "/private/tmp/jps-telephone-issue59",
+  "evidence": [
+    "Shared immutable presentation includes route and distinct nonfatal destination explanation; compact/full layouts retain their purposes.",
+    "One provider invocation per coherent refresh; deferred table rows and selectors reuse that snapshot. Same account fields skip redundant menu/table rebuilds.",
+    "Native injected account mutation between route resolution/presentation stays frozen; later refresh uses new name/state.",
+    "Unsaved drafts and open exception fields/selected UUID survive rename/removal/state/config refresh. Own synchronous Save notification does not double-refresh.",
+    "Duplicate UUID visibly ambiguous; no fallback/provider retargeting introduced; normaliser, resolver and admission coordinator unchanged.",
+    "Empty/error explanatory tooltips/accessibility values reset; detached callback avoids bridging nil accounts after teardown."
+  ],
+  "review": "Implementation and independent review subagents for this issue only; no remaining blocking findings.",
+  "performance_claim": "Maintainability and bounded snapshot/provider reads verified; no measured latency, CPU, memory or energy improvement claimed.",
+  "environment": {
+    "macOS": "27.0.1",
+    "macOS_build": "26A434",
+    "Xcode": "27.0 /27A266a",
+    "SDK": "27.0"
+  },
+  "isolation": "Fresh unique nib-free Debug app host; actual Telephone app-module native editor types, synthetic accounts and per-test defaults suites. No owner accounts, Contacts, credentials, history or recordings loaded.",
+  "app_version_unchanged": "3.5.1/build 163",
+  "limits": [
+    "Provider/device/audio/permission/full visual/proficient VoiceOver acceptance remains separate under issue62 and the final combined release.",
+    "Off-main account-notification hop and defaults-backed fallback observation have static review only; added native tests exercise normal main-thread/post-admission notifications.",
+    "Unchanged framework results remain historical, not rerun.",
+    "No install/publication/version bump, cloud workflow dispatch or release tag/asset mutation."
+  ],
+  "official_docs_checked": "20 October2026: OpenAI best practices, Apple macOS27notes, MainActor and NSPopover documentation."
+}

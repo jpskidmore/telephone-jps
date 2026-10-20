@@ -35,6 +35,9 @@ documents the verified source improvement and its separate delivery boundary.
 The [issue #58 waiting-call record](maintenance/2026-10-20-waiting-calls.md)
 documents individual cancellation, compact feedback and fresh local checks.
 
+The [issue #59 route-preview record](maintenance/2026-10-20-route-presentation.md)
+documents shared explanations and consistent account snapshots.
+
 ## Owner's execution controls
 
 The owner authorised roadmap implementation on **19 October 2026**, strictly

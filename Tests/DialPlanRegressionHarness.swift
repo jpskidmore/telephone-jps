@@ -47,6 +47,56 @@ struct DialPlanRegressionHarness {
         } catch { check(name, store.defaults.data(forKey: DialPlanStore.settingsKey) == before) }
     }
 
+    static func checkRoutePresentation(store: DialPlanStore) throws {
+        let settings = configuration(store, targets: ["mobile": local])
+        for (enabled, availability, status) in [
+            (true, "online", "Ready"), (true, "unavailable", "Ready"),
+            (true, "registering", "Waiting"), (true, "needsRegistration", "Waiting"),
+            (true, "offline", "Offline"), (true, "failed", "Unavailable"),
+            (true, "unknown", "Unavailable"), (false, "online", "Disabled"),
+            (false, "needsRegistration", "Disabled")
+        ] {
+            let snapshot = [DialPlanAccount(uuid: local, name: "Localphone", enabled: enabled, availability: availability), accounts[1]]
+            let route = try store.previewDestination("07799414799", configuration: settings, accounts: snapshot)
+            let display = DialPlanRoutePresentation(route: route, accounts: snapshot)
+            check("presentation \(enabled)/\(availability) keeps compact status", display.compactStatus == "\(status) · Localphone")
+            check("presentation \(enabled)/\(availability) keeps matching provider and no fallback", display.providerName == "Localphone" && display.ruleDescription == "Prefix +4477" && route.accountUUID == local)
+            check("presentation \(enabled)/\(availability) keeps destination and explanation", display.detailText == "+447799414799\n\(route.message)" && display.explanation == route.message)
+        }
+        let missing = try store.previewDestination("07799414799", configuration: settings, accounts: [accounts[1]])
+        let removed = DialPlanRoutePresentation(route: missing, accounts: [accounts[1]])
+        check("presentation preserves removed connection status without fallback", removed.compactStatus == "Connection removed" && removed.providerName == "No connection" && missing.accountUUID == local)
+        let duplicateAccounts = accounts + [DialPlanAccount(uuid: local, name: "Different name", enabled: true, availability: "online")]
+        let ambiguous = try store.previewDestination("07799414799", configuration: settings, accounts: duplicateAccounts)
+        let ambiguousDisplay = DialPlanRoutePresentation(route: ambiguous, accounts: duplicateAccounts)
+        check("presentation never picks arbitrary duplicate UUID provider", ambiguousDisplay.compactStatus == "Unavailable · Ambiguous connection" && ambiguousDisplay.providerName == "Ambiguous connection" && ambiguousDisplay.explanation == ambiguous.message && !ambiguous.canDial)
+
+        let blocked = try store.previewDestination("07799414799", configuration: configuration(store, targets: ["mobile": "block"]), accounts: accounts)
+        let blockedDisplay = DialPlanRoutePresentation(route: blocked, accounts: accounts)
+        check("presentation preserves Block and matched prefix", blockedDisplay.compactStatus == "Blocked by dial plan" && blockedDisplay.routeText == "Blocked · Prefix +4477" && blockedDisplay.explanation == blocked.message)
+        let emergency = try store.previewDestination("999", configuration: settings, accounts: accounts)
+        let emergencyDisplay = DialPlanRoutePresentation(route: emergency, accounts: accounts)
+        check("presentation preserves protected emergency provider", emergencyDisplay.compactStatus == "Ready · AA" && emergencyDisplay.routeText == "AA · Emergency" && emergencyDisplay.detailText == "999\nUse AA.")
+        for input in ["123R45P67", "*21*07799414799#", "101", "sip:alice@example.net"] {
+            let route = try store.previewDestination(input, configuration: settings, accounts: accounts)
+            let display = DialPlanRoutePresentation(route: route, accounts: accounts)
+            check("presentation preserves literal service/SIP destination \(input)", display.detailText.hasPrefix(input + "\n") && display.providerName == "AA")
+            let explanation = [route.message, route.destination.message].filter { !$0.isEmpty }.joined(separator: " ")
+            check("presentation retains route plus numbering guidance \(input)", display.explanation == explanation)
+        }
+        let invalid = try store.previewDestination("07799x414799", configuration: settings, accounts: accounts)
+        let invalidDisplay = DialPlanRoutePresentation(route: invalid, accounts: accounts)
+        check("presentation deduplicates invalid destination explanation", invalidDisplay.compactStatus == "Check number" && invalidDisplay.explanation == invalid.message && invalid.message == invalid.destination.message)
+        var unconfigured = settings
+        unconfigured["defaultAccountUUID"] = ""
+        unconfigured["emergencyAccountUUID"] = ""
+        for input in ["999", "242110"] {
+            let route = try store.previewDestination(input, configuration: unconfigured, accounts: accounts)
+            let display = DialPlanRoutePresentation(route: route, accounts: accounts)
+            check("presentation retains unconfigured route message \(input)", display.compactStatus == route.message && display.explanation == route.message && route.accountUUID == nil && !route.canDial)
+        }
+    }
+
     static func main() throws {
         let domain = "test.jps.dialplan.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
@@ -226,6 +276,9 @@ struct DialPlanRegressionHarness {
         let corrupt = DialPlanStore(defaults: defaults)
         check("damaged persisted plan blocks dialling instead of silently defaulting", !corrupt.configurationError.isEmpty && !corrupt.resolveDestination("07799414799", accounts: accounts).canDial)
         check("damaged plan bytes retained for repair", defaults.data(forKey: DialPlanStore.settingsKey) == Data("corrupt".utf8))
+        let repairRoute = corrupt.resolveDestination("07799414799", accounts: accounts)
+        let repairDisplay = DialPlanRoutePresentation(route: repairRoute, accounts: accounts)
+        check("presentation retains malformed configuration repair message", repairDisplay.compactStatus == repairRoute.message && repairDisplay.explanation == repairRoute.message && !repairRoute.canDial)
         try corrupt.updateConfiguration(draft)
         check("explicit validated save repairs corrupted configuration", corrupt.configurationError.isEmpty && corrupt.resolveDestination("07799414799", accounts: accounts).canDial)
         defaults.removeObject(forKey: DialPlanStore.settingsKey)
@@ -234,6 +287,7 @@ struct DialPlanRegressionHarness {
         migration.bootstrapDefaultAccountUUID(aa)
         check("migration pins former default once, never follows reorder", migration.configuration["defaultAccountUUID"] as? String == local)
         check("migration never silently configures emergency account", migration.configuration["emergencyAccountUUID"] as? String == "")
+        try checkRoutePresentation(store: store)
 
         let json: [String: Any] = ["suite": "DialPlanRegressionHarness", "cases": cases,
                                    "failures": failures.count, "failedCases": failures,

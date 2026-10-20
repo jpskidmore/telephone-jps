@@ -10,7 +10,7 @@ The Routes page assigns connections or Block to Mobile, Landline, International,
 
 The Exceptions page adds, edits, activates, deactivates and removes precise prefixes. Each canonical prefix is unique; comments have at most 20 characters. Prefixes are literal, with no regular expressions or wildcards. International prefixes allow up to 15 digits plus the displayed +. National prefixes such as 077 are saved as +4477 using the configured country. Explicit short/service prefixes accept digits, *, #, R and P. Save commits the validated plan together; leaving an edited page/window offers Save, Discard or Cancel.
 
-The Test page shows the expanded destination, winning rule/category and selected connection without making a call. The main Call button also exposes the current expanded destination and selected route in its tooltip and accessibility help. Use it to check changes before calling.
+The Test page shows the expanded destination, winning rule/category and selected connection without making a call. The main Call button also exposes the current expanded destination and selected route in its tooltip and accessibility help. Both previews share provider/rule wording and include nonfatal destination guidance, such as the literal pause/recall limitation. Account names and readiness refresh from current snapshots without discarding unsaved plan edits. Use the preview to check changes before calling.
 
 ## Expansion and matching
 

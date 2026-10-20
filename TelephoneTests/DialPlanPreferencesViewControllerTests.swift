@@ -5,8 +5,8 @@ import XCTest
 @MainActor
 final class DialPlanPreferencesViewControllerTests: XCTestCase {
     private let accounts = [
-        DialPlanAccount(uuid: "local", name: "Localphone", enabled: true, availability: "online"),
-        DialPlanAccount(uuid: "aa", name: "AA", enabled: true, availability: "online")
+        Telephone.DialPlanAccount(uuid: "local", name: "Localphone", enabled: true, availability: "online"),
+        Telephone.DialPlanAccount(uuid: "aa", name: "AA", enabled: true, availability: "online")
     ]
 
     func testPaneKeepsCompactDimensionsAndSixAccessibleNativeRouteSelectors() throws {
@@ -39,20 +39,20 @@ final class DialPlanPreferencesViewControllerTests: XCTestCase {
         XCTAssertEqual(fixture.store.configuration["defaultAccountUUID"] as? String, "local")
         XCTAssertEqual(fixture.store.configuration["emergencyAccountUUID"] as? String, "aa")
         XCTAssertFalse(fixture.controller.hasUnsavedChanges)
-        XCTAssertEqual(DialPlanStore(defaults: fixture.defaults).configuration["defaultAccountUUID"] as? String, "local")
+        XCTAssertEqual(Telephone.DialPlanStore(defaults: fixture.defaults).configuration["defaultAccountUUID"] as? String, "local")
     }
 
     func testInvalidAreaSaveKeepsPreviousBytesAndUserDraft() throws {
         let fixture = makeFixture()
         defer { fixture.clean() }
         try fixture.store.updateConfiguration(fixture.store.configuration)
-        let bytes = fixture.defaults.data(forKey: DialPlanStore.settingsKey)
+        let bytes = fixture.defaults.data(forKey: Telephone.DialPlanStore.settingsKey)
         let area: NSTextField = try control("DialPlanArea", in: fixture.controller.view)
         area.stringValue = "not-an-area"
         fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: area))
         let save: NSButton = try control("SaveDialPlan", in: fixture.controller.view)
         save.performClick(nil)
-        XCTAssertEqual(fixture.defaults.data(forKey: DialPlanStore.settingsKey), bytes)
+        XCTAssertEqual(fixture.defaults.data(forKey: Telephone.DialPlanStore.settingsKey), bytes)
         XCTAssertEqual(area.stringValue, "not-an-area")
         XCTAssertTrue(fixture.controller.hasUnsavedChanges)
         let status: NSTextField = try control("DialPlanSaveStatus", in: fixture.controller.view)
@@ -71,9 +71,198 @@ final class DialPlanPreferencesViewControllerTests: XCTestCase {
             fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: field))
             XCTAssertEqual(preview.stringValue, canonical)
         }
-        XCTAssertNil(fixture.defaults.object(forKey: DialPlanStore.settingsKey))
+        XCTAssertNil(fixture.defaults.object(forKey: Telephone.DialPlanStore.settingsKey))
         let route: NSTextField = try control("DialPlanRoutePreview", in: fixture.controller.view)
         XCTAssertTrue(route.stringValue.contains("Localphone"))
+    }
+
+    func testEachRefreshUsesOneSnapshotForEveryMenuPreviewAndDeferredExceptionRow() throws {
+        var calls = 0
+        let fixture = makeFixture(accountProvider: {
+            calls += 1
+            return [Telephone.DialPlanAccount(uuid: "local", name: calls.isMultiple(of: 2) ? "Second" : "First", enabled: true, availability: "online")]
+        })
+        defer { fixture.clean() }
+        XCTAssertEqual(calls, 1)
+        var settings = fixture.store.configuration
+        settings["defaultAccountUUID"] = "local"
+        settings["rules"] = [["id": "snapshot-rule", "prefix": "+447799", "target": "local", "enabled": true, "comment": ""]]
+        try fixture.store.updateConfiguration(settings)
+        let field: NSTextField = try control("DialPlanTestNumber", in: fixture.controller.view)
+        field.stringValue = "07799414799"
+        let before = calls
+        fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: field))
+        XCTAssertEqual(calls, before + 1)
+        let expectedName = calls.isMultiple(of: 2) ? "Second" : "First"
+        for key in ["defaultAccountUUID", "emergencyAccountUUID", "mobile", "landline", "international", "premium", "other", "service"] {
+            let menu: NSPopUpButton = try control("DialPlanTarget.\(key)", in: fixture.controller.view)
+            let item = try XCTUnwrap(menu.itemArray.first { ($0.representedObject as? String) == "local" })
+            XCTAssertEqual(item.title, expectedName)
+        }
+        let route: NSTextField = try control("DialPlanRoutePreview", in: fixture.controller.view)
+        let explanation: NSTextField = try control("DialPlanPreviewExplanation", in: fixture.controller.view)
+        XCTAssertEqual(route.stringValue, "\(expectedName) · Prefix +447799")
+        XCTAssertEqual(explanation.stringValue, "Use \(expectedName).")
+        let table: NSTableView = try control("DialPlanExceptions", in: fixture.controller.view)
+        let column = try XCTUnwrap(table.tableColumns.first { $0.identifier.rawValue == "target" })
+        for _ in 0..<3 {
+            let row = try XCTUnwrap(fixture.controller.tableView(table, viewFor: column, row: 0) as? NSTextField)
+            XCTAssertEqual(row.stringValue, expectedName)
+        }
+        XCTAssertEqual(calls, before + 1, "Deferred table cells must reuse the displayed snapshot")
+        let beforeAppearance = calls
+        fixture.controller.viewWillAppear()
+        XCTAssertEqual(calls, beforeAppearance + 1)
+        XCTAssertEqual(route.stringValue, "\(calls.isMultiple(of: 2) ? "Second" : "First") · Prefix +447799")
+    }
+
+    func testAccountRenameOfflineAndRemovalRefreshWithoutDiscardingUnsavedDraft() throws {
+        var current = accounts
+        var calls = 0
+        let fixture = makeFixture(accountProvider: { calls += 1; return current })
+        defer { fixture.clean() }
+        var settings = fixture.store.configuration
+        settings["defaultAccountUUID"] = "local"
+        try fixture.store.updateConfiguration(settings)
+        let area: NSTextField = try control("DialPlanArea", in: fixture.controller.view)
+        area.stringValue = "020"
+        fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: area))
+        let field: NSTextField = try control("DialPlanTestNumber", in: fixture.controller.view)
+        field.stringValue = "07799414799"
+        fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: field))
+        let menu: NSPopUpButton = try control("DialPlanTarget.defaultAccountUUID", in: fixture.controller.view)
+        let route: NSTextField = try control("DialPlanRoutePreview", in: fixture.controller.view)
+        let explanation: NSTextField = try control("DialPlanPreviewExplanation", in: fixture.controller.view)
+        current = [Telephone.DialPlanAccount(uuid: "local", name: "Renamed connection", enabled: true, availability: "online"), accounts[1]]
+        let beforeRename = calls
+        NotificationCenter.default.post(name: Notification.Name(Telephone.DialPlanStore.accountsChangeNotificationName), object: nil)
+        XCTAssertEqual(calls, beforeRename + 1)
+        XCTAssertEqual(menu.selectedItem?.title, "Renamed connection")
+        XCTAssertEqual(route.stringValue, "Renamed connection · Mobile / Default")
+        XCTAssertEqual(explanation.stringValue, "Use Renamed connection.")
+
+        current = [Telephone.DialPlanAccount(uuid: "local", name: "Renamed connection", enabled: true, availability: "offline"), accounts[1]]
+        let beforeOffline = calls
+        NotificationCenter.default.post(name: Notification.Name("JPSAccountRoutingStateDidChangeNotification"), object: nil)
+        XCTAssertEqual(calls, beforeOffline + 1)
+        XCTAssertEqual(route.textColor, .systemRed)
+        XCTAssertTrue(explanation.stringValue.contains("Renamed connection is Offline"))
+        XCTAssertTrue(explanation.stringValue.contains("no other connection will be used"))
+
+        current = [accounts[1]]
+        NotificationCenter.default.post(name: Notification.Name(Telephone.DialPlanStore.accountsChangeNotificationName), object: nil)
+        XCTAssertEqual(menu.selectedItem?.representedObject as? String, "local")
+        XCTAssertEqual(menu.selectedItem?.title, "Missing connection")
+        XCTAssertEqual(route.stringValue, "No connection · Mobile / Default")
+        XCTAssertTrue(explanation.stringValue.contains("selected connection was removed"))
+        XCTAssertEqual(area.stringValue, "020")
+        XCTAssertEqual(fixture.store.configuration["areaCode"] as? String, "01442")
+        XCTAssertTrue(fixture.controller.hasUnsavedChanges)
+    }
+
+    func testExternalPlanRefreshPreservesUnsavedDraftAndUsesOneFreshAccountSnapshot() throws {
+        var calls = 0
+        let fixture = makeFixture(accountProvider: { calls += 1; return self.accounts })
+        defer { fixture.clean() }
+        try pick("local", identifier: "DialPlanTarget.defaultAccountUUID", in: fixture.controller)
+        let before = calls
+        var external = fixture.store.configuration
+        external["defaultAccountUUID"] = "aa"
+        external["areaCode"] = "020"
+        try fixture.store.updateConfiguration(external)
+        XCTAssertEqual(calls, before + 1)
+        let menu: NSPopUpButton = try control("DialPlanTarget.defaultAccountUUID", in: fixture.controller.view)
+        let area: NSTextField = try control("DialPlanArea", in: fixture.controller.view)
+        XCTAssertEqual(menu.selectedItem?.representedObject as? String, "local")
+        XCTAssertEqual(area.stringValue, "01442")
+        XCTAssertTrue(fixture.controller.hasUnsavedChanges)
+        XCTAssertEqual(fixture.store.configuration["defaultAccountUUID"] as? String, "aa")
+    }
+
+    func testSaveRendersOneSnapshotDespiteItsSynchronousCommittedChangeNotification() throws {
+        var calls = 0
+        let fixture = makeFixture(accountProvider: { calls += 1; return self.accounts })
+        defer { fixture.clean() }
+        try pick("local", identifier: "DialPlanTarget.defaultAccountUUID", in: fixture.controller)
+        let before = calls
+        let save: NSButton = try control("SaveDialPlan", in: fixture.controller.view)
+        save.performClick(nil)
+        XCTAssertEqual(calls, before + 1)
+        XCTAssertFalse(fixture.controller.hasUnsavedChanges)
+        XCTAssertEqual(fixture.store.configuration["defaultAccountUUID"] as? String, "local")
+    }
+
+    func testAccountRefreshPreservesOpenExceptionFieldsAndMissingTarget() throws {
+        var current = accounts
+        var calls = 0
+        let fixture = makeFixture(accountProvider: { calls += 1; return current })
+        defer { fixture.clean() }
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 548, height: 292),
+                              styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.contentViewController = fixture.controller
+        window.orderFront(nil)
+        defer { window.orderOut(nil) }
+        let add: NSButton = try control("AddDialPlanException", in: fixture.controller.view)
+        add.performClick(nil)
+        let content = try XCTUnwrap(window.attachedSheet?.contentView)
+        let prefix: NSTextField = try control("ExceptionPrefix", in: content)
+        let comment: NSTextField = try control("ExceptionComment", in: content)
+        let target: NSPopUpButton = try control("ExceptionTarget", in: content)
+        let enabled: NSButton = try control("ExceptionEnabled", in: content)
+        prefix.stringValue = "07799"
+        comment.stringValue = "Keep draft comment"
+        enabled.state = .off
+        target.select(try XCTUnwrap(target.itemArray.first { ($0.representedObject as? String) == "aa" }))
+        current = [accounts[0], Telephone.DialPlanAccount(uuid: "aa", name: "Renamed AA", enabled: true, availability: "online")]
+        let before = calls
+        NotificationCenter.default.post(name: Notification.Name(Telephone.DialPlanStore.accountsChangeNotificationName), object: nil)
+        XCTAssertEqual(calls, before + 1)
+        XCTAssertEqual(target.selectedItem?.title, "Renamed AA")
+        current = [accounts[0]]
+        NotificationCenter.default.post(name: Notification.Name(Telephone.DialPlanStore.accountsChangeNotificationName), object: nil)
+        XCTAssertEqual(target.selectedItem?.representedObject as? String, "aa")
+        XCTAssertEqual(target.selectedItem?.title, "Missing connection")
+        XCTAssertEqual(prefix.stringValue, "07799")
+        XCTAssertEqual(comment.stringValue, "Keep draft comment")
+        XCTAssertEqual(enabled.state, .off)
+        XCTAssertFalse(fixture.controller.hasUnsavedChanges)
+        let cancel: NSButton = try control("CancelException", in: content)
+        cancel.performClick(nil)
+    }
+
+    func testPreviewShowsCompleteLiteralPauseRecallExplanationWithoutSaving() throws {
+        let fixture = makeFixture()
+        defer { fixture.clean() }
+        try pick("local", identifier: "DialPlanTarget.defaultAccountUUID", in: fixture.controller)
+        let field: NSTextField = try control("DialPlanTestNumber", in: fixture.controller.view)
+        field.stringValue = "123R45P67"
+        fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: field))
+        let canonical: NSTextField = try control("DialPlanCanonicalPreview", in: fixture.controller.view)
+        let explanation: NSTextField = try control("DialPlanPreviewExplanation", in: fixture.controller.view)
+        let message = "Use Localphone. Pause/recall syntax is preserved for the selected connection; it is not converted into post-connect DTMF."
+        XCTAssertEqual(canonical.stringValue, "123R45P67")
+        XCTAssertEqual(explanation.stringValue, message)
+        XCTAssertEqual(explanation.toolTip, message)
+        XCTAssertEqual(explanation.accessibilityValue() as? String, message)
+        let route: NSTextField = try control("DialPlanRoutePreview", in: fixture.controller.view)
+        XCTAssertEqual(route.toolTip, "123R45P67\n\(message)")
+        field.stringValue = ""
+        fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: field))
+        XCTAssertNil(route.toolTip)
+        XCTAssertEqual(explanation.accessibilityValue() as? String, explanation.stringValue)
+        XCTAssertEqual(explanation.toolTip, explanation.stringValue)
+        XCTAssertFalse(explanation.stringValue.contains("post-connect DTMF"))
+        field.stringValue = "123R45P67"
+        fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: field))
+        let area: NSTextField = try control("DialPlanArea", in: fixture.controller.view)
+        area.stringValue = "invalid"
+        fixture.controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: area))
+        XCTAssertEqual(canonical.stringValue, "Check the dial-plan fields")
+        XCTAssertNil(route.toolTip)
+        XCTAssertEqual(explanation.accessibilityValue() as? String, explanation.stringValue)
+        XCTAssertEqual(explanation.toolTip, explanation.stringValue)
+        XCTAssertFalse(explanation.stringValue.contains("post-connect DTMF"))
+        XCTAssertNil(fixture.defaults.object(forKey: Telephone.DialPlanStore.settingsKey))
     }
 
     func testBlockedDraftAppearsInPreviewWithoutChangingSavedPlan() throws {
@@ -87,7 +276,7 @@ final class DialPlanPreferencesViewControllerTests: XCTestCase {
         XCTAssertTrue(route.stringValue.hasPrefix("Blocked"))
         XCTAssertEqual(route.textColor, .systemRed)
         XCTAssertNil((fixture.store.configuration["categoryTargets"] as? [String: String])?["mobile"])
-        XCTAssertNil(fixture.defaults.object(forKey: DialPlanStore.settingsKey))
+        XCTAssertNil(fixture.defaults.object(forKey: Telephone.DialPlanStore.settingsKey))
     }
 
     func testEmergencyHasUnconfiguredChoiceAndCannotChooseBlock() throws {
@@ -250,21 +439,21 @@ final class DialPlanPreferencesViewControllerTests: XCTestCase {
     private struct Fixture {
         let domain: String
         let defaults: UserDefaults
-        let store: DialPlanStore
-        let controller: DialPlanPreferencesViewController
+        let store: Telephone.DialPlanStore
+        let controller: Telephone.DialPlanPreferencesViewController
         func clean() { defaults.removePersistentDomain(forName: domain) }
     }
 
-    private func makeFixture() -> Fixture {
+    private func makeFixture(accountProvider: (() -> [Telephone.DialPlanAccount])? = nil) -> Fixture {
         let domain = "test.jps.guided-routes.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
-        let store = DialPlanStore(defaults: defaults)
-        let controller = DialPlanPreferencesViewController(store: store) { self.accounts }
+        let store = Telephone.DialPlanStore(defaults: defaults)
+        let controller = Telephone.DialPlanPreferencesViewController(store: store, accountProvider: accountProvider ?? { self.accounts })
         _ = controller.view
         return Fixture(domain: domain, defaults: defaults, store: store, controller: controller)
     }
 
-    private func pick(_ value: String, identifier: String, in controller: DialPlanPreferencesViewController) throws {
+    private func pick(_ value: String, identifier: String, in controller: Telephone.DialPlanPreferencesViewController) throws {
         let menu: NSPopUpButton = try control(identifier, in: controller.view)
         menu.select(try XCTUnwrap(menu.itemArray.first { ($0.representedObject as? String) == value }))
         send(menu)

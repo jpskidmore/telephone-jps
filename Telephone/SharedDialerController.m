@@ -32,8 +32,8 @@
 @implementation SharedDialerController
 - (instancetype)initWithAccounts:(AccountControllers *)accounts historyFactory:(AsyncCallHistoryViewEventTargetFactory *)factory {
     SharedDialerRouteResolver resolver = nil;
-    if (factory != nil) resolver = ^DialPlanRoute *(NSString *input) {
-        return [DialPlanStore.shared resolveDestination:input accounts:[DialPlanCoordinator.shared accountSnapshots]];
+    if (factory != nil) resolver = ^DialPlanRoute *(NSString *input, NSArray<DialPlanAccount *> *accounts) {
+        return [DialPlanStore.shared resolveDestination:input accounts:accounts];
     };
     return [self initWithAccounts:accounts historyFactory:factory routeResolver:resolver];
 }
@@ -76,30 +76,18 @@
         };
         if (routeResolver != nil) _dialler.callRoutePreviewHandler = ^NSString *(AKSIPURI *uri, NSString *text) {
             SharedDialerController *owner = weakSelf;
+            if (owner == nil) return @"Call";
             if (text.length == 0) {
                 [owner.dialler setCallRouteStatus:@"Enter a number" detail:@"Enter a number to see its outgoing connection."];
                 return @"Call";
             }
             AKSIPURI *address = [uri copy]; address.displayName = @"";
             NSString *input = address ? (address.host.length ? address.description : address.user) : text;
-            DialPlanRoute *route = routeResolver(input);
-            NSString *detail = [NSString stringWithFormat:@"%@\n%@", route.destination.destination,route.message];
-            AccountController *selected = nil;
-            for (AccountController *account in owner.accounts.all) {
-                if ([account.account.uuid isEqualToString:route.accountUUID]) { selected = account; break; }
-            }
-            NSString *status;
-            if (route.blocked) status = @"Blocked by dial plan";
-            else if (!route.destination.valid) status = @"Check number";
-            else if (route.accountUUID.length == 0) status = route.message;
-            else if (selected == nil) status = @"Connection removed";
-            else {
-                NSString *state = route.requiresRegistration ? @"Waiting" : route.canDial ? @"Ready" :
-                    !selected.isEnabled ? @"Disabled" : [selected.routingAvailability isEqualToString:@"offline"] ? @"Offline" : @"Unavailable";
-                status = [NSString stringWithFormat:@"%@ · %@", state,selected.accountDescription];
-            }
-            [owner.dialler setCallRouteStatus:status detail:detail];
-            return detail;
+            NSArray<DialPlanAccount *> *snapshot = [owner routeAccountSnapshots];
+            DialPlanRoute *route = routeResolver(input, snapshot);
+            DialPlanRoutePresentation *presentation = [[DialPlanRoutePresentation alloc] initWithRoute:route accounts:snapshot];
+            [owner.dialler setCallRouteStatus:presentation.compactStatus detail:presentation.detailText];
+            return presentation.detailText;
         };
         (void)_dialler.view;
         [_dialler installCompactDialerWithAvailabilityView:_availability target:self historyAction:@selector(toggleHistory:) moreAction:@selector(showActions:)];
@@ -147,11 +135,22 @@
     }
     return result;
 }
+- (NSArray<DialPlanAccount *> *)routeAccountSnapshots {
+    NSMutableArray<DialPlanAccount *> *snapshot = [NSMutableArray array];
+    for (AccountController *account in self.accounts.all) {
+        [snapshot addObject:[[DialPlanAccount alloc] initWithUUID:account.accountUUID name:account.accountDescription
+                                                        enabled:account.isEnabled availability:account.routingAvailability]];
+    }
+    return snapshot.copy;
+}
 - (void)refreshAccounts {
     [self.historyFactory updateGlobalAccounts:[self historyAccounts]];
     [self rebuildAvailability];
     [self.dialler refreshCallRoutePreview];
     [self refreshPendingCalls];
+    // AppController has admitted additions/removals/replacements before this
+    // boundary; editor previews must not read the earlier preferences signal.
+    [NSNotificationCenter.defaultCenter postNotificationName:DialPlanStore.accountsChangeNotificationName object:nil];
 }
 - (void)accountStateChanged:(NSNotification *)notification { [self rebuildAvailability]; [self.dialler refreshCallRoutePreview]; }
 - (void)pendingCallsChanged:(NSNotification *)notification { [self refreshPendingCalls]; }

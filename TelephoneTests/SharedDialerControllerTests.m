@@ -428,7 +428,7 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
     NSError *error = nil;
     XCTAssertTrue([store updateConfiguration:configuration error:&error], @"%@", error);
     SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:(id)accounts historyFactory:nil
-        routeResolver:^DialPlanRoute *(NSString *input) { return [store resolveDestination:input accounts:[self routeSnapshots:accounts]]; }];
+        routeResolver:^DialPlanRoute *(NSString *input, NSArray<DialPlanAccount *> *snapshot) { return [store resolveDestination:input accounts:snapshot]; }];
     @try {
         ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
         // Raw input exercises the route-preview path without Contacts tokenisation.
@@ -466,6 +466,84 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
         [defaults removePersistentDomainForName:suite];
     }
 }
+- (void)testCompactPreviewUsesOneFrozenSnapshotAndExposesLiteralServiceExplanation {
+    NSString *suite = [@"jps.tests.route-presentation." stringByAppendingString:NSUUID.UUID.UUIDString];
+    NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:suite];
+    DialPlanStore *store = [[DialPlanStore alloc] initWithDefaults:defaults];
+    JPSSharedDiallerAccountFixture *selected = [self accountWithUUID:@"selected" name:@"Original connection" availability:@"online"];
+    JPSSharedDiallerAccountFixture *other = [self accountWithUUID:@"other" name:@"Other connection" availability:@"online"];
+    JPSSharedDiallerAccountsFixture *accounts = [JPSSharedDiallerAccountsFixture new]; accounts.all = @[selected,other];
+    NSMutableDictionary *configuration = [store.configuration mutableCopy]; configuration[@"defaultAccountUUID"] = @"selected";
+    NSError *error = nil;
+    XCTAssertTrue([store updateConfiguration:configuration error:&error], @"%@", error);
+    __block BOOL changeAfterResolution = YES;
+    __block NSUInteger snapshotsResolved = 0;
+    SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:(id)accounts historyFactory:nil
+        routeResolver:^DialPlanRoute *(NSString *input, NSArray<DialPlanAccount *> *snapshot) {
+            snapshotsResolved++;
+            DialPlanRoute *route = [store resolveDestination:input accounts:snapshot];
+            if (changeAfterResolution) {
+                changeAfterResolution = NO;
+                selected.accountDescription = @"Renamed connection"; selected.routingAvailability = @"offline";
+            }
+            return route;
+        }];
+    __block NSUInteger admittedRefreshes = 0;
+    id observer = [NSNotificationCenter.defaultCenter addObserverForName:DialPlanStore.accountsChangeNotificationName object:nil queue:nil usingBlock:^(NSNotification *notification) {
+        XCTAssertTrue(NSThread.isMainThread); XCTAssertNil(notification.object); XCTAssertNil(notification.userInfo);
+        admittedRefreshes++;
+    }];
+    @try {
+        ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
+        dialler.callDestinationField.delegate = nil;
+        dialler.callDestinationField.stringValue = @"07700900123";
+        NSTextField *status = [self routeStatusInController:controller];
+        XCTAssertEqual(snapshotsResolved,1u);
+        XCTAssertEqualObjects(status.stringValue,@"Ready · Original connection");
+        XCTAssertTrue([status.toolTip containsString:@"Use Original connection."]);
+        [controller refreshAccounts];
+        XCTAssertEqual(admittedRefreshes,1u);
+        XCTAssertEqual(snapshotsResolved,2u);
+        XCTAssertEqualObjects(status.stringValue,@"Offline · Renamed connection");
+        XCTAssertTrue([status.toolTip containsString:@"no other connection will be used"]);
+        selected.routingAvailability = @"online";
+        dialler.callDestinationField.stringValue = @"123R45P67";
+        XCTAssertEqualObjects(status.stringValue,@"Ready · Renamed connection");
+        XCTAssertTrue([status.toolTip containsString:@"123R45P67"]);
+        XCTAssertTrue([status.toolTip containsString:@"Pause/recall syntax is preserved"]);
+        XCTAssertTrue([status.accessibilityHelp containsString:@"not converted into post-connect DTMF"]);
+        NSButton *call = [dialler valueForKey:@"dialButton"];
+        XCTAssertEqualObjects(call.accessibilityHelp,status.accessibilityHelp);
+        XCTAssertEqualObjects(store.configuration[@"defaultAccountUUID"],@"selected");
+    } @finally {
+        [NSNotificationCenter.defaultCenter removeObserver:observer];
+        [controller.window orderOut:nil]; [defaults removePersistentDomainForName:suite];
+    }
+}
+- (void)testDetachedPreviewHandlerDoesNotResolveAfterItsWindowControllerIsReleased {
+    NSString *suite = [@"jps.tests.detached-preview." stringByAppendingString:NSUUID.UUID.UUIDString];
+    NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:suite];
+    DialPlanStore *store = [[DialPlanStore alloc] initWithDefaults:defaults];
+    __block NSUInteger resolutions = 0;
+    __weak SharedDialerController *released;
+    NSString *(^preview)(AKSIPURI *, NSString *);
+    @autoreleasepool {
+        SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:[AccountControllers new] historyFactory:nil
+            routeResolver:^DialPlanRoute *(NSString *input, NSArray<DialPlanAccount *> *snapshot) {
+                resolutions++;
+                XCTFail(@"A detached preview must not enter resolution or Swift presentation.");
+                return [store resolveDestination:input accounts:snapshot];
+            }];
+        ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
+        preview = [dialler.callRoutePreviewHandler copy];
+        released = controller;
+        [controller.window orderOut:nil];
+    }
+    XCTAssertNil(released);
+    XCTAssertEqualObjects(preview(nil,@"07700900123"),@"Call");
+    XCTAssertEqual(resolutions,0u);
+    [defaults removePersistentDomainForName:suite];
+}
 - (void)testVisibleRouteFollowsDestinationSavedPlanAccountRenameAndRemoval {
     NSString *suite = [@"jps.tests.route-updates." stringByAppendingString:NSUUID.UUID.UUIDString];
     NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:suite];
@@ -477,7 +555,7 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
     NSError *error = nil;
     XCTAssertTrue([store updateConfiguration:configuration error:&error], @"%@", error);
     SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:(id)accounts historyFactory:nil
-        routeResolver:^DialPlanRoute *(NSString *input) { return [store resolveDestination:input accounts:[self routeSnapshots:accounts]]; }];
+        routeResolver:^DialPlanRoute *(NSString *input, NSArray<DialPlanAccount *> *snapshot) { return [store resolveDestination:input accounts:snapshot]; }];
     @try {
         ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
         // Raw input exercises the route-preview path without Contacts tokenisation.

@@ -70,12 +70,53 @@ final class DialPlanRoute: NSObject {
     }
 }
 
+/// Detached display values for both route previews. The caller supplies the same
+/// immutable account snapshot used to resolve the route; no live state is read.
+@objcMembers
+final class DialPlanRoutePresentation: NSObject {
+    let compactStatus: String
+    let detailText: String
+    let routeText: String
+    let explanation: String
+    let providerName: String
+    let ruleDescription: String
+
+    @objc(initWithRoute:accounts:)
+    init(route: DialPlanRoute, accounts: [DialPlanAccount]) {
+        let matches = accounts.filter { $0.uuid == route.accountUUID }
+        let selected = matches.count == 1 ? matches.first : nil
+        providerName = selected?.name ?? (matches.isEmpty ? "No connection" : "Ambiguous connection")
+        ruleDescription = route.matchedPrefix.map { "Prefix \($0)" }
+            ?? (route.category == "emergency" ? "Emergency" : "\(route.category.capitalized) / Default")
+        routeText = "\(route.blocked ? "Blocked" : providerName) · \(ruleDescription)"
+
+        // Invalid destinations already supply the route error. Preserve useful
+        // nonfatal numbering guidance (including literal R/P syntax) only once.
+        var messages = [String]()
+        for message in [route.message, route.destination.message] where !message.isEmpty {
+            if !messages.contains(message) { messages.append(message) }
+        }
+        explanation = messages.joined(separator: " ")
+        detailText = [route.destination.destination, explanation].filter { !$0.isEmpty }.joined(separator: "\n")
+
+        if route.blocked { compactStatus = "Blocked by dial plan" }
+        else if !route.destination.valid { compactStatus = "Check number" }
+        else if route.accountUUID?.isEmpty ?? true { compactStatus = route.message }
+        else if let selected {
+            let state = route.requiresRegistration ? "Waiting" : route.canDial ? "Ready"
+                : !selected.enabled ? "Disabled" : selected.availability == "offline" ? "Offline" : "Unavailable"
+            compactStatus = "\(state) · \(providerName)"
+        } else { compactStatus = matches.isEmpty ? "Connection removed" : "Unavailable · \(providerName)" }
+    }
+}
+
 @MainActor
 @objcMembers
 final class DialPlanStore: NSObject {
     static let shared = DialPlanStore(defaults: .standard)
     static let settingsKey = "JPSDialPlanConfigurationV1"
     static let changeNotificationName = "JPSDialPlanDidChangeNotification"
+    static let accountsChangeNotificationName = "JPSDialPlanAccountsDidRefreshNotification"
     static let metadataVersion = "ofcom-2025-04-22+libphonenumber-d145763-v1"
     static let supportedCountryCodes = ["+44", "+1", "+33", "+49", "+39"]
     let defaults: UserDefaults

@@ -1,7 +1,7 @@
 #import <Cocoa/Cocoa.h>
-@class AccountControllers, AsyncCallHistoryViewEventTargetFactory, DialPlanRoute;
+@class AccountControllers, AsyncCallHistoryViewEventTargetFactory, DialPlanRoute, DialPlanAccount;
 NS_ASSUME_NONNULL_BEGIN
-typedef DialPlanRoute * _Nonnull (^SharedDialerRouteResolver)(NSString *input);
+typedef DialPlanRoute * _Nonnull (^SharedDialerRouteResolver)(NSString *input, NSArray<DialPlanAccount *> *accounts);
 @interface SharedDialerController : NSWindowController
 - (instancetype)initWithAccounts:(AccountControllers *)accounts historyFactory:(nullable AsyncCallHistoryViewEventTargetFactory *)factory;
 - (instancetype)initWithAccounts:(AccountControllers *)accounts

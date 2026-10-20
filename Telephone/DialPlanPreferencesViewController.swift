@@ -6,8 +6,12 @@ import Cocoa
 final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDelegate, NSTableViewDataSource, NSTableViewDelegate {
     private let store: DialPlanStore
     private let accountProvider: () -> [DialPlanAccount]
+    // Retained only for one rendered state, including deferred table-cell asks.
+    // Every refresh replaces it before any menu, row or preview is rebuilt.
+    private var renderedAccounts: [DialPlanAccount] = []
     private var draft: [String: Any]
     private var saved: [String: Any]
+    private var isSavingDraft = false
     private var pages: [NSView] = []
     private var selectors: [String: NSPopUpButton] = [:]
     private var exceptionEditor: NSWindow?
@@ -40,7 +44,16 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
         saved = store.configuration
         super.init(nibName: nil, bundle: nil)
         title = "Dial plan"
+        let centre = NotificationCenter.default
+        centre.addObserver(self, selector: #selector(accountStateDidChange(_:)),
+                           name: Notification.Name("JPSAccountRoutingStateDidChangeNotification"), object: nil)
+        centre.addObserver(self, selector: #selector(accountStateDidChange(_:)),
+                           name: Notification.Name(DialPlanStore.accountsChangeNotificationName), object: nil)
+        centre.addObserver(self, selector: #selector(savedPlanDidChange(_:)),
+                           name: Notification.Name(DialPlanStore.changeNotificationName), object: store)
     }
+
+    deinit { NotificationCenter.default.removeObserver(self) }
 
     @objc(initWithStore:defaults:)
     convenience init(store: DialPlanStore, defaults: UserDefaults) {
@@ -54,6 +67,8 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
                                        availability: "offline")
             }
         }
+        NotificationCenter.default.addObserver(self, selector: #selector(accountStateDidChange(_:)),
+                                               name: UserDefaults.didChangeNotification, object: defaults)
     }
 
     required init?(coder: NSCoder) { fatalError("Use the injected dial-plan initializer") }
@@ -106,8 +121,21 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
     override func viewWillAppear() {
         super.viewWillAppear()
         if !hasUnsavedChanges { reloadSavedConfiguration() }
-        else { refreshAccountMenus() }
-        updatePreview()
+        else { refreshAccountPresentation() }
+    }
+
+    @objc nonisolated private func accountStateDidChange(_ notification: Notification) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { refreshAccountPresentation() }
+        } else {
+            Task { @MainActor [weak self] in self?.refreshAccountPresentation() }
+        }
+    }
+
+    @objc private func savedPlanDidChange(_ notification: Notification) {
+        guard isViewLoaded, !isSavingDraft else { return }
+        if hasUnsavedChanges { refreshAccountPresentation() }
+        else { reloadSavedConfiguration() }
     }
 
     private func buildNumbersPage(_ page: NSView) {
@@ -164,6 +192,7 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
         scroll.borderType = .bezelBorder
         scroll.hasVerticalScroller = true
         rulesTable.style = .plain
+        rulesTable.identifier = NSUserInterfaceItemIdentifier("DialPlanExceptions")
         rulesTable.rowHeight = 24
         rulesTable.allowsMultipleSelection = false
         rulesTable.setAccessibilityLabel("Custom dial-plan exceptions")
@@ -219,11 +248,29 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
         select(countryMenu, value: draft["countryCode"] as? String ?? "+44")
         areaField.stringValue = draft["areaCode"] as? String ?? "01442"
         refreshNumberExample()
-        refreshAccountMenus()
-        rulesTable.reloadData()
+        refreshAccountPresentation(forceControls: true)
         updateDirtyState()
-        updatePreview()
         if !store.configurationError.isEmpty { showError("Saved plan needs repair. Review these fields and Save. \(store.configurationError)") }
+    }
+
+    private func refreshAccountPresentation(forceControls: Bool = false) {
+        guard isViewLoaded else { return }
+        let accounts = accountProvider()
+        let accountsChanged = accounts.count != renderedAccounts.count || zip(accounts, renderedAccounts).contains { next, previous in
+            next.uuid != previous.uuid || next.name != previous.name || next.enabled != previous.enabled
+                || next.availability != previous.availability
+        }
+        renderedAccounts = accounts
+        // Number/draft edits need a fresh preview, but stable accounts should
+        // not rebuild eight menus and the exception table on every keystroke.
+        if forceControls || accountsChanged {
+            refreshAccountMenus()
+            rulesTable.reloadData()
+            if let target = editorFields["target"] as? NSPopUpButton {
+                populate(target, selected: selectedValue(target), defaultTitle: "Choose connection…", allowsBlock: true)
+            }
+        }
+        updatePreview()
     }
 
     private func refreshAccountMenus() {
@@ -237,7 +284,13 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
     private func populate(_ menu: NSPopUpButton, selected: String, defaultTitle: String?, allowsBlock: Bool) {
         menu.removeAllItems()
         if let defaultTitle { addItem(defaultTitle, value: "", to: menu) }
-        for account in accountProvider() {
+        var displayedUUIDs = Set<String>()
+        for account in renderedAccounts where displayedUUIDs.insert(account.uuid).inserted {
+            if renderedAccounts.filter({ $0.uuid == account.uuid }).count > 1 {
+                addItem("Ambiguous connection", value: account.uuid, to: menu)
+                menu.lastItem?.isEnabled = false
+                continue
+            }
             let name = account.name.isEmpty ? "Connection" : account.name
             addItem(account.enabled ? name : "\(name) — Disabled", value: account.uuid, to: menu)
             menu.lastItem?.isEnabled = account.enabled
@@ -304,7 +357,7 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
             draft["areaCode"] = field.stringValue
             refreshNumberExample()
             didChangeDraft()
-        } else if field === testField { updatePreview() }
+        } else if field === testField { refreshAccountPresentation() }
         else if field === editorFields["comment"] {
             let count = field.stringValue.count
             editorFields["commentCount"]?.setAccessibilityValue("\(count) of 20 characters")
@@ -316,14 +369,14 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
         statusLabel.stringValue = "Unsaved changes"
         statusLabel.textColor = .secondaryLabelColor
         updateDirtyState()
-        updatePreview()
+        refreshAccountPresentation()
     }
 
     private func updateDirtyState() { saveButton.isEnabled = hasUnsavedChanges || !store.configurationError.isEmpty }
 
     @objc private func changePage(_ sender: NSSegmentedControl) {
         for (index, page) in pages.enumerated() { page.isHidden = index != sender.selectedSegment }
-        if sender.selectedSegment == 3 { updatePreview() }
+        if sender.selectedSegment == 3 { refreshAccountPresentation() }
         view.window?.recalculateKeyViewLoop()
     }
 
@@ -332,6 +385,8 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
     @discardableResult
     private func saveDraft() -> Bool {
         view.window?.makeFirstResponder(nil)
+        isSavingDraft = true
+        defer { isSavingDraft = false }
         do {
             try store.updateConfiguration(draft)
             draft = store.configuration
@@ -360,27 +415,35 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
         guard isViewLoaded else { return }
         guard !testField.stringValue.isEmpty else {
             canonicalLabel.stringValue = "Enter a number to preview"
+            canonicalLabel.toolTip = nil
             routeLabel.stringValue = ""
-            previewMessage.stringValue = "This preview uses the current fields, including unsaved changes."
+            routeLabel.toolTip = nil
+            setPreviewExplanation("This preview uses the current fields, including unsaved changes.", color: .secondaryLabelColor)
             return
         }
         do {
-            let accounts = accountProvider()
-            let route = try store.previewDestination(testField.stringValue, configuration: draft, accounts: accounts)
+            let route = try store.previewDestination(testField.stringValue, configuration: draft, accounts: renderedAccounts)
+            let presentation = DialPlanRoutePresentation(route: route, accounts: renderedAccounts)
             canonicalLabel.stringValue = route.destination.canonical
-            let name = accounts.first(where: { $0.uuid == route.accountUUID })?.name ?? "No connection"
-            let reason = route.matchedPrefix.map { "Prefix \($0)" } ?? (route.category == "emergency" ? "Emergency" : "\(route.category.capitalized) / Default")
-            routeLabel.stringValue = route.blocked ? "Blocked · \(reason)" : "\(name) · \(reason)"
+            routeLabel.stringValue = presentation.routeText
             routeLabel.textColor = route.blocked || !route.canDial ? .systemRed : .controlTextColor
-            previewMessage.stringValue = route.message
-            previewMessage.textColor = route.canDial ? .secondaryLabelColor : .systemRed
+            setPreviewExplanation(presentation.explanation, color: route.canDial ? .secondaryLabelColor : .systemRed)
+            routeLabel.toolTip = presentation.detailText
             canonicalLabel.toolTip = route.destination.canonical
         } catch {
             canonicalLabel.stringValue = "Check the dial-plan fields"
+            canonicalLabel.toolTip = nil
             routeLabel.stringValue = ""
-            previewMessage.stringValue = error.localizedDescription
-            previewMessage.textColor = .systemRed
+            routeLabel.toolTip = nil
+            setPreviewExplanation(error.localizedDescription, color: .systemRed)
         }
+    }
+
+    private func setPreviewExplanation(_ message: String, color: NSColor) {
+        previewMessage.stringValue = message
+        previewMessage.textColor = color
+        previewMessage.toolTip = message
+        previewMessage.setAccessibilityValue(message)
     }
 
     @objc(confirmLeavingWithCompletion:)
@@ -456,7 +519,9 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
             return checkbox
         }
         let target = rule["target"] as? String ?? ""
-        let text = key == "target" ? target == "block" ? "Block" : accountProvider().first(where: { $0.uuid == target })?.name ?? "Missing connection" : rule[key] as? String ?? ""
+        let matches = renderedAccounts.filter { $0.uuid == target }
+        let name = matches.count == 1 ? matches[0].name : matches.isEmpty ? "Missing connection" : "Ambiguous connection"
+        let text = key == "target" ? target == "block" ? "Block" : name : rule[key] as? String ?? ""
         let value = NSTextField(labelWithString: text)
         value.lineBreakMode = .byTruncatingTail
         value.toolTip = text
@@ -487,6 +552,7 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
 
     private func presentException(_ rule: [String: Any]?) {
         guard exceptionEditor == nil, let parent = view.window else { return }
+        refreshAccountPresentation()
         editingRuleID = rule?["id"] as? String
         let panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 388, height: 226), styleMask: [.titled], backing: .buffered, defer: false)
         panel.title = rule == nil ? "Add exception" : "Edit exception"
@@ -550,7 +616,7 @@ final class DialPlanPreferencesViewController: NSViewController, NSTextFieldDele
         var candidate = draft
         candidate["rules"] = values
         do {
-            _ = try store.previewDestination("07799414799", configuration: candidate, accounts: accountProvider())
+            _ = try store.previewDestination("07799414799", configuration: candidate, accounts: renderedAccounts)
             draft = candidate
             finishException()
             rulesTable.reloadData()
