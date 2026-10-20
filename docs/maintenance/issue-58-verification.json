@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-20",
+  "test_date": "2026-10-19",
+  "issue": 58,
+  "source_parent_commit": "9265b5e3b6d6d0b8fbd9fe16927e36dc3839813c",
+  "scope": "Verified source only; release/install deferred until entire roadmap completion.",
+  "fresh_app_cases": {
+    "xctest": 269,
+    "swift_testing": 48,
+    "total": 317,
+    "failures": 0,
+    "new_xctest_cases": 7
+  },
+  "focused_cases": {
+    "account_routing": 12,
+    "shared_dialler": 11,
+    "total": 23,
+    "failures": 0
+  },
+  "initial_failure": "First focused run found two key-loop assertions failing when AppKit recalculated the shown popover key loop. Explicit native key-loop setup after presentation fixed it; repeated focused and complete app suites pass.",
+  "source_sha256": {
+    "Telephone/AccountController.h": "e95d2da36cb2eb419ba3c100a5a5d3f69dc946692c156023ab774048e94fdb92",
+    "Telephone/AccountController.m": "e636a963fa12e096fafb21a6747816c3db1669b32606c0d345f38904d0b60691",
+    "Telephone/ActiveAccountViewController.h": "5d1f0d01a3d1561dd4f769042d75eeaf1525ece7942408b4449898d9e46bd603",
+    "Telephone/ActiveAccountViewController.m": "9dee358b220e0ec99753f0271470615bc00409214d7275327240965fde21d1e2",
+    "Telephone/SharedDialerController.m": "90ccb16213b3e1fbab34d540571915ab971426b3ad1d4c385fbea99d08735709",
+    "Telephone/en-GB.lproj/Localizable.strings": "094b8cf0f8f56e4b8d4f8ff0b6825f35d6c637baebea9aef22f0351c3895b33a",
+    "TelephoneTests/AccountRoutingRegressionTests.m": "b711e43391dbcf511da8b425dcb6fff30382b1cb33e57a91a4937967714a59a7",
+    "TelephoneTests/SharedDialerControllerTests.m": "1a48841cdf35a4b6a688bc5a60afc900095fca598e9f68e794de5b7b231fe5ae"
+  },
+  "project_metadata_sha256": "5fefca7f7eb20672de14cac08ed32ef73a40deb2ed4dd1f5bd42b4f620f3c077",
+  "log_sha256": {
+    "build-focused.log": "af6ac1d39040eec287e6361fcbbf05902b9970610259664f29d7baaf61182792",
+    "TelephoneTests-focused.log": "da6613691145829d2b3787cbde2b57a289791cafb1dd33c673aba48ee4132671",
+    "build-focused-keyloop.log": "91dc3aa0f3c636f3a604b7c429eeaa8f060d5ec36ac5e63d9a53caeaab69b488",
+    "TelephoneTests-focused-keyloop.log": "6819d533648a853a5729eca78177e8b14a6d956970b3ffde90b3dd2f9f1d0586",
+    "build-final.log": "c4af859625a59b567ea5cbfc6617dc3fbf78e976b0cd247f49eb65ceeb89eb73",
+    "TelephoneTests-final.log": "5fce79dde941d4d466d5c54f4badbe9b7d0d98205113fdef73960fb6b183d4be"
+  },
+  "log_directory": "/private/tmp/jps-telephone-issue58",
+  "isolation": "Fresh unique nib-free Debug host; inert synthetic account fixtures; no owner SIP accounts, defaults, Contacts, credentials or history loaded. Shown-popover test uses an offscreen synthetic window.",
+  "review": "Separate implementation and independent review subagents; final review found no remaining actionable findings.",
+  "geometry": "368x104 default; 368x268 expanded; destination >=160; existing controls44x44. Light/Dark layout assertions pass.",
+  "automated_acceptance": [
+    "Immutable string-only provider/destination/request/account UUID snapshots and payload-free main-thread notifications.",
+    "Cancel A leaves B and the exact original timer/fireDate; B drains once, final cancellation rejects late registration; stale UUID is harmless.",
+    "Two-provider count/content, account removal, bulk cancel, compact keyboard chain and native accessibility role/labels.",
+    "Shown eight-row popover: lower-row cancellation retains visible replacement focus; final/bulk removal closes and restores destination focus."
+  ],
+  "environment": {
+    "macOS": "27.0.1",
+    "macOS_build": "26A434",
+    "Xcode": "27.0 /27A266a",
+    "SDK": "27.0"
+  },
+  "app_version_unchanged": "3.5.1/build163",
+  "limits": [
+    "No real provider/audio/device/grant or proficient VoiceOver acceptance claimed; retained for issue62 and final release.",
+    "View-cache captures of the native popover omit composited button titles and backgrounds; these images are not accepted as final native visual proof. Compact layout captures and native control/focus assertions are separate evidence.",
+    "Framework suites and standalone routing harness are unchanged historical evidence, not freshly rerun here.",
+    "No install/publication/version bump, cloud workflow dispatch or release asset/tag mutation."
+  ],
+  "official_docs_checked": "19 and20 October2026: OpenAI bestpractices; Apple macOS27notes, MainActor, NSPopover/contentViewController."
+}

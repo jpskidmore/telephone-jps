@@ -12,7 +12,7 @@
 - (NSEdgeInsets)alignmentRectInsets { return NSEdgeInsetsMake(0,0,0,0); }
 @end
 
-@interface SharedDialerController () <NSWindowDelegate, NSMenuDelegate>
+@interface SharedDialerController () <NSWindowDelegate, NSMenuDelegate, NSPopoverDelegate>
 @property(nonatomic) AccountControllers *accounts;
 @property(nonatomic) AsyncCallHistoryViewEventTargetFactory *historyFactory;
 @property(nonatomic) ActiveAccountViewController *dialler;
@@ -24,6 +24,9 @@
 @property(nonatomic) NSSize expandedSize;
 @property(nonatomic) BOOL menuTracking;
 @property(nonatomic) BOOL availabilityRefreshPending;
+@property(nonatomic) NSPopover *pendingPopover;
+@property(nonatomic, copy) NSArray<NSDictionary<NSString *, NSString *> *> *pendingRequests;
+@property(nonatomic, copy) NSArray<NSButton *> *pendingCancelButtons;
 @end
 
 @implementation SharedDialerController
@@ -127,11 +130,16 @@
         }];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(accountStateChanged:) name:@"JPSAccountRoutingStateDidChangeNotification" object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(accountStateChanged:) name:@"JPSDialPlanDidChangeNotification" object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pendingCallsChanged:) name:JPSPendingRoutedCallsDidChangeNotification object:nil];
         [self refreshAccounts];
     }
     return self;
 }
-- (void)dealloc { [[NSNotificationCenter defaultCenter] removeObserver:self]; }
+- (void)dealloc {
+    self.pendingPopover.delegate = nil;
+    [self.pendingPopover close];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
 - (NSArray<CallHistoryAccount *> *)historyAccounts {
     NSMutableArray *result = [NSMutableArray array];
     for (AccountController *account in self.accounts.all) {
@@ -143,8 +151,114 @@
     [self.historyFactory updateGlobalAccounts:[self historyAccounts]];
     [self rebuildAvailability];
     [self.dialler refreshCallRoutePreview];
+    [self refreshPendingCalls];
 }
 - (void)accountStateChanged:(NSNotification *)notification { [self rebuildAvailability]; [self.dialler refreshCallRoutePreview]; }
+- (void)pendingCallsChanged:(NSNotification *)notification { [self refreshPendingCalls]; }
+- (void)refreshPendingCalls {
+    NSResponder *focused = self.pendingPopover.contentViewController.view.window.firstResponder;
+    NSUInteger focusedIndex = [self.pendingCancelButtons indexOfObjectIdenticalTo:focused];
+    NSMutableArray *requests = [NSMutableArray array];
+    for (AccountController *account in self.accounts.all) [requests addObjectsFromArray:account.pendingRoutedCallSummaries];
+    self.pendingRequests = requests;
+    [self.dialler setPendingCallCount:requests.count target:self action:@selector(showPendingCalls:)];
+    if (self.pendingPopover.isShown) {
+        if (requests.count == 0) [self.pendingPopover close];
+        else {
+            [self rebuildPendingPopover];
+            if (focusedIndex != NSNotFound) {
+                NSButton *next = self.pendingCancelButtons[MIN(focusedIndex, self.pendingCancelButtons.count - 1)];
+                [next.window makeFirstResponder:next];
+                [next scrollRectToVisible:next.bounds];
+            }
+        }
+    }
+}
+- (void)showPendingCalls:(NSButton *)sender {
+    if (self.pendingPopover.isShown) { [self.pendingPopover close]; return; }
+    if (self.pendingRequests.count == 0) return;
+    [self rebuildPendingPopover];
+    [self.pendingPopover showRelativeToRect:sender.bounds ofView:sender preferredEdge:NSMinYEdge];
+    [self configurePendingKeyLoop];
+    NSButton *first = self.pendingCancelButtons.firstObject;
+    [first.window makeFirstResponder:first];
+}
+- (void)rebuildPendingPopover {
+    if (self.pendingPopover == nil) {
+        self.pendingPopover = [[NSPopover alloc] init];
+        self.pendingPopover.behavior = NSPopoverBehaviorTransient;
+        self.pendingPopover.animates = NO;
+        self.pendingPopover.delegate = self;
+    }
+    CGFloat width = 330, rowHeight = 52;
+    CGFloat rowsHeight = rowHeight * self.pendingRequests.count;
+    CGFloat visibleHeight = MIN(288, rowsHeight), height = visibleHeight + 38;
+    NSViewController *content = [[NSViewController alloc] init];
+    content.view = [[NSView alloc] initWithFrame:NSMakeRect(0,0,width,height)];
+    NSTextField *heading = [NSTextField labelWithString:NSLocalizedString(@"Waiting for registration", @"Waiting call list heading.")];
+    heading.font = [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold];
+    heading.frame = NSMakeRect(12,height-28,width-24,18);
+    [content.view addSubview:heading];
+    NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(0,0,width,visibleHeight)];
+    scroll.borderType = NSNoBorder; scroll.drawsBackground = NO;
+    scroll.hasVerticalScroller = rowsHeight > visibleHeight;
+    scroll.autohidesScrollers = YES;
+    NSView *rows = [[NSView alloc] initWithFrame:NSMakeRect(0,0,width-16,rowsHeight)];
+    NSMutableArray<NSButton *> *buttons = [NSMutableArray array];
+    for (NSUInteger index = 0; index < self.pendingRequests.count; index++) {
+        NSDictionary<NSString *, NSString *> *request = self.pendingRequests[index];
+        CGFloat y = rowsHeight - (index+1)*rowHeight;
+        NSTextField *provider = [NSTextField labelWithString:request[@"providerName"]];
+        provider.frame = NSMakeRect(12,y+29,210,16);
+        provider.font = [NSFont systemFontOfSize:11]; provider.textColor = NSColor.secondaryLabelColor;
+        provider.lineBreakMode = NSLineBreakByTruncatingTail;
+        provider.toolTip = request[@"providerName"];
+        NSTextField *destination = [NSTextField labelWithString:request[@"destination"]];
+        destination.frame = NSMakeRect(12,y+9,210,18);
+        destination.font = [NSFont systemFontOfSize:13]; destination.lineBreakMode = NSLineBreakByTruncatingTail;
+        destination.toolTip = request[@"destination"];
+        NSButton *cancel = [NSButton buttonWithTitle:NSLocalizedString(@"Cancel", @"Cancel one waiting call.") target:self action:@selector(cancelWaitingCall:)];
+        cancel.frame = NSMakeRect(234,y+4,68,44);
+        cancel.bezelStyle = NSBezelStyleRounded;
+        cancel.identifier = @"PendingCallCancelButton";
+        cancel.cell.representedObject = request;
+        cancel.accessibilityLabel = [NSString stringWithFormat:NSLocalizedString(@"Cancel call to %@ through %@", @"Cancel waiting destination through its selected connection."),request[@"destination"],request[@"providerName"]];
+        cancel.cell.accessibilityLabel = cancel.accessibilityLabel;
+        cancel.toolTip = heading.stringValue; cancel.accessibilityHelp = cancel.toolTip;
+        [rows addSubview:provider]; [rows addSubview:destination]; [rows addSubview:cancel];
+        [buttons addObject:cancel];
+    }
+    content.view.nextKeyView = buttons.firstObject;
+    scroll.documentView = rows; [content.view addSubview:scroll];
+    self.pendingCancelButtons = buttons;
+    self.pendingPopover.contentViewController = content;
+    self.pendingPopover.contentSize = NSMakeSize(width,height);
+    [self configurePendingKeyLoop];
+    // Start with the first listed destination, including when the list scrolls.
+    [rows scrollRectToVisible:NSMakeRect(0,MAX(0,rowsHeight-visibleHeight),width,visibleHeight)];
+}
+- (void)configurePendingKeyLoop {
+    NSWindow *window = self.pendingPopover.contentViewController.view.window;
+    window.autorecalculatesKeyViewLoop = NO;
+    window.initialFirstResponder = self.pendingCancelButtons.firstObject;
+    for (NSUInteger index = 0; index < self.pendingCancelButtons.count; index++)
+        self.pendingCancelButtons[index].nextKeyView = self.pendingCancelButtons[(index+1)%self.pendingCancelButtons.count];
+}
+- (void)cancelWaitingCall:(NSButton *)sender {
+    NSDictionary<NSString *, NSString *> *request = sender.cell.representedObject;
+    for (AccountController *account in self.accounts.all) {
+        if ([account.account.uuid isEqualToString:request[@"accountUUID"]]) {
+            if ([account cancelPendingRoutedCallWithIdentifier:request[@"id"]]) return;
+            break;
+        }
+    }
+    // An old button may outlive registration, expiry or removal of its account.
+    [self refreshPendingCalls];
+}
+- (void)popoverDidClose:(NSNotification *)notification {
+    NSView *next = self.dialler.pendingCallsButton.hidden ? self.dialler.callDestinationField : self.dialler.pendingCallsButton;
+    [self.window makeFirstResponder:next];
+}
 - (void)rebuildAvailability {
     if (self.menuTracking) { self.availabilityRefreshPending = YES; return; }
     BOOL online = NO, unavailable = NO;

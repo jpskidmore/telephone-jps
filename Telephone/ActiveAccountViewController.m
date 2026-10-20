@@ -84,6 +84,9 @@ static NSDictionary *DestinationForToken(id token) {
 @property(nonatomic) NSButton *historyButton;
 @property(nonatomic) NSTextField *offlineLabel;
 @property(nonatomic) NSTextField *routeStatusLabel;
+@property(nonatomic, readwrite, strong) NSButton *pendingCallsButton;
+@property(nonatomic) NSLayoutConstraint *pendingCallsWidth;
+@property(nonatomic) NSLayoutConstraint *routeStatusTrailing;
 @property(nonatomic) BOOL observesDestinationValues;
 @property(nonatomic) NSView *compactLastKeyView;
 @end
@@ -194,6 +197,16 @@ static NSDictionary *DestinationForToken(id token) {
     self.routeStatusLabel.cell.accessibilityLabel = @"Outgoing connection";
     [self.routeStatusLabel setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
     [destination addSubview:self.routeStatusLabel];
+    self.pendingCallsButton = [NSButton buttonWithTitle:@"" target:nil action:NULL];
+    self.pendingCallsButton.identifier = @"CompactPendingCallsButton";
+    self.pendingCallsButton.bordered = NO;
+    self.pendingCallsButton.font = [NSFont systemFontOfSize:11];
+    self.pendingCallsButton.controlSize = NSControlSizeSmall;
+    self.pendingCallsButton.translatesAutoresizingMaskIntoConstraints = NO;
+    self.pendingCallsButton.hidden = YES;
+    [destination addSubview:self.pendingCallsButton];
+    self.pendingCallsWidth = [self.pendingCallsButton.widthAnchor constraintEqualToConstant:0];
+    self.routeStatusTrailing = [self.routeStatusLabel.trailingAnchor constraintEqualToAnchor:self.pendingCallsButton.leadingAnchor];
     [NSLayoutConstraint activateConstraints:@[
         [destination.heightAnchor constraintEqualToConstant:44],
         [destination.widthAnchor constraintGreaterThanOrEqualToConstant:160],
@@ -202,7 +215,11 @@ static NSDictionary *DestinationForToken(id token) {
         [field.topAnchor constraintEqualToAnchor:destination.topAnchor constant:2],
         [self.routeStatusLabel.topAnchor constraintEqualToAnchor:field.bottomAnchor constant:1],
         [self.routeStatusLabel.leadingAnchor constraintEqualToAnchor:destination.leadingAnchor constant:4],
-        [self.routeStatusLabel.trailingAnchor constraintEqualToAnchor:destination.trailingAnchor constant:-4],
+        self.routeStatusTrailing,
+        [self.pendingCallsButton.trailingAnchor constraintEqualToAnchor:destination.trailingAnchor constant:-4],
+        [self.pendingCallsButton.topAnchor constraintEqualToAnchor:self.routeStatusLabel.topAnchor],
+        [self.pendingCallsButton.heightAnchor constraintEqualToConstant:13],
+        self.pendingCallsWidth,
         [self.routeStatusLabel.heightAnchor constraintEqualToConstant:13]
     ]];
     NSStackView *row = [NSStackView stackViewWithViews:@[availability, destination, self.dialButton, self.historyButton, more]];
@@ -312,6 +329,27 @@ static NSDictionary *DestinationForToken(id token) {
     self.routeStatusLabel.cell.accessibilityValue = status;
     self.routeStatusLabel.cell.accessibilityHelp = detail;
     if (changed) NSAccessibilityPostNotification(self.routeStatusLabel, NSAccessibilityValueChangedNotification);
+}
+
+- (void)setPendingCallCount:(NSUInteger)count target:(id)target action:(SEL)action {
+    NSButton *button = self.pendingCallsButton;
+    NSString *title = [NSString stringWithFormat:NSLocalizedString(@"Waiting %lu", @"Compact waiting call count."), (unsigned long)count];
+    BOOL changed = ![button.title isEqualToString:title];
+    button.title = title;
+    button.attributedTitle = [[NSAttributedString alloc] initWithString:title attributes:@{
+        NSFontAttributeName:button.font, NSForegroundColorAttributeName:NSColor.controlAccentColor,
+        NSUnderlineStyleAttributeName:@(NSUnderlineStyleSingle)}];
+    button.target = target; button.action = action;
+    button.hidden = count == 0; button.enabled = count > 0;
+    button.accessibilityLabel = [NSString stringWithFormat:NSLocalizedString(@"Calls waiting for registration: %lu", @"Waiting call count purpose."), (unsigned long)count];
+    button.cell.accessibilityLabel = button.accessibilityLabel;
+    button.toolTip = NSLocalizedString(@"Show destinations and cancel individual waiting calls", @"Waiting calls button help.");
+    button.accessibilityHelp = button.toolTip;
+    self.pendingCallsWidth.constant = count ? MIN(80, MAX(54, ceil(button.attributedTitle.size.width) + 4)) : 0;
+    self.routeStatusTrailing.constant = count ? -4 : 0;
+    self.callDestinationField.nextKeyView = count ? button : self.dialButton;
+    button.nextKeyView = self.dialButton;
+    if (changed && count) NSAccessibilityPostNotification(button, NSAccessibilityValueChangedNotification);
 }
 
 - (IBAction)dialFromButton:(NSButton *)sender {

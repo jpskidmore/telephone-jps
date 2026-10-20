@@ -1,5 +1,6 @@
 #import <XCTest/XCTest.h>
 #import "SharedDialerController.h"
+#import "AccountController.h"
 #import "AccountControllers.h"
 #import "AKSIPURI.h"
 #import "ActiveAccountViewController.h"
@@ -11,6 +12,11 @@
 - (void)rebuildAvailability;
 - (NSMenu *)moreActionsMenu;
 - (void)showGuidedRoutes:(id)sender;
+- (void)refreshPendingCalls;
+- (void)rebuildPendingPopover;
+- (void)showPendingCalls:(id)sender;
+- (void)cancelWaitingCall:(id)sender;
+- (void)cancelPendingCalls:(id)sender;
 @end
 
 @interface JPSSharedGuidedRoutesPreferences : NSObject
@@ -76,8 +82,42 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
 @property(nonatomic, copy) NSString *accountDescription;
 @property(nonatomic, copy) NSString *routingAvailability;
 @property(nonatomic) JPSSharedDiallerAccountInfo *account;
+@property(nonatomic, copy) NSArray<NSDictionary<NSString *, NSString *> *> *pendingRoutedCallSummaries;
+@property(nonatomic, readonly) NSString *accountUUID;
+@property(nonatomic, readonly) BOOL hasPendingRoutedCalls;
+@property(nonatomic) NSUInteger individualCancellations;
+@property(nonatomic) NSUInteger bulkCancellations;
+- (BOOL)cancelPendingRoutedCallWithIdentifier:(NSString *)identifier;
+- (void)cancelPendingRoutedCalls;
 @end
-@implementation JPSSharedDiallerAccountFixture @end
+@implementation JPSSharedDiallerAccountFixture
+- (instancetype)init {
+    if ((self = [super init])) _pendingRoutedCallSummaries = @[];
+    return self;
+}
+- (NSString *)accountUUID { return self.account.uuid; }
+- (BOOL)hasPendingRoutedCalls { return self.pendingRoutedCallSummaries.count > 0; }
+- (void)setPendingRoutedCallSummaries:(NSArray<NSDictionary<NSString *, NSString *> *> *)summaries {
+    _pendingRoutedCallSummaries = [[NSArray alloc] initWithArray:summaries copyItems:YES];
+    [NSNotificationCenter.defaultCenter postNotificationName:JPSPendingRoutedCallsDidChangeNotification object:nil];
+}
+- (BOOL)cancelPendingRoutedCallWithIdentifier:(NSString *)identifier {
+    NSMutableArray *remaining = [self.pendingRoutedCallSummaries mutableCopy];
+    NSUInteger index = [remaining indexOfObjectPassingTest:^BOOL(NSDictionary *summary, NSUInteger index, BOOL *stop) {
+        return [summary[@"id"] isEqualToString:identifier];
+    }];
+    if (index == NSNotFound) return NO;
+    [remaining removeObjectAtIndex:index];
+    self.individualCancellations++;
+    self.pendingRoutedCallSummaries = remaining;
+    return YES;
+}
+- (void)cancelPendingRoutedCalls {
+    if (!self.hasPendingRoutedCalls) return;
+    self.bulkCancellations++;
+    self.pendingRoutedCallSummaries = @[];
+}
+@end
 
 @interface JPSSharedDiallerAccountsFixture : NSObject
 @property(nonatomic) NSArray<JPSSharedDiallerAccountFixture *> *all;
@@ -122,6 +162,246 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
     }
     XCTFail(@"The selected outgoing connection must be visible in the compact dialler.");
     return nil;
+}
+- (NSDictionary<NSString *, NSString *> *)pendingSummaryForAccount:(JPSSharedDiallerAccountFixture *)account destination:(NSString *)destination {
+    return @{@"id":NSUUID.UUID.UUIDString, @"accountUUID":account.accountUUID,
+             @"providerName":account.accountDescription, @"destination":destination};
+}
+- (void)writePendingSnapshotIfRequested:(NSView *)view name:(NSString *)name {
+    NSString *directory = NSProcessInfo.processInfo.environment[@"JPS_PENDING_CALL_CAPTURE_DIR"];
+    if (directory.length == 0) return;
+    NSError *error = nil;
+    XCTAssertTrue([NSFileManager.defaultManager createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:nil error:&error], @"%@", error);
+    [view layoutSubtreeIfNeeded];
+    NSBitmapImageRep *image = [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:image];
+    XCTAssertTrue([[image representationUsingType:NSBitmapImageFileTypePNG properties:@{}]
+                  writeToFile:[directory stringByAppendingPathComponent:name] atomically:YES]);
+}
+- (void)testWaitingCountAndNativePopoverRetainTwoProvidersAndCancelOnlySelectedUUID {
+    JPSSharedDiallerAccountFixture *first = [self accountWithUUID:@"first" name:@"Synthetic first provider" availability:@"registering"];
+    JPSSharedDiallerAccountFixture *second = [self accountWithUUID:@"second" name:@"Synthetic second provider" availability:@"registering"];
+    JPSSharedDiallerAccountsFixture *accounts = [JPSSharedDiallerAccountsFixture new]; accounts.all = @[first,second];
+    SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:(id)accounts historyFactory:nil];
+    @try {
+        ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
+        XCTAssertTrue(dialler.pendingCallsButton.hidden);
+        NSDictionary *firstSummary = [self pendingSummaryForAccount:first destination:@"+447700900123"];
+        NSDictionary *secondSummary = [self pendingSummaryForAccount:second destination:@"+442079460958"];
+        first.pendingRoutedCallSummaries = @[firstSummary];
+        second.pendingRoutedCallSummaries = @[secondSummary];
+        XCTAssertFalse(dialler.pendingCallsButton.hidden);
+        XCTAssertEqualObjects(dialler.pendingCallsButton.title,@"Waiting 2");
+        XCTAssertEqual(dialler.pendingCallsButton.target,controller);
+        XCTAssertEqual(dialler.pendingCallsButton.action,@selector(showPendingCalls:));
+        XCTAssertTrue([dialler.pendingCallsButton.accessibilityLabel containsString:@"2"]);
+        XCTAssertEqualObjects([controller valueForKey:@"pendingRequests"],(@[firstSummary,secondSummary]));
+        [controller rebuildPendingPopover];
+        NSPopover *popover = [controller valueForKey:@"pendingPopover"];
+        NSArray<NSButton *> *buttons = [controller valueForKey:@"pendingCancelButtons"];
+        XCTAssertNotNil(popover);
+        XCTAssertEqual(popover.behavior,NSPopoverBehaviorTransient);
+        XCTAssertEqual(buttons.count,2u);
+        NSMutableArray<NSString *> *content = [NSMutableArray array];
+        for (NSView *view in [self descendants:popover.contentViewController.view]) {
+            if ([view isKindOfClass:NSTextField.class]) [content addObject:((NSTextField *)view).stringValue];
+        }
+        NSString *text = [content componentsJoinedByString:@"\n"];
+        for (NSDictionary *summary in @[firstSummary,secondSummary]) {
+            XCTAssertTrue([text containsString:summary[@"providerName"]]);
+            XCTAssertTrue([text containsString:summary[@"destination"]]);
+        }
+        for (NSUInteger index = 0; index < buttons.count; index++) {
+            NSButton *button = buttons[index];
+            XCTAssertEqualObjects(button.cell.representedObject,(@[firstSummary,secondSummary])[index]);
+            XCTAssertEqualObjects(button.title,@"Cancel");
+            XCTAssertEqual(button.target,controller);
+            XCTAssertEqual(button.action,@selector(cancelWaitingCall:));
+            id accessible = NSAccessibilityUnignoredDescendant(button);
+            NSString *role = [accessible respondsToSelector:@selector(accessibilityRole)] ? [accessible accessibilityRole] :
+                [accessible accessibilityAttributeValue:NSAccessibilityRoleAttribute];
+            XCTAssertEqualObjects(role,NSAccessibilityButtonRole);
+            XCTAssertGreaterThan(button.accessibilityLabel.length,0u);
+        }
+        [controller cancelWaitingCall:buttons.firstObject];
+        XCTAssertEqual(first.individualCancellations,1u);
+        XCTAssertEqual(second.individualCancellations,0u);
+        XCTAssertEqual(first.pendingRoutedCallSummaries.count,0u);
+        XCTAssertEqualObjects(second.pendingRoutedCallSummaries,(@[secondSummary]));
+        XCTAssertEqualObjects(dialler.pendingCallsButton.title,@"Waiting 1");
+        [controller cancelWaitingCall:buttons.firstObject];
+        XCTAssertEqual(first.individualCancellations,1u);
+        XCTAssertEqualObjects([controller valueForKey:@"pendingRequests"],(@[secondSummary]));
+    } @finally {
+        [[controller valueForKey:@"pendingPopover"] close];
+        [controller.window orderOut:nil];
+    }
+}
+- (void)testWaitingRowsTrackAccountRemovalAndBulkCancellationWithoutUsingStaleButtons {
+    JPSSharedDiallerAccountFixture *first = [self accountWithUUID:@"first" name:@"Synthetic first" availability:@"registering"];
+    JPSSharedDiallerAccountFixture *second = [self accountWithUUID:@"second" name:@"Synthetic second" availability:@"registering"];
+    first.pendingRoutedCallSummaries = @[[self pendingSummaryForAccount:first destination:@"+447700900123"]];
+    second.pendingRoutedCallSummaries = @[[self pendingSummaryForAccount:second destination:@"+442079460958"]];
+    JPSSharedDiallerAccountsFixture *accounts = [JPSSharedDiallerAccountsFixture new]; accounts.all = @[first,second];
+    SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:(id)accounts historyFactory:nil];
+    @try {
+        ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
+        [controller rebuildPendingPopover];
+        NSArray<NSButton *> *buttons = [controller valueForKey:@"pendingCancelButtons"];
+        NSButton *removedAccountButton = buttons.lastObject;
+        accounts.all = @[first];
+        [controller refreshAccounts];
+        XCTAssertEqualObjects(dialler.pendingCallsButton.title,@"Waiting 1");
+        [controller cancelWaitingCall:removedAccountButton];
+        XCTAssertEqual(first.individualCancellations,0u);
+        XCTAssertEqual(second.individualCancellations,0u);
+        XCTAssertEqual(second.pendingRoutedCallSummaries.count,1u);
+        NSMenuItem *bulk = nil;
+        for (NSMenuItem *item in [controller moreActionsMenu].itemArray) {
+            if (item.action == @selector(cancelPendingCalls:)) { bulk = item; break; }
+        }
+        XCTAssertNotNil(bulk);
+        [controller cancelPendingCalls:bulk];
+        XCTAssertEqual(first.bulkCancellations,1u);
+        XCTAssertEqual(second.bulkCancellations,0u);
+        XCTAssertTrue(dialler.pendingCallsButton.hidden);
+        XCTAssertFalse(dialler.pendingCallsButton.enabled);
+        XCTAssertEqual([[controller valueForKey:@"pendingRequests"] count],0u);
+        XCTAssertNotEqual(dialler.callDestinationField.nextKeyView,dialler.pendingCallsButton);
+    } @finally {
+        [[controller valueForKey:@"pendingPopover"] close];
+        [controller.window orderOut:nil];
+    }
+}
+- (void)testWaitingControlKeepsCompactGeometryAndKeyboardChainInLightAndDark {
+    JPSSharedDiallerAccountFixture *account = [self accountWithUUID:@"synthetic" name:@"A long synthetic waiting provider" availability:@"registering"];
+    account.pendingRoutedCallSummaries = @[[self pendingSummaryForAccount:account destination:@"+447700900123"]];
+    JPSSharedDiallerAccountsFixture *accounts = [JPSSharedDiallerAccountsFixture new]; accounts.all = @[account];
+    SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:(id)accounts historyFactory:nil];
+    @try {
+        ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
+        dialler.callDestinationField.delegate = nil;
+        dialler.callDestinationField.stringValue = @"07700900123";
+        NSButton *waiting = dialler.pendingCallsButton;
+        NSTextField *status = [self routeStatusInController:controller];
+        NSButton *call = [dialler valueForKey:@"dialButton"];
+        NSButton *history = [dialler valueForKey:@"historyButton"];
+        NSPopUpButton *availability = [controller valueForKey:@"availability"];
+        XCTAssertEqualObjects(waiting.identifier,@"CompactPendingCallsButton");
+        XCTAssertEqual(dialler.callDestinationField.nextKeyView,waiting);
+        XCTAssertEqual(waiting.nextKeyView,call);
+        XCTAssertEqual(call.nextKeyView,history);
+        XCTAssertFalse(waiting.refusesFirstResponder);
+        XCTAssertTrue([waiting.accessibilityHelp containsString:@"cancel"]);
+        for (NSString *appearance in @[NSAppearanceNameAqua,NSAppearanceNameDarkAqua]) {
+            controller.window.appearance = [NSAppearance appearanceNamed:appearance];
+            [controller.window.contentView layoutSubtreeIfNeeded];
+            XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.width,368,0.5);
+            XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height,104,0.5);
+            NSRect waitingFrame = [waiting convertRect:waiting.bounds toView:controller.window.contentView];
+            NSRect statusFrame = [status convertRect:status.bounds toView:controller.window.contentView];
+            NSRect fieldFrame = [dialler.callDestinationField convertRect:dialler.callDestinationField.bounds toView:controller.window.contentView];
+            XCTAssertTrue(NSContainsRect(controller.window.contentView.bounds,waitingFrame));
+            XCTAssertFalse(NSIntersectsRect(waitingFrame,statusFrame));
+            XCTAssertFalse(NSIntersectsRect(waitingFrame,fieldFrame));
+            XCTAssertGreaterThan(statusFrame.size.width,30);
+            XCTAssertGreaterThanOrEqual(fieldFrame.size.width,160);
+            for (NSView *control in @[availability,call,history,history.nextKeyView]) {
+                XCTAssertEqualWithAccuracy(control.bounds.size.width,44,0.5);
+                XCTAssertEqualWithAccuracy(control.bounds.size.height,44,0.5);
+            }
+            NSString *name = [appearance isEqualToString:NSAppearanceNameAqua] ? @"waiting-light.png" : @"waiting-dark.png";
+            [self writePendingSnapshotIfRequested:controller.window.contentView name:name];
+            [controller rebuildPendingPopover];
+            NSPopover *popover = [controller valueForKey:@"pendingPopover"];
+            popover.contentViewController.view.appearance = [NSAppearance appearanceNamed:appearance];
+            name = [appearance isEqualToString:NSAppearanceNameAqua] ? @"waiting-popover-light.png" : @"waiting-popover-dark.png";
+            [self writePendingSnapshotIfRequested:popover.contentViewController.view name:name];
+            [controller toggleHistory:nil];
+            [controller.window.contentView layoutSubtreeIfNeeded];
+            XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.width,368,0.5);
+            XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height,268,0.5);
+            XCTAssertEqual(dialler.callDestinationField.nextKeyView,waiting);
+            [controller toggleHistory:nil];
+        }
+        [controller cancelPendingCalls:nil];
+        XCTAssertEqual(dialler.callDestinationField.nextKeyView,call);
+        XCTAssertTrue(waiting.hidden);
+    } @finally {
+        [[controller valueForKey:@"pendingPopover"] close];
+        [controller.window orderOut:nil];
+    }
+}
+- (void)testShownWaitingPopoverKeepsCancellationFocusAndRestoresDestinationAfterFinalRemoval {
+    XCTAssertTrue([NSBundle.mainBundle.bundleIdentifier hasPrefix:@"uk.jpsit.telephone.tests."], @"Popover focus regression requires the isolated synthetic host.");
+    if (![NSBundle.mainBundle.bundleIdentifier hasPrefix:@"uk.jpsit.telephone.tests."]) return;
+    JPSSharedDiallerAccountFixture *first = [self accountWithUUID:@"first" name:@"Synthetic first" availability:@"registering"];
+    JPSSharedDiallerAccountFixture *second = [self accountWithUUID:@"second" name:@"Synthetic second" availability:@"registering"];
+    first.pendingRoutedCallSummaries = @[[self pendingSummaryForAccount:first destination:@"+447700900123"]];
+    NSMutableArray *secondSummaries = [NSMutableArray array];
+    for (NSUInteger index = 0; index < 7; index++)
+        [secondSummaries addObject:[self pendingSummaryForAccount:second destination:@"+442079460958"]];
+    second.pendingRoutedCallSummaries = secondSummaries;
+    JPSSharedDiallerAccountsFixture *accounts = [JPSSharedDiallerAccountsFixture new]; accounts.all = @[first,second];
+    SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:(id)accounts historyFactory:nil];
+    @try {
+        ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
+        dialler.callDestinationField.delegate = nil;
+        [controller.window setFrameOrigin:NSMakePoint(-10000,-10000)];
+        [controller.window orderFront:nil];
+        [controller.window.contentView layoutSubtreeIfNeeded];
+        [controller showPendingCalls:dialler.pendingCallsButton];
+        NSPopover *popover = [controller valueForKey:@"pendingPopover"];
+        NSArray<NSButton *> *buttons = [controller valueForKey:@"pendingCancelButtons"];
+        XCTAssertTrue(popover.isShown);
+        XCTAssertEqual(buttons.count,8u);
+        XCTAssertEqual(popover.contentViewController.view.window.firstResponder,buttons.firstObject);
+        XCTAssertEqual(buttons.firstObject.nextKeyView,buttons[1]);
+        XCTAssertEqual(buttons.lastObject.nextKeyView,buttons.firstObject);
+        [self writePendingSnapshotIfRequested:popover.contentViewController.view name:@"waiting-popover-shown.png"];
+
+        [controller cancelWaitingCall:buttons.firstObject];
+        XCTAssertTrue(popover.isShown);
+        NSArray<NSButton *> *remaining = [controller valueForKey:@"pendingCancelButtons"];
+        XCTAssertEqual(remaining.count,7u);
+        XCTAssertEqualObjects(((NSDictionary *)remaining.firstObject.cell.representedObject)[@"accountUUID"],@"second");
+        XCTAssertEqual(popover.contentViewController.view.window.firstResponder,remaining.firstObject);
+        XCTAssertEqual(first.individualCancellations,1u);
+        XCTAssertEqual(second.individualCancellations,0u);
+        NSButton *lower = remaining[5];
+        NSString *nextIdentifier = ((NSDictionary *)remaining[6].cell.representedObject)[@"id"];
+        [lower.window makeFirstResponder:lower];
+        [lower scrollRectToVisible:lower.bounds];
+        [controller cancelWaitingCall:lower];
+        XCTAssertEqual(second.individualCancellations,1u);
+        XCTAssertTrue(popover.isShown);
+        NSArray<NSButton *> *afterLowerCancellation = [controller valueForKey:@"pendingCancelButtons"];
+        NSButton *focused = (id)popover.contentViewController.view.window.firstResponder;
+        XCTAssertEqual(focused,afterLowerCancellation[5]);
+        XCTAssertEqualObjects(((NSDictionary *)focused.cell.representedObject)[@"id"],nextIdentifier);
+        NSScrollView *scroll = focused.enclosingScrollView;
+        XCTAssertNotNil(scroll);
+        NSRect focusedFrame = [focused convertRect:focused.bounds toView:scroll.documentView];
+        XCTAssertTrue(NSIntersectsRect(focusedFrame,scroll.documentVisibleRect));
+        [controller cancelPendingCalls:nil];
+        XCTAssertFalse(popover.isShown);
+        XCTAssertTrue(dialler.pendingCallsButton.hidden);
+        NSResponder *restored = controller.window.firstResponder;
+        XCTAssertTrue(restored == dialler.callDestinationField ||
+                      (dialler.callDestinationField.currentEditor != nil && restored == dialler.callDestinationField.currentEditor));
+        first.pendingRoutedCallSummaries = @[[self pendingSummaryForAccount:first destination:@"+447700900123"]];
+        [controller showPendingCalls:dialler.pendingCallsButton];
+        NSButton *final = [[controller valueForKey:@"pendingCancelButtons"] firstObject];
+        [controller cancelWaitingCall:final];
+        XCTAssertFalse(popover.isShown);
+        XCTAssertTrue(dialler.pendingCallsButton.hidden);
+        restored = controller.window.firstResponder;
+        XCTAssertTrue(restored == dialler.callDestinationField ||
+                      (dialler.callDestinationField.currentEditor != nil && restored == dialler.callDestinationField.currentEditor));
+    } @finally {
+        [[controller valueForKey:@"pendingPopover"] close];
+        [controller.window orderOut:nil];
+    }
 }
 - (void)writeRouteSnapshotIfRequested:(NSWindow *)window name:(NSString *)name {
     NSString *directory = NSProcessInfo.processInfo.environment[@"JPS_ROUTE_PREVIEW_CAPTURE_DIR"];

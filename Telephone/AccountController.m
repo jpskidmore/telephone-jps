@@ -39,6 +39,7 @@
 #import "Telephone-Swift.h"
 
 NSString * const kEmailSIPLabel = @"sip";
+NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendingRoutedCallsDidChangeNotification";
 
 @interface AccountController () <AccountWindowControllerDelegate>
 
@@ -389,7 +390,15 @@ NSString * const kEmailSIPLabel = @"sip";
         [DialPlanCoordinator.shared presentFailure:[NSString stringWithFormat:@"%@ is Offline. Choose Online before calling.", self.accountDescription]];
         return;
     }
-    NSDictionary *request = @{@"uri": [uri copy], @"label": phoneLabel ?: @"", @"canonical": canonicalDestination ?: @"", @"id": NSUUID.UUID.UUIDString};
+    AKSIPURI *frozenURI = [uri copy];
+    NSString *identifier = NSUUID.UUID.UUIDString;
+    NSString *canonical = [canonicalDestination copy] ?: @"";
+    NSString *destination = canonical.length ? canonical : (frozenURI.host.length ? frozenURI.SIPAddress : frozenURI.user);
+    NSDictionary<NSString *, NSString *> *summary = @{@"id": identifier,
+                                                       @"accountUUID": [self.accountUUID copy] ?: @"",
+                                                       @"providerName": [self.accountDescription copy] ?: @"",
+                                                       @"destination": [destination copy] ?: @""};
+    NSDictionary *request = @{@"uri": frozenURI, @"label": [phoneLabel copy] ?: @"", @"canonical": canonical, @"id": identifier, @"summary": summary};
     if (!self.isAccountAdded || (!self.isAccountRegistered && !self.isAccountUnavailable)) {
         [self.pendingRoutedCalls addObject:request];
         if (self.routedCallTimeout == nil) {
@@ -403,15 +412,44 @@ NSString * const kEmailSIPLabel = @"sip";
         self.shouldPresentRegistrationError = YES;
         if (self.isAccountUnavailable || self.desiredAvailability == AccountWindowControllerAccountStateUnavailable) [self setAccountRegistered:NO];
         else [self registerAccount];
+        [self notifyPendingRoutedCallsDidChange];
         return;
     }
     [self dispatchRoutedRequest:request];
 }
 
 - (BOOL)hasPendingRoutedCalls { return self.pendingRoutedCalls.count > 0; }
+- (NSArray<NSDictionary<NSString *, NSString *> *> *)pendingRoutedCallSummaries {
+    NSMutableArray<NSDictionary<NSString *, NSString *> *> *summaries = [NSMutableArray arrayWithCapacity:self.pendingRoutedCalls.count];
+    for (NSDictionary *request in self.pendingRoutedCalls) [summaries addObject:request[@"summary"]];
+    return summaries.copy;
+}
+- (BOOL)cancelPendingRoutedCallWithIdentifier:(NSString *)identifier {
+    NSUInteger index = [self.pendingRoutedCalls indexOfObjectPassingTest:^BOOL(NSDictionary *request, NSUInteger index, BOOL *stop) {
+        return [request[@"id"] isEqualToString:identifier];
+    }];
+    if (index == NSNotFound) return NO;
+    [self.pendingRoutedCalls removeObjectAtIndex:index];
+    // Later requests share the first request's deadline; removing one must not
+    // restart or replace the account's existing registration timer.
+    if (!self.hasPendingRoutedCalls) {
+        [self.routedCallTimeout invalidate]; self.routedCallTimeout = nil;
+    }
+    [self notifyPendingRoutedCallsDidChange];
+    return YES;
+}
 - (void)cancelPendingRoutedCalls {
+    BOOL hadPendingCalls = self.hasPendingRoutedCalls;
     [self.pendingRoutedCalls removeAllObjects];
     [self.routedCallTimeout invalidate]; self.routedCallTimeout = nil;
+    if (hadPendingCalls) [self notifyPendingRoutedCallsDidChange];
+}
+- (void)notifyPendingRoutedCallsDidChange {
+    void (^postChange)(void) = ^{
+        [NSNotificationCenter.defaultCenter postNotificationName:JPSPendingRoutedCallsDidChangeNotification object:nil];
+    };
+    if (NSThread.isMainThread) postChange();
+    else dispatch_async(dispatch_get_main_queue(), postChange);
 }
 
 - (void)dispatchRoutedRequest:(NSDictionary *)request {

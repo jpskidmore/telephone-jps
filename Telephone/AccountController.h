@@ -25,6 +25,9 @@
 // Address Book label for SIP address in the email field.
 extern NSString * const kEmailSIPLabel;
 
+// Queue changes are delivered on the main thread without controller or URI payloads.
+FOUNDATION_EXPORT NSNotificationName const JPSPendingRoutedCallsDidChangeNotification;
+
 @class AKSIPURI, AKNetworkReachability;
 @class AsyncCallHistoryPurchaseCheckUseCaseFactory, AsyncCallHistoryViewEventTargetFactory;
 @class CallTransferController, SanitizedCallDestination, StoreWindowPresenter, WorkspaceSleepStatus;
@@ -51,6 +54,9 @@ extern NSString * const kEmailSIPLabel;
 @property(nonatomic, readonly) NSString *routingAvailability;
 @property(nonatomic, readonly) NSString *accountUUID;
 @property(nonatomic, readonly) BOOL hasPendingRoutedCalls;
+// Immutable enqueue-time string values: id, accountUUID, providerName and destination.
+@property(nonatomic, readonly) NSArray<NSDictionary<NSString *, NSString *> *> *pendingRoutedCallSummaries;
+- (BOOL)cancelPendingRoutedCallWithIdentifier:(NSString *)identifier;
 - (void)cancelPendingRoutedCalls;
 - (void)changeRoutingAvailability:(NSString *)availability;
 - (void)makeRoutedCallToURI:(AKSIPURI *)uri phoneLabel:(NSString *)phoneLabel canonicalDestination:(nullable NSString *)canonicalDestination;

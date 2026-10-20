@@ -263,3 +263,10 @@
 "Network — All Accounts" = "Network — All Accounts";
 "Network settings for all accounts." = "Network settings for all accounts.";
 "Connection settings for the selected account." = "Connection settings for the selected account.";
+
+/* Calls queued while their chosen connection registers. */
+"Waiting %lu" = "Waiting %lu";
+"Calls waiting for registration: %lu" = "Calls waiting for registration: %lu";
+"Show destinations and cancel individual waiting calls" = "Show destinations and cancel individual waiting calls";
+"Waiting for registration" = "Waiting for registration";
+"Cancel call to %@ through %@" = "Cancel call to %@ through %@";
