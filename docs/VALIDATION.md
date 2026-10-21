@@ -1,5 +1,21 @@
 # Validation and release checks
 
+## 3.6 interim roadmap release — 21 October 2026
+
+Fresh serial local validation passed **694 cases, zero failures or skips**:
+Domain 28 XCTest; UseCases 201 XCTest plus 131 Swift Testing; ReceiptValidation
+5 XCTest; isolated Telephone 281 XCTest plus 48 Swift Testing. Fresh vendor,
+audio, recording ownership/recovery, Foundation and additional routing/SIP/
+history/CoreAudio checks are separate from that suite total.
+
+The exact signed candidate is installed and privately published from immutable
+source `7abcede59ff282f9c0dd042e66cb8283ffb66085`. Every app file/symlink,
+source Git blob and all seven uploaded/downloaded asset hashes match. Previous
+releases/tags/assets remain unchanged. Read [delivery proof](releases/3.6-verification.md)
+and [fresh results](releases/3.6-tests.json). Actual provider/audio/device/grant,
+full visual and proficient VoiceOver acceptance remain separate. Issues #61–71
+are deferred; no further roadmap implementation is part of this release.
+
 ## 3.5.1 Guided routes crash repair — 8 October 2026
 
 Fresh serial local validation passed **665 test cases, zero failures**: Domain

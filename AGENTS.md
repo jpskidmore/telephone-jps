@@ -12,9 +12,21 @@ completed changes, and leave the rest for another day. This supersedes the
 earlier whole-roadmap release deferral. The interim batch is #53–60; #61–71
 remain open. Verify packaging, installation and private publication separately.
 
-## Released application baseline — 8 October 2026
+## Current released baseline — 21 October 2026
 
-The owner's 3.5 crash in More → Guided routes… is fixed in **3.5.1/build 163**. Fresh local verification passed 665 cases; the app is built, installed and published as private Latest from immutable source `e111e5daee9e57f26c66c9a42d40b6f1f4f25edc`. The owner reported “tested - looks good”. Read [hotfix notes](docs/releases/3.5.1.md), [fresh tests](docs/releases/3.5.1-tests.json) and [publication proof](docs/releases/3.5.1-verification.md). Preserve all previous release tags/assets and all routing/data/layout behaviour. The 170 routing cases and unrelated component checks remain historical 3.5 unchanged-input evidence; no fresh rerun is claimed.
+**3.6/build 164** is installed and published as private Latest from immutable
+source `7abcede59ff282f9c0dd042e66cb8283ffb66085`. Fresh local validation passed
+694 suite cases plus separately counted components. Read
+[publication proof](docs/releases/3.6-verification.md) and
+[test evidence](docs/releases/3.6-tests.json). Eight roadmap issues (#53–60) are
+complete; #61–71 are deferred until the owner asks. No further automatic roadmap
+work is authorised by the completed release-only wakeup. Preserve all prior
+releases, user data, settings and credentials; actual provider/audio/VoiceOver
+acceptance remains separate.
+
+## Historical 3.5.1 baseline — 8 October 2026
+
+The owner's 3.5 crash in More → Guided routes… is fixed in **3.5.1/build 163**. Fresh local verification passed 665 cases; the app was then built, installed and published as private Latest from immutable source `e111e5daee9e57f26c66c9a42d40b6f1f4f25edc`. The owner reported “tested - looks good”. Read [hotfix notes](docs/releases/3.5.1.md), [fresh tests](docs/releases/3.5.1-tests.json) and [publication proof](docs/releases/3.5.1-verification.md). Preserve all previous release tags/assets and all routing/data/layout behaviour. The 170 routing cases and unrelated component checks remain historical 3.5 unchanged-input evidence; no fresh rerun is claimed.
 
 Read [the maintenance handover](docs/BUG_FIX_HANDOVER.md),
 [verified repair map](docs/REPAIR_VERIFICATION.md) and

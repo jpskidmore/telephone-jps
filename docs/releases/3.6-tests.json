@@ -1,0 +1,100 @@
+{
+  "release": "3.6/build164",
+  "sourceCommit": "7abcede59ff282f9c0dd042e66cb8283ffb66085",
+  "validationDate": "2026-10-20",
+  "publicationDate": "2026-10-21",
+  "freshCases": 694,
+  "failures": 0,
+  "skipped": 0,
+  "suiteCounts": {
+    "Domain": 28,
+    "UseCasesTests": 332,
+    "ReceiptValidationTests": 5,
+    "TelephoneTests": 329
+  },
+  "caseTypes": {
+    "XCTest": 515,
+    "SwiftTesting": 179
+  },
+  "nativeResultSummaries": {
+    "Domain": {
+      "result": "Passed",
+      "passedTests": 28,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "totalTestCount": 28,
+      "startTime": 1792525734.792,
+      "finishTime": 1792525746.028
+    },
+    "UseCasesTests": {
+      "result": "Passed",
+      "passedTests": 332,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "totalTestCount": 332,
+      "startTime": 1792525752.481,
+      "finishTime": 1792525762.052
+    },
+    "ReceiptValidationTests": {
+      "result": "Passed",
+      "passedTests": 5,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "totalTestCount": 5,
+      "startTime": 1792525768.393,
+      "finishTime": 1792525771.635
+    },
+    "TelephoneTests": {
+      "result": "Passed",
+      "passedTests": 329,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "totalTestCount": 329,
+      "startTime": 1792525794.757,
+      "finishTime": 1792525819.859
+    }
+  },
+  "componentProof": {
+    "routing": {
+      "passed": true,
+      "log_sha256": "9a90fb5dab79bd2305852f9ddfb9beb11eb567ae453716857319241349cde6c0"
+    },
+    "sip-uri": {
+      "passed": true,
+      "log_sha256": "05b139ede836319d396b5262f6789b0931db5f976a40ed57196afc1cccb4568b"
+    },
+    "sip-lifecycle": {
+      "passed": true,
+      "log_sha256": "ed28824be136b256ffc742d6f25cd646e1d8d63bfa2c34fa13e6af02ae9aab37"
+    },
+    "sip-callback": {
+      "passed": true,
+      "log_sha256": "04fb93efe9705a569e0e8f815703ef1b882ad657fbd250ef68bd4536d1631ee9"
+    },
+    "history-resources": {
+      "passed": true,
+      "log_sha256": "8649c8ef6a339a82a96ded25bf7e8966536fe850652b6c78a1e2aac790e28cf3"
+    },
+    "coreaudio": {
+      "passed": true,
+      "log_sha256": "fdbb8e25114858e702e5f7904a74ac51997f934f8626e343e40f0108ede28604"
+    }
+  },
+  "componentBoundary": "Fresh build-script vendor/audio/recording ownership/recovery/Foundation/model checks, plus routing 213 and SIP URI/lifecycle/callback/history/resources/CoreAudio fixtures. These assertions/models are not added to 694 native cases.",
+  "buildLogSHA256": "d725e9bf2e40a543de6b116feaea2f452153b54570185a616e6ef6c197a24864",
+  "externalBuildDriverSHA256": "8303f4456abfb2b7e25853ab5ecbc5faee6c8a81f3d34edf60d7c95e917c22ad",
+  "recordingDriverSHA256": "48d994e2bd2de343f784f7612e7c8fa363161644ee9794aeec3b78d4f421f586",
+  "driverDifference": "Only runtime driver project/output paths were adapted so recording executables remain under /private/tmp; repository compile/test scripts and source semantics are unchanged.",
+  "isolation": "Fresh unique nib-free Debug host; synthetic profiles and fixtures; production MainMenu metadata retained.",
+  "limits": [
+    "Ad-hoc signed and unnotarised.",
+    "No real provider/audio/device/grant/full visual/proficient VoiceOver or emergency-call acceptance claimed.",
+    "Installed app was not launched against owner data as a regression test.",
+    "Roadmap #61\u201371 remain deferred until owner requests resumption."
+  ],
+  "fullResultSummarySHA256": "13ba25ba64f322e0155a71f572f4d2bb9c7879a6446d79dc0ea8096d2a0d3543"
+}

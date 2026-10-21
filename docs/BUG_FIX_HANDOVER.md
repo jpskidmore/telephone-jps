@@ -4,6 +4,13 @@ Start with [Current maintenance](MAINTENANCE.md) for the live roadmap, current
 baseline and owner's execution controls. The detailed release/repair records
 below retain their original dates and verification limits.
 
+**Current release: 3.6/build 164**, installed and privately published on 21 October
+2026 from `7abcede59ff282f9c0dd042e66cb8283ffb66085`. Read
+[completion proof](releases/3.6-verification.md) for 694 fresh suite passes,
+package/source/installation/download parity and preserved prior releases.
+Issues #53–60 are complete; #61–71 are deferred. Sections below retain the
+historical 3.5.1 and earlier snapshots, not the current installed version.
+
 The owner authorised the ranked roadmap on **19 October 2026**, one issue at a
 time. **Issue #53 is verified:** private repository visibility is restored;
 authenticated access, all 11 releases/60 asset records and 11 remote tags are

@@ -6,13 +6,15 @@ replace those archives or certify a changed app.
 
 ## Released and installed baseline
 
-Checked on **19 October 2026**:
+Checked on **21 October 2026**:
 
-- GitHub Latest and the installed application are **3.5.1/build 163**.
+- GitHub Latest and the installed application are **3.6/build 164**.
 - The immutable application release source is
-  `e111e5daee9e57f26c66c9a42d40b6f1f4f25edc`. Read the
-  [3.5.1 publication proof](releases/3.5.1-verification.md) and
-  [release test record](releases/3.5.1-tests.json) for the 8 October evidence.
+  `7abcede59ff282f9c0dd042e66cb8283ffb66085`. Read the
+  [3.6 publication proof](releases/3.6-verification.md) and
+  [release test record](releases/3.6-tests.json) for the fresh 694-case validation
+  and verified packaging/installation/publication. Previous 3.5.1 and earlier
+  release tags/assets remain unchanged.
 - The repository is private. The
   [19 October visibility repair](maintenance/2026-10-19-visibility.md) records
   restored private access and preserved release assets/tags.
@@ -53,8 +55,9 @@ the roadmap. On **20 October 2026**, they changed that instruction: at **25%
 remaining in the actual five-hour allowance**, stop roadmap work, build and
 release the completed verified batch, and leave remaining issues for another
 day. This interim delivery contains #53–60 (eight of nineteen); #61–71 remain
-open. Version 3.6/build 164 is being prepared. Do not call it installed or
-published until the independent delivery checks succeed.
+open. Version 3.6/build 164 completed installation and private publication on
+21 October after the independent delivery checks passed. The remaining roadmap
+is deferred until the owner asks; the release-only wakeup is stopped.
 
 Read the actual five-hour usage window before work, between issues and during
 long-running work. If its remaining allowance falls **below 10%**, stop at a
