@@ -77,16 +77,12 @@
         if (routeResolver != nil) _dialler.callRoutePreviewHandler = ^NSString *(AKSIPURI *uri, NSString *text) {
             SharedDialerController *owner = weakSelf;
             if (owner == nil) return @"Call";
-            if (text.length == 0) {
-                [owner.dialler setCallRouteStatus:@"Enter a number" detail:@"Enter a number to see its outgoing connection."];
-                return @"Call";
-            }
+            if (text.length == 0) return @"Call";
             AKSIPURI *address = [uri copy]; address.displayName = @"";
             NSString *input = address ? (address.host.length ? address.description : address.user) : text;
             NSArray<DialPlanAccount *> *snapshot = [owner routeAccountSnapshots];
             DialPlanRoute *route = routeResolver(input, snapshot);
             DialPlanRoutePresentation *presentation = [[DialPlanRoutePresentation alloc] initWithRoute:route accounts:snapshot];
-            [owner.dialler setCallRouteStatus:presentation.compactStatus detail:presentation.detailText];
             return presentation.detailText;
         };
         (void)_dialler.view;

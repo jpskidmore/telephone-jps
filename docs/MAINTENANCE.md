@@ -15,9 +15,10 @@ Checked on **21 October 2026**:
   [release test record](releases/3.6-tests.json) for the fresh 694-case validation
   and verified packaging/installation/publication. Previous 3.5.1 and earlier
   release tags/assets remain unchanged.
-- The repository is private. The
-  [19 October visibility repair](maintenance/2026-10-19-visibility.md) records
-  restored private access and preserved release assets/tags.
+- The owner chose **public visibility on 21 October 2026** and explicitly said
+  to leave repository visibility alone. Do not change that setting. The
+  [19 October visibility record](maintenance/2026-10-19-visibility.md) retains
+  the earlier private-policy snapshot; it is superseded as current policy.
 - The original 50-issue repair gate (#2–51) completed on **8 October 2026**.
   The [repair map](REPAIR_VERIFICATION.md) is completed historical evidence,
   not a list of 50 outstanding tasks.
@@ -44,6 +45,11 @@ The [issue #60 numbering record](maintenance/2026-10-20-numbering-transparency.m
 documents visible coverage/version information and saved-versus-draft behaviour.
 
 ## Owner's execution controls
+
+On **21 October 2026**, the owner authorised **Fix A for #72**: remove the
+permanent route line and restore the centred 3.5 dialler row, then install and
+release **3.6.1/build 165** after verification. The other eleven roadmap issues
+remain deferred. Repository visibility is owner-controlled and must be left alone.
 
 The owner authorised roadmap implementation on **19 October 2026**, strictly
 **one issue at a time, in ranked order**. Finish and verify the current item,

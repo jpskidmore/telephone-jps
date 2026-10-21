@@ -83,10 +83,8 @@ static NSDictionary *DestinationForToken(id token) {
 @property(nonatomic) NSButton *dialButton;
 @property(nonatomic) NSButton *historyButton;
 @property(nonatomic) NSTextField *offlineLabel;
-@property(nonatomic) NSTextField *routeStatusLabel;
 @property(nonatomic, readwrite, strong) NSButton *pendingCallsButton;
 @property(nonatomic) NSLayoutConstraint *pendingCallsWidth;
-@property(nonatomic) NSLayoutConstraint *routeStatusTrailing;
 @property(nonatomic) BOOL observesDestinationValues;
 @property(nonatomic) NSView *compactLastKeyView;
 @end
@@ -181,22 +179,20 @@ static NSDictionary *DestinationForToken(id token) {
     NSButton *more = [self compactButtonWithSymbol:@"ellipsis"
                                              title:NSLocalizedString(@"More actions", @"Compact dialer actions menu.")
                                             target:target action:moreAction];
-    // The destination and its route share the existing 44-point slot. The
-    // controls and the compact window retain their original sizes.
-    NSView *destination = [[NSView alloc] initWithFrame:NSZeroRect];
-    destination.translatesAutoresizingMaskIntoConstraints = NO;
-    [destination addSubview:field];
-    self.routeStatusLabel = [NSTextField labelWithString:@"Enter a number"];
-    self.routeStatusLabel.identifier = @"CompactOutgoingRouteStatus";
-    self.routeStatusLabel.font = [NSFont systemFontOfSize:11];
-    self.routeStatusLabel.textColor = NSColor.secondaryLabelColor;
-    self.routeStatusLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-    self.routeStatusLabel.maximumNumberOfLines = 1;
-    self.routeStatusLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    self.routeStatusLabel.accessibilityLabel = @"Outgoing connection";
-    self.routeStatusLabel.cell.accessibilityLabel = @"Outgoing connection";
-    [self.routeStatusLabel setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
-    [destination addSubview:self.routeStatusLabel];
+    // Keep the 3.5 destination field centred with the icon controls. Route
+    // details remain available through Call's tooltip and accessibility help.
+    NSStackView *row = [NSStackView stackViewWithViews:@[availability, field, self.dialButton, self.historyButton, more]];
+    row.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    row.alignment = NSLayoutAttributeCenterY;
+    row.spacing = 4;
+    row.detachesHiddenViews = NO;
+    row.translatesAutoresizingMaskIntoConstraints = NO;
+    [bar.contentView addSubview:row];
+
+    // Waiting calls are temporary, actionable feedback. Use the existing space
+    // below the centred field without moving it or changing the 56-point dial
+    // section. The link belongs to that section, so its full frame is hittable
+    // even where it extends below the rounded bar.
     self.pendingCallsButton = [NSButton buttonWithTitle:@"" target:nil action:NULL];
     self.pendingCallsButton.identifier = @"CompactPendingCallsButton";
     self.pendingCallsButton.bordered = NO;
@@ -204,38 +200,23 @@ static NSDictionary *DestinationForToken(id token) {
     self.pendingCallsButton.controlSize = NSControlSizeSmall;
     self.pendingCallsButton.translatesAutoresizingMaskIntoConstraints = NO;
     self.pendingCallsButton.hidden = YES;
-    [destination addSubview:self.pendingCallsButton];
+    [self.view addSubview:self.pendingCallsButton];
     self.pendingCallsWidth = [self.pendingCallsButton.widthAnchor constraintEqualToConstant:0];
-    self.routeStatusTrailing = [self.routeStatusLabel.trailingAnchor constraintEqualToAnchor:self.pendingCallsButton.leadingAnchor];
     [NSLayoutConstraint activateConstraints:@[
-        [destination.heightAnchor constraintEqualToConstant:44],
-        [destination.widthAnchor constraintGreaterThanOrEqualToConstant:160],
-        [field.leadingAnchor constraintEqualToAnchor:destination.leadingAnchor],
-        [field.trailingAnchor constraintEqualToAnchor:destination.trailingAnchor],
-        [field.topAnchor constraintEqualToAnchor:destination.topAnchor constant:2],
-        [self.routeStatusLabel.topAnchor constraintEqualToAnchor:field.bottomAnchor constant:1],
-        [self.routeStatusLabel.leadingAnchor constraintEqualToAnchor:destination.leadingAnchor constant:4],
-        self.routeStatusTrailing,
-        [self.pendingCallsButton.trailingAnchor constraintEqualToAnchor:destination.trailingAnchor constant:-4],
-        [self.pendingCallsButton.topAnchor constraintEqualToAnchor:self.routeStatusLabel.topAnchor],
+        [self.pendingCallsButton.trailingAnchor constraintEqualToAnchor:field.trailingAnchor constant:-4],
+        [self.pendingCallsButton.topAnchor constraintEqualToAnchor:field.bottomAnchor constant:1],
+        [self.pendingCallsButton.bottomAnchor constraintLessThanOrEqualToAnchor:self.view.bottomAnchor],
         [self.pendingCallsButton.heightAnchor constraintEqualToConstant:13],
-        self.pendingCallsWidth,
-        [self.routeStatusLabel.heightAnchor constraintEqualToConstant:13]
+        self.pendingCallsWidth
     ]];
-    NSStackView *row = [NSStackView stackViewWithViews:@[availability, destination, self.dialButton, self.historyButton, more]];
-    row.orientation = NSUserInterfaceLayoutOrientationHorizontal;
-    row.alignment = NSLayoutAttributeCenterY;
-    row.spacing = 4;
-    row.detachesHiddenViews = NO;
-    row.translatesAutoresizingMaskIntoConstraints = NO;
-    [bar.contentView addSubview:row];
     [NSLayoutConstraint activateConstraints:@[
         [row.leadingAnchor constraintEqualToAnchor:bar.contentView.leadingAnchor constant:4],
         [row.trailingAnchor constraintEqualToAnchor:bar.contentView.trailingAnchor constant:-4],
         [row.topAnchor constraintEqualToAnchor:bar.contentView.topAnchor],
         [row.bottomAnchor constraintEqualToAnchor:bar.contentView.bottomAnchor],
         [availability.widthAnchor constraintEqualToConstant:44],
-        [availability.heightAnchor constraintEqualToConstant:44]
+        [availability.heightAnchor constraintEqualToConstant:44],
+        [field.widthAnchor constraintGreaterThanOrEqualToConstant:160]
     ]];
     [field setContentHuggingPriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
 
@@ -318,17 +299,7 @@ static NSDictionary *DestinationForToken(id token) {
     NSString *preview = self.callRoutePreviewHandler(self.callDestinationURI, self.callDestinationField.stringValue);
     self.dialButton.toolTip = preview.length ? preview : @"Call";
     self.dialButton.accessibilityHelp = self.dialButton.toolTip;
-}
-
-- (void)setCallRouteStatus:(NSString *)status detail:(NSString *)detail {
-    BOOL changed = ![self.routeStatusLabel.stringValue isEqualToString:status];
-    self.routeStatusLabel.stringValue = status;
-    self.routeStatusLabel.toolTip = detail;
-    self.routeStatusLabel.accessibilityValue = status;
-    self.routeStatusLabel.accessibilityHelp = detail;
-    self.routeStatusLabel.cell.accessibilityValue = status;
-    self.routeStatusLabel.cell.accessibilityHelp = detail;
-    if (changed) NSAccessibilityPostNotification(self.routeStatusLabel, NSAccessibilityValueChangedNotification);
+    self.dialButton.cell.accessibilityHelp = self.dialButton.toolTip;
 }
 
 - (void)setPendingCallCount:(NSUInteger)count target:(id)target action:(SEL)action {
@@ -346,7 +317,6 @@ static NSDictionary *DestinationForToken(id token) {
     button.toolTip = NSLocalizedString(@"Show destinations and cancel individual waiting calls", @"Waiting calls button help.");
     button.accessibilityHelp = button.toolTip;
     self.pendingCallsWidth.constant = count ? MIN(80, MAX(54, ceil(button.attributedTitle.size.width) + 4)) : 0;
-    self.routeStatusTrailing.constant = count ? -4 : 0;
     self.callDestinationField.nextKeyView = count ? button : self.dialButton;
     button.nextKeyView = self.dialButton;
     if (changed && count) NSAccessibilityPostNotification(button, NSAccessibilityValueChangedNotification);

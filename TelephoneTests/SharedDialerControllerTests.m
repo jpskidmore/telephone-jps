@@ -156,12 +156,16 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
     }
     return snapshots;
 }
-- (NSTextField *)routeStatusInController:(SharedDialerController *)controller {
+- (void)assertNoPermanentRouteStatusInController:(SharedDialerController *)controller {
     for (NSView *view in [self descendants:controller.window.contentView]) {
-        if ([view.identifier isEqualToString:@"CompactOutgoingRouteStatus"]) return (NSTextField *)view;
+        XCTAssertNotEqualObjects(view.identifier,@"CompactOutgoingRouteStatus");
+        if ([view isKindOfClass:NSTextField.class] && ![view isKindOfClass:NSTokenField.class]) {
+            NSString *text = ((NSTextField *)view).stringValue;
+            XCTAssertFalse([text isEqualToString:@"Enter a number"] || [text hasPrefix:@"Ready · "] ||
+                           [text hasPrefix:@"Offline · "] || [text hasPrefix:@"Waiting · "],
+                           @"Route details must remain in Call help, without a permanent status row.");
+        }
     }
-    XCTFail(@"The selected outgoing connection must be visible in the compact dialler.");
-    return nil;
 }
 - (NSDictionary<NSString *, NSString *> *)pendingSummaryForAccount:(JPSSharedDiallerAccountFixture *)account destination:(NSString *)destination {
     return @{@"id":NSUUID.UUID.UUIDString, @"accountUUID":account.accountUUID,
@@ -273,9 +277,8 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
         [controller.window orderOut:nil];
     }
 }
-- (void)testWaitingControlKeepsCompactGeometryAndKeyboardChainInLightAndDark {
+- (void)testWaitingControlKeepsCentredGeometryHitRegionsAndKeyboardChainInLightAndDark {
     JPSSharedDiallerAccountFixture *account = [self accountWithUUID:@"synthetic" name:@"A long synthetic waiting provider" availability:@"registering"];
-    account.pendingRoutedCallSummaries = @[[self pendingSummaryForAccount:account destination:@"+447700900123"]];
     JPSSharedDiallerAccountsFixture *accounts = [JPSSharedDiallerAccountsFixture new]; accounts.all = @[account];
     SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:(id)accounts historyFactory:nil];
     @try {
@@ -283,50 +286,74 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
         dialler.callDestinationField.delegate = nil;
         dialler.callDestinationField.stringValue = @"07700900123";
         NSButton *waiting = dialler.pendingCallsButton;
-        NSTextField *status = [self routeStatusInController:controller];
         NSButton *call = [dialler valueForKey:@"dialButton"];
         NSButton *history = [dialler valueForKey:@"historyButton"];
         NSPopUpButton *availability = [controller valueForKey:@"availability"];
         XCTAssertEqualObjects(waiting.identifier,@"CompactPendingCallsButton");
-        XCTAssertEqual(dialler.callDestinationField.nextKeyView,waiting);
-        XCTAssertEqual(waiting.nextKeyView,call);
-        XCTAssertEqual(call.nextKeyView,history);
         XCTAssertFalse(waiting.refusesFirstResponder);
         XCTAssertTrue([waiting.accessibilityHelp containsString:@"cancel"]);
+        [self assertNoPermanentRouteStatusInController:controller];
         for (NSString *appearance in @[NSAppearanceNameAqua,NSAppearanceNameDarkAqua]) {
             controller.window.appearance = [NSAppearance appearanceNamed:appearance];
             [controller.window.contentView layoutSubtreeIfNeeded];
-            XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.width,368,0.5);
-            XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height,104,0.5);
-            NSRect waitingFrame = [waiting convertRect:waiting.bounds toView:controller.window.contentView];
-            NSRect statusFrame = [status convertRect:status.bounds toView:controller.window.contentView];
-            NSRect fieldFrame = [dialler.callDestinationField convertRect:dialler.callDestinationField.bounds toView:controller.window.contentView];
-            XCTAssertTrue(NSContainsRect(controller.window.contentView.bounds,waitingFrame));
-            XCTAssertFalse(NSIntersectsRect(waitingFrame,statusFrame));
-            XCTAssertFalse(NSIntersectsRect(waitingFrame,fieldFrame));
-            XCTAssertGreaterThan(statusFrame.size.width,30);
-            XCTAssertGreaterThanOrEqual(fieldFrame.size.width,160);
-            for (NSView *control in @[availability,call,history,history.nextKeyView]) {
-                XCTAssertEqualWithAccuracy(control.bounds.size.width,44,0.5);
-                XCTAssertEqualWithAccuracy(control.bounds.size.height,44,0.5);
+            NSRect originalFieldFrame = [dialler.callDestinationField convertRect:dialler.callDestinationField.bounds toView:controller.window.contentView];
+            [controller.window makeFirstResponder:dialler.callDestinationField];
+            NSResponder *editor = controller.window.firstResponder;
+            for (NSNumber *count in @[@0,@1,@3,@0]) {
+                NSMutableArray *summaries = [NSMutableArray array];
+                for (NSUInteger index = 0; index < count.unsignedIntegerValue; index++)
+                    [summaries addObject:[self pendingSummaryForAccount:account destination:@"+447700900123"]];
+                account.pendingRoutedCallSummaries = summaries;
+                [controller.window.contentView layoutSubtreeIfNeeded];
+                XCTAssertEqual(controller.window.firstResponder,editor, @"A count refresh must not take focus from the number editor.");
+                XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.width,368,0.5);
+                XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height,104,0.5);
+                NSRect fieldFrame = [dialler.callDestinationField convertRect:dialler.callDestinationField.bounds toView:controller.window.contentView];
+                XCTAssertTrue(NSEqualRects(fieldFrame,originalFieldFrame), @"Waiting calls must not displace the centred field.");
+                XCTAssertGreaterThanOrEqual(fieldFrame.size.width,160);
+                for (NSView *control in @[availability,call,history,history.nextKeyView]) {
+                    NSRect controlFrame = [control convertRect:control.bounds toView:controller.window.contentView];
+                    XCTAssertEqualWithAccuracy(control.bounds.size.width,44,0.5);
+                    XCTAssertEqualWithAccuracy(control.bounds.size.height,44,0.5);
+                    XCTAssertEqualWithAccuracy(NSMidY(fieldFrame),NSMidY(controlFrame),0.5, @"The number field must share the 3.5 icon centre line.");
+                    if (count.unsignedIntegerValue) {
+                        NSRect waitingFrame = [waiting convertRect:waiting.bounds toView:controller.window.contentView];
+                        XCTAssertFalse(NSIntersectsRect(waitingFrame,controlFrame), @"Waiting must preserve each icon's full hit region.");
+                    }
+                }
+                XCTAssertEqual(waiting.hidden,count.unsignedIntegerValue == 0);
+                XCTAssertEqual(dialler.callDestinationField.nextKeyView,count.unsignedIntegerValue ? waiting : call);
+                XCTAssertEqual(waiting.nextKeyView,call);
+                XCTAssertEqual(call.nextKeyView,history);
+                if (count.unsignedIntegerValue) {
+                    NSRect waitingFrame = [waiting convertRect:waiting.bounds toView:controller.window.contentView];
+                    NSRect localFrame = [waiting convertRect:waiting.bounds toView:dialler.view];
+                    XCTAssertTrue(NSContainsRect(dialler.view.bounds,localFrame));
+                    XCTAssertFalse(NSIntersectsRect(waitingFrame,fieldFrame));
+                    XCTAssertGreaterThanOrEqual(waitingFrame.size.width,54);
+                    for (NSNumber *y in @[@(NSMinY(localFrame) + 1), @(NSMidY(localFrame)), @(NSMaxY(localFrame) - 1)]) {
+                        NSPoint hitPoint = [dialler.view convertPoint:NSMakePoint(NSMidX(localFrame),y.doubleValue) toView:dialler.view.superview];
+                        XCTAssertEqual([dialler.view hitTest:hitPoint],waiting, @"The whole waiting link must be reachable, including its edge outside the glass bar.");
+                    }
+                    NSString *expectedTitle = [NSString stringWithFormat:@"Waiting %@",count];
+                    XCTAssertEqualObjects(waiting.title,expectedTitle);
+                }
+                NSString *mode = [appearance isEqualToString:NSAppearanceNameAqua] ? @"light" : @"dark";
+                [self writePendingSnapshotIfRequested:controller.window.contentView name:[NSString stringWithFormat:@"waiting-%@-%@.png",count,mode]];
+                if (count.unsignedIntegerValue == 1) {
+                    [controller rebuildPendingPopover];
+                    NSPopover *popover = [controller valueForKey:@"pendingPopover"];
+                    popover.contentViewController.view.appearance = [NSAppearance appearanceNamed:appearance];
+                    [self writePendingSnapshotIfRequested:popover.contentViewController.view name:[NSString stringWithFormat:@"waiting-popover-%@.png",mode]];
+                    [controller toggleHistory:nil];
+                    [controller.window.contentView layoutSubtreeIfNeeded];
+                    XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.width,368,0.5);
+                    XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height,268,0.5);
+                    XCTAssertEqual(dialler.callDestinationField.nextKeyView,waiting);
+                    [controller toggleHistory:nil];
+                }
             }
-            NSString *name = [appearance isEqualToString:NSAppearanceNameAqua] ? @"waiting-light.png" : @"waiting-dark.png";
-            [self writePendingSnapshotIfRequested:controller.window.contentView name:name];
-            [controller rebuildPendingPopover];
-            NSPopover *popover = [controller valueForKey:@"pendingPopover"];
-            popover.contentViewController.view.appearance = [NSAppearance appearanceNamed:appearance];
-            name = [appearance isEqualToString:NSAppearanceNameAqua] ? @"waiting-popover-light.png" : @"waiting-popover-dark.png";
-            [self writePendingSnapshotIfRequested:popover.contentViewController.view name:name];
-            [controller toggleHistory:nil];
-            [controller.window.contentView layoutSubtreeIfNeeded];
-            XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.width,368,0.5);
-            XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height,268,0.5);
-            XCTAssertEqual(dialler.callDestinationField.nextKeyView,waiting);
-            [controller toggleHistory:nil];
         }
-        [controller cancelPendingCalls:nil];
-        XCTAssertEqual(dialler.callDestinationField.nextKeyView,call);
-        XCTAssertTrue(waiting.hidden);
     } @finally {
         [[controller valueForKey:@"pendingPopover"] close];
         [controller.window orderOut:nil];
@@ -414,7 +441,7 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
     XCTAssertTrue([[image representationUsingType:NSBitmapImageFileTypePNG properties:@{}]
                   writeToFile:[directory stringByAppendingPathComponent:name] atomically:YES]);
 }
-- (void)testVisibleSelectedRouteReadinessDiffersFromAggregateOnlineAndTracksAccountState {
+- (void)testCallHelpKeepsSelectedProviderTruthSeparateFromAggregateOnline {
     NSString *suite = [@"jps.tests.route-readiness." stringByAppendingString:NSUUID.UUID.UUIDString];
     NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:suite];
     DialPlanStore *store = [[DialPlanStore alloc] initWithDefaults:defaults];
@@ -434,32 +461,35 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
         // Raw input exercises the route-preview path without Contacts tokenisation.
         dialler.callDestinationField.delegate = nil;
         dialler.callDestinationField.stringValue = @"07700900123";
-        NSTextField *status = [self routeStatusInController:controller];
+        NSButton *call = [dialler valueForKey:@"dialButton"];
+        [self assertNoPermanentRouteStatusInController:controller];
         NSPopUpButton *availability = [controller valueForKey:@"availability"];
-        XCTAssertFalse(status.hidden);
-        XCTAssertEqualObjects(status.stringValue,@"Offline · Localphone");
+        XCTAssertTrue([call.toolTip containsString:@"Localphone is Offline."]);
         XCTAssertEqualObjects(availability.accessibilityValue,@"Online");
-        XCTAssertEqualObjects(status.accessibilityLabel,@"Outgoing connection");
-        XCTAssertTrue([status.toolTip containsString:@"+447700900123"]);
-        XCTAssertTrue([status.accessibilityHelp containsString:@"no other connection will be used"]);
+        XCTAssertEqualObjects(call.accessibilityLabel,@"Call");
+        XCTAssertEqualObjects(call.accessibilityHelp,call.toolTip);
+        XCTAssertEqualObjects(call.cell.accessibilityHelp,call.toolTip);
+        XCTAssertTrue([call.toolTip containsString:@"+447700900123"]);
+        XCTAssertTrue([call.accessibilityHelp containsString:@"no other connection will be used"]);
         DialPlanRoute *route = [store resolveDestination:@"07700900123" accounts:[self routeSnapshots:accounts]];
         XCTAssertEqualObjects(route.accountUUID,@"local");
         XCTAssertFalse(route.canDial);
 
         local.routingAvailability = @"registering";
         [NSNotificationCenter.defaultCenter postNotificationName:@"JPSAccountRoutingStateDidChangeNotification" object:local];
-        XCTAssertEqualObjects(status.stringValue,@"Waiting · Localphone");
-        XCTAssertTrue([status.toolTip containsString:@"Wait for Localphone to register"]);
+        XCTAssertTrue([call.toolTip containsString:@"Wait for Localphone to register"]);
         local.accountRegistered = YES; local.routingAvailability = @"online";
         [NSNotificationCenter.defaultCenter postNotificationName:@"JPSAccountRoutingStateDidChangeNotification" object:local];
-        XCTAssertEqualObjects(status.stringValue,@"Ready · Localphone");
+        XCTAssertTrue([call.toolTip containsString:@"Use Localphone."]);
+        XCTAssertEqualObjects(call.accessibilityHelp,call.toolTip);
         route = [store resolveDestination:@"07700900123" accounts:[self routeSnapshots:accounts]];
         XCTAssertEqualObjects(route.accountUUID,@"local");
         XCTAssertTrue(route.canDial);
         XCTAssertEqualObjects(route.destination.destination,@"+447700900123");
         local.enabled = NO;
         [controller refreshAccounts];
-        XCTAssertEqualObjects(status.stringValue,@"Disabled · Localphone");
+        XCTAssertTrue([call.toolTip containsString:@"Localphone is disabled."]);
+        XCTAssertEqualObjects(call.accessibilityHelp,call.toolTip);
         XCTAssertEqualObjects(availability.accessibilityValue,@"Online");
     } @finally {
         [controller.window orderOut:nil];
@@ -497,23 +527,21 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
         ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
         dialler.callDestinationField.delegate = nil;
         dialler.callDestinationField.stringValue = @"07700900123";
-        NSTextField *status = [self routeStatusInController:controller];
+        NSButton *call = [dialler valueForKey:@"dialButton"];
         XCTAssertEqual(snapshotsResolved,1u);
-        XCTAssertEqualObjects(status.stringValue,@"Ready · Original connection");
-        XCTAssertTrue([status.toolTip containsString:@"Use Original connection."]);
+        XCTAssertTrue([call.toolTip containsString:@"Use Original connection."]);
         [controller refreshAccounts];
         XCTAssertEqual(admittedRefreshes,1u);
         XCTAssertEqual(snapshotsResolved,2u);
-        XCTAssertEqualObjects(status.stringValue,@"Offline · Renamed connection");
-        XCTAssertTrue([status.toolTip containsString:@"no other connection will be used"]);
+        XCTAssertTrue([call.toolTip containsString:@"no other connection will be used"]);
         selected.routingAvailability = @"online";
         dialler.callDestinationField.stringValue = @"123R45P67";
-        XCTAssertEqualObjects(status.stringValue,@"Ready · Renamed connection");
-        XCTAssertTrue([status.toolTip containsString:@"123R45P67"]);
-        XCTAssertTrue([status.toolTip containsString:@"Pause/recall syntax is preserved"]);
-        XCTAssertTrue([status.accessibilityHelp containsString:@"not converted into post-connect DTMF"]);
-        NSButton *call = [dialler valueForKey:@"dialButton"];
-        XCTAssertEqualObjects(call.accessibilityHelp,status.accessibilityHelp);
+        XCTAssertTrue([call.toolTip containsString:@"123R45P67"]);
+        XCTAssertTrue([call.toolTip containsString:@"Pause/recall syntax is preserved"]);
+        XCTAssertTrue([call.accessibilityHelp containsString:@"not converted into post-connect DTMF"]);
+        XCTAssertEqualObjects(call.accessibilityHelp,call.toolTip);
+        XCTAssertEqualObjects(call.cell.accessibilityHelp,call.toolTip);
+        XCTAssertTrue([call.toolTip containsString:@"Use Renamed connection."]);
         XCTAssertEqualObjects(store.configuration[@"defaultAccountUUID"],@"selected");
     } @finally {
         [NSNotificationCenter.defaultCenter removeObserver:observer];
@@ -544,7 +572,7 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
     XCTAssertEqual(resolutions,0u);
     [defaults removePersistentDomainForName:suite];
 }
-- (void)testVisibleRouteFollowsDestinationSavedPlanAccountRenameAndRemoval {
+- (void)testCallHelpFollowsDestinationSavedPlanAccountRenameAndRemovalWithoutStatusRow {
     NSString *suite = [@"jps.tests.route-updates." stringByAppendingString:NSUUID.UUID.UUIDString];
     NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:suite];
     DialPlanStore *store = [[DialPlanStore alloc] initWithDefaults:defaults];
@@ -560,45 +588,45 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
         ActiveAccountViewController *dialler = [controller valueForKey:@"dialler"];
         // Raw input exercises the route-preview path without Contacts tokenisation.
         dialler.callDestinationField.delegate = nil;
-        NSTextField *status = [self routeStatusInController:controller];
+        NSButton *call = [dialler valueForKey:@"dialButton"];
+        XCTAssertEqualObjects(call.toolTip,@"Call");
+        [self assertNoPermanentRouteStatusInController:controller];
         dialler.callDestinationField.stringValue = @"02079460958";
-        XCTAssertEqualObjects(status.stringValue,@"Ready · AA");
+        XCTAssertTrue([call.toolTip containsString:@"Use AA."]);
+        NSString *savedPreview = call.toolTip;
         configuration[@"defaultAccountUUID"] = @"local";
-        XCTAssertEqualObjects(status.stringValue,@"Ready · AA", @"An unsaved draft must not change the dialler.");
+        XCTAssertEqualObjects(call.toolTip,savedPreview, @"An unsaved draft must not change Call help.");
         XCTAssertTrue([store updateConfiguration:configuration error:&error], @"%@", error);
-        XCTAssertEqualObjects(status.stringValue,@"Ready · Localphone");
-        local.accountDescription = @"A deliberately long synthetic connection name for the compact outgoing status";
+        XCTAssertTrue([call.toolTip containsString:@"Use Localphone."]);
+        local.accountDescription = @"A deliberately long synthetic connection name for Call's outgoing connection help";
         [controller refreshAccounts];
-        NSString *fullStatus = [@"Ready · " stringByAppendingString:local.accountDescription];
-        XCTAssertEqualObjects(status.stringValue,fullStatus);
-        XCTAssertEqualObjects(status.accessibilityValue,fullStatus);
-        XCTAssertTrue([status.toolTip containsString:local.accountDescription]);
-        XCTAssertEqual(status.lineBreakMode,NSLineBreakByTruncatingTail);
-        id<NSAccessibility> accessibleStatus = NSAccessibilityUnignoredDescendant(status);
-        XCTAssertEqualObjects(accessibleStatus.accessibilityLabel,@"Outgoing connection");
-        XCTAssertEqualObjects(accessibleStatus.accessibilityValue,fullStatus);
-        XCTAssertEqualObjects(accessibleStatus.accessibilityHelp,status.toolTip);
-        XCTAssertFalse(status.isEditable);
-        XCTAssertFalse(status.isSelectable);
-        XCTAssertFalse(status.acceptsFirstResponder);
+        NSString *fullPreview = call.toolTip;
+        XCTAssertTrue([fullPreview containsString:local.accountDescription]);
+        XCTAssertEqualObjects(call.accessibilityHelp,fullPreview);
+        XCTAssertEqualObjects(call.cell.accessibilityHelp,fullPreview);
+        id accessibleCall = NSAccessibilityUnignoredDescendant(call);
+        NSString *accessibleHelp = [accessibleCall respondsToSelector:@selector(accessibilityHelp)] ? [accessibleCall accessibilityHelp] :
+            [accessibleCall accessibilityAttributeValue:NSAccessibilityHelpAttribute];
+        XCTAssertEqualObjects(accessibleHelp,fullPreview);
         [controller.window.contentView layoutSubtreeIfNeeded];
-        CGFloat narrowWidth = status.bounds.size.width;
+        CGFloat narrowWidth = dialler.callDestinationField.bounds.size.width;
         [controller.window setContentSize:NSMakeSize(500,104)];
         [controller.window.contentView layoutSubtreeIfNeeded];
-        XCTAssertGreaterThan(status.bounds.size.width,narrowWidth);
-        XCTAssertEqualObjects(status.accessibilityValue,fullStatus);
+        XCTAssertGreaterThan(dialler.callDestinationField.bounds.size.width,narrowWidth);
+        XCTAssertEqualObjects(call.accessibilityHelp,fullPreview);
         [controller.window setContentSize:NSMakeSize(368,104)];
         for (NSString *appearance in @[NSAppearanceNameAqua,NSAppearanceNameDarkAqua]) {
             controller.window.appearance = [NSAppearance appearanceNamed:appearance];
             [controller.window.contentView layoutSubtreeIfNeeded];
             XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.width,368,0.5);
             XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height,104,0.5);
-            NSRect statusFrame = [status convertRect:status.bounds toView:controller.window.contentView];
+            NSRect callFrame = [call convertRect:call.bounds toView:controller.window.contentView];
             NSRect fieldFrame = [dialler.callDestinationField convertRect:dialler.callDestinationField.bounds toView:controller.window.contentView];
-            XCTAssertTrue(NSContainsRect(controller.window.contentView.bounds,statusFrame));
-            XCTAssertFalse(NSIntersectsRect(statusFrame,fieldFrame));
-            XCTAssertGreaterThan(statusFrame.size.width,100);
-            NSString *name = [appearance isEqualToString:NSAppearanceNameAqua] ? @"route-status-long-light.png" : @"route-status-long-dark.png";
+            XCTAssertTrue(NSContainsRect(controller.window.contentView.bounds,fieldFrame));
+            XCTAssertEqualWithAccuracy(NSMidY(fieldFrame),NSMidY(callFrame),0.5);
+            XCTAssertEqualObjects(call.toolTip,fullPreview);
+            [self assertNoPermanentRouteStatusInController:controller];
+            NSString *name = [appearance isEqualToString:NSAppearanceNameAqua] ? @"centred-field-light.png" : @"centred-field-dark.png";
             [self writeRouteSnapshotIfRequested:controller.window name:name];
             [controller toggleHistory:nil];
             XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height,268,0.5);
@@ -607,16 +635,19 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
         }
         accounts.all = @[aa];
         [controller refreshAccounts];
-        XCTAssertEqualObjects(status.stringValue,@"Connection removed");
+        XCTAssertTrue([call.toolTip containsString:@"The selected connection was removed."]);
         dialler.callDestinationField.stringValue = @"07700900123";
         configuration[@"categoryTargets"] = @{@"mobile":@"block"};
         XCTAssertTrue([store updateConfiguration:configuration error:&error], @"%@", error);
-        XCTAssertEqualObjects(status.stringValue,@"Blocked by dial plan");
+        XCTAssertTrue([call.toolTip containsString:@"Blocked by the dialling plan."]);
         dialler.callDestinationField.stringValue = @"123?invalid";
-        XCTAssertEqualObjects(status.stringValue,@"Check number");
-        XCTAssertTrue([status.toolTip containsString:@"Unsupported characters"]);
+        XCTAssertTrue([call.toolTip containsString:@"Unsupported characters"]);
+        XCTAssertEqualObjects(call.accessibilityHelp,call.toolTip);
         dialler.callDestinationField.stringValue = @"";
-        XCTAssertEqualObjects(status.stringValue,@"Enter a number");
+        XCTAssertEqualObjects(call.toolTip,@"Call");
+        XCTAssertEqualObjects(call.accessibilityHelp,@"Call");
+        XCTAssertEqualObjects(call.cell.accessibilityHelp,@"Call");
+        [self assertNoPermanentRouteStatusInController:controller];
     } @finally {
         [controller.window orderOut:nil];
         [defaults removePersistentDomainForName:suite];

@@ -10,11 +10,20 @@ The owner updated delivery on **20 October 2026**: at **25% remaining in the
 actual five-hour allowance**, stop roadmap work, build and release the verified
 completed changes, and leave the rest for another day. This supersedes the
 earlier whole-roadmap release deferral. The interim batch is #53–60; #61–71
-remain open. Verify packaging, installation and private publication separately.
+remain open. Verify packaging, installation and publication separately.
+
+## Owner update — 21 October 2026
+
+The owner explicitly chose a **public repository** and said to **leave repository
+visibility alone**. This supersedes all earlier private-repository instructions.
+Do not change visibility settings or try to restore the historical private policy.
+Existing dated release records retain the visibility checked at their original time.
+The owner authorised issue #72 **Fix A**, then installation and publication of a
+**3.6.1/build 165 hotfix**. The remaining roadmap #61–71 stays deferred.
 
 ## Current released baseline — 21 October 2026
 
-**3.6/build 164** is installed and published as private Latest from immutable
+**3.6/build 164** is installed and published as Latest from immutable
 source `7abcede59ff282f9c0dd042e66cb8283ffb66085`. Fresh local validation passed
 694 suite cases plus separately counted components. Read
 [publication proof](docs/releases/3.6-verification.md) and
@@ -31,7 +40,7 @@ The owner's 3.5 crash in More → Guided routes… is fixed in **3.5.1/build 163
 Read [the maintenance handover](docs/BUG_FIX_HANDOVER.md),
 [verified repair map](docs/REPAIR_VERIFICATION.md) and
 [tracked issue evidence](docs/audit-2.1.8/repair-progress.json) before implementation.
-The repository remains private. The owner authorised 3.5/build 162 Guided routes after the published 3.0 repair baseline and requires main, local builds and no cloud workflows. Read [DIAL_PLANS.md](docs/DIAL_PLANS.md) and [offline numbering coverage](docs/DIAL_PLAN_NUMBERING.md) before changing routing. Historical 3.5 was built, installed and published as then-Latest from immutable source `cbfd3a0bbbca094f2f17e18b82e2904beb7e051a`; 664 complete-suite cases plus 170 separately counted dial-plan cases passed locally. Read [3.5 publication proof](docs/releases/3.5-verification.md) and its JSON record. Preserve v3.5, v3.0 and v2.1.8 tags/assets; later documentation commits do not replace a release archive.
+Repository visibility is owner-controlled; leave it alone. The owner authorised 3.5/build 162 Guided routes after the published 3.0 repair baseline and requires main, local builds and no cloud workflows. Read [DIAL_PLANS.md](docs/DIAL_PLANS.md) and [offline numbering coverage](docs/DIAL_PLAN_NUMBERING.md) before changing routing. Historical 3.5 was built, installed and published as then-Latest from immutable source `cbfd3a0bbbca094f2f17e18b82e2904beb7e051a`; 664 complete-suite cases plus 170 separately counted dial-plan cases passed locally. Read [3.5 publication proof](docs/releases/3.5-verification.md) and its JSON record. Preserve v3.5, v3.0 and v2.1.8 tags/assets; later documentation commits do not replace a release archive.
 
 ## Retained verified 3.0 repair baseline
 
@@ -55,7 +64,8 @@ The repository remains private. The owner authorised 3.5/build 162 Guided routes
   Do all compilation/testing locally on the Mac. Do not dispatch cloud workflows.
   Include **[skip ci]** in pushed commits. Existing workflow files do not override
   these instructions.
-- Keep the repository private. Preserve **v2.1.8/build 160** and all its uploaded
+- Leave repository visibility settings alone; the owner chose public on
+  21 October 2026. Preserve **v2.1.8/build 160** and all its uploaded
   assets unchanged as the historical audit baseline at `9a32ae8`.
   Also preserve **v3.0/build 161**, its tag at `6363412` and all seven assets
   unchanged. The tag/source ZIP retain the preparation-time documentation
