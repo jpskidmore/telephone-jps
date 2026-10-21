@@ -1,0 +1,234 @@
+{
+  "capturedDate": "2026-10-21",
+  "platform": "macOS 27.0.1 (26A434), arm64",
+  "scale": 2,
+  "baseline": {
+    "version": "3.5",
+    "build": 162,
+    "commit": "cbfd3a0bbbca094f2f17e18b82e2904beb7e051a",
+    "releaseZIPsha256": "1a4f4fa5e5bb9fa0cded6ff1b1a871f19ccc3396b05277bdc90edb9c207ef91b"
+  },
+  "comparison": {
+    "version": "3.6",
+    "build": 164,
+    "commit": "7abcede59ff282f9c0dd042e66cb8283ffb66085"
+  },
+  "images": [
+    {
+      "name": "01-3.5-light.jpg",
+      "encoding": "JPEG as returned by Computer Use, unedited",
+      "widthPixels": 736,
+      "heightPixels": 272,
+      "sha256": "fd18dd9f929e722a3568cdac24e021f3302817e45bdff4eac16f071572bcf150"
+    },
+    {
+      "name": "02-3.6-light.jpg",
+      "encoding": "JPEG as returned by Computer Use, unedited",
+      "widthPixels": 736,
+      "heightPixels": 272,
+      "sha256": "e7026ee7fed401864fee52de73fc1130332812f8a753474f62f46fc439c0b875"
+    },
+    {
+      "name": "03-3.5-dark.jpg",
+      "encoding": "JPEG as returned by Computer Use, unedited",
+      "widthPixels": 736,
+      "heightPixels": 272,
+      "sha256": "25b59019178427fcdadbb08b4aaf4d729f75cb2fc4533a1ff3dfc735e1e3238c"
+    },
+    {
+      "name": "04-3.6-dark.jpg",
+      "encoding": "JPEG as returned by Computer Use, unedited",
+      "widthPixels": 736,
+      "heightPixels": 272,
+      "sha256": "16b86bc3d37bf8d6deed9d7587173ad4df34bf72dcc571f82ae312bafde82f2e"
+    }
+  ],
+  "geometry": {
+    "3.5": {
+      "Aqua": {
+        "appearance": "NSAppearanceNameAqua",
+        "appVersion": "3.5",
+        "build": "162",
+        "bundleID": "uk.jpsit.telephone.gui-fixture.35.86017ddd558044b6b2f24f1e5bc9f73f",
+        "contentHeight": 104,
+        "contentWidth": 368,
+        "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+        "frames": {
+          "callDestinationField": {
+            "centreY": 76,
+            "height": 24,
+            "width": 160,
+            "x": 56,
+            "y": 64
+          },
+          "dialButton": {
+            "centreY": 76,
+            "height": 44,
+            "width": 44,
+            "x": 220,
+            "y": 54
+          },
+          "historyButton": {
+            "centreY": 76,
+            "height": 44,
+            "width": 44,
+            "x": 268,
+            "y": 54
+          }
+        },
+        "mainNibAbsent": 1
+      },
+      "DarkAqua": {
+        "appearance": "NSAppearanceNameDarkAqua",
+        "appVersion": "3.5",
+        "build": "162",
+        "bundleID": "uk.jpsit.telephone.gui-fixture.35.86017ddd558044b6b2f24f1e5bc9f73f",
+        "contentHeight": 104,
+        "contentWidth": 368,
+        "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+        "frames": {
+          "callDestinationField": {
+            "centreY": 76,
+            "height": 24,
+            "width": 160,
+            "x": 56,
+            "y": 64
+          },
+          "dialButton": {
+            "centreY": 76,
+            "height": 44,
+            "width": 44,
+            "x": 220,
+            "y": 54
+          },
+          "historyButton": {
+            "centreY": 76,
+            "height": 44,
+            "width": 44,
+            "x": 268,
+            "y": 54
+          }
+        },
+        "mainNibAbsent": 1
+      }
+    },
+    "3.6": {
+      "Aqua": {
+        "appearance": "NSAppearanceNameAqua",
+        "appVersion": "3.6",
+        "build": "164",
+        "bundleID": "uk.jpsit.telephone.gui-fixture.36.2031bd2bc38544589e4157d7656304d3",
+        "contentHeight": 104,
+        "contentWidth": 368,
+        "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+        "frames": {
+          "callDestinationField": {
+            "centreY": 84,
+            "height": 24,
+            "width": 160,
+            "x": 56,
+            "y": 72
+          },
+          "dialButton": {
+            "centreY": 76,
+            "height": 44,
+            "width": 44,
+            "x": 220,
+            "y": 54
+          },
+          "historyButton": {
+            "centreY": 76,
+            "height": 44,
+            "width": 44,
+            "x": 268,
+            "y": 54
+          },
+          "pendingCallsButton": {
+            "centreY": 64.5,
+            "height": 13,
+            "width": 0,
+            "x": 212,
+            "y": 58
+          },
+          "routeStatusLabel": {
+            "centreY": 64.5,
+            "height": 13,
+            "width": 156,
+            "x": 58,
+            "y": 58
+          }
+        },
+        "mainNibAbsent": 1
+      },
+      "DarkAqua": {
+        "appearance": "NSAppearanceNameDarkAqua",
+        "appVersion": "3.6",
+        "build": "164",
+        "bundleID": "uk.jpsit.telephone.gui-fixture.36.2031bd2bc38544589e4157d7656304d3",
+        "contentHeight": 104,
+        "contentWidth": 368,
+        "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+        "frames": {
+          "callDestinationField": {
+            "centreY": 84,
+            "height": 24,
+            "width": 160,
+            "x": 56,
+            "y": 72
+          },
+          "dialButton": {
+            "centreY": 76,
+            "height": 44,
+            "width": 44,
+            "x": 220,
+            "y": 54
+          },
+          "historyButton": {
+            "centreY": 76,
+            "height": 44,
+            "width": 44,
+            "x": 268,
+            "y": 54
+          },
+          "pendingCallsButton": {
+            "centreY": 64.5,
+            "height": 13,
+            "width": 0,
+            "x": 212,
+            "y": 58
+          },
+          "routeStatusLabel": {
+            "centreY": 64.5,
+            "height": 13,
+            "width": 156,
+            "x": 58,
+            "y": 58
+          }
+        },
+        "mainNibAbsent": 1
+      }
+    }
+  },
+  "fixtureParity": [
+    {
+      "version": "3.5",
+      "unchangedRegularFiles": 54,
+      "unchangedSymlinks": 6,
+      "unchangedMachOSections": 46
+    },
+    {
+      "version": "3.6",
+      "unchangedRegularFiles": 54,
+      "unchangedSymlinks": 6,
+      "unchangedMachOSections": 46
+    }
+  ],
+  "fixtureSourceSHA256": "a4ad5e504c94887d31cd0b22a0662ffc32ce5ff8f2329508cf18b76decb0b896",
+  "limits": [
+    "Fresh onscreen Computer Use captures of actual released controller/nib in unique nib-free isolated app copies; synthetic inert account, example number and empty history.",
+    "No AppController or CompositionRoot startup; no real accounts, Contacts, Keychain, history or calls used by the fixtures.",
+    "Only fixture metadata/signatures differ; runtime code sections and layout resources match each released version.",
+    "Compact typed-number Light/Dark visual comparison only; no full Settings, call-card, provider/audio, permission or proficient VoiceOver acceptance.",
+    "Installed app remains 3.6/build164; no application source or release asset change."
+  ]
+}
