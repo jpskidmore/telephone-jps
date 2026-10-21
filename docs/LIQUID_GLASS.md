@@ -60,6 +60,11 @@ resizable. Secondary commands remain available through menus instead of taking
 permanent space in the dial bar. The visible history button is the single
 visibility control; More offers Clear Call History… without a duplicate toggle.
 
+Since 3.6.1, the destination field again shares the primary icon centre line.
+The permanent route-status line is removed; Call tooltip and accessibility help
+retain selected-provider details. Waiting counts appear only while requests
+exist, independently below the field, without changing compact geometry.
+
 ## Calls: Pocket card
 
 The call card returns to the original 300-point width. Caller, number, status,

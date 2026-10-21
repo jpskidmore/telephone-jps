@@ -1,0 +1,107 @@
+{
+  "verifiedUTC": "2026-10-21T08:24:12.816117+00:00",
+  "version": "3.6.1",
+  "build": 165,
+  "sourceCommit": "407bd1ceb8c39995a986180c8ec70dad87d1a8fc",
+  "sourceTree": "3b6aae16cd87b5a9fc20902e8cafc1050c0c1913",
+  "releaseID": 419312925,
+  "releaseURL": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.6.1",
+  "public": true,
+  "visibilityChanged": false,
+  "latest": true,
+  "freshSuiteCases": 694,
+  "failures": 0,
+  "skipped": 0,
+  "assets": [
+    {
+      "name": "BUILD-VERIFICATION.md",
+      "bytes": 901,
+      "sha256": "c2d6391b2265f86b3da0a5e68389e1373108be5c9e7274a895d47ebbfdf50045",
+      "id": 661834170,
+      "digest": "sha256:c2d6391b2265f86b3da0a5e68389e1373108be5c9e7274a895d47ebbfdf50045",
+      "download_verified": true
+    },
+    {
+      "name": "DIAL-PLAN-NUMBERING.md",
+      "bytes": 8002,
+      "sha256": "f4beb21fb0668366ab23af977f02166c0594ac08973c05c6b757507a73591c2a",
+      "id": 661834169,
+      "digest": "sha256:f4beb21fb0668366ab23af977f02166c0594ac08973c05c6b757507a73591c2a",
+      "download_verified": true
+    },
+    {
+      "name": "DIAL-PLANS.md",
+      "bytes": 8475,
+      "sha256": "43a6b379110d45b0b94c2d8a5682dba5d62dfc3556bd09c12b3e34f75dc16bcc",
+      "id": 661834171,
+      "digest": "sha256:43a6b379110d45b0b94c2d8a5682dba5d62dfc3556bd09c12b3e34f75dc16bcc",
+      "download_verified": true
+    },
+    {
+      "name": "RELEASE-NOTES.md",
+      "bytes": 1370,
+      "sha256": "6137be8b8f087bbf3bb0fd4839dc989646a0296eac730ff1201ac11c9b0b6c45",
+      "id": 661834166,
+      "digest": "sha256:6137be8b8f087bbf3bb0fd4839dc989646a0296eac730ff1201ac11c9b0b6c45",
+      "download_verified": true
+    },
+    {
+      "name": "jps-Telephone-3.6.1-macOS-arm64.zip",
+      "bytes": 3412582,
+      "sha256": "b6d280a625fc6ba9a0ee2ed2f09201036c8af904a27e37d003907d8066049e30",
+      "id": 661834193,
+      "digest": "sha256:b6d280a625fc6ba9a0ee2ed2f09201036c8af904a27e37d003907d8066049e30",
+      "download_verified": true
+    },
+    {
+      "name": "jps-Telephone-3.6.1-source.zip",
+      "bytes": 40189260,
+      "sha256": "378110e706cf9f1419f4a1ba0aa0caaaa7e808966cd0428de59a391179f2c974",
+      "id": 661834196,
+      "digest": "sha256:378110e706cf9f1419f4a1ba0aa0caaaa7e808966cd0428de59a391179f2c974",
+      "download_verified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 539,
+      "sha256": "2d8f4cdf806bc88604fdfca3d63b83a8014231931c5b8d720824911b11dffcc8",
+      "id": 661834167,
+      "digest": "sha256:2d8f4cdf806bc88604fdfca3d63b83a8014231931c5b8d720824911b11dffcc8",
+      "download_verified": true
+    }
+  ],
+  "previousReleasesPreserved": 6,
+  "previousAssetRecordsPreserved": 37,
+  "previousDistinctTagsPreserved": 11,
+  "previousTagRefRecordsPreserved": 12,
+  "appRegularFiles": 57,
+  "appSymlinks": 6,
+  "sourceGitBlobs": 1451,
+  "nestedArm64AndEntitlements": true,
+  "installedApp": "/Applications/jps Telephone.app",
+  "previousAppBackup": {
+    "path": "/Users/john/Documents/Codex/2026-10-21/telephone-issue72-fix/outputs/jps-Telephone-3.6-before-3.6.1.zip",
+    "bytes": 3413470,
+    "sha256": "6f034fdb66f3c7bd3b5313e5ee4d74f9c2e33436666bb2a9f54fa7e218e1d0e4"
+  },
+  "nativeVisualReview": "Independent pass: Light/Dark, exact centrelineY76, conditionalWaiting3->2; selectedsecondUUIDremoved only.",
+  "manualCloudWorkflowDispatch": false,
+  "automaticActionsRuns": [
+    {
+      "id": 39568825817,
+      "event": "dynamic",
+      "name": "Push on main",
+      "status": "completed"
+    }
+  ],
+  "limits": [
+    "Ad-hoc signed and unnotarised",
+    "No real provider/audio/device/permission/full contrast/proficient VoiceOver acceptance claimed",
+    "Other roadmap61-71deferred"
+  ],
+  "officialReferences": [
+    "https://developer.apple.com/documentation/macos-release-notes/macos-27-release-notes",
+    "https://developer.apple.com/design/human-interface-guidelines/layout",
+    "https://learn.chatgpt.com/docs/learn/best-practices"
+  ]
+}

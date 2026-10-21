@@ -8,11 +8,11 @@ replace those archives or certify a changed app.
 
 Checked on **21 October 2026**:
 
-- GitHub Latest and the installed application are **3.6/build 164**.
+- GitHub Latest and the installed application are **3.6.1/build 165**.
 - The immutable application release source is
-  `7abcede59ff282f9c0dd042e66cb8283ffb66085`. Read the
-  [3.6 publication proof](releases/3.6-verification.md) and
-  [release test record](releases/3.6-tests.json) for the fresh 694-case validation
+  `407bd1ceb8c39995a986180c8ec70dad87d1a8fc`. Read the
+  [3.6.1 publication proof](releases/3.6.1-verification.md) and
+  [release test record](releases/3.6.1-tests.json) for the fresh 694-case validation
   and verified packaging/installation/publication. Previous 3.5.1 and earlier
   release tags/assets remain unchanged.
 - The owner chose **public visibility on 21 October 2026** and explicitly said
@@ -48,7 +48,8 @@ documents visible coverage/version information and saved-versus-draft behaviour.
 
 On **21 October 2026**, the owner authorised **Fix A for #72**: remove the
 permanent route line and restore the centred 3.5 dialler row, then install and
-release **3.6.1/build 165** after verification. The other eleven roadmap issues
+release **3.6.1/build 165** after verification. Delivery completed on21 October;
+read the hotfix proof above. The other eleven roadmap issues
 remain deferred. Repository visibility is owner-controlled and must be left alone.
 
 The owner authorised roadmap implementation on **19 October 2026**, strictly

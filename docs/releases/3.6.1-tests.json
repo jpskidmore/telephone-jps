@@ -1,0 +1,89 @@
+{
+  "release": "3.6.1/build165",
+  "sourceCommit": "407bd1ceb8c39995a986180c8ec70dad87d1a8fc",
+  "freshCases": 694,
+  "failures": 0,
+  "skipped": 0,
+  "suiteCounts": {
+    "Domain": 28,
+    "UseCasesTests": 332,
+    "ReceiptValidationTests": 5,
+    "TelephoneTests": 329
+  },
+  "nativeResultSummaries": {
+    "Domain": {
+      "result": "Passed",
+      "passedTests": 28,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "totalTestCount": 28,
+      "startTime": 1792570435.603,
+      "finishTime": 1792570446.488
+    },
+    "UseCasesTests": {
+      "result": "Passed",
+      "passedTests": 332,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "totalTestCount": 332,
+      "startTime": 1792570453.07,
+      "finishTime": 1792570462.664
+    },
+    "ReceiptValidationTests": {
+      "result": "Passed",
+      "passedTests": 5,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "totalTestCount": 5,
+      "startTime": 1792570468.895,
+      "finishTime": 1792570472.453
+    },
+    "TelephoneTests": {
+      "result": "Passed",
+      "passedTests": 329,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "expectedFailures": 0,
+      "totalTestCount": 329,
+      "startTime": 1792570498.556,
+      "finishTime": 1792570523.36
+    }
+  },
+  "fullResultSummarySHA256": "a1ec01ddf770568392be58508928d5fb07dba75b2984f499ec17ea323201c682",
+  "externalBuildDriverSHA256": "8311d36edf0f344d7f45c6f2f302ea9968a4753114b28f0906400bfe559ed768",
+  "recordingDriverSHA256": "fd9cdf7450d35f5f43d275e07573c30162d0bf6c66863e312a5b98586e27e812",
+  "driverDifference": "Only project/output paths adapted; repository compile/test semantics unchanged. Recording executables remain in /private/tmp.",
+  "isolation": "Fresh unique nib-free Debug test host; synthetic fixtures; no owner profile startup.",
+  "initialDiagnostic": "A test-assertion macro compile error was corrected before the final full pass; first attempt retained separately, not counted as a pass.",
+  "limits": "Source/automated tests do not prove real provider/audio, actual permission grants or proficient VoiceOver acceptance.",
+  "buildLogSHA256": "ed3a4129cf602b76595b5393e3c790a8e1fc388fb8c4d5ac84fc9c5163830b26",
+  "components": {
+    "routing": {
+      "passed": true,
+      "log_sha256": "9a90fb5dab79bd2305852f9ddfb9beb11eb567ae453716857319241349cde6c0"
+    },
+    "sip-uri": {
+      "passed": true,
+      "log_sha256": "05b139ede836319d396b5262f6789b0931db5f976a40ed57196afc1cccb4568b"
+    },
+    "sip-lifecycle": {
+      "passed": true,
+      "log_sha256": "c64a7e2267cd827edb7e2df4e393c532d240765c5ddba966f3a7875974ff4c0a"
+    },
+    "sip-callback": {
+      "passed": true,
+      "log_sha256": "0fc59c69a6dc50cc7524196b0217398cfb6410f863a10cbba6796b7bee743005"
+    },
+    "history-resources": {
+      "passed": true,
+      "log_sha256": "8649c8ef6a339a82a96ded25bf7e8966536fe850652b6c78a1e2aac790e28cf3"
+    },
+    "coreaudio": {
+      "passed": true,
+      "log_sha256": "fdbb8e25114858e702e5f7904a74ac51997f934f8626e343e40f0108ede28604"
+    }
+  }
+}

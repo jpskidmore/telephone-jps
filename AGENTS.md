@@ -23,6 +23,18 @@ The owner authorised issue #72 **Fix A**, then installation and publication of a
 
 ## Current released baseline — 21 October 2026
 
+**3.6.1/build 165** is installed and published as public Latest from immutable
+source `407bd1ceb8c39995a986180c8ec70dad87d1a8fc`. Issue #72 Fix A restores the
+centred dialler and removes the permanent route line, retaining Call help and
+conditional Waiting cancellation. Fresh local validation passed 694 cases and
+component gates; independent native Light/Dark visual review passed. Read
+[hotfix delivery proof](docs/releases/3.6.1-verification.md) and
+[test results](docs/releases/3.6.1-tests.json). The remaining roadmap stays deferred.
+Leave repository visibility alone. Real provider/audio/permission and proficient
+VoiceOver acceptance remain separate.
+
+## Historical 3.6 release — 21 October 2026
+
 **3.6/build 164** is installed and published as Latest from immutable
 source `7abcede59ff282f9c0dd042e66cb8283ffb66085`. Fresh local validation passed
 694 suite cases plus separately counted components. Read

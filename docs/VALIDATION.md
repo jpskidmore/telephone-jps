@@ -1,5 +1,15 @@
 # Validation and release checks
 
+## 3.6.1 centred dialler hotfix — 21 October 2026
+
+Fresh 694-case local validation, separate components, independent Light/Dark
+visual review and installed/downloaded package/source parity passed. Issue #72 Fix A
+removes the permanent route line while retaining Call help and conditional
+Waiting control. Read [delivery proof](releases/3.6.1-verification.md) and
+[fresh results](releases/3.6.1-tests.json). The repository remains public by owner
+choice; visibility settings are left alone. Actual provider/audio/grant and
+proficient VoiceOver acceptance remain separate.
+
 ## 3.6 interim roadmap release — 21 October 2026
 
 Fresh serial local validation passed **694 cases, zero failures or skips**:

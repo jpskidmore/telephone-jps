@@ -4,7 +4,12 @@ Start with [Current maintenance](MAINTENANCE.md) for the live roadmap, current
 baseline and owner's execution controls. The detailed release/repair records
 below retain their original dates and verification limits.
 
-**Current release: 3.6/build 164**, installed and privately published on 21 October
+**Current release: 3.6.1/build 165**, installed and publicly published from
+`407bd1ceb8c39995a986180c8ec70dad87d1a8fc`. [Issue #72 delivery proof](releases/3.6.1-verification.md)
+records694 fresh passes, native screenshots and package/download checks.
+Repository visibility is owner-controlled: leave it alone.
+
+**Previous release: 3.6/build 164**, installed and privately published on 21 October
 2026 from `7abcede59ff282f9c0dd042e66cb8283ffb66085`. Read
 [completion proof](releases/3.6-verification.md) for 694 fresh suite passes,
 package/source/installation/download parity and preserved prior releases.

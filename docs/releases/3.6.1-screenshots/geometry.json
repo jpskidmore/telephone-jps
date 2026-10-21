@@ -1,0 +1,399 @@
+{
+  "geometry-NSAppearanceNameAqua-typed-waiting-3.json": {
+    "appearance": "NSAppearanceNameAqua",
+    "appVersion": "3.6.1",
+    "build": "165",
+    "bundleID": "uk.jpsit.telephone.gui-fixture.issue72.ffd8fd9ec44c4f5a8e6b873f5716dfff",
+    "cancelledRequestIDs": [],
+    "contentHeight": 104,
+    "contentWidth": 368,
+    "destinationState": "typed",
+    "destinationText": "020 7946 0958",
+    "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+    "frames": {
+      "callDestinationField": {
+        "centreY": 76,
+        "height": 24,
+        "hidden": false,
+        "identifier": "_NS:8",
+        "width": 160,
+        "withinContentBounds": true,
+        "x": 56,
+        "y": 64
+      },
+      "dialButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 220,
+        "y": 54
+      },
+      "historyButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 268,
+        "y": 54
+      },
+      "pendingCallsButton": {
+        "centreY": 56.5,
+        "enabled": true,
+        "height": 13,
+        "hidden": false,
+        "identifier": "CompactPendingCallsButton",
+        "title": "Waiting 3",
+        "width": 54,
+        "withinContentBounds": true,
+        "x": 158,
+        "y": 50
+      }
+    },
+    "mainNibAbsent": 1,
+    "pendingRequestIDs": [
+      "synthetic-request-first",
+      "synthetic-request-second",
+      "synthetic-request-third"
+    ],
+    "routeStatusLabelPresent": false,
+    "waitingCount": 3
+  },
+  "geometry-NSAppearanceNameAqua-typed-waiting-2.json": {
+    "appearance": "NSAppearanceNameAqua",
+    "appVersion": "3.6.1",
+    "build": "165",
+    "bundleID": "uk.jpsit.telephone.gui-fixture.issue72.ffd8fd9ec44c4f5a8e6b873f5716dfff",
+    "cancelledRequestIDs": [
+      "synthetic-request-second"
+    ],
+    "contentHeight": 104,
+    "contentWidth": 368,
+    "destinationState": "typed",
+    "destinationText": "020 7946 0958",
+    "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+    "frames": {
+      "callDestinationField": {
+        "centreY": 76,
+        "height": 24,
+        "hidden": false,
+        "identifier": "_NS:8",
+        "width": 160,
+        "withinContentBounds": true,
+        "x": 56,
+        "y": 64
+      },
+      "dialButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 220,
+        "y": 54
+      },
+      "historyButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 268,
+        "y": 54
+      },
+      "pendingCallsButton": {
+        "centreY": 56.5,
+        "enabled": true,
+        "height": 13,
+        "hidden": false,
+        "identifier": "CompactPendingCallsButton",
+        "title": "Waiting 2",
+        "width": 54,
+        "withinContentBounds": true,
+        "x": 158,
+        "y": 50
+      }
+    },
+    "mainNibAbsent": 1,
+    "pendingRequestIDs": [
+      "synthetic-request-first",
+      "synthetic-request-third"
+    ],
+    "routeStatusLabelPresent": false,
+    "waitingCount": 2
+  },
+  "geometry-NSAppearanceNameAqua-empty-waiting-0.json": {
+    "appearance": "NSAppearanceNameAqua",
+    "appVersion": "3.6.1",
+    "build": "165",
+    "bundleID": "uk.jpsit.telephone.gui-fixture.issue72.ffd8fd9ec44c4f5a8e6b873f5716dfff",
+    "cancelledRequestIDs": [],
+    "contentHeight": 104,
+    "contentWidth": 368,
+    "destinationState": "empty",
+    "destinationText": "",
+    "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+    "frames": {
+      "callDestinationField": {
+        "centreY": 76,
+        "height": 24,
+        "hidden": false,
+        "identifier": "_NS:8",
+        "width": 160,
+        "withinContentBounds": true,
+        "x": 56,
+        "y": 64
+      },
+      "dialButton": {
+        "centreY": 76,
+        "enabled": false,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 220,
+        "y": 54
+      },
+      "historyButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 268,
+        "y": 54
+      },
+      "pendingCallsButton": {
+        "centreY": 56.5,
+        "enabled": false,
+        "height": 13,
+        "hidden": true,
+        "identifier": "CompactPendingCallsButton",
+        "title": "Waiting 0",
+        "width": 0,
+        "withinContentBounds": false,
+        "x": 212,
+        "y": 50
+      }
+    },
+    "mainNibAbsent": 1,
+    "pendingRequestIDs": [],
+    "routeStatusLabelPresent": false,
+    "waitingCount": 0
+  },
+  "geometry-NSAppearanceNameDarkAqua-typed-waiting-0.json": {
+    "appearance": "NSAppearanceNameDarkAqua",
+    "appVersion": "3.6.1",
+    "build": "165",
+    "bundleID": "uk.jpsit.telephone.gui-fixture.issue72.ffd8fd9ec44c4f5a8e6b873f5716dfff",
+    "cancelledRequestIDs": [],
+    "contentHeight": 104,
+    "contentWidth": 368,
+    "destinationState": "typed",
+    "destinationText": "020 7946 0958",
+    "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+    "frames": {
+      "callDestinationField": {
+        "centreY": 76,
+        "height": 24,
+        "hidden": false,
+        "identifier": "_NS:8",
+        "width": 160,
+        "withinContentBounds": true,
+        "x": 56,
+        "y": 64
+      },
+      "dialButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 220,
+        "y": 54
+      },
+      "historyButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 268,
+        "y": 54
+      },
+      "pendingCallsButton": {
+        "centreY": 56.5,
+        "enabled": false,
+        "height": 13,
+        "hidden": true,
+        "identifier": "CompactPendingCallsButton",
+        "title": "Waiting 0",
+        "width": 0,
+        "withinContentBounds": false,
+        "x": 212,
+        "y": 50
+      }
+    },
+    "mainNibAbsent": 1,
+    "pendingRequestIDs": [],
+    "routeStatusLabelPresent": false,
+    "waitingCount": 0
+  },
+  "geometry-NSAppearanceNameDarkAqua-typed-waiting-3.json": {
+    "appearance": "NSAppearanceNameDarkAqua",
+    "appVersion": "3.6.1",
+    "build": "165",
+    "bundleID": "uk.jpsit.telephone.gui-fixture.issue72.ffd8fd9ec44c4f5a8e6b873f5716dfff",
+    "cancelledRequestIDs": [],
+    "contentHeight": 104,
+    "contentWidth": 368,
+    "destinationState": "typed",
+    "destinationText": "020 7946 0958",
+    "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+    "frames": {
+      "callDestinationField": {
+        "centreY": 76,
+        "height": 24,
+        "hidden": false,
+        "identifier": "_NS:8",
+        "width": 160,
+        "withinContentBounds": true,
+        "x": 56,
+        "y": 64
+      },
+      "dialButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 220,
+        "y": 54
+      },
+      "historyButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 268,
+        "y": 54
+      },
+      "pendingCallsButton": {
+        "centreY": 56.5,
+        "enabled": true,
+        "height": 13,
+        "hidden": false,
+        "identifier": "CompactPendingCallsButton",
+        "title": "Waiting 3",
+        "width": 54,
+        "withinContentBounds": true,
+        "x": 158,
+        "y": 50
+      }
+    },
+    "mainNibAbsent": 1,
+    "pendingRequestIDs": [
+      "synthetic-request-first",
+      "synthetic-request-second",
+      "synthetic-request-third"
+    ],
+    "routeStatusLabelPresent": false,
+    "waitingCount": 3
+  },
+  "geometry-NSAppearanceNameAqua-typed-waiting-0.json": {
+    "appearance": "NSAppearanceNameAqua",
+    "appVersion": "3.6.1",
+    "build": "165",
+    "bundleID": "uk.jpsit.telephone.gui-fixture.issue72.ffd8fd9ec44c4f5a8e6b873f5716dfff",
+    "cancelledRequestIDs": [],
+    "contentHeight": 104,
+    "contentWidth": 368,
+    "destinationState": "typed",
+    "destinationText": "020 7946 0958",
+    "fixtureBoundary": "Actual released controller and nib; synthetic inert account, empty history, isolated route defaults, detached Contacts delegate, inert call handler; no AppController startup",
+    "frames": {
+      "callDestinationField": {
+        "centreY": 76,
+        "height": 24,
+        "hidden": false,
+        "identifier": "_NS:8",
+        "width": 160,
+        "withinContentBounds": true,
+        "x": 56,
+        "y": 64
+      },
+      "dialButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 220,
+        "y": 54
+      },
+      "historyButton": {
+        "centreY": 76,
+        "enabled": true,
+        "height": 44,
+        "hidden": false,
+        "identifier": "",
+        "title": "",
+        "width": 44,
+        "withinContentBounds": true,
+        "x": 268,
+        "y": 54
+      },
+      "pendingCallsButton": {
+        "centreY": 56.5,
+        "enabled": false,
+        "height": 13,
+        "hidden": true,
+        "identifier": "CompactPendingCallsButton",
+        "title": "Waiting 0",
+        "width": 0,
+        "withinContentBounds": false,
+        "x": 212,
+        "y": 50
+      }
+    },
+    "mainNibAbsent": 1,
+    "pendingRequestIDs": [],
+    "routeStatusLabelPresent": false,
+    "waitingCount": 0
+  }
+}
