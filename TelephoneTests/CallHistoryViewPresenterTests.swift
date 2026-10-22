@@ -360,6 +360,79 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         XCTAssertTrue((item.target as? NSObject) === sut)
     }
 
+    func testExpandedFilterFocusChainAndFixedWidthStayInsideHistoryArea() throws {
+        let (sut, table, window) = try makeHistoryController()
+        defer { window.close() }
+        // The isolated controller receives the same history-area width as the
+        // native 368-point shared dialler, without launching the real app.
+        window.setContentSize(NSSize(width: 368, height: 211))
+        let filterRow = try XCTUnwrap(sut.view.subviews.compactMap { $0 as? NSStackView }.first)
+        let search = try XCTUnwrap(filterRow.arrangedSubviews.compactMap { $0 as? NSSearchField }.first)
+        let popups = filterRow.arrangedSubviews.compactMap { $0 as? NSPopUpButton }
+        XCTAssertEqual(popups.count, 2)
+        let returnTarget = NSButton(frame: .zero)
+        sut.updateNextKeyView(returnTarget)
+
+        sut.setHistoryExpanded(true)
+        window.contentView?.layoutSubtreeIfNeeded()
+        XCTAssertTrue(sut.keyView === search)
+        XCTAssertTrue(search.nextKeyView === popups[0])
+        XCTAssertTrue(popups[0].nextKeyView === popups[1])
+        XCTAssertTrue(popups[1].nextKeyView === table)
+        XCTAssertTrue(table.nextKeyView === returnTarget)
+        XCTAssertFalse(filterRow.isHidden)
+        XCTAssertGreaterThanOrEqual(search.frame.width, 80)
+        XCTAssertGreaterThanOrEqual(popups[1].frame.width, 130)
+        XCTAssertLessThanOrEqual(filterRow.frame.maxX, sut.view.bounds.maxX)
+        XCTAssertGreaterThanOrEqual(filterRow.frame.minX, sut.view.bounds.minX)
+        XCTAssertLessThanOrEqual(table.enclosingScrollView!.frame.maxY, filterRow.frame.minY + 1)
+        XCTAssertFalse(sut.view.hasAmbiguousLayout)
+
+        sut.setHistoryExpanded(false)
+        window.contentView?.layoutSubtreeIfNeeded()
+        XCTAssertTrue(sut.keyView === table)
+        XCTAssertTrue(filterRow.isHidden)
+        XCTAssertEqual(table.enclosingScrollView?.frame.maxY, sut.view.bounds.maxY, accuracy: 1)
+    }
+
+    func testExpandedFilteringNeverMovesActionsToAnotherRecordUUID() throws {
+        let (sut, table, window) = try makeHistoryController()
+        defer { window.close() }
+        let call = CallHistoryCallMakeUseCaseFactorySpy(callMake: UseCaseSpy())
+        let target = CallHistoryViewEventTarget(
+            recordsGet: UseCaseSpy(), purchaseCheck: UseCaseSpy(),
+            recordRemoveAll: UseCaseSpy(),
+            recordRemove: CallHistoryRecordRemoveUseCaseFactorySpy(remove: UseCaseSpy()),
+            callMake: call
+        )
+        sut.target = target
+        let records = makeRecords([1, 2, 3])
+        sut.show(records)
+        XCTAssertTrue(table.allowsEmptySelection)
+        table.selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
+
+        let filterRow = try XCTUnwrap(sut.view.subviews.compactMap { $0 as? NSStackView }.first)
+        let search = try XCTUnwrap(filterRow.arrangedSubviews.compactMap { $0 as? NSSearchField }.first)
+        let changed = Notification(name: Notification.Name("SyntheticSearchChanged"), object: search)
+        search.stringValue = records[0].contact.title
+        sut.controlTextDidChange(changed)
+        XCTAssertEqual(table.numberOfRows, 1)
+        XCTAssertEqual(table.selectedRow, -1, "A different row must not inherit the previous selection.")
+        sut.makeCall(table)
+        XCTAssertNil(call.invokedIdentifier)
+
+        search.stringValue = ""
+        sut.controlTextDidChange(changed)
+        XCTAssertEqual(table.numberOfRows, 3)
+        XCTAssertEqual(table.selectedRow, -1, "Clearing a filter must not silently select a call.")
+        table.selectRowIndexes(IndexSet(integer: 2), byExtendingSelection: false)
+        let incoming = makeRecords([4])
+        sut.show(incoming + records)
+        XCTAssertEqual(table.selectedRow, 3, "An inserted call must preserve the selected UUID.")
+        sut.makeCall(table)
+        XCTAssertEqual(call.invokedIdentifier, records[2].identifier)
+    }
+
     private func makeHistoryController() throws -> (CallHistoryViewController, NSTableView, NSWindow) {
         let sut = CallHistoryViewController()
         let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 368, height: 47),
