@@ -314,6 +314,9 @@
 }
 - (void)toggleHistory:(id)sender {
     self.expanded = !self.expanded; [self.history setHistoryExpanded:self.expanded];
+    // The first history focus target changes between collapsed table and
+    // expanded search. Refresh the parent key loop on every transition.
+    [self.dialler updateNextKeyView:self.history.keyView];
     [self.dialler updateHistoryExpanded:self.expanded]; [self resizeForHistory:self.expanded];
 }
 - (NSMenu *)moreActionsMenu {
