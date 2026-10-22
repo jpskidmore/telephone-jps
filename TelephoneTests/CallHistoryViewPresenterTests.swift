@@ -392,7 +392,7 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         window.contentView?.layoutSubtreeIfNeeded()
         XCTAssertTrue(sut.keyView === table)
         XCTAssertTrue(filterRow.isHidden)
-        XCTAssertEqual(table.enclosingScrollView?.frame.maxY, sut.view.bounds.maxY, accuracy: 1)
+        XCTAssertEqual(try XCTUnwrap(table.enclosingScrollView).frame.maxY, sut.view.bounds.maxY, accuracy: 1)
     }
 
     func testExpandedFilteringNeverMovesActionsToAnotherRecordUUID() throws {
