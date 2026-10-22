@@ -18,6 +18,10 @@
 
 import Cocoa
 
+private enum HistoryStatusFilter: Int {
+    case all, missed, incoming, outgoing
+}
+
 final class CallHistoryViewController: NSViewController {
     @objc var keyView: NSView {
         return tableView
@@ -38,7 +42,17 @@ final class CallHistoryViewController: NSViewController {
     private var isExpanded = true
     private var expandedSelectionIdentifier: String?
     private var emptyLabel: NSTextField?
+    // The backing data is unchanged. Visible rows retain original record IDs.
     private var records: [PresentationCallHistoryRecord] = []
+    private var visibleRecords: [PresentationCallHistoryRecord] = []
+    private var statusFilter: HistoryStatusFilter = .all
+    private var selectedAccountKey: String?
+    private let searchField = NSSearchField(frame: .zero)
+    private let statusPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let accountPopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private var filterRow: NSStackView?
+    private var compactScrollTop: NSLayoutConstraint?
+    private var expandedScrollTop: NSLayoutConstraint?
     private let pasteboard = NSPasteboard.general
     @IBOutlet private weak var tableView: NSTableView!
 
@@ -56,12 +70,14 @@ final class CallHistoryViewController: NSViewController {
         // does not shift the direction icon and contact away from the dial bar.
         tableView.style = .plain
         tableView.setAccessibilityLabel(NSLocalizedString("Call history", comment: "Call history accessibility label."))
+        configureFindControls()
         if let scroll = tableView.enclosingScrollView {
             scroll.translatesAutoresizingMaskIntoConstraints = false
+            compactScrollTop = scroll.topAnchor.constraint(equalTo: view.topAnchor)
+            expandedScrollTop = scroll.topAnchor.constraint(equalTo: filterRow!.bottomAnchor, constant: 4)
             NSLayoutConstraint.activate([
                 scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
                 scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
-                scroll.topAnchor.constraint(equalTo: view.topAnchor),
                 scroll.bottomAnchor.constraint(equalTo: view.bottomAnchor)
             ])
             let background = NSVisualEffectView(frame: view.bounds)
@@ -87,29 +103,152 @@ final class CallHistoryViewController: NSViewController {
         target?.shouldReloadData()
     }
 
+    private func configureFindControls() {
+        searchField.placeholderString = NSLocalizedString("Find calls", comment: "Expanded call history search placeholder.")
+        searchField.setAccessibilityLabel(NSLocalizedString("Find calls", comment: "Call history search accessibility label."))
+        searchField.delegate = self
+        searchField.sendsSearchStringImmediately = true
+        searchField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        statusPopup.addItems(withTitles: [
+            NSLocalizedString("All calls", comment: "History status filter."),
+            NSLocalizedString("Missed", comment: "History status filter."),
+            NSLocalizedString("Incoming", comment: "History status filter."),
+            NSLocalizedString("Outgoing", comment: "History status filter.")
+        ])
+        statusPopup.setAccessibilityLabel(NSLocalizedString("Call type", comment: "History status selector."))
+        statusPopup.target = self
+        statusPopup.action = #selector(statusFilterChanged(_:))
+
+        accountPopup.setAccessibilityLabel(NSLocalizedString("Account", comment: "History account selector."))
+        accountPopup.target = self
+        accountPopup.action = #selector(accountFilterChanged(_:))
+        rebuildAccountMenu()
+
+        let row = NSStackView(views: [searchField, statusPopup, accountPopup])
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.distribution = .fill
+        row.spacing = 6
+        view.addSubview(row)
+        NSLayoutConstraint.activate([
+            row.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
+            row.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
+            row.topAnchor.constraint(equalTo: view.topAnchor, constant: 4),
+            searchField.widthAnchor.constraint(greaterThanOrEqualToConstant: 80),
+            statusPopup.widthAnchor.constraint(equalToConstant: 90),
+            accountPopup.widthAnchor.constraint(equalToConstant: 110)
+        ])
+        filterRow = row
+    }
+
+    @objc private func statusFilterChanged(_ sender: NSPopUpButton) {
+        statusFilter = HistoryStatusFilter(rawValue: sender.indexOfSelectedItem) ?? .all
+        refreshFilteredRows(keeping: selectedRecordIdentifier)
+    }
+
+    @objc private func accountFilterChanged(_ sender: NSPopUpButton) {
+        selectedAccountKey = sender.selectedItem?.representedObject as? String
+        refreshFilteredRows(keeping: selectedRecordIdentifier)
+    }
+
+    // UUIDs distinguish accounts that share a display name. Older records
+    // without UUIDs remain searchable using their stored account name.
+    private func accountKey(for record: PresentationCallHistoryRecord) -> String {
+        if let uuid = record.accountUUID { return "uuid:" + uuid }
+        return "legacy:" + record.accountName
+    }
+
+    private func rebuildAccountMenu() {
+        var names: [String: String] = [:]
+        for record in records {
+            let name = record.accountName.trimmingCharacters(in: .whitespacesAndNewlines)
+            names[accountKey(for: record)] = name.isEmpty
+                ? NSLocalizedString("Unknown account", comment: "History record without an account name.")
+                : name
+        }
+        accountPopup.removeAllItems()
+        accountPopup.addItem(withTitle: NSLocalizedString("All accounts", comment: "History account filter."))
+        for (key, name) in names.sorted(by: { $0.value.localizedStandardCompare($1.value) == .orderedAscending }) {
+            accountPopup.addItem(withTitle: name)
+            accountPopup.lastItem?.representedObject = key
+        }
+        if let key = selectedAccountKey,
+           let index = (1..<accountPopup.numberOfItems).first(where: {
+               accountPopup.item(at: $0)?.representedObject as? String == key
+           }) {
+            accountPopup.selectItem(at: index)
+        } else {
+            selectedAccountKey = nil
+            accountPopup.selectItem(at: 0)
+        }
+    }
+
+    private func matchesFilters(_ record: PresentationCallHistoryRecord) -> Bool {
+        switch statusFilter {
+        case .all: break
+        case .missed: guard record.status == .missed else { return false }
+        case .incoming: guard record.status == .incoming else { return false }
+        case .outgoing: guard record.status == .outgoing else { return false }
+        }
+        if let key = selectedAccountKey, key != accountKey(for: record) { return false }
+
+        let query = searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        if query.isEmpty { return true }
+        let texts = [record.contact.title, record.contact.tooltip, record.contact.address, record.accountName]
+        if texts.contains(where: { $0.localizedStandardContains(query) }) { return true }
+        // Compare digits to find numbers regardless of spaces and punctuation.
+        let digits = String(query.filter { $0.isNumber })
+        return !digits.isEmpty && texts.contains {
+            String($0.filter { $0.isNumber }).contains(digits)
+        }
+    }
+
+    private var selectedRecordIdentifier: String? {
+        let row = tableView.selectedRow
+        return visibleRecords.indices.contains(row) ? visibleRecords[row].identifier : nil
+    }
+
     @objc func setHistoryExpanded(_ expanded: Bool) {
         guard expanded != isExpanded else { return }
-        if isViewLoaded, isExpanded, records.indices.contains(tableView.selectedRow) {
-            expandedSelectionIdentifier = records[tableView.selectedRow].identifier
+        if isViewLoaded && isExpanded {
+            expandedSelectionIdentifier = selectedRecordIdentifier
         }
         isExpanded = expanded
         guard isViewLoaded else { return }
+        refreshFilteredRows(keeping: expanded ? expandedSelectionIdentifier : nil)
+    }
+
+    private func refreshFilteredRows(keeping identifier: String?) {
+        let previousIndex = tableView.selectedRow
+        visibleRecords = isExpanded ? records.filter(matchesFilters) : Array(records.prefix(1))
         tableView.reloadData()
-        let index = expanded ? records.firstIndex { $0.identifier == expandedSelectionIdentifier } ?? 0 : 0
-        selectVisibleRecord(at: index)
+        if let identifier, let row = visibleRecords.firstIndex(where: { $0.identifier == identifier }) {
+            selectVisibleRecord(at: row)
+        } else if !visibleRecords.isEmpty {
+            selectVisibleRecord(at: min(max(previousIndex, 0), visibleRecords.count - 1))
+        } else {
+            tableView.deselectAll(nil)
+        }
         updateHistoryPresentation()
     }
 
     private func updateHistoryPresentation() {
         tableView.enclosingScrollView?.hasVerticalScroller = isExpanded
-        emptyLabel?.isHidden = !records.isEmpty
+        filterRow?.isHidden = !isExpanded
+        compactScrollTop?.isActive = false
+        expandedScrollTop?.isActive = false
+        (isExpanded ? expandedScrollTop : compactScrollTop)?.isActive = true
+        emptyLabel?.stringValue = records.isEmpty
+            ? NSLocalizedString("No recent calls", comment: "Empty call history.")
+            : NSLocalizedString("No matching calls", comment: "No history records match the current filters.")
+        emptyLabel?.isHidden = !visibleRecords.isEmpty
     }
 
-    private var visibleRecordCount: Int { isExpanded ? records.count : min(1, records.count) }
-
     private func selectVisibleRecord(at index: Int) {
-        guard visibleRecordCount > 0 else { return }
-        let visibleIndex = min(max(index, 0), visibleRecordCount - 1)
+        guard !visibleRecords.isEmpty else { return }
+        let visibleIndex = min(max(index, 0), visibleRecords.count - 1)
         tableView.selectRowIndexes(IndexSet(integer: visibleIndex), byExtendingSelection: false)
         tableView.scrollRowToVisible(visibleIndex)
     }
@@ -139,9 +278,10 @@ final class CallHistoryViewController: NSViewController {
     }
 
     @IBAction func copy(_ sender: Any) {
-        guard records.indices.contains(clickedOrSelectedRow()), clickedOrSelectedRow() < visibleRecordCount else { return }
+        let row = clickedOrSelectedRow()
+        guard visibleRecords.indices.contains(row) else { return }
         pasteboard.clearContents()
-        pasteboard.writeObjects([records[clickedOrSelectedRow()]])
+        pasteboard.writeObjects([visibleRecords[row]])
     }
 
     @IBAction func delete(_ sender: Any) {
@@ -157,33 +297,26 @@ final class CallHistoryViewController: NSViewController {
         }
     }
 
-    // Resolve the identity again when an asynchronous confirmation completes.
-    // A new call can prepend rows while the sheet is open.
+    // Resolve the original identifier after asynchronous confirmation.
     func removeRecord(withIdentifier identifier: String) {
         guard let row = records.firstIndex(where: { $0.identifier == identifier }) else { return }
+        let selected = selectedRecordIdentifier
         records.remove(at: row)
-        if isExpanded {
-            tableView.removeRows(at: IndexSet(integer: row), withAnimation: .slideUp)
-        } else {
-            // Removing the only visible row may reveal the next recent record;
-            // an animated row removal would have an inconsistent row count.
-            tableView.reloadData()
-            selectVisibleRecord(at: 0)
-        }
-        updateHistoryPresentation()
+        rebuildAccountMenu()
+        refreshFilteredRows(keeping: selected == identifier ? nil : selected)
         target?.shouldRemoveRecord(withIdentifier: identifier)
     }
 }
 
 private extension CallHistoryViewController {
     func pickRecord(at index: Int) {
-        guard records.indices.contains(index), index < visibleRecordCount else { return }
-        target?.didPickRecord(withIdentifier: records[index].identifier)
+        guard visibleRecords.indices.contains(index) else { return }
+        target?.didPickRecord(withIdentifier: visibleRecords[index].identifier)
     }
 
     func removeRecord(at index: Int) {
-        guard records.indices.contains(index), index < visibleRecordCount else { return }
-        let record = records[index]
+        guard visibleRecords.indices.contains(index) else { return }
+        let record = visibleRecords[index]
         Task {
             if await makeDeleteRecordAlert(recordName: record.name).beginSheetModal(for: view.window!) == .alertFirstButtonReturn {
                 removeRecord(withIdentifier: record.identifier)
@@ -206,48 +339,27 @@ private extension CallHistoryViewController {
 
 extension CallHistoryViewController: CallHistoryView {
     func show(_ records: [PresentationCallHistoryRecord]) {
-        let oldRecords = self.records
-        let oldIndex = tableView.selectedRow
+        let previousSelection = selectedRecordIdentifier
         self.records = records
-        reloadTableView(old: oldRecords, new: records)
-        restoreSelection(oldIndex: oldIndex, old: oldRecords, new: records)
-        updateHistoryPresentation()
+        rebuildAccountMenu()
+        refreshFilteredRows(keeping: previousSelection)
     }
+}
 
-    private func reloadTableView(old: [PresentationCallHistoryRecord], new: [PresentationCallHistoryRecord]) {
-        guard isExpanded else {
-            tableView.reloadData()
-            return
-        }
-        let diff = ArrayDifference(before: old, after: new)
-        if case .prepended(count: let count) = diff, count <= 2 {
-            tableView.insertRows(at: IndexSet(integersIn: 0..<count), withAnimation: .slideDown)
-        } else if case .shiftedByOne = diff {
-            tableView.beginUpdates()
-            tableView.insertRows(at: IndexSet(integer: 0), withAnimation: .slideDown)
-            tableView.removeRows(at: IndexSet(integer: old.count), withAnimation: .slideDown)
-            tableView.endUpdates()
-        } else {
-            tableView.reloadData()
-        }
-    }
-
-    private func restoreSelection(oldIndex: Int, old: [PresentationCallHistoryRecord], new: [PresentationCallHistoryRecord]) {
-        guard !records.isEmpty else { return }
-        let selectedIdentifier = old.indices.contains(oldIndex) ? old[oldIndex].identifier : nil
-        let restoredIndex = selectedIdentifier.flatMap { identifier in new.firstIndex { $0.identifier == identifier } }
-            ?? min(max(oldIndex, 0), new.count - 1)
-        selectVisibleRecord(at: isExpanded ? restoredIndex : 0)
+extension CallHistoryViewController: NSSearchFieldDelegate {
+    func controlTextDidChange(_ notification: Notification) {
+        guard (notification.object as? NSSearchField) === searchField else { return }
+        refreshFilteredRows(keeping: selectedRecordIdentifier)
     }
 }
 
 extension CallHistoryViewController: NSTableViewDataSource {
     func numberOfRows(in view: NSTableView) -> Int {
-        return visibleRecordCount
+        return visibleRecords.count
     }
 
     func tableView(_ view: NSTableView, objectValueFor column: NSTableColumn?, row: Int) -> Any? {
-        return records[row]
+        return visibleRecords[row]
     }
 }
 
@@ -288,8 +400,8 @@ extension CallHistoryViewController: NSTableViewDelegate {
     }
 
     private func removeRowAndRecord(action: NSTableViewRowAction, row: Int) {
-        guard records.indices.contains(row), row < visibleRecordCount else { return }
-        removeRecord(withIdentifier: records[row].identifier)
+        guard visibleRecords.indices.contains(row) else { return }
+        removeRecord(withIdentifier: visibleRecords[row].identifier)
     }
 }
 
@@ -299,7 +411,7 @@ extension CallHistoryViewController: NSMenuItemValidation {
         case #selector(deleteAll):
             return !records.isEmpty
         case #selector(copy(_:)), #selector(makeCall), #selector(delete):
-            return records.indices.contains(clickedOrSelectedRow()) && clickedOrSelectedRow() < visibleRecordCount
+            return visibleRecords.indices.contains(clickedOrSelectedRow())
         default:
             return false
         }
