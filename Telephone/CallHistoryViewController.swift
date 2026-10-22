@@ -23,8 +23,11 @@ private enum HistoryStatusFilter: Int {
 }
 
 final class CallHistoryViewController: NSViewController {
+    // The dialler enters the filter controls before the table only when
+    // expanded; compact history must never tab through hidden controls.
     @objc var keyView: NSView {
-        return tableView
+        _ = view
+        return isExpanded ? searchField : tableView
     }
     @objc weak var target: CallHistoryViewEventTarget? {
         didSet {
@@ -69,6 +72,9 @@ final class CallHistoryViewController: NSViewController {
         // Use one native row geometry in both modes so expanding the history
         // does not shift the direction icon and contact away from the dial bar.
         tableView.style = .plain
+        // The XIB disables empty selection. Filtered-out rows must be able
+        // to leave no selection rather than silently selecting another call.
+        tableView.allowsEmptySelection = true
         tableView.setAccessibilityLabel(NSLocalizedString("Call history", comment: "Call history accessibility label."))
         configureFindControls()
         if let scroll = tableView.enclosingScrollView {
@@ -117,10 +123,12 @@ final class CallHistoryViewController: NSViewController {
             NSLocalizedString("Outgoing", comment: "History status filter.")
         ])
         statusPopup.setAccessibilityLabel(NSLocalizedString("Call type", comment: "History status selector."))
+        statusPopup.toolTip = statusPopup.selectedItem?.title
         statusPopup.target = self
         statusPopup.action = #selector(statusFilterChanged(_:))
 
         accountPopup.setAccessibilityLabel(NSLocalizedString("Account", comment: "History account selector."))
+        accountPopup.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         accountPopup.target = self
         accountPopup.action = #selector(accountFilterChanged(_:))
         rebuildAccountMenu()
@@ -138,18 +146,20 @@ final class CallHistoryViewController: NSViewController {
             row.topAnchor.constraint(equalTo: view.topAnchor, constant: 4),
             searchField.widthAnchor.constraint(greaterThanOrEqualToConstant: 80),
             statusPopup.widthAnchor.constraint(equalToConstant: 90),
-            accountPopup.widthAnchor.constraint(equalToConstant: 110)
+            accountPopup.widthAnchor.constraint(equalToConstant: 130)
         ])
         filterRow = row
     }
 
     @objc private func statusFilterChanged(_ sender: NSPopUpButton) {
+        statusPopup.toolTip = sender.selectedItem?.title
         statusFilter = HistoryStatusFilter(rawValue: sender.indexOfSelectedItem) ?? .all
         refreshFilteredRows(keeping: selectedRecordIdentifier)
     }
 
     @objc private func accountFilterChanged(_ sender: NSPopUpButton) {
         selectedAccountKey = sender.selectedItem?.representedObject as? String
+        accountPopup.toolTip = sender.selectedItem?.title
         refreshFilteredRows(keeping: selectedRecordIdentifier)
     }
 
@@ -170,9 +180,11 @@ final class CallHistoryViewController: NSViewController {
         }
         accountPopup.removeAllItems()
         accountPopup.addItem(withTitle: NSLocalizedString("All accounts", comment: "History account filter."))
+        accountPopup.lastItem?.toolTip = accountPopup.lastItem?.title
         for (key, name) in names.sorted(by: { $0.value.localizedStandardCompare($1.value) == .orderedAscending }) {
             accountPopup.addItem(withTitle: name)
             accountPopup.lastItem?.representedObject = key
+            accountPopup.lastItem?.toolTip = name
         }
         if let key = selectedAccountKey,
            let index = (1..<accountPopup.numberOfItems).first(where: {
@@ -183,6 +195,7 @@ final class CallHistoryViewController: NSViewController {
             selectedAccountKey = nil
             accountPopup.selectItem(at: 0)
         }
+        accountPopup.toolTip = accountPopup.selectedItem?.title
     }
 
     private func matchesFilters(_ record: PresentationCallHistoryRecord) -> Bool {
@@ -215,20 +228,27 @@ final class CallHistoryViewController: NSViewController {
         if isViewLoaded && isExpanded {
             expandedSelectionIdentifier = selectedRecordIdentifier
         }
+        // Preserve the compact row's identity on first expansion. On later
+        // expansions, restore the prior expanded selection only if it exists.
+        let selectionToRestore = expandedSelectionIdentifier ?? selectedRecordIdentifier
         isExpanded = expanded
         guard isViewLoaded else { return }
-        refreshFilteredRows(keeping: expanded ? expandedSelectionIdentifier : nil)
+        refreshFilteredRows(keeping: expanded ? selectionToRestore : nil)
     }
 
     private func refreshFilteredRows(keeping identifier: String?) {
-        let previousIndex = tableView.selectedRow
         visibleRecords = isExpanded ? records.filter(matchesFilters) : Array(records.prefix(1))
         tableView.reloadData()
-        if let identifier, let row = visibleRecords.firstIndex(where: { $0.identifier == identifier }) {
+        if !isExpanded {
+            // The compact presentation always shows its single newest call.
+            if visibleRecords.isEmpty { tableView.deselectAll(nil) }
+            else { selectVisibleRecord(at: 0) }
+        } else if let identifier,
+                  let row = visibleRecords.firstIndex(where: { $0.identifier == identifier }) {
             selectVisibleRecord(at: row)
-        } else if !visibleRecords.isEmpty {
-            selectVisibleRecord(at: min(max(previousIndex, 0), visibleRecords.count - 1))
         } else {
+            // Never transfer a Call/Copy/Delete action to a different UUID
+            // merely because filtering or a new arrival shifted row indexes.
             tableView.deselectAll(nil)
         }
         updateHistoryPresentation()
@@ -264,7 +284,12 @@ final class CallHistoryViewController: NSViewController {
     }
 
     @objc func updateNextKeyView(_ view: NSView) {
-        keyView.nextKeyView = view
+        // Search -> Status -> Account -> History -> Dialler, with the
+        // collapsed dialler entering directly at History.
+        searchField.nextKeyView = statusPopup
+        statusPopup.nextKeyView = accountPopup
+        accountPopup.nextKeyView = tableView
+        tableView.nextKeyView = view
     }
 
     @IBAction func didDoubleClick(_ sender: NSTableView) {
