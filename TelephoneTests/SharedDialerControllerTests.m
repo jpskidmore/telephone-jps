@@ -793,4 +793,35 @@ static BOOL JPSObserveApplicationSendAction(id application, SEL command, SEL act
         [controller.window orderOut:nil];
     }
 }
+- (void)testExpandedHistoryReconnectsDiallerFocusToSearchAndRestoresCompactTable {
+    // Inert account fixture: exercise the actual shared AppKit window without
+    // registration, Contacts, stored calls or the owner's SIP profile.
+    JPSSharedDiallerAccountsFixture *accounts = [JPSSharedDiallerAccountsFixture new];
+    accounts.all = @[];
+    SharedDialerController *controller = [[SharedDialerController alloc] initWithAccounts:(id)accounts historyFactory:nil];
+    @try {
+        CallHistoryViewController *history = [controller valueForKey:@"history"];
+        NSPopUpButton *availability = [controller valueForKey:@"availability"];
+        NSView *compactTarget = history.keyView;
+        XCTAssertTrue([compactTarget isKindOfClass:NSTableView.class]);
+        XCTAssertEqual(availability.nextKeyView, compactTarget);
+
+        [controller toggleHistory:nil];
+        NSView *searchTarget = history.keyView;
+        XCTAssertTrue(history.historyExpanded);
+        XCTAssertTrue([searchTarget isKindOfClass:NSSearchField.class]);
+        XCTAssertEqual(availability.nextKeyView, searchTarget);
+        XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height, 268, 0.5);
+
+        [controller toggleHistory:nil];
+        XCTAssertFalse(history.historyExpanded);
+        XCTAssertEqual(history.keyView, compactTarget);
+        XCTAssertEqual(availability.nextKeyView, compactTarget);
+        XCTAssertEqualWithAccuracy(controller.window.contentView.bounds.size.height, 104, 0.5);
+    } @finally {
+        [controller.window orderOut:nil];
+    }
+}
+
+
 @end
