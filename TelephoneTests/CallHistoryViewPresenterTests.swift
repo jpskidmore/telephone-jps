@@ -481,6 +481,121 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         XCTAssertEqual(table.numberOfRows, 1)
     }
 
+    func testHistoryModeCanBeSetBeforeItsViewAndTableAreLoaded() {
+        let sut = CallHistoryViewController()
+        XCTAssertFalse(sut.isViewLoaded)
+
+        // SharedDialerController requests compact history before loading its nib.
+        sut.setHistoryExpanded(false)
+        XCTAssertFalse(sut.historyExpanded)
+        XCTAssertFalse(sut.isViewLoaded, "Setting the initial mode must not load the nib.")
+        sut.setHistoryExpanded(false)
+        sut.setHistoryExpanded(true)
+        XCTAssertTrue(sut.historyExpanded)
+        XCTAssertFalse(sut.isViewLoaded)
+    }
+
+    func testAccountFilterKeepsDistinctUUIDsAndAllAccountsWhenNamesCollide() throws {
+        let (sut, table, window) = try makeHistoryController()
+        defer { window.close() }
+        let records = [("a", "Office"), ("b", "Office"), ("c", "All accounts")].map { uuid, name in
+            PresentationCallHistoryRecord(identifier: "record-" + uuid,
+                contact: PresentationContact(title: "Caller " + uuid, tooltip: "", label: "",
+                                             color: .labelColor, address: uuid + "@example.invalid"),
+                date: "Today", duration: "0 sec", isIncoming: true,
+                accountUUID: uuid, accountName: name)
+        }
+        sut.show(records)
+        let filters = try XCTUnwrap(sut.view.subviews.compactMap { $0 as? NSStackView }.first)
+        let account = try XCTUnwrap(filters.arrangedSubviews.compactMap { $0 as? NSPopUpButton }.last)
+        XCTAssertEqual(account.numberOfItems, 4)
+        XCTAssertNil(account.item(at: 0)?.representedObject)
+        XCTAssertEqual(account.item(at: 0)?.title, "All accounts")
+        XCTAssertEqual(account.itemArray.filter { $0.title == "Office" }.count, 2)
+
+        for uuid in ["a", "b", "c"] {
+            let item = try XCTUnwrap(account.itemArray.first { $0.representedObject as? String == "uuid:" + uuid })
+            account.select(item)
+            XCTAssertTrue(account.sendAction(try XCTUnwrap(account.action), to: account.target))
+            XCTAssertEqual(table.numberOfRows, 1)
+            XCTAssertEqual((sut.tableView(table, objectValueFor: nil, row: 0) as? PresentationCallHistoryRecord)?.identifier,
+                           "record-" + uuid)
+        }
+
+        // Rebuilding from a reordered snapshot retains the exact selected UUID.
+        sut.show(Array(records.reversed()))
+        XCTAssertEqual(account.selectedItem?.representedObject as? String, "uuid:c")
+        XCTAssertEqual(table.numberOfRows, 1)
+        account.selectItem(at: 0)
+        XCTAssertTrue(account.sendAction(try XCTUnwrap(account.action), to: account.target))
+        XCTAssertEqual(table.numberOfRows, 3)
+    }
+
+    func testExpandedHistoryNativeLayoutInLightAndDarkAtMinimumAndWiderWidths() throws {
+        let (sut, table, window) = try makeHistoryController()
+        defer { window.close() }
+        let records = (1...6).map { number in
+            PresentationCallHistoryRecord(identifier: "visual-\(number)",
+                contact: PresentationContact(title: "Synthetic caller \(number)", tooltip: "07700 900123",
+                                             label: "Mobile", color: .labelColor, address: "07700 900123"),
+                date: "Today", duration: "30 sec", isIncoming: true, isMissed: number == 2,
+                accountUUID: "provider", accountName: "Synthetic office provider with a long name")
+        }
+        sut.show(records)
+        for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+            window.appearance = NSAppearance(named: appearance)
+            for width in [368.0, 520.0] {
+                window.setContentSize(NSSize(width: width, height: 211))
+                window.contentView?.layoutSubtreeIfNeeded()
+                XCTAssertEqual(table.numberOfRows, 6)
+                XCTAssertFalse(sut.view.hasAmbiguousLayout)
+                let bitmap = try XCTUnwrap(sut.view.bitmapImageRepForCachingDisplay(in: sut.view.bounds))
+                sut.view.cacheDisplay(in: sut.view.bounds, to: bitmap)
+                let image = NSImage(size: sut.view.bounds.size)
+                image.addRepresentation(bitmap)
+                let attachment = XCTAttachment(image: image)
+                attachment.name = "History-\(appearance.rawValue)-\(Int(width))"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+            }
+        }
+    }
+
+    func testNativeSearchCancelRestoresRowsWithinTheRemainingFilters() throws {
+        let (sut, table, window) = try makeHistoryController()
+        defer { window.close() }
+        let records = [("Alice", "a", true), ("Alex", "a", true), ("Bob", "b", true), ("Carol", "a", false)].map { name, account, missed in
+            PresentationCallHistoryRecord(identifier: name,
+                contact: PresentationContact(title: name, tooltip: "", label: "", color: .labelColor,
+                                             address: name.lowercased() + "@example.invalid"),
+                date: "Today", duration: "0 sec", isIncoming: true, isMissed: missed,
+                accountUUID: account, accountName: "Provider " + account.uppercased())
+        }
+        sut.show(records)
+        let filters = try XCTUnwrap(sut.view.subviews.compactMap { $0 as? NSStackView }.first)
+        let search = try XCTUnwrap(filters.arrangedSubviews.compactMap { $0 as? NSSearchField }.first)
+        let selectors = filters.arrangedSubviews.compactMap { $0 as? NSPopUpButton }
+        let status = try XCTUnwrap(selectors.first), account = try XCTUnwrap(selectors.last)
+        status.selectItem(at: 1)
+        XCTAssertTrue(status.sendAction(try XCTUnwrap(status.action), to: status.target))
+        account.selectItem(withTitle: "Provider A")
+        XCTAssertTrue(account.sendAction(try XCTUnwrap(account.action), to: account.target))
+        search.stringValue = "Alice"
+        sut.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: search))
+        XCTAssertEqual(table.numberOfRows, 1)
+        table.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+
+        let cell = try XCTUnwrap(search.cell as? NSSearchFieldCell)
+        try XCTUnwrap(cell.cancelButtonCell).performClick(search)
+
+        XCTAssertEqual(search.stringValue, "")
+        XCTAssertEqual(table.numberOfRows, 2, "Native cancellation must clear only the text filter.")
+        XCTAssertEqual((sut.tableView(table, objectValueFor: nil, row: table.selectedRow) as? PresentationCallHistoryRecord)?.identifier,
+                       "Alice", "Clearing search must preserve the selected record identity.")
+        XCTAssertEqual(account.selectedItem?.representedObject as? String, "uuid:a")
+        XCTAssertEqual(status.indexOfSelectedItem, 1)
+    }
+
     private func makeHistoryController() throws -> (CallHistoryViewController, NSTableView, NSWindow) {
         let sut = CallHistoryViewController()
         let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 368, height: 47),

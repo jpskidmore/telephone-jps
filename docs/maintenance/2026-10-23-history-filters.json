@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-23",
+  "issue": 61,
+  "baseCommit": "610e133b3806105175a0a46340a51b34a5122b59",
+  "platform": {
+    "macOS": "27.0.1 (26A434)",
+    "Xcode": "27.1 (27A9275)",
+    "Swift": "6.4",
+    "architecture": "arm64",
+    "deploymentTarget": "macOS 15.6"
+  },
+  "result": "source fix and native verification complete; no release or installation",
+  "tests": {
+    "TelephoneXCTest": {
+      "cases": 289,
+      "failures": 0
+    },
+    "TelephoneSwiftTesting": {
+      "cases": 48,
+      "failures": 0
+    },
+    "standaloneAppKit": {
+      "componentAssertions": 68,
+      "failures": 0
+    }
+  },
+  "sourceSHA256": {
+    "Telephone/CallHistoryViewController.swift": "1be24565b7c3eb9878d57c50be1e6d37d33206ca7eaf1cbe8be6e1a367259c25",
+    "TelephoneTests/CallHistoryViewPresenterTests.swift": "5b463a254011643908524a4678d8ab01125948a5f8b069ae443b7268fb5b7e70",
+    "TelephoneTests/CallHistoryViewEventTargetTests.swift": "6edd77fb881c7cb067e43004cbb176f69dd338130236303bf2d62d8673f17aa7",
+    "Scripts/run-history-filter-tests.sh": "d734d2544dee4a88f02a94509abd1f1e800529c1cd0cb86831e8fa79a49c3236",
+    "Tests/HistoryFilterRegressionHarness.swift": "f9d9dcf8c1246b0eeeec46b914d6fa4536b2bf9cbba84dd24b696c5a48acbb12"
+  },
+  "logSHA256": {
+    "/private/tmp/jps-history-final-build-20261023.log": "725d340b5925f55d3021dfcd4b50585468cd81786473dfab2558856d8af0d98e",
+    "/private/tmp/jps-history-telephone-tests-final-20261023.log": "93ce9d00f3c0a626ed84cdd25081b348cd0f80259b731b516e5e4fe66e77c687",
+    "work/history-filter/final-native-cancel.log": "fa115187e3936490dd6307665e063af921fd5c6aecd94a9ded4a946356f563b7"
+  },
+  "boundaries": [
+    "Synthetic uniquely identified nib-free hosted tests; production nib resources loaded by individual test controllers",
+    "No real SIP provider call, physical audio, Contacts, user history, credential read, package/install/release or proficient VoiceOver acceptance",
+    "Other framework suites were not rerun because their source is unchanged"
+  ]
+}

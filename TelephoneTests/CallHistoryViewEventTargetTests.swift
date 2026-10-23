@@ -276,7 +276,10 @@ final class V30HistorySelectionTests: XCTestCase {
 
     func testCappedNativeTableKeepsTheCallIdentityUsedByReturn() throws {
         let controller = Telephone.CallHistoryViewController(); _ = controller.view
-        let table = try XCTUnwrap(controller.keyView as? NSTableView)
+        // Expanded history now enters through Search. Locate the actual table
+        // independently so this regression still exercises record identity.
+        let scroll = try XCTUnwrap(controller.view.subviews.compactMap { $0 as? NSScrollView }.first)
+        let table = try XCTUnwrap(scroll.documentView as? NSTableView)
         let callFactory = CallHistoryCallMakeUseCaseFactorySpy(callMake: UseCaseSpy())
         let target = Telephone.CallHistoryViewEventTarget(recordsGet: UseCaseSpy(), purchaseCheck: UseCaseSpy(), recordRemoveAll: UseCaseSpy(), recordRemove: CallHistoryRecordRemoveUseCaseFactorySpy(remove: UseCaseSpy()), callMake: callFactory)
         controller.target = target

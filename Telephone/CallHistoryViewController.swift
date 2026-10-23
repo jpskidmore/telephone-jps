@@ -113,6 +113,10 @@ final class CallHistoryViewController: NSViewController {
         searchField.placeholderString = NSLocalizedString("Find calls", comment: "Expanded call history search placeholder.")
         searchField.setAccessibilityLabel(NSLocalizedString("Find calls", comment: "Call history search accessibility label."))
         searchField.delegate = self
+        // The native cancel button sends the field's action after clearing,
+        // but does not send controlTextDidChange like ordinary typing does.
+        searchField.target = self
+        searchField.action = #selector(searchChanged(_:))
         searchField.sendsSearchStringImmediately = true
         searchField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
@@ -151,6 +155,10 @@ final class CallHistoryViewController: NSViewController {
         filterRow = row
     }
 
+    @objc private func searchChanged(_ sender: NSSearchField) {
+        refreshFilteredRows(keeping: selectedRecordIdentifier)
+    }
+
     @objc private func statusFilterChanged(_ sender: NSPopUpButton) {
         statusPopup.toolTip = sender.selectedItem?.title
         statusFilter = HistoryStatusFilter(rawValue: sender.indexOfSelectedItem) ?? .all
@@ -179,12 +187,23 @@ final class CallHistoryViewController: NSViewController {
                 : name
         }
         accountPopup.removeAllItems()
-        accountPopup.addItem(withTitle: NSLocalizedString("All accounts", comment: "History account filter."))
-        accountPopup.lastItem?.toolTip = accountPopup.lastItem?.title
-        for (key, name) in names.sorted(by: { $0.value.localizedStandardCompare($1.value) == .orderedAscending }) {
-            accountPopup.addItem(withTitle: name)
-            accountPopup.lastItem?.representedObject = key
-            accountPopup.lastItem?.toolTip = name
+        // The popup convenience API replaces an existing same-title item.
+        // Insert menu items directly so account UUIDs and the unfiltered choice
+        // stay distinct even when their displayed names are identical.
+        let allAccounts = NSMenuItem(
+            title: NSLocalizedString("All accounts", comment: "History account filter."),
+            action: nil, keyEquivalent: ""
+        )
+        allAccounts.toolTip = allAccounts.title
+        accountPopup.menu?.addItem(allAccounts)
+        for (key, name) in names.sorted(by: {
+            let order = $0.value.localizedStandardCompare($1.value)
+            return order == .orderedSame ? $0.key < $1.key : order == .orderedAscending
+        }) {
+            let item = NSMenuItem(title: name, action: nil, keyEquivalent: "")
+            item.representedObject = key
+            item.toolTip = name
+            accountPopup.menu?.addItem(item)
         }
         if let key = selectedAccountKey,
            let index = (1..<accountPopup.numberOfItems).first(where: {
@@ -234,14 +253,19 @@ final class CallHistoryViewController: NSViewController {
 
     @objc func setHistoryExpanded(_ expanded: Bool) {
         guard expanded != isExpanded else { return }
-        if isViewLoaded && isExpanded {
+        // The shared dialler sets compact mode before loading this controller's
+        // nib. Remember that mode without touching the not-yet-connected table.
+        guard isViewLoaded else {
+            isExpanded = expanded
+            return
+        }
+        if isExpanded {
             expandedSelectionIdentifier = selectedRecordIdentifier
         }
         // Preserve the compact row's identity on first expansion. On later
         // expansions, restore the prior expanded selection only if it exists.
         let selectionToRestore = expandedSelectionIdentifier ?? selectedRecordIdentifier
         isExpanded = expanded
-        guard isViewLoaded else { return }
         refreshFilteredRows(keeping: expanded ? selectionToRestore : nil)
     }
 

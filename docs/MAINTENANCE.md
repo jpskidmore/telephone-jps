@@ -44,6 +44,19 @@ documents shared explanations and consistent account snapshots.
 The [issue #60 numbering record](maintenance/2026-10-20-numbering-transparency.md)
 documents visible coverage/version information and saved-versus-draft behaviour.
 
+## Current source work — 23 October 2026
+
+The owner resumed open-issue repairs. Expanded history search/filter issue #61
+now has fresh native validation: 289 XCTest plus 48 Swift Testing cases, and
+68 separately counted AppKit component assertions. Startup, duplicate account
+menu and native Search clear defects found during acceptance are repaired.
+Read [the history filter record](maintenance/2026-10-23-history-filters.md).
+This is source work only; the released/installed baseline above is unchanged.
+The next ranked item is practical acceptance matrix #62. Keep all findings and
+verification outcomes on GitHub because other contributors are working here.
+The owner's current stop threshold is 10% remaining in the actual five-hour
+allowance; resume five minutes after the usage tool's reported reset.
+
 ## Owner's execution controls
 
 On **21 October 2026**, the owner authorised **Fix A for #72**: remove the
