@@ -211,7 +211,16 @@ final class CallHistoryViewController: NSViewController {
         if query.isEmpty { return true }
         let texts = [record.contact.title, record.contact.tooltip, record.contact.address, record.accountName]
         if texts.contains(where: { $0.localizedStandardContains(query) }) { return true }
-        // Compare digits to find numbers regardless of spaces and punctuation.
+        // Compare phone numbers ignoring formatting, but only for numeric
+        // queries. A mixed text query such as "Alice123" must not match an
+        // unrelated telephone number simply because it contains "123".
+        let phonePunctuation = CharacterSet(charactersIn: "+()-./")
+        let isPhoneQuery = query.unicodeScalars.allSatisfy {
+            CharacterSet.decimalDigits.contains($0)
+                || CharacterSet.whitespaces.contains($0)
+                || phonePunctuation.contains($0)
+        }
+        guard isPhoneQuery else { return false }
         let digits = String(query.filter { $0.isNumber })
         return !digits.isEmpty && texts.contains {
             String($0.filter { $0.isNumber }).contains(digits)
