@@ -433,6 +433,54 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         XCTAssertEqual(call.invokedIdentifier, records[2].identifier)
     }
 
+    func testExpandedCombinedAccountStatusAndNumericQueryFiltering() throws {
+        let (sut, table, window) = try makeHistoryController()
+        defer { window.close() }
+        func record(_ id: String, _ name: String, _ number: String, _ account: String, missed: Bool) -> PresentationCallHistoryRecord {
+            PresentationCallHistoryRecord(identifier: id,
+                contact: PresentationContact(title: name, tooltip: number, label: "Mobile",
+                                             color: .labelColor, address: number),
+                date: "Today", duration: "0 sec", isIncoming: missed, isMissed: missed,
+                accountUUID: account, accountName: "Provider " + account.uppercased())
+        }
+        let first = record("a1", "Alice", "07700 900123", "a", missed: true)
+        let second = record("b1", "Alex", "07700 900456", "b", missed: true)
+        let third = record("a2", "Charlie", "020 7946 0111", "a", missed: false)
+        sut.show([first, second, third])
+        XCTAssertEqual(table.numberOfRows, 3)
+        let filters = try XCTUnwrap(sut.view.subviews.compactMap { $0 as? NSStackView }.first)
+        let search = try XCTUnwrap(filters.arrangedSubviews.compactMap { $0 as? NSSearchField }.first)
+        let selectors = filters.arrangedSubviews.compactMap { $0 as? NSPopUpButton }
+        XCTAssertEqual(selectors.count, 2)
+        let status = selectors[0], account = selectors[1]
+        status.selectItem(at: 1)
+        XCTAssertTrue(status.sendAction(try XCTUnwrap(status.action), to: status.target))
+        XCTAssertEqual(table.numberOfRows, 2)
+        account.selectItem(withTitle: "Provider A")
+        XCTAssertTrue(account.sendAction(try XCTUnwrap(account.action), to: account.target))
+        XCTAssertEqual(table.numberOfRows, 1)
+        XCTAssertEqual((sut.tableView(table, objectValueFor: nil, row: 0) as? PresentationCallHistoryRecord)?.identifier,
+                       first.identifier)
+        XCTAssertEqual(account.toolTip, "Provider A")
+        let changed = Notification(name: Notification.Name("SyntheticSearchChanged"), object: search)
+        search.stringValue = "07700900123"
+        sut.controlTextDidChange(changed)
+        XCTAssertEqual(table.numberOfRows, 1, "Ignore phone-number punctuation.")
+        search.stringValue = "Unknown123"
+        sut.controlTextDidChange(changed)
+        XCTAssertEqual(table.numberOfRows, 0, "A mixed text query must not match unrelated phone digits.")
+        XCTAssertEqual(table.selectedRow, -1)
+        search.stringValue = ""
+        sut.controlTextDidChange(changed)
+        account.selectItem(at: 0)
+        XCTAssertTrue(account.sendAction(try XCTUnwrap(account.action), to: account.target))
+        status.selectItem(at: 0)
+        XCTAssertTrue(status.sendAction(try XCTUnwrap(status.action), to: status.target))
+        XCTAssertEqual(table.numberOfRows, 3)
+        sut.setHistoryExpanded(false)
+        XCTAssertEqual(table.numberOfRows, 1)
+    }
+
     private func makeHistoryController() throws -> (CallHistoryViewController, NSTableView, NSWindow) {
         let sut = CallHistoryViewController()
         let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 368, height: 47),
