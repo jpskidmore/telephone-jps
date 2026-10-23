@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "issue": 62,
+  "preparedAt": "2026-10-23",
+  "status": "practical_acceptance_incomplete",
+  "sourceBaseline": "a69ed93c00ce20768883473a7f48e278fe719bf7",
+  "resultValues": [
+    "passed",
+    "failed",
+    "blocked",
+    "unverified",
+    "not_applicable"
+  ],
+  "requiredRunFields": [
+    "run_id",
+    "scenario_id",
+    "variant",
+    "tested_at_ISO8601_with_timezone",
+    "tester",
+    "result",
+    "app_version",
+    "app_build",
+    "source_commit",
+    "app_bundle_SHA256",
+    "configuration_and_signing_identity",
+    "installed_or_isolated_host",
+    "macOS_version_and_build",
+    "SDK_and_Xcode_version",
+    "hardware_model_and_architecture",
+    "display_scale",
+    "appearance_and_accessibility_settings",
+    "input_output_device_models_and_connections",
+    "provider_and_controlled_endpoint_aliases",
+    "permission_and_folder_grant_state",
+    "authorisation_reference",
+    "steps_actually_performed",
+    "observed_result",
+    "redacted_evidence_reference",
+    "failure_issue",
+    "reason_if_not_exercised_or_not_applicable"
+  ],
+  "practicalContext": {
+    "candidateVersion": null,
+    "candidateBuild": null,
+    "sourceCommit": null,
+    "bundleSHA256": null,
+    "hardwareModel": null,
+    "displayScale": null,
+    "providerAlias": null,
+    "controlledEndpointAliases": [],
+    "authorisationReference": null,
+    "reason": "No practical run or controlled provider/destination has been supplied."
+  },
+  "controlledEvidence": {
+    "sourceCommit": "a69ed93c00ce20768883473a7f48e278fe719bf7",
+    "macOS": "27.0.1 (26A434)",
+    "Xcode": "27.1 (27A9275)",
+    "architecture": "arm64",
+    "TelephoneXCTestCases": 289,
+    "TelephoneSwiftTestingCases": 48,
+    "failures": 0,
+    "separateAppKitAssertions": 68,
+    "doesNotPassPracticalScenarios": true
+  },
+  "scenarios": [
+    {
+      "id": "CALL-01",
+      "name": "Outgoing",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Call an agreed controlled endpoint; answer remotely; confirm both directions of audio; end locally, then repeat with remote hangup.",
+      "passObservations": "Correct destination/provider and one call; truthful connecting/active/ended state; both participants confirm media; end removes active media and restores ended actions.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "CALL-02",
+      "name": "Incoming / decline",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Call from the controlled endpoint; answer once, then repeat and decline.",
+      "passObservations": "Correct identity/account and configured ringtone; Answer/Decline work; answered audio works both ways; decline leaves no call or continuing ringtone.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "CALL-03",
+      "name": "Mute / hold",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Mute/unmute and hold/resume a controlled call; separately end while held.",
+      "passObservations": "Remote observations agree with controls; resume restores media; end while held finishes normally.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "CALL-04",
+      "name": "Transfer",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Exercise each transfer mode actually offered, using agreed endpoints; separately cancel the sheet.",
+      "passObservations": "Intended recipient receives transfer; no duplicate media; expected final state; cancellation leaves original call usable. Record provider rejection separately.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "CALL-05",
+      "name": "DTMF",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Send 0–9, *, # and each supported A–D/R input through keypad and keyboard to a controlled receiver.",
+      "passObservations": "Receiver confirms the exact sequence once per input; ordinary text entry elsewhere emits no tones. Record provider support per variant.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "ROUTE-01",
+      "name": "Selected route",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Compare accepted current route/help with a controlled outgoing call.",
+      "passObservations": "Actual provider/destination matches the admitted plan; accurate provider help; no unexpected fallback.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "ROUTE-02",
+      "name": "Waiting cancellation",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Make the selected test provider unavailable; enqueue one request, cancel it, then restore availability.",
+      "passObservations": "Waiting accurately identifies the request; cancellation removes it; restoration produces no delayed call.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "ROUTE-03",
+      "name": "Pending request ownership",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Queue a controlled request, change its route or remove/disable its account, then restore availability.",
+      "passObservations": "No unexpected reroute or stale-account call; compare immutable admitted request/account validation with the recorded expected policy before execution.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "REC-01",
+      "name": "Actual capture / export",
+      "result": "unverified",
+      "run": null,
+      "procedure": "With participant consent, record known short local/remote phrases; stop/end and export each offered format under acceptance.",
+      "passObservations": "Both expected channels and interval captured; output plays with correct filename/format; successful export cleans only its own completed raw job.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "REC-02",
+      "name": "Failed export / retry",
+      "result": "unverified",
+      "run": null,
+      "procedure": "In an isolated profile, export synthetic capture to deliberately unwritable scratch storage; defer, reopen, then Retry/Save Elsewhere.",
+      "passObservations": "Visible failure; original tracks retained; recoverable job rediscovered; retry produces usable audio; no silent overwrite or premature deletion.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "REC-03",
+      "name": "Recovery / termination",
+      "result": "unverified",
+      "run": null,
+      "procedure": "With an isolated failed job, exercise Stay Open and Keep Files and Quit separately; reopen.",
+      "passObservations": "Stay Open cancels quit; keeping files preserves the job; reopen discovers it; retry succeeds.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "REC-04",
+      "name": "Audio-loss segments",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Use the agreed hardware-loss setup during a consented recorded call; explicitly retry audio.",
+      "passObservations": "Original segment finalises; no recording claimed during loss; successful retry may start a separately named segment; hangup remains possible.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "DEVICE-01",
+      "name": "Physical device selection",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Select each agreed input/output/ringtone device and perform controlled call/ringtone checks, including duplicate names if equipment exists.",
+      "passObservations": "Actual sound uses the intended physical devices and stable identity; labels and selection remain accurate.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "DEVICE-02",
+      "name": "Hotplug / defaults",
+      "result": "unverified",
+      "run": null,
+      "procedure": "During idle and an agreed active call, disconnect/reconnect a removable test device and change the agreed default.",
+      "passObservations": "Responsive GUI; accurate device/state; visible failure or actual recovery; no hidden retry loop; explicit Retry Audio uses current selection.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "DEVICE-03",
+      "name": "Failure / explicit retry",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Reproduce an agreed test audio failure without changing production privacy grants; dismiss warning and use Retry Audio.",
+      "passObservations": "Persistent failure remains visible until actual recovery; generic notifications do not clear it; retry restores media or reports continued failure.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "POWER-01",
+      "name": "Idle sleep / wake",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Sleep/wake the test Mac while idle; then make controlled incoming/outgoing calls.",
+      "passObservations": "Registration settles truthfully; no stale cancelled request dials; subsequent calls/audio work. Record recovery time without inventing an SLA.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "POWER-02",
+      "name": "Active sleep / wake",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Sleep/wake during an agreed controlled call.",
+      "passObservations": "State reflects actual provider outcome; no phantom active timer/media; surviving call has confirmed audio or visible recovery; ending works.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "GUI-01",
+      "name": "Whole-app appearance / geometry",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Inspect all Settings panes/account tabs, compact/expanded history and incoming/connecting/active/ended cards in Light and Dark.",
+      "passObservations": "Readable, unclipped, usable controls; native Close and UK English. Record dimensions against version-specific design: dialler minimum content 368×104/368×268 expanded, Settings 592×337 outer; current card baseline 300-point width. Track requested change #74 separately.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "GUI-02",
+      "name": "Accessibility materials / motion",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Repeat key tasks with Reduce Transparency, Increase Contrast, both combined and Reduce Motion; record each variant.",
+      "passObservations": "Readable opaque semantic fallback/contrast outline as applicable; state understandable without colour alone; material changes retain focus/selection; appropriate motion.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "GUI-03",
+      "name": "Keyboard / focus",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Navigate dialler, Search → Status → Account → Table, Settings, call controls, menus and sheets without a mouse; collapse/reopen.",
+      "passObservations": "All actions reachable forward/reverse with visible focus; Return uses the selected original record; hidden filters do not retain focus after collapse.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "GUI-04",
+      "name": "VoiceOver tasks",
+      "result": "unverified",
+      "run": null,
+      "procedure": "A proficient tester completes representative dial, history, Settings, call-control, menu and sheet tasks.",
+      "passObservations": "Correct spoken purpose/role/state, logical order and modal focus; tasks completed without sight. AX metadata alone cannot pass this row.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "GUI-05",
+      "name": "Native Open/Save panels",
+      "result": "unverified",
+      "run": null,
+      "procedure": "From isolated flows, keyboard-navigate panels, cancel/reopen and complete a scratch operation; test actual sandbox grant separately.",
+      "passObservations": "Focus enters modal context and returns to invoker; cancel makes no unintended write; correct path, filename/accessories and overwrite handling. Check current macOS panel shortcuts/layout.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "GUI-06",
+      "name": "Menus / symbols",
+      "result": "unverified",
+      "run": null,
+      "procedure": "Inspect actual app, context and popup menus in both appearances, with keyboard and VoiceOver.",
+      "passObservations": "Titles/states sufficient with or without images; appropriate native symbol visibility and disabled/selection/focus states; same-title account UUIDs remain selectable.",
+      "reason": "Not exercised in a separately recorded practical session."
+    },
+    {
+      "id": "COMPAT-01",
+      "name": "Earlier supported OS",
+      "result": "unverified",
+      "run": null,
+      "procedure": "On separately available supported older hardware/OS, repeat the relevant task/appearance subset.",
+      "passObservations": "Fallback materials and availability guards work with no unavailable-API crash; macOS 27 evidence cannot pass this row.",
+      "reason": "Not exercised in a separately recorded practical session."
+    }
+  ]
+}
