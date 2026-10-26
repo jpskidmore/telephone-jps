@@ -78,7 +78,7 @@ Activity-policy investigation #66 retains the current SIP-session activity after
 an isolated 16-sample comparison and a fresh token-balance fixture. It permits
 idle system sleep; no app energy/battery improvement or real readiness is claimed.
 Read [the measurement and retention decision](maintenance/2026-10-26-activity-policy.md).
-The next ranked source item is #68.
+The next ranked source item is #69.
 
 Call controls #67 now use current state events and diffed snapshots, with a
 one-second tolerant duration-only timer. Fresh isolated Telephone validation
@@ -86,7 +86,16 @@ passed 377 XCTest + 48 Swift Testing cases; final 18 focused cases and bounded
 baseline/candidate counters plus Time Profiler captures passed. Read
 [the call-control record](maintenance/2026-10-26-call-controls.md) for event
 coverage, lifecycle checks and measurement limits. No battery or live-call gain
-is claimed. The next ranked source item is #68.
+is claimed. The next ranked source item is #69.
+
+Recording recovery #68 now has a selectable native manager and a generation-checked
+asynchronous index; menu validation reads cached state. Owned retry/report/discard
+and cleanup participate in quit drains, with exclusive output creation and per-job
+confirmation before discard. Fresh isolated Telephone validation passed 428 XCTest
++ 48 Swift Testing cases, plus separate 105 recording ownership assertions, 32 native
+lifecycle checks, 11 audio wiring and 6 model/wiring checks. Light/Dark captures
+were inspected. Read [the recovery manager record](maintenance/2026-10-26-recording-recovery-browser.md).
+The next ranked source item is #69. These changes have not been installed/released.
 
 On 26 October the owner authorised **all remaining issues, one at a time**, with
 findings and outcomes logged in GitHub for other contributors. This resumes the

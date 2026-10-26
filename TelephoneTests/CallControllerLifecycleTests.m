@@ -220,6 +220,11 @@
 @interface RecordingOwnershipTests : XCTestCase
 @end
 @implementation RecordingOwnershipTests
+- (void)drainFinalizations {
+    XCTestExpectation *drained = [self expectationWithDescription:@"recording cleanup drained"];
+    AKWaitForPendingRecordingFinalizations(^{ [drained fulfill]; });
+    [self waitForExpectations:@[drained] timeout:3];
+}
 - (void)checkReplacementCompletingFirstCallFirst:(BOOL)firstCallFirst {
     AKHeadlessCallController *controller = [[AKHeadlessCallController alloc] initWithWindowNibName:@"Call"
         accountController:nil userAgent:nil delegate:nil];
@@ -241,8 +246,10 @@
     XCTAssertFalse(b.isRecording);
     XCTAssertEqual(scope.releases, 0u);
     [(firstCallFirst ? a : b) complete:YES];
+    [self drainFinalizations];
     XCTAssertEqual(scope.releases, 1u);
     [(firstCallFirst ? b : a) complete:NO]; // Failed conversion must also release.
+    [self drainFinalizations];
     XCTAssertEqual(scope.releases, 2u);
     [NSFileManager.defaultManager removeItemAtURL:a.testRoot error:nil];
     [NSFileManager.defaultManager removeItemAtURL:b.testRoot error:nil];
@@ -279,6 +286,7 @@
     call.nativeStopFails = NO;
     [call stopRecording];
     [call complete:YES];
+    [self drainFinalizations];
     XCTAssertEqual(scope.releases, 1u);
     [NSFileManager.defaultManager removeItemAtURL:call.testRoot error:nil];
 }
@@ -301,6 +309,7 @@
     XCTAssertEqual(b.nativeStops, 1u);
     [a complete:YES];
     [b complete:YES];
+    [self drainFinalizations];
     XCTAssertEqual(scope.releases, 2u);
     [NSFileManager.defaultManager removeItemAtURL:a.testRoot error:nil];
     [NSFileManager.defaultManager removeItemAtURL:b.testRoot error:nil];
@@ -344,6 +353,7 @@
     }
     [NSNotificationCenter.defaultCenter removeObserver:observer];
     [call complete:NO];
+    [self drainFinalizations];
     XCTAssertEqual(AKRecordingRecoveryJobsAtRoot(call.testRoot).count, 1u);
     XCTAssertEqualObjects([NSData dataWithContentsOfURL:local], original);
     XCTAssertTrue([NSFileManager.defaultManager fileExistsAtPath:remote.path]);
@@ -356,6 +366,7 @@
     AKRecordingJobOwnership *earlier = [call valueForKey:@"recordingJobOwnership"];
     [call stopRecording];
     [call complete:NO];
+    [self drainFinalizations];
     AKRecordingJobOwnership *current = AKClaimRecordingJob(call.testDirectory, nil);
     XCTAssertNotNil(current);
     AKFinishRecordingRecoveryJob(earlier, YES);
@@ -375,6 +386,7 @@
     call.manifestFails = YES;
     __block BOOL failed = NO;
     [call stopRecordingWithCompletion:^(BOOL succeeded) { failed = !succeeded; }];
+    [self drainFinalizations];
     XCTAssertTrue(failed);
     XCTAssertEqual(scope.releases, 1u);
     XCTAssertNil(call.pendingCompletion);

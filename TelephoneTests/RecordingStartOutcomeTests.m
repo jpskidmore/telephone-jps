@@ -101,6 +101,11 @@
 @property(nonatomic, strong) NSMutableArray<RSOCall *> *calls;
 @end
 @implementation RecordingStartOutcomeTests
+- (void)drainFinalizations {
+    XCTestExpectation *drained = [self expectationWithDescription:@"owned recording cleanup drained"];
+    AKWaitForPendingRecordingFinalizations(^{ [drained fulfill]; });
+    [self waitForExpectations:@[drained] timeout:3];
+}
 - (void)setUp {
     [super setUp];
     self.scratch = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString]
@@ -115,6 +120,7 @@
         call.heldOperation = nil;
         call.heldCompletion = nil;
     }
+    [self drainFinalizations];
     self.calls = nil;
     [NSFileManager.defaultManager removeItemAtURL:self.scratch error:nil];
     [super tearDown];
@@ -160,6 +166,7 @@
     XCTAssertEqual(scope.releases, 0u);
     XCTAssertEqual(AKRecordingRecoveryJobsAtRoot(call.scratchRoot).count, 0u);
     [call stopRecording];
+    [self drainFinalizations];
     XCTAssertEqual(scope.releases, 1u); XCTAssertEqual(call.nativeStops, 1u);
     XCTAssertFalse(call.isRecording); XCTAssertNil(call.recordingURL);
 }
@@ -220,7 +227,8 @@
     }];
     XCTAssertEqual(call.admissions, 1u); XCTAssertEqual(first.releases, 0u); XCTAssertEqual(duplicate.releases, 1u);
     XCTAssertTrue([NSFileManager.defaultManager fileExistsAtPath:URL.path]);
-    [call runWorker]; [call completeWorker]; [call stopRecording]; XCTAssertEqual(first.releases, 1u);
+    [call runWorker]; [call completeWorker]; [call stopRecording];
+    [self drainFinalizations]; XCTAssertEqual(first.releases, 1u);
 }
 - (void)testActiveDuplicatePreservesDestinationAndCleansItsSeparateReservation {
     RSOCall *call = [self newCall]; NSURL *URL = [self reservation]; RSOAccessSpy *first = [self scopeForURL:URL];
@@ -252,6 +260,7 @@
     RSOCall *replacement = [self newCall]; NSURL *newURL = [self reservation]; RSOAccessSpy *newScope = [self scopeForURL:newURL];
     XCTAssertEqual([self startCall:replacement URL:newURL scope:newScope], AKRecordingStartResultSuccess);
     [old completeWorker];
+    [self drainFinalizations];
     XCTAssertEqual(oldResult, AKRecordingStartResultStaleCall); XCTAssertEqual(oldScope.releases, 1u);
     XCTAssertTrue(replacement.isRecording); XCTAssertEqualObjects(replacement.recordingURL, newURL);
     XCTAssertEqual(replacement.nativeStops, 0u); XCTAssertEqual(newScope.releases, 0u);

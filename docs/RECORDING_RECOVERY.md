@@ -1,35 +1,18 @@
 # Recording and call-history recovery
 
-This describes recovery behaviour introduced by the published **3.0/build 161**
-repair and retained in later releases. Start with [current maintenance and release
-status](MAINTENANCE.md) for the installed baseline; later source changes are not
-installed updates.
-The [repair map](REPAIR_VERIFICATION.md) preserves the controlled 3.0 evidence;
-[VALIDATION.md](VALIDATION.md) defines checks for later authorised changes. This
-documentation update adds no test result. Recovery uses compact native alerts
-and menu actions without expanding the accepted call or Settings layouts.
+The source on main now includes [#68's recovery manager](maintenance/2026-10-26-recording-recovery-browser.md), verified on 26 October 2026. This is not an installed update: the released 3.6.1/build 165 still uses the earlier sequential alert. Start with [current maintenance](MAINTENANCE.md) for delivery status. The durable retention/ownership baseline from 3.0 and 3.6 is preserved.
 
-## Recovering a recording
+## Recovering a recording on current main
 
-If a captured recording cannot be exported, Telephone retains its original local
-and remote audio and shows **Recording could not be saved**. Choose **Retry**,
-**Save Elsewhere…**, **Show Recovery Files**, or **Later**. The Telephone menu's
-**Recover Recordings…** action remains available while a recoverable job exists.
-Jobs are discovered again when the app opens.
+**jps Telephone → Recover Recordings…** opens a selectable native list with filename, date, retained raw size, state, actual destination and last known error. Choose **Retry**, **Save Elsewhere…**, **Reveal**, or **Refresh**. Closing the window keeps files and admitted work. **Discard…** requires explicit confirmation for only the selected unowned job; no automatic expiry/deletion exists.
 
-Retry uses the original filename when it is safe and available. An existing file,
-missing/damaged destination metadata, or a destination inside the raw recovery
-folder requires a fresh destination. Save Elsewhere uses the native save panel.
-Recovery never silently replaces a later recording at the old filename. If the
-chosen destination cannot be written, the originals remain available for another
-attempt. A granted destination security-scope token remains active for the
-complete asynchronous export and is released before the completion callback;
-an ungranted token is never stopped.
+Discovery and recovery file work run off main. Cached menu validation performs no scan. Failed checks keep previous entries and show an error rather than an empty success. Pending jobs remain visible with indeterminate progress; closing/reopening cannot submit an old panel choice or duplicate operation.
 
-At Quit, **Keep Files and Quit** retains unfinished recovery jobs for reopening;
-**Stay Open** cancels termination. These choices follow pending conversion and
-history persistence, rather than interrupting them. If history still cannot be
-saved, Quit is cancelled and a separate history error offers retry.
+Retry uses an available original filename or a new native save-panel destination. Invalid metadata requires Save Elsewhere. Existing files are never silently overwritten, including files appearing during conversion: private staging publishes to an exclusively created output. Failed export retains original audio and any staging data for another attempt. Raw size counts original tracks, excluding staging/metadata. A granted scope lasts through export/cleanup and is released before completion; an ungranted token is never stopped.
+
+Quit closes new recovery admission and waits for recording and history drains, then checks recovery asynchronously. **Keep Files and Quit** retains unfinished jobs; **Stay Open** cancels termination and reopens actions. A failed recovery check has its own explicit decision. Failed history persistence cancels Quit separately. Native callbacks/generations reject stale and repeated termination replies.
+
+Actual installed save panels, sandbox grants, quit/reopen, provider/hardware and proficient VoiceOver remain pending in [#62's matrix](MACOS_27_ACCEPTANCE.md). [Fresh source evidence and limits](maintenance/2026-10-26-recording-recovery-browser.md) are separate from installation/release.
 
 ## Durable data and ownership
 

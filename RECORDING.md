@@ -42,8 +42,10 @@ large or queued recordings can therefore delay exit while the interface remains
 responsive. Force Quit, a crash or power loss cannot provide that completion guarantee.
 
 If conversion fails, the original tracks remain in a protected recovery job.
-Use **jps Telephone → Recover Recordings…** for **Retry**, **Save Elsewhere…**,
-**Show Recovery Files**, or **Later**. Read the [recovery guide](docs/RECORDING_RECOVERY.md)
+On current main, **jps Telephone → Recover Recordings…** opens a selectable list
+with **Retry**, **Save Elsewhere…**, **Reveal** and confirmed **Discard…**. Closing
+the window keeps files and pending work. This source improvement is not an
+installed update; released 3.6.1 uses the earlier sequential alert. Read the [recovery guide](docs/RECORDING_RECOVERY.md)
 for destination safety, retained files and Quit choices.
 
 Published controlled checks do not establish real recording capture, physical

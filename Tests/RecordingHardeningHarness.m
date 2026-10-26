@@ -11,7 +11,16 @@
 // cases run. The actual file conversion stays real; no sandbox grant is requested.
 static NSUInteger ScopeStarts, ScopeStops;
 static BOOL ScopeGrant;
-static BOOL ScopeStart(NSURL *URL, SEL selector) { ScopeStarts++; return ScopeGrant; }
+static NSString *ScopeBlockedTarget;
+static dispatch_semaphore_t ScopeBlockedEntered, ScopeBlockedRelease;
+static BOOL ScopeStart(NSURL *URL, SEL selector) {
+    ScopeStarts++;
+    if ([URL.absoluteString isEqual:ScopeBlockedTarget]) {
+        dispatch_semaphore_signal(ScopeBlockedEntered);
+        dispatch_semaphore_wait(ScopeBlockedRelease, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+    }
+    return ScopeGrant;
+}
 static void ScopeStop(NSURL *URL, SEL selector) { ScopeStops++; }
 
 static AudioStreamBasicDescription FloatPCM(Float64 rate, UInt32 channels) {
@@ -187,12 +196,23 @@ static BOOL RunOwnershipCases(NSURL *scratch, NSURL *executable) {
     forgedTracks[@"remoteURL"] = forgedTracks[@"localURL"];
     __block NSUInteger successfulCallbacks = 0;
     __block BOOL successfulOnMain = NO;
+    Method blockedStart = class_getInstanceMethod(NSURL.class, @selector(startAccessingSecurityScopedResource));
+    IMP originalBlockedStart = method_setImplementation(blockedStart, (IMP)ScopeStart);
+    ScopeBlockedTarget = output.absoluteString;
+    ScopeBlockedEntered = dispatch_semaphore_create(0); ScopeBlockedRelease = dispatch_semaphore_create(0);
+    ScopeGrant = NO;
     AKRetryRecordingRecoveryJob(forgedTracks, output, ^(BOOL succeeded) {
         successfulCallbacks++; successfulOnMain = succeeded && NSThread.isMainThread;
     });
-    // Main has not run the encoder completion, so finalisation is held even if
-    // the short synthetic conversion has already finished on its worker.
-    REQUIRE_OWNERSHIP([ReadManifest(directory)[@"state"] isEqual:@"finalising"]);
+    // Admission returns before any file I/O. Hold the actual claimed worker at
+    // this attempt's scope boundary while main processes its duplicate rejection.
+    __block BOOL blockedWorkerEntered = NO;
+    REQUIRE_OWNERSHIP(SpinUntil(^BOOL {
+        if (!blockedWorkerEntered)
+            blockedWorkerEntered = dispatch_semaphore_wait(ScopeBlockedEntered, DISPATCH_TIME_NOW) == 0;
+        return blockedWorkerEntered;
+    }, 2));
+    REQUIRE_OWNERSHIP([ReadManifest(directory)[@"state"] isEqual:@"failed"]);
     REQUIRE_OWNERSHIP(AKRecordingRecoveryJobsAtRoot(root).count == 0);
     REQUIRE_OWNERSHIP(AKClaimRecordingJob(directory, nil) == nil);
     AKRetryRecordingRecoveryJob(snapshot, [scratch URLByAppendingPathComponent:@"duplicate.wav"], ^(BOOL succeeded) {
@@ -202,7 +222,11 @@ static BOOL RunOwnershipCases(NSURL *scratch, NSURL *executable) {
     AKWaitForPendingRecordingFinalizations(^{
         drained = successfulCallbacks == 1 && ![manager fileExistsAtPath:directory.path] && NSThread.isMainThread;
     });
+    REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return rejectedCallbacks == 3; }, 2));
+    REQUIRE_OWNERSHIP(!drained && successfulCallbacks == 0);
+    dispatch_semaphore_signal(ScopeBlockedRelease);
     REQUIRE_OWNERSHIP(SpinUntil(^BOOL { return drained && rejectedCallbacks == 3; }, 10));
+    method_setImplementation(blockedStart, originalBlockedStart); ScopeBlockedTarget = nil;
     REQUIRE_OWNERSHIP(successfulOnMain && rejectionOnMain && failures == 0 && CheckWaveChannels(output));
     REQUIRE_OWNERSHIP(![manager fileExistsAtPath:[scratch URLByAppendingPathComponent:@"duplicate.wav"].path]);
     AKRetryRecordingRecoveryJob(snapshot, [scratch URLByAppendingPathComponent:@"stale.wav"], ^(BOOL succeeded) {

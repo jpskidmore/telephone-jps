@@ -4,6 +4,9 @@
 @interface AppController (TerminationRegressionInterface)
 - (void)finishTerminationAfterRecordings;
 - (NSArray *)pendingRecordingRecoveryJobs;
+- (void)refreshRecordingRecoveryJobsWithCompletion:(void (^)(BOOL current, NSArray *jobs, NSError *error))completion;
+- (BOOL)confirmQuitWithRecordingRecoveryError:(NSError *)error;
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender;
 - (void)waitForRecordingFinalizations:(dispatch_block_t)completion;
 - (void)finishPendingHistoryWrites:(dispatch_block_t)completion;
 - (void)retryFailedHistoryWrites:(void (^)(BOOL))completion;
@@ -41,6 +44,10 @@
 @property(nonatomic) NSUInteger historyWarnings;
 @property(nonatomic) NSUInteger recordingConfirmations;
 @property(nonatomic) BOOL allowQuitWithRecovery;
+@property(nonatomic) BOOL deferRecoveryScan, allowQuitWithScanError;
+@property(nonatomic) NSUInteger recoveryScans, scanWarnings;
+@property(nonatomic) NSError *recoveryScanError;
+@property(nonatomic, copy) void (^scanCompletion)(BOOL, NSArray *, NSError *);
 - (instancetype)initForRegression;
 @end
 @implementation ControlledTerminationController
@@ -51,12 +58,18 @@
     _inertAgent = [InertTerminationAgent new];
     _jobs = @[];
     _replies = [NSMutableArray array];
-    _allowQuitWithRecovery = YES;
+    _allowQuitWithRecovery = YES; _allowQuitWithScanError = YES;
     [self setValue:@YES forKey:@"terminating"];
     return self;
 }
 - (AKSIPUserAgent *)userAgent { return (id)self.inertAgent; }
 - (NSArray *)pendingRecordingRecoveryJobs { return self.jobs; }
+- (void)refreshRecordingRecoveryJobsWithCompletion:(void (^)(BOOL, NSArray *, NSError *))completion {
+    self.recoveryScans++;
+    if (self.deferRecoveryScan) self.scanCompletion = completion;
+    else completion(YES, self.jobs, self.recoveryScanError);
+}
+- (BOOL)confirmQuitWithRecordingRecoveryError:(NSError *)error { self.scanWarnings++; return self.allowQuitWithScanError; }
 - (void)waitForRecordingFinalizations:(dispatch_block_t)completion {
     self.recordingWaitCount++; self.recordingCompletion = completion;
 }
@@ -97,6 +110,61 @@
     [controller finishTerminationAfterRecordings];
     XCTAssertEqual(controller.recordingWaitCount, 1u, @"A late stop/quit callback after YES must be idempotent");
     controller.recordingCompletion = nil; controller.historyCompletion = nil; controller.retryCompletion = nil;
+}
+- (void)testQuitWaitsForFreshRecoveryScanAndRepeatedQuitDoesNotReadmitBarriers {
+    ControlledTerminationController *controller = [[ControlledTerminationController alloc] initForRegression];
+    controller.deferRecoveryScan = YES;
+    [controller finishTerminationAfterRecordings];
+    controller.recordingCompletion(); controller.historyCompletion(); controller.retryCompletion(YES);
+    XCTAssertEqual(controller.recoveryScans, 1u); XCTAssertEqual(controller.replies.count, 0u);
+    [controller finishTerminationAfterRecordings];
+    XCTAssertEqual([controller applicationShouldTerminate:nil], NSTerminateLater);
+    XCTAssertEqual(controller.recordingWaitCount, 1u); XCTAssertEqual(controller.recoveryScans, 1u);
+    void (^scan)(BOOL, NSArray *, NSError *) = controller.scanCompletion;
+    scan(YES, @[], nil); scan(YES, @[], nil);
+    XCTAssertEqualObjects(controller.replies, (@[@YES]));
+    XCTAssertEqual([controller applicationShouldTerminate:nil], NSTerminateNow);
+    controller.scanCompletion = nil; controller.recordingCompletion = nil; controller.historyCompletion = nil; controller.retryCompletion = nil;
+}
+- (void)testSupersededRecoveryScanRetriesDiscoveryWithoutRepeatingPersistenceDrains {
+    ControlledTerminationController *controller = [[ControlledTerminationController alloc] initForRegression];
+    controller.deferRecoveryScan = YES;
+    [controller finishTerminationAfterRecordings];
+    controller.recordingCompletion(); controller.historyCompletion(); controller.retryCompletion(YES);
+    controller.scanCompletion(NO, @[], nil);
+    XCTAssertEqual(controller.recoveryScans, 2u); XCTAssertEqual(controller.recordingWaitCount, 1u);
+    XCTAssertEqual(controller.historyWaitCount, 1u); XCTAssertEqual(controller.retryCount, 1u); XCTAssertEqual(controller.replies.count, 0u);
+    controller.scanCompletion(YES, @[], nil); XCTAssertEqualObjects(controller.replies, (@[@YES]));
+    controller.scanCompletion = nil; controller.recordingCompletion = nil; controller.historyCompletion = nil; controller.retryCompletion = nil;
+}
+- (void)testCancelledQuitScanCannotReplyDuringANewerQuitAttempt {
+    ControlledTerminationController *controller = [[ControlledTerminationController alloc] initForRegression];
+    controller.deferRecoveryScan = YES; controller.allowQuitWithScanError = NO;
+    [controller finishTerminationAfterRecordings];
+    controller.recordingCompletion(); controller.historyCompletion(); controller.retryCompletion(YES);
+    void (^oldScan)(BOOL, NSArray *, NSError *) = controller.scanCompletion;
+    oldScan(YES, @[], [NSError errorWithDomain:NSPOSIXErrorDomain code:5 userInfo:nil]);
+    XCTAssertEqualObjects(controller.replies, (@[@NO]));
+    [controller.replies removeAllObjects]; [controller setValue:@YES forKey:@"terminating"];
+    [controller finishTerminationAfterRecordings];
+    oldScan(YES, @[], nil);
+    XCTAssertEqual(controller.replies.count, 0u); XCTAssertEqual(controller.recordingWaitCount, 2u);
+    controller.recordingCompletion(); controller.historyCompletion(); controller.retryCompletion(YES);
+    controller.scanCompletion(YES, @[], nil); XCTAssertEqualObjects(controller.replies, (@[@YES]));
+    controller.scanCompletion = nil; controller.recordingCompletion = nil; controller.historyCompletion = nil; controller.retryCompletion = nil;
+}
+- (void)testRecoveryScanFailureHasAnExplicitKeepOrStayDecision {
+    for (NSNumber *allow in @[@YES, @NO]) {
+        ControlledTerminationController *controller = [[ControlledTerminationController alloc] initForRegression];
+        controller.recoveryScanError = [NSError errorWithDomain:NSPOSIXErrorDomain code:5 userInfo:nil];
+        controller.allowQuitWithScanError = allow.boolValue;
+        [controller finishTerminationAfterRecordings];
+        controller.recordingCompletion(); controller.historyCompletion(); controller.retryCompletion(YES);
+        XCTAssertEqualObjects(controller.replies, (@[allow])); XCTAssertEqual(controller.scanWarnings, 1u);
+        XCTAssertEqual(controller.recordingConfirmations, 0u); XCTAssertEqual(controller.historyWarnings, 0u);
+        XCTAssertEqual([[controller valueForKey:@"terminating"] boolValue], allow.boolValue);
+        controller.recordingCompletion = nil; controller.historyCompletion = nil; controller.retryCompletion = nil;
+    }
 }
 - (void)testHistoryFailureCancelsQuitAndWarnsEvenWithRecordingRecoveryJobs {
     ControlledTerminationController *controller = [[ControlledTerminationController alloc] initForRegression];

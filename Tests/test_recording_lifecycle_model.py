@@ -100,7 +100,8 @@ class RecordingLifecycleModelTests(unittest.TestCase):
         self.assertLess(convert, release)
         self.assertIn('dispatch_group_enter(RecordingFinalizations());', encoder)
         self.assertIn('dispatch_group_notify(RecordingFinalizations(), dispatch_get_main_queue(), completion);', encoder)
-        self.assertLess(encoder.index('completion(succeeded);'), encoder.index('dispatch_group_leave(RecordingFinalizations());'))
+        merge_async = encoder.split('void AKMergeMonoRecordingsIntoStereoAsync(', 1)[1].split('BOOL AKMergeMonoRecordingsIntoStereo(', 1)[0]
+        self.assertLess(merge_async.index('completion(succeeded);'), merge_async.index('dispatch_group_leave(RecordingFinalizations());'))
         self.assertNotIn('dispatch_group_wait', encoder + app)
         self.assertIn('[self waitForRecordingFinalizations:^{', app)
         self.assertIn('AKWaitForPendingRecordingFinalizations(completion)', app)

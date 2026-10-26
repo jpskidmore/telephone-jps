@@ -1,0 +1,119 @@
+{
+  "issue": 68,
+  "dateUTC": "2026-10-26T23:39:59.919987Z",
+  "baseline": "e78bb51aa9752b19264f881cad56797f5502a905",
+  "status": "source_verified_not_installed_or_released",
+  "platform": {
+    "os": "27.0.1",
+    "build": "26A434",
+    "xcode": "Xcode 27.1\nBuild version 27A9275",
+    "arch": "arm64",
+    "deploymentTarget": "macOS15.6"
+  },
+  "sourceSHA256": {
+    "Telephone/AKStereoRecording.h": "235419944208f6777432c85272adbfa73fb11bc52e4a456f17964ac46569da09",
+    "Telephone/AKStereoRecording.m": "68cebbddb7802f53332396781307d4bc9e7fe4c3b7de6df1c1ebec298ce7bf28",
+    "Telephone/AKSIPCall.m": "4743018153d5f8ca2fddd459ad27a5a521fe3ffc53e125c39b38d63a2ad83820",
+    "Telephone/AKRecordingRecoveryIndex.h": "8a3a3788decc129d8230acfd5380cec594f174103030d5b23fc30cdbfd0ec80b",
+    "Telephone/AKRecordingRecoveryIndex.m": "37884e3ac7775165fd2dcc3293c3eb603b854803744ccb5016ff42b2678832fb",
+    "Telephone/RecordingRecoveryController.h": "eaebb53ac6949d7b68ee64cd2a33e9189881cae91e15abc411257b1124164ed4",
+    "Telephone/RecordingRecoveryController.m": "28bfb08d9fa7edf33c413f092ba58cddaa7d20a390e07a42d4b503ee460f5b9e",
+    "Telephone/AppController.m": "6b62eb3cb8bea9232093ff296d826a008f8b623a0737be01661e50f5b9753329",
+    "TelephoneTests/RecordingRecoveryIndexTests.m": "eb48871b9c667ab38fd662ce9d9a40691e8ac13a5385d2de450acae2c6365f44",
+    "TelephoneTests/RecordingRecoveryMetadataTests.m": "3cb6f4b815193d81c72960a9e9d43b868b8d1e88b820ba773da75a4c8e7963a2",
+    "TelephoneTests/RecordingRecoveryAsyncTests.m": "4330b726a7d028c5b9ebc65a45a44489d0f660a7b7e55a25601f844bbfa12c71",
+    "TelephoneTests/RecordingRecoveryPresentationTests.m": "b39ee160a4a48fb41b19170d0ef229aaf04e3c5330f1dea68a3eef5ad5b0e61a",
+    "TelephoneTests/RecordingRecoveryIntegrationTests.m": "ceaa7cf8f79766f22f3ae6a88107e610f755b688531ca4e9e3f4422b03387919",
+    "TelephoneTests/RecordingRecoveryPerformanceTests.m": "e84749db24c9a99113e7040e592802f792e712c3721e484d1d2317febae4f7c9",
+    "TelephoneTests/AppTerminationRegressionTests.m": "084ff0bcbf6745a66e237f26fbcb6d9e3678d24ed0d872c7934fe5e680ec5732",
+    "TelephoneTests/CallControllerLifecycleTests.m": "bbe4779fea281838d72cb3a5f30ed138b637f817b7b96ce1e19df01725f47042",
+    "TelephoneTests/RecordingStartOutcomeTests.m": "591e063617f0452217e4749ada4b17514f2f98c1823f160c6e24d7c393236062",
+    "Tests/RecordingHardeningHarness.m": "59a5ca69eec55ef6cd3b53efccdc938fed3fa14692bc089070d2a92db05a768a",
+    "Tests/test_recording_lifecycle_model.py": "69349332dc74db74b3acec93952613e5a3a2e5abcef953c238170ec26f8562d9"
+  },
+  "freshValidation": {
+    "completeTelephoneSuite": {
+      "XCTest": 428,
+      "SwiftTesting": 48,
+      "failures": 0,
+      "resultBundle": "/private/tmp/jps-recovery68-final-v2-full.xcresult"
+    },
+    "newCasesInCompleteSuite": {
+      "metadataAndDiscard": 12,
+      "index": 5,
+      "asyncOwnershipAndExport": 9,
+      "nativePresentation": 15,
+      "appIntegration": 4,
+      "syntheticCollections": 2,
+      "additionalQuitScenarios": 4,
+      "total": 51
+    },
+    "separateComponents": {
+      "syntheticEncodingRecoveryOwnershipAssertions": 105,
+      "nativeSIPWorkerLifecycleChecks": 32,
+      "audioSourceWiringChecks": 11,
+      "recordingLifecycleModelAndWiringChecks": 6
+    },
+    "otherFrameworks": "Unchanged. Prior results are historical, not freshly rerun or added."
+  },
+  "performance": [
+    {
+      "cachedMenuValidationCount": 1000,
+      "cachedMenuValidationElapsedSeconds": 0.00014983332948759198,
+      "cachedMenuValidationProcessSystemCPUSeconds": 1.999999999946489e-06,
+      "cachedMenuValidationProcessUserCPUSeconds": 0.0001499999999996504,
+      "filesystemCacheEvicted": false,
+      "jobCount": 100,
+      "mainQueueCallbacksWhileScanActive": 25,
+      "mainQueueProbeIntervalSeconds": 0.001,
+      "os": "Version 27.0.1 (Build 26A434)",
+      "pid": 27542,
+      "retainedRawBytes": 12800,
+      "scanElapsedSeconds": 0.02503174998855684,
+      "scanLoaderCalls": 1,
+      "scanLoaderCallsAfterMenuValidation": 1,
+      "scanProcessSystemCPUSeconds": 0.016635999999999984,
+      "scanProcessUserCPUSeconds": 0.009635000000000282,
+      "scope": "synthetic_first_utility_read_and_cached_menu_validation"
+    },
+    {
+      "cachedMenuValidationCount": 1000,
+      "cachedMenuValidationElapsedSeconds": 0.00014233333058655262,
+      "cachedMenuValidationProcessSystemCPUSeconds": 5.000000000032756e-06,
+      "cachedMenuValidationProcessUserCPUSeconds": 0.00014200000000030855,
+      "filesystemCacheEvicted": false,
+      "jobCount": 500,
+      "mainQueueCallbacksWhileScanActive": 119,
+      "mainQueueProbeIntervalSeconds": 0.001,
+      "os": "Version 27.0.1 (Build 26A434)",
+      "pid": 27542,
+      "retainedRawBytes": 64000,
+      "scanElapsedSeconds": 0.11866016665589996,
+      "scanLoaderCalls": 1,
+      "scanLoaderCallsAfterMenuValidation": 1,
+      "scanProcessSystemCPUSeconds": 0.080924,
+      "scanProcessUserCPUSeconds": 0.041551000000000116,
+      "scope": "synthetic_first_utility_read_and_cached_menu_validation"
+    }
+  ],
+  "images": {
+    "docs/maintenance/images/2026-10-26-recovery-light.png": "0227ab3d58f436498504ab6e1b7121db534d0579a0adb1d92fa39c473270cec6",
+    "docs/maintenance/images/2026-10-26-recovery-dark.png": "871c8b170f472eacfed6f6a0e60be95de4a3752f688c9fab1270802bca7be54e"
+  },
+  "logs": {
+    "/private/tmp/jps-recovery68-final-v2-build.log": "86cb333e64e4fe637f28060e6fd72b8ed5a424e066050b629ddf79bc49487548",
+    "/private/tmp/jps-recovery68-final-v2-full.log": "c66ea732f22e2452f1ef529049bea490c02b3f2e7149027f37340f325b00f6f1",
+    "/private/tmp/jps-recovery68-final-harness-v2.log": "ef7892c14c28f5134587700907bfa7859c01cf53951e1c5b48b599f0081cb2b0",
+    "/private/tmp/jps-recovery68-native-lifecycle.log": "c2c014d2f7d39d57158c13b7fccf4a300fed2e7ab19e0b496a9185d20d7cc673",
+    "/private/tmp/jps-recovery68-audio-wiring.log": "7f996fde1206463de8b66dfebee80cbdd164e13fd239f12a0be4381145aadcb2",
+    "/private/tmp/jps-recovery68-recording-model-final.log": "91b176562b61c6f5288297e50ff8f09cbd6a6a6ee226d47c94a6823d2611f5d7"
+  },
+  "nativeLifecycleProof": "/private/tmp/jps-recovery68-native-lifecycle/results.json",
+  "limits": [
+    "Only synthetic recovery jobs, defaults, calls, scope boundaries and inert native lifecycle used.",
+    "First utility reads on current filesystem cache, not cold/energy/battery measurements; process CPU includes framework/test overhead.",
+    "Raw size reports the two source tracks, excluding manifests, locks and any retained encoded staging file.",
+    "Actual installed save panels, sandbox grants, provider/audio hardware, quit/reopen and proficient VoiceOver remain pending in #62.",
+    "Native capture-start metadata admission still retains its existing synchronous behaviour; this issue removes recovery discovery/actions/final cleanup IO from UI paths."
+  ]
+}

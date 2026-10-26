@@ -35,6 +35,13 @@ BOOL AKPersistOwnedRecordingRecoveryJob(AKRecordingJobOwnership *owner,
 // Idempotent. Failure records failed state and retains raw tracks; success marks
 // completed before owner-only cleanup. Both release the exclusive claim.
 void AKFinishRecordingRecoveryJob(AKRecordingJobOwnership *owner, BOOL succeeded);
+// Retains the existing claim through utility-worker metadata/cleanup. A failure
+// records its actual error (or truthful generic detail) before notifying on main.
+// Completion is asynchronous on main and included in the termination drain. A
+// nil destination omits the export notification for incomplete-session cleanup.
+void AKFinishRecordingRecoveryJobAsync(AKRecordingJobOwnership *owner, BOOL succeeded,
+                                       NSURL * _Nullable destination, NSError * _Nullable error,
+                                       dispatch_block_t _Nullable completion);
 // Owner-only cleanup for a recording which could not start.
 void AKDiscardRecordingRecoveryJob(AKRecordingJobOwnership *owner);
 
@@ -44,9 +51,30 @@ BOOL AKPersistRecordingRecoveryJob(NSURL *directory, NSURL *local, NSURL *remote
                                    NSURL *destination, NSError **error);
 NSArray<NSDictionary *> *AKPendingRecordingRecoveryJobs(void);
 NSArray<NSDictionary *> *AKRecordingRecoveryJobsAtRoot(NSURL *root);
+// Synchronous discovery; callers should run it on their utility worker. A missing
+// root is an empty result; an unreadable root/job returns nil and its real error.
+// Busy/completed jobs are excluded. Stable snapshots include directoryIdentity
+// (device:inode), created, title, retainedRawBytes, phase, lastErrorDescription,
+// and lastError only when an actual NSError was recorded. Safe legacy/orphan
+// tracks have truthful unknown metadata. Results sort by created, then identity.
+NSArray<NSDictionary *> * _Nullable AKPendingRecordingRecoveryJobsWithError(NSError **error);
+NSArray<NSDictionary *> * _Nullable AKRecordingRecoveryJobsAtRootWithError(NSURL *root, NSError **error);
+// For an explicitly confirmed UI snapshot only. Requires its exact nonempty
+// directoryIdentity, reacquires ownership and rereads eligibility before retiring
+// the directory name and removing it. No automatic discard or expiry is implied.
+BOOL AKDiscardPendingRecordingRecoveryJob(NSDictionary *job, NSError **error);
+void AKDiscardPendingRecordingRecoveryJobAsync(NSDictionary *job,
+    void (^completion)(BOOL succeeded, NSError * _Nullable error));
+// Asynchronously reports on main after best-effort utility-worker persistence.
+// The legacy persist entry point binds identity/revision to its directory URL;
+// without that context this API only notifies. Owned finalizers use the async
+// finish API so a late report cannot rewrite a replacement or newer attempt.
+// Nil error does not invent a native error code. Included in termination drain.
 void AKReportRecordingExportFailure(NSURL *directory, NSURL *destination, NSError * _Nullable error);
-// Revalidates current files under an exclusive claim. Busy/stale admission is
-// rejected asynchronously on main without reporting a new export failure.
+// Copies the chosen snapshot and admits before dispatching any file I/O. Its
+// exact directoryIdentity is required. Revalidates on a serial utility worker;
+// busy/stale admission is rejected on main without a new export failure. Scope
+// release, notification and main completion are included in termination drain.
 void AKRetryRecordingRecoveryJob(NSDictionary *job, NSURL *destination,
                                  void (^completion)(BOOL succeeded));
 
@@ -68,9 +96,10 @@ void AKMergeMonoRecordingsIntoStereoAsync(NSURL *localURL,
                                           NSURL *destinationURL,
                                           void (^completion)(BOOL succeeded));
 
-// Asynchronously waits for conversions already submitted, including their main-
-// queue completion/cleanup callbacks. Stop call production before using this as
-// the application-termination barrier. Always calls back on the main queue.
+// Waits for admitted conversions, retries, async discards and finalization/error
+// reports, including their main completion/cleanup callbacks and nested work.
+// Stop call/recovery action production before this termination barrier.
+// Always calls back asynchronously on the main queue.
 void AKWaitForPendingRecordingFinalizations(dispatch_block_t completion);
 
 NS_ASSUME_NONNULL_END

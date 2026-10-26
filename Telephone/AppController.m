@@ -25,6 +25,7 @@
 #import "AKSIPAccount.h"
 #import "AKSIPCall.h"
 #import "AKStereoRecording.h"
+#import "RecordingRecoveryController.h"
 
 #import "AccountController.h"
 #import "AccountControllers.h"
@@ -55,6 +56,7 @@ static const NSTimeInterval AKAudioRecoverySlowInterval = 5.0;
 @property(nonatomic, getter=isTerminating) BOOL terminating;
 @property(nonatomic) BOOL waitingForRecordingFinalizations;
 @property(nonatomic) BOOL terminationReplySent;
+@property(nonatomic) NSUInteger terminationGeneration;
 @property(nonatomic) BOOL shouldPresentUserAgentLaunchError;
 @property(nonatomic) BOOL hasPresentedAudioFailure;
 @property(nonatomic, nullable) NSAlert *audioFailureAlert;
@@ -72,7 +74,7 @@ static const NSTimeInterval AKAudioRecoverySlowInterval = 5.0;
 @property(nonatomic) BOOL audioRecoveryIsSlow;
 @property(nonatomic) BOOL audioRecoveryDidRecover;
 @property(nonatomic, nullable) NSMenuItem *recordingRecoveryMenuItem;
-@property(nonatomic) BOOL presentingRecordingRecovery;
+@property(nonatomic) RecordingRecoveryController *recordingRecoveryController;
 @property(nonatomic) BOOL presentingHistoryError;
 @property(nonatomic) AccountsMenuItems *accountsMenuItems;
 @property(nonatomic) SharedDialerController *sharedDialler;
@@ -94,6 +96,10 @@ static const NSTimeInterval AKAudioRecoverySlowInterval = 5.0;
 @property(nonatomic, readonly, nullable) NameServers *nameServers;
 
 - (void)finishTerminationAfterRecordings;
+- (void)finishTerminationAfterRecoveryScan;
+- (void)refreshRecordingRecoveryJobsWithCompletion:(void (^)(BOOL, NSArray *, NSError * _Nullable))completion;
+- (void)updateRecordingRecoveryMenuItem;
+- (BOOL)confirmQuitWithRecordingRecoveryError:(NSError *)error;
 
 @end
 
@@ -104,6 +110,27 @@ NS_ASSUME_NONNULL_END
 
 @synthesize accountSetupController = _accountSetupController;
 @synthesize terminating = _terminating;
+@synthesize recordingRecoveryController = _recordingRecoveryController;
+
+- (RecordingRecoveryController *)recordingRecoveryController {
+    if (_recordingRecoveryController == nil) {
+        _recordingRecoveryController = [[RecordingRecoveryController alloc] initWithLoader:^NSArray *(NSError **error) {
+            return AKPendingRecordingRecoveryJobsWithError(error);
+        }];
+        _recordingRecoveryController.actionsEnabled = !self.isTerminating;
+        __weak AppController *weakSelf = self;
+        _recordingRecoveryController.stateDidChange = ^{ [weakSelf updateRecordingRecoveryMenuItem]; };
+    }
+    return _recordingRecoveryController;
+}
+
+- (void)updateRecordingRecoveryMenuItem {
+    if (self.recordingRecoveryMenuItem == nil) return;
+    NSUInteger count = self.recordingRecoveryController.managedJobCount;
+    self.recordingRecoveryMenuItem.title = count > 0
+        ? [NSString stringWithFormat:NSLocalizedString(@"Recover Recordings… (%lu)", @"Recovery menu with eligible recording count."), (unsigned long)count]
+        : NSLocalizedString(@"Recover Recordings…", @"Recording recovery menu.");
+}
 
 - (AccountSetupController *)accountSetupController {
     if (_accountSetupController == nil) {
@@ -304,7 +331,9 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)setTerminating:(BOOL)terminating {
+    if (_terminating != terminating) self.terminationGeneration++;
     _terminating = terminating;
+    _recordingRecoveryController.actionsEnabled = !terminating;
     if (!terminating) return;
     [self invalidateAudioRecoveryWatchdog];
     if (self.retryAudioMenuItem != nil) {
@@ -455,7 +484,12 @@ NS_ASSUME_NONNULL_END
     if (menuItem.action == @selector(retryAudio:)) {
         return self.userAgent.hasAudioFailure && self.userAgent.isStarted && !self.isTerminating && !self.userAgent.audioCommandPending;
     }
-    if (menuItem.action == @selector(recoverRecordings:)) return [self pendingRecordingRecoveryJobs].count > 0 && !self.isTerminating;
+    if (menuItem.action == @selector(recoverRecordings:)) {
+        if (self.isTerminating) return NO;
+        AKRecordingRecoveryIndex *index = self.recordingRecoveryController.index;
+        // Validation is a cache read, including unknown/loading/failed discovery.
+        return !index.hasLoaded || index.isRefreshing || index.error != nil || self.recordingRecoveryController.managedJobCount > 0;
+    }
     return YES;
 }
 
@@ -843,9 +877,9 @@ NS_ASSUME_NONNULL_END
     self.recordingRecoveryMenuItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Recover Recordings…", @"Recording recovery menu.") action:@selector(recoverRecordings:) keyEquivalent:@""];
     self.recordingRecoveryMenuItem.target = self;
     [applicationMenu insertItem:self.recordingRecoveryMenuItem atIndex:[applicationMenu indexOfItem:self.preferencesMenuItem] + 1];
-    if ([self pendingRecordingRecoveryJobs].count > 0) {
-        dispatch_async(dispatch_get_main_queue(), ^{ [self recoverRecordings:nil]; });
-    }
+    [self refreshRecordingRecoveryJobsWithCompletion:^(BOOL current, NSArray *jobs, NSError *error) {
+        if (current && !self.isTerminating && jobs.count > 0) [self.recordingRecoveryController showRecovery];
+    }];
     [self.compositionRoot.defaultAppSettings registerDefaults];
     [self.compositionRoot.settingsMigration execute];
     self.helpMenuActionRedirect.target = self.compositionRoot.helpMenuActionTarget;
@@ -925,6 +959,8 @@ NS_ASSUME_NONNULL_END
 }
 
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
+    if (self.terminationReplySent) return NSTerminateNow;
+    if (self.isTerminating) return NSTerminateLater;
     if (self.accountControllers.haveActiveCallControllers) {
         NSAlert *alert = [[NSAlert alloc] init];
         [alert addButtonWithTitle:NSLocalizedString(@"Quit", @"Quit button.")];
@@ -954,36 +990,56 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)finishTerminationAfterRecordings {
-    if (self.waitingForRecordingFinalizations || self.terminationReplySent || !self.isTerminating) {
-        return;
-    }
+    if (self.waitingForRecordingFinalizations || self.terminationReplySent || !self.isTerminating) return;
     self.waitingForRecordingFinalizations = YES;
+    NSUInteger generation = self.terminationGeneration;
     [self waitForRecordingFinalizations:^{
+        if (!self.isTerminating || self.terminationReplySent || self.terminationGeneration != generation) return;
         [self finishPendingHistoryWrites:^{
+            if (!self.isTerminating || self.terminationReplySent || self.terminationGeneration != generation) return;
             [self retryFailedHistoryWrites:^(BOOL succeeded) {
-                self.waitingForRecordingFinalizations = NO;
+                if (!self.isTerminating || self.terminationReplySent || self.terminationGeneration != generation) return;
                 if (!succeeded) {
+                    self.waitingForRecordingFinalizations = NO;
                     [self cancelTerminationAfterPersistenceFailure];
                     [self callHistoryPersistenceDidFail:nil];
                     return;
                 }
                 if (self.userAgent.state == AKSIPUserAgentStateStopped) {
-                    NSArray *jobs = [self pendingRecordingRecoveryJobs];
-                    if (jobs.count > 0 && ![self confirmQuitWithRecoveryJobs:jobs]) {
-                        [self cancelTerminationAfterPersistenceFailure];
-                        return;
-                    }
-                    self.terminationReplySent = YES;
-                    [self replyToTermination:YES];
-                } else if (self.userAgent.isStarted) {
-                    [self stopUserAgent];
+                    [self finishTerminationAfterRecoveryScan];
+                } else {
+                    self.waitingForRecordingFinalizations = NO;
+                    if (self.userAgent.isStarted) [self stopUserAgent];
                 }
             }];
         }];
     }];
 }
 
-- (NSArray<NSDictionary *> *)pendingRecordingRecoveryJobs { return AKPendingRecordingRecoveryJobs(); }
+- (void)finishTerminationAfterRecoveryScan {
+    NSUInteger generation = self.terminationGeneration;
+    [self refreshRecordingRecoveryJobsWithCompletion:^(BOOL current, NSArray *jobs, NSError *error) {
+        if (!self.isTerminating || self.terminationReplySent || self.terminationGeneration != generation) return;
+        if (!current) {
+            // A newer explicit snapshot superseded this scan. Obtain a current
+            // result without repeating recording/history barriers or replying early.
+            [self finishTerminationAfterRecoveryScan];
+            return;
+        }
+        BOOL allowQuit = error != nil ? [self confirmQuitWithRecordingRecoveryError:error]
+                                     : (jobs.count == 0 || [self confirmQuitWithRecoveryJobs:jobs]);
+        self.waitingForRecordingFinalizations = NO;
+        if (!allowQuit) { [self cancelTerminationAfterPersistenceFailure]; return; }
+        self.terminationReplySent = YES;
+        [self replyToTermination:YES];
+    }];
+}
+
+- (NSArray<NSDictionary *> *)pendingRecordingRecoveryJobs { return self.recordingRecoveryController.index.jobs; }
+- (void)refreshRecordingRecoveryJobsWithCompletion:(void (^)(BOOL, NSArray *, NSError * _Nullable))completion {
+    AKRecordingRecoveryIndex *index = self.recordingRecoveryController.index;
+    [index refreshWithCompletion:^(BOOL current) { completion(current, index.jobs, index.error); }];
+}
 - (void)waitForRecordingFinalizations:(dispatch_block_t)completion { AKWaitForPendingRecordingFinalizations(completion); }
 - (void)finishPendingHistoryWrites:(dispatch_block_t)completion { [HistoryPersistenceCoordinator finishPendingWritesWithCompletion:completion]; }
 - (void)retryFailedHistoryWrites:(void (^)(BOOL))completion { [HistoryPersistenceCoordinator retryFailedWritesWithCompletion:completion]; }
@@ -994,6 +1050,15 @@ NS_ASSUME_NONNULL_END
     self.terminationReplySent = NO;
     [HistoryPersistenceCoordinator resumeAcceptingWrites];
     [self replyToTermination:NO];
+}
+
+- (BOOL)confirmQuitWithRecordingRecoveryError:(NSError *)error {
+    NSAlert *alert = [NSAlert new];
+    alert.messageText = NSLocalizedString(@"Recordings could not be checked", @"Quit recovery discovery failed.");
+    alert.informativeText = [NSString stringWithFormat:NSLocalizedString(@"%@\nOriginal audio has been kept. You can check recovery again after reopening Telephone.", @"Quit after recovery discovery error."), error.localizedDescription];
+    [alert addButtonWithTitle:NSLocalizedString(@"Keep Files and Quit", @"Quit with durable recovery files.")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Stay Open", @"Keep application open for recovery.")];
+    return [alert runModal] == NSAlertFirstButtonReturn;
 }
 
 - (BOOL)confirmQuitWithRecoveryJobs:(NSArray *)jobs {
@@ -1039,42 +1104,12 @@ NS_ASSUME_NONNULL_END
 }
 
 - (IBAction)recoverRecordings:(id)sender {
-    if (self.isTerminating || self.presentingRecordingRecovery) return;
-    NSDictionary *job = [self pendingRecordingRecoveryJobs].firstObject;
-    if (!job) return;
-    self.presentingRecordingRecovery = YES;
-    NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = NSLocalizedString(@"Recording could not be saved", @"Recording export failure.");
-    alert.informativeText = NSLocalizedString(@"The original audio has been kept for recovery. Retry saving it or choose a different destination.", @"Recording recovery options.");
-    [alert addButtonWithTitle:NSLocalizedString(@"Retry", @"Retry recording export.")];
-    [alert addButtonWithTitle:NSLocalizedString(@"Save Elsewhere…", @"Choose a recording recovery destination.")];
-    [alert addButtonWithTitle:NSLocalizedString(@"Show Recovery Files", @"Reveal retained original recordings.")];
-    [alert addButtonWithTitle:NSLocalizedString(@"Later", @"Keep recording recovery for later.")];
-    NSInteger choice = [alert runModal];
-    if (choice == NSAlertThirdButtonReturn) {
-        [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[job[@"directoryURL"]]];
-        self.presentingRecordingRecovery = NO;
-        return;
-    }
-    if (choice != NSAlertFirstButtonReturn && choice != NSAlertSecondButtonReturn) {
-        self.presentingRecordingRecovery = NO;
-        return;
-    }
-    NSURL *destination = job[@"destinationURL"];
-    if (choice == NSAlertSecondButtonReturn || [job[@"needsNewDestination"] boolValue] || [NSFileManager.defaultManager fileExistsAtPath:destination.path]) {
-        NSSavePanel *panel = NSSavePanel.savePanel;
-        panel.title = NSLocalizedString(@"Recover Recording", @"Recording recovery file panel.");
-        panel.nameFieldStringValue = destination.lastPathComponent ?: @"Recovered Recording.wav";
-        if ([panel runModal] != NSModalResponseOK) {
-            self.presentingRecordingRecovery = NO;
-            return;
-        }
-        destination = panel.URL;
-    }
-    AKRetryRecordingRecoveryJob(job, destination, ^(BOOL succeeded) {
-        self.presentingRecordingRecovery = NO;
-        if (!succeeded || [self pendingRecordingRecoveryJobs].count > 0) [self recoverRecordings:nil];
-    });
+    if (self.isTerminating) return;
+    [self refreshRecordingRecoveryJobsWithCompletion:^(BOOL current, NSArray *jobs, NSError *error) {
+        if (current && !self.isTerminating) [self.recordingRecoveryController refreshPresentation];
+    }];
+    // Start discovery first so showRecovery cannot admit a duplicate initial scan.
+    [self.recordingRecoveryController showRecovery];
 }
 
 

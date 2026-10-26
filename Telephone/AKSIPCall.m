@@ -463,8 +463,7 @@ static void AKRemoveEmptyRecordingReservation(NSURL *URL) {
     }
     if (!AKPersistOwnedRecordingRecoveryJob(ownership, localURL, remoteURL, URL,
                                            AKRecordingJobPhaseCapturing, &directoryError)) {
-        AKFinishRecordingRecoveryJob(ownership, NO);
-        AKReportRecordingExportFailure(temporaryDirectoryURL, URL, directoryError);
+        AKFinishRecordingRecoveryJobAsync(ownership, NO, URL, directoryError, nil);
         self.recordingStartResult = AKRecordingStartResultPrivateStorageFailure;
         return NO;
     }
@@ -585,11 +584,10 @@ static void AKRemoveEmptyRecordingReservation(NSURL *URL) {
     self.recordingTemporaryDirectoryURL = nil;
     if (localURL == nil || remoteURL == nil || destinationURL == nil) {
         self.recordingJobOwnership = nil;
-        if (ownership) AKFinishRecordingRecoveryJob(ownership, NO);
-        [accessedDirectoryURL stopAccessingSecurityScopedResource];
-        if (completion != nil) {
-            completion(NO);
-        }
+        AKFinishRecordingRecoveryJobAsync(ownership, NO, nil, nil, ^{
+            [accessedDirectoryURL stopAccessingSecurityScopedResource];
+            if (completion) completion(NO);
+        });
         return;
     }
 
@@ -597,28 +595,24 @@ static void AKRemoveEmptyRecordingReservation(NSURL *URL) {
     if (![self persistRecordingRecoveryJobAtDirectory:temporaryDirectoryURL localURL:localURL remoteURL:remoteURL
                                      destinationURL:destinationURL error:&recoveryError]) {
         self.recordingJobOwnership = nil;
-        if (ownership) AKFinishRecordingRecoveryJob(ownership, NO);
-        AKReportRecordingExportFailure(temporaryDirectoryURL, destinationURL, recoveryError);
-        [accessedDirectoryURL stopAccessingSecurityScopedResource];
-        if (completion) completion(NO);
+        AKFinishRecordingRecoveryJobAsync(ownership, NO, destinationURL, recoveryError, ^{
+            [accessedDirectoryURL stopAccessingSecurityScopedResource];
+            if (completion) completion(NO);
+        });
         return;
     }
     // Transfer the same claim to this finalizer before another segment starts.
     self.recordingJobOwnership = nil;
     [self finalizeRecordingFromLocalURL:localURL remoteURL:remoteURL destinationURL:destinationURL completion:^(BOOL succeeded) {
-        AKFinishRecordingRecoveryJob(ownership, succeeded);
-        if (succeeded) {
-            NSLog(@"Saved stereo call recording (local left, remote right)");
-        } else {
-            AKReportRecordingExportFailure(temporaryDirectoryURL, destinationURL, nil);
-            NSLog(@"Could not create the stereo recording; private durable recovery tracks were retained");
-        }
-        // This captured token belongs to this recording, not the controller's
-        // current call or another recording using the same directory.
-        [accessedDirectoryURL stopAccessingSecurityScopedResource];
-        if (completion != nil) {
-            completion(succeeded);
-        }
+        // Admit cleanup before the encoder's main callback can release its
+        // finalization count. The termination barrier includes this nested job.
+        AKFinishRecordingRecoveryJobAsync(ownership, succeeded, destinationURL, nil, ^{
+            if (succeeded) NSLog(@"Saved stereo call recording (local left, remote right)");
+            else NSLog(@"Could not create the stereo recording; private durable recovery tracks were retained");
+            // This token belongs to this recording, including worker cleanup.
+            [accessedDirectoryURL stopAccessingSecurityScopedResource];
+            if (completion) completion(succeeded);
+        });
     }];
 }
 // Kept separate from conversion so native stop failures retain their resources
