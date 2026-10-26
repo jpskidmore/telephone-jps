@@ -800,6 +800,20 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
 }
 @end
 
+@interface V64AudioLifecycleAdmissionAgent : V30AudioAdmissionAgent
+@property(nonatomic) NSUInteger lifecycleCommands;
+@property(nonatomic) NSUInteger publishesAtLifecycleAdmission;
+@end
+@implementation V64AudioLifecycleAdmissionAgent
+- (BOOL)isStarted { return self.state == AKSIPUserAgentStateStarted; }
+// Hold lifecycle scheduling at admission. Do not create or stop a real SIP
+// worker, endpoint or device in this synthetic receiver.
+- (void)performSelector:(SEL)selector onThread:(NSThread *)thread withObject:(id)object waitUntilDone:(BOOL)wait {
+    self.publishesAtLifecycleAdmission = self.publishes;
+    self.lifecycleCommands++;
+}
+@end
+
 @interface V30AudioAdmissionTests : XCTestCase @end
 @implementation V30AudioAdmissionTests
 - (V30AudioAdmissionAgent *)agent {
@@ -815,16 +829,23 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
     V30AudioAdmissionAgent *agent = [self agent];
     __block NSUInteger firstRuns = 0, secondRuns = 0;
     XCTAssertTrue([agent performAudioSelection:^pj_status_t(NSUInteger revision) { firstRuns++; return PJ_SUCCESS; }]);
+    NSUInteger generation = agent.audioGeneration;
+    NSUInteger firstRevision = agent.audioSelectionRevision;
     XCTAssertTrue(agent.audioCommandPending); XCTAssertFalse([agent beginOutgoingCall]);
     XCTAssertTrue([agent performAudioSelection:^pj_status_t(NSUInteger revision) { secondRuns++; return PJ_SUCCESS; }]);
+    NSUInteger secondRevision = agent.audioSelectionRevision;
+    XCTAssertNotEqual(firstRevision, secondRevision);
+    XCTAssertEqual(agent.audioGeneration, generation);
     pj_status_t (^oldOperation)(void) = agent.operations[0];
     void (^oldCompletion)(pj_status_t) = agent.completions[0];
     XCTAssertEqual(oldOperation(), PJ_ECANCELLED); oldCompletion(PJ_ECANCELLED);
     XCTAssertTrue(agent.audioCommandPending); XCTAssertEqual(firstRuns, 0);
+    XCTAssertEqual(agent.audioSelectionRevision, secondRevision);
     pj_status_t (^newOperation)(void) = agent.operations[1];
     void (^newCompletion)(pj_status_t) = agent.completions[1];
     XCTAssertEqual(newOperation(), PJ_SUCCESS); newCompletion(PJ_SUCCESS);
     XCTAssertFalse(agent.audioCommandPending); XCTAssertEqual(secondRuns, 1);
+    XCTAssertEqual(agent.audioSelectionRevision, secondRevision);
 }
 - (void)testBlockedNativeOpenDoesNotRecoverOrReconnectAnInvalidatedGeneration {
     V30AudioAdmissionAgent *agent = [self agent];
@@ -854,7 +875,9 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
     [agent setValue:@YES forKey:@"audioRecoveryPending"];
     __block NSUInteger retries = 0;
     agent.soundIOSelectionRetry = ^{ retries++; return YES; };
+    NSUInteger previousRevision = agent.audioSelectionRevision;
     XCTAssertTrue([agent retrySoundAfterFailure]);
+    XCTAssertNotEqual(agent.audioSelectionRevision, previousRevision);
     [agent setValue:@2 forKey:@"audioGeneration"];
     void (^retryCompletion)(pj_status_t) = agent.completions[0]; retryCompletion(PJ_ECANCELLED);
     XCTAssertFalse(agent.audioCommandPending); XCTAssertEqual(retries, 0);
@@ -868,5 +891,48 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
     XCTAssertTrue([agent performAudioSelection:^pj_status_t(NSUInteger revision) { return PJ_SUCCESS; }]);
     void (^retryCompletion)(pj_status_t) = agent.completions[0]; retryCompletion(PJ_SUCCESS);
     XCTAssertTrue(agent.audioCommandPending); XCTAssertEqual(retries, 0);
+}
+- (void)testStopPublishesLifecycleInvalidationWithoutReleasingHeldNativeCommand {
+    V64AudioLifecycleAdmissionAgent *agent = class_createInstance(V64AudioLifecycleAdmissionAgent.class, 0);
+    CFRetain((__bridge CFTypeRef)agent);
+    agent.operations = [NSMutableArray new]; agent.completions = [NSMutableArray new];
+    [agent setValue:@(AKSIPUserAgentStateStarted) forKey:@"state"];
+    [agent setValue:@1 forKey:@"audioGeneration"];
+    XCTAssertTrue([agent performAudioSelection:^pj_status_t(NSUInteger revision) { return PJ_SUCCESS; }]);
+    NSUInteger revision = agent.audioSelectionRevision;
+    NSUInteger generation = agent.audioGeneration;
+    NSUInteger publishes = agent.publishes;
+
+    [agent stop];
+
+    XCTAssertEqual(agent.state, AKSIPUserAgentStateStopping);
+    XCTAssertFalse(agent.isStarted);
+    XCTAssertNotEqual(agent.audioGeneration, generation);
+    XCTAssertEqual(agent.audioSelectionRevision, revision);
+    XCTAssertEqual(agent.publishes, publishes + 1);
+    XCTAssertEqual(agent.publishesAtLifecycleAdmission, publishes + 1);
+    XCTAssertEqual(agent.lifecycleCommands, 1);
+    XCTAssertTrue(agent.audioCommandPending, @"Presentation invalidation must not unlock native work");
+    pj_status_t (^operation)(void) = agent.operations[0];
+    XCTAssertEqual(operation(), PJ_ECANCELLED);
+    void (^completion)(pj_status_t) = agent.completions[0];
+    completion(PJ_ECANCELLED);
+    XCTAssertFalse(agent.audioCommandPending, @"Only the matching native completion releases pending admission");
+}
+- (void)testStartPublishesNewLifecycleBeforeAdmittingWorkerCommand {
+    V64AudioLifecycleAdmissionAgent *agent = class_createInstance(V64AudioLifecycleAdmissionAgent.class, 0);
+    CFRetain((__bridge CFTypeRef)agent);
+    [agent setValue:@(AKSIPUserAgentStateStopped) forKey:@"state"];
+    [agent setValue:@1 forKey:@"audioGeneration"];
+    NSUInteger generation = agent.audioGeneration;
+
+    [agent start];
+
+    XCTAssertEqual(agent.state, AKSIPUserAgentStateStarting);
+    XCTAssertFalse(agent.isStarted);
+    XCTAssertNotEqual(agent.audioGeneration, generation);
+    XCTAssertEqual(agent.publishes, 1);
+    XCTAssertEqual(agent.publishesAtLifecycleAdmission, 1);
+    XCTAssertEqual(agent.lifecycleCommands, 1);
 }
 @end

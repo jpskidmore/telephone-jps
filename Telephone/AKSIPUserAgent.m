@@ -89,7 +89,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
 @property(nonatomic) NSInteger requestedOutputDevice;
 @property(atomic) BOOL mediaEndpointReady;
 @property(atomic) BOOL audioCommandPending;
-@property(atomic) NSUInteger audioSelectionRevision;
+@property(atomic, readwrite) NSUInteger audioSelectionRevision;
 @property(atomic) NSUInteger audioSelectionGeneration;
 @property(atomic) BOOL ownsPJLIBReference;
 @property(atomic) NSUInteger codecRevision;
@@ -339,6 +339,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     self.audioGeneration++;
     self.state = AKSIPUserAgentStateStarting;
     self.lifecycleGeneration++;
+    [self publishAudioState];
     void (^completion)(BOOL) = ^(BOOL didStart) {
         self.state = didStart ? AKSIPUserAgentStateStarted : AKSIPUserAgentStateStopped;
         if (didStart && self.codecRevision != self.appliedCodecRevision) {
@@ -652,6 +653,9 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     self.audioGeneration++;
     [self.audioDeviceController finishOutgoingCall];
     self.state = AKSIPUserAgentStateStopping;
+    // Stop invalidates the visible command identity immediately. Native work
+    // stays on its serial worker and releases its own pending flag on return.
+    [self publishAudioState];
     [self performSelector:@selector(thread_stopWithCompletion:) onThread:self.thread withObject:^{[self finishStopping];} waitUntilDone:NO];
 }
 
@@ -663,6 +667,7 @@ static const BOOL kAKSIPUserAgentDefaultLocksCodec = YES;
     self.audioGeneration++;
     [self.audioDeviceController finishOutgoingCall];
     self.state = AKSIPUserAgentStateStopping;
+    [self publishAudioState];
     [self performSelector:@selector(thread_stop) onThread:self.thread withObject:nil waitUntilDone:YES];
     [self finishStopping];
 }

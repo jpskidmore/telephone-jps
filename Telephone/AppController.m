@@ -41,6 +41,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+// Presentation guidance only. Native driver work is never timed out or cancelled.
+static const NSTimeInterval AKAudioRecoverySlowInterval = 5.0;
+
 @interface AppController () <AKSIPUserAgentDelegate, NSUserNotificationCenterDelegate, NSMenuItemValidation, NameServersChangeEventTarget, PreferencesControllerDelegate, ObjCStoreEventTarget>
 
 @property(nonatomic, readonly) AKSIPUserAgent *userAgent;
@@ -56,6 +59,18 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) BOOL hasPresentedAudioFailure;
 @property(nonatomic, nullable) NSAlert *audioFailureAlert;
 @property(nonatomic, nullable) NSMenuItem *retryAudioMenuItem;
+@property(nonatomic, nullable) NSView *audioRecoveryProgressView;
+@property(nonatomic, nullable) NSProgressIndicator *audioRecoveryProgressIndicator;
+@property(nonatomic, nullable) NSTextField *audioRecoveryProgressLabel;
+@property(nonatomic, nullable) id audioRecoveryWatchdog;
+@property(nonatomic, weak, nullable) AKSIPUserAgent *audioRecoveryAgent;
+@property(nonatomic) NSUInteger audioRecoveryGeneration;
+@property(nonatomic) NSUInteger audioRecoveryRevision;
+@property(nonatomic) NSTimeInterval audioRecoveryStartedAt;
+@property(nonatomic) BOOL audioRecoveryOperationPending;
+@property(nonatomic) BOOL audioRecoveryOperationBeganFailed;
+@property(nonatomic) BOOL audioRecoveryIsSlow;
+@property(nonatomic) BOOL audioRecoveryDidRecover;
 @property(nonatomic, nullable) NSMenuItem *recordingRecoveryMenuItem;
 @property(nonatomic) BOOL presentingRecordingRecovery;
 @property(nonatomic) BOOL presentingHistoryError;
@@ -88,6 +103,7 @@ NS_ASSUME_NONNULL_END
 @implementation AppController
 
 @synthesize accountSetupController = _accountSetupController;
+@synthesize terminating = _terminating;
 
 - (AccountSetupController *)accountSetupController {
     if (_accountSetupController == nil) {
@@ -194,6 +210,7 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)dealloc {
+    [self.audioRecoveryWatchdog invalidate];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [[[NSWorkspace sharedWorkspace] notificationCenter] removeObserver:self];
     [[NSDistributedNotificationCenter defaultCenter] removeObserver:self];
@@ -271,15 +288,161 @@ NS_ASSUME_NONNULL_END
     [self updateAudioRecoveryMenuItem];
 }
 
+// These small seams keep presentation timing testable without native devices,
+// sleeping, real preferences, or a second audio retry path.
+- (NSTimeInterval)monotonicAudioRecoveryTime { return NSProcessInfo.processInfo.systemUptime; }
+
+- (id)scheduleAudioRecoveryWatchdogAfter:(NSTimeInterval)delay action:(dispatch_block_t)action {
+    NSTimer *timer = [NSTimer timerWithTimeInterval:MAX(0.01, delay) repeats:NO block:^(NSTimer *unused) { action(); }];
+    [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
+    return timer;
+}
+
+- (void)invalidateAudioRecoveryWatchdog {
+    [self.audioRecoveryWatchdog invalidate];
+    self.audioRecoveryWatchdog = nil;
+}
+
+- (void)setTerminating:(BOOL)terminating {
+    _terminating = terminating;
+    if (!terminating) return;
+    [self invalidateAudioRecoveryWatchdog];
+    if (self.retryAudioMenuItem != nil) {
+        [self updateAudioRecoveryMenuItem];
+    } else {
+        // Quitting before the menu exists must not initialise presentation or
+        // require audio collaborators merely to stop an inactive watchdog.
+        self.audioRecoveryAgent = nil;
+        self.audioRecoveryOperationPending = NO;
+        self.audioRecoveryOperationBeganFailed = NO;
+        self.audioRecoveryIsSlow = NO;
+        self.audioRecoveryDidRecover = NO;
+        [self.audioRecoveryProgressIndicator stopAnimation:nil];
+    }
+}
+
+- (BOOL)audioRecoveryIdentityMatchesAgent:(AKSIPUserAgent *)agent generation:(NSUInteger)generation revision:(NSUInteger)revision {
+    return self.audioRecoveryAgent == agent && self.audioRecoveryGeneration == generation && self.audioRecoveryRevision == revision;
+}
+
+- (void)scheduleAudioRecoveryWatchdogForAgent:(AKSIPUserAgent *)agent after:(NSTimeInterval)delay {
+    NSUInteger generation = self.audioRecoveryGeneration, revision = self.audioRecoveryRevision;
+    __weak AppController *weakSelf = self;
+    __weak AKSIPUserAgent *weakAgent = agent;
+    self.audioRecoveryWatchdog = [self scheduleAudioRecoveryWatchdogAfter:delay action:^{
+        AppController *controller = weakSelf;
+        AKSIPUserAgent *currentAgent = weakAgent;
+        if (controller == nil || currentAgent == nil ||
+            ![controller audioRecoveryIdentityMatchesAgent:currentAgent generation:generation revision:revision] ||
+            controller.userAgent != currentAgent || !controller.audioRecoveryOperationPending) return;
+        if (controller.isTerminating || !currentAgent.isStarted || !currentAgent.audioCommandPending ||
+            currentAgent.audioGeneration != generation || currentAgent.audioSelectionRevision != revision) {
+            [controller updateAudioRecoveryMenuItem];
+            return;
+        }
+        controller.audioRecoveryWatchdog = nil;
+        NSTimeInterval elapsed = MAX(0, [controller monotonicAudioRecoveryTime] - controller.audioRecoveryStartedAt);
+        if (elapsed < AKAudioRecoverySlowInterval) {
+            // Run-loop timers are best effort; recheck monotonic elapsed time.
+            [controller scheduleAudioRecoveryWatchdogForAgent:currentAgent after:AKAudioRecoverySlowInterval - elapsed];
+            return;
+        }
+        controller.audioRecoveryIsSlow = YES;
+        [controller updateAudioRecoveryMenuItem];
+    }];
+}
+
+- (void)installAudioRecoveryProgressViewIfNeeded {
+    if (self.audioRecoveryProgressView != nil) return;
+    NSView *view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 300, 24)];
+    view.identifier = @"AudioRecoveryProgress";
+    NSProgressIndicator *indicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(12, 4, 16, 16)];
+    indicator.style = NSProgressIndicatorStyleSpinning;
+    indicator.indeterminate = YES;
+    indicator.displayedWhenStopped = NO;
+    indicator.controlSize = NSControlSizeSmall;
+    indicator.accessibilityLabel = NSLocalizedString(@"Audio operation in progress", @"Indeterminate audio recovery progress purpose.");
+    NSTextField *label = [NSTextField labelWithString:@""];
+    label.frame = NSMakeRect(36, 3, 252, 18);
+    label.font = [NSFont menuFontOfSize:0];
+    label.lineBreakMode = NSLineBreakByTruncatingTail;
+    [view addSubview:indicator];
+    [view addSubview:label];
+    self.audioRecoveryProgressView = view;
+    self.audioRecoveryProgressIndicator = indicator;
+    self.audioRecoveryProgressLabel = label;
+}
+
 - (void)updateAudioRecoveryMenuItem {
-    self.retryAudioMenuItem.title = self.userAgent.hasAudioFailure
-        ? NSLocalizedString(@"Audio unavailable: Retry Audio", @"Persistent audio failure and recovery menu item.")
-        : NSLocalizedString(@"Retry Audio", @"Explicit audio recovery action.");
-    self.retryAudioMenuItem.enabled = self.userAgent.hasAudioFailure && self.userAgent.isStarted && !self.isTerminating && !self.userAgent.audioCommandPending;
+    AKSIPUserAgent *agent = self.userAgent;
+    BOOL started = agent.isStarted && !self.isTerminating;
+    BOOL pending = started && agent.audioCommandPending;
+    BOOL sameIdentity = [self audioRecoveryIdentityMatchesAgent:agent generation:agent.audioGeneration revision:agent.audioSelectionRevision];
+    if (!sameIdentity || !started) {
+        [self invalidateAudioRecoveryWatchdog];
+        self.audioRecoveryAgent = started ? agent : nil;
+        self.audioRecoveryGeneration = agent.audioGeneration;
+        self.audioRecoveryRevision = agent.audioSelectionRevision;
+        self.audioRecoveryOperationPending = NO;
+        self.audioRecoveryOperationBeganFailed = NO;
+        self.audioRecoveryIsSlow = NO;
+        self.audioRecoveryDidRecover = NO;
+    }
+    if (pending && !self.audioRecoveryOperationPending) {
+        self.audioRecoveryOperationPending = YES;
+        self.audioRecoveryOperationBeganFailed = agent.hasAudioFailure;
+        self.audioRecoveryStartedAt = [self monotonicAudioRecoveryTime];
+        self.audioRecoveryIsSlow = NO;
+        self.audioRecoveryDidRecover = NO;
+        [self scheduleAudioRecoveryWatchdogForAgent:agent after:AKAudioRecoverySlowInterval];
+    } else if (!pending && self.audioRecoveryOperationPending) {
+        self.audioRecoveryDidRecover = started && sameIdentity && self.audioRecoveryOperationBeganFailed && !agent.hasAudioFailure;
+        self.audioRecoveryOperationPending = NO;
+        self.audioRecoveryIsSlow = NO;
+        [self invalidateAudioRecoveryWatchdog];
+    }
+    if (agent.hasAudioFailure) self.audioRecoveryDidRecover = NO;
+
+    NSString *title;
+    NSString *guidance;
+    if (pending) {
+        title = self.audioRecoveryIsSlow
+            ? NSLocalizedString(@"Audio is taking longer…", @"Audio operation remains pending after five seconds.")
+            : NSLocalizedString(@"Trying audio…", @"Selected audio devices are being opened.");
+        guidance = self.audioRecoveryIsSlow
+            ? NSLocalizedString(@"Audio has taken longer than 5 seconds and is still running. Telephone has not cancelled it and will not retry automatically. Retry Audio is available only after it finishes.", @"Slow audio operation guidance without a native timeout claim.")
+            : NSLocalizedString(@"Telephone is trying the selected audio devices. Your call may still be connected. Wait for this operation to finish; Telephone will not retry automatically.", @"Pending audio operation guidance.");
+        [self installAudioRecoveryProgressViewIfNeeded];
+        self.audioRecoveryProgressLabel.stringValue = title;
+        self.audioRecoveryProgressLabel.accessibilityLabel = title;
+        self.audioRecoveryProgressLabel.accessibilityHelp = guidance;
+        self.audioRecoveryProgressView.accessibilityHelp = guidance;
+        self.audioRecoveryProgressView.toolTip = guidance;
+        [self.audioRecoveryProgressIndicator startAnimation:nil];
+        self.retryAudioMenuItem.view = self.audioRecoveryProgressView;
+    } else {
+        [self.audioRecoveryProgressIndicator stopAnimation:nil];
+        self.retryAudioMenuItem.view = nil;
+        title = agent.hasAudioFailure
+            ? NSLocalizedString(@"Audio unavailable: Retry Audio", @"Persistent audio failure and recovery menu item.")
+            : self.audioRecoveryDidRecover
+                ? NSLocalizedString(@"Audio recovered", @"Observed failed audio operation completed successfully.")
+                : NSLocalizedString(@"Retry Audio", @"Explicit audio recovery action.");
+        guidance = agent.hasAudioFailure
+            ? NSLocalizedString(@"Your call may still be connected. Choose devices in Sound Settings, then use Retry Audio. If microphone access is denied, allow Telephone in System Settings > Privacy & Security > Microphone. Telephone will not retry automatically.", @"Audio failure recovery and microphone privacy guidance.")
+            : self.audioRecoveryDidRecover
+                ? NSLocalizedString(@"The selected audio operation completed successfully. Telephone did not retry automatically.", @"Completed explicit audio recovery guidance.")
+                : NSLocalizedString(@"Retry Audio is available after an audio failure.", @"Availability of explicit audio recovery.");
+    }
+    self.retryAudioMenuItem.title = title;
+    self.retryAudioMenuItem.accessibilityLabel = title;
+    self.retryAudioMenuItem.accessibilityHelp = guidance;
+    self.retryAudioMenuItem.toolTip = guidance;
+    self.retryAudioMenuItem.enabled = agent.hasAudioFailure && started && !pending;
 }
 
 - (IBAction)retryAudio:(id)sender {
-    if (!self.userAgent.hasAudioFailure || !self.userAgent.isStarted || self.isTerminating) {
+    if (!self.userAgent.hasAudioFailure || !self.userAgent.isStarted || self.isTerminating || self.userAgent.audioCommandPending) {
         return;
     }
     // Only an explicit user action may reopen a device that has failed. A failed
@@ -301,7 +464,7 @@ NS_ASSUME_NONNULL_END
         return;
     }
     [self updateAudioRecoveryMenuItem];
-    if (!self.userAgent.hasAudioFailure) {
+    if (!self.userAgent.hasAudioFailure || !self.userAgent.isStarted || self.isTerminating) {
         self.hasPresentedAudioFailure = NO;
         NSWindow *sheet = self.audioFailureAlert.window;
         if (sheet.sheetParent != nil) {

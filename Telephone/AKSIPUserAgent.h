@@ -207,6 +207,9 @@ extern const NSInteger kAKSIPUserAgentInvalidIdentifier;
 // is explicit; generic device notifications never reset the retry barrier.
 @property(nonatomic, readonly) BOOL hasAudioFailure;
 @property(atomic, readonly) BOOL audioCommandPending;
+// Main-admitted selection/retry identity. Together with audioGeneration this
+// lets presentation ignore an older command without cancelling native work.
+@property(atomic, readonly) NSUInteger audioSelectionRevision;
 - (void)reportAudioSelectionFailure;
 @property(atomic, readonly) NSUInteger audioGeneration;
 // A pending make-call must finish classification on main before another is

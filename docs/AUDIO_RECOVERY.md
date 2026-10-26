@@ -1,10 +1,9 @@
 # Audio failure containment and recovery
 
 The audio repairs were published in **3.0/build 161**, whose controlled local
-suites passed 617 automated cases with zero failures. The current published
-release is **3.5.1/build 163**; local packaging, installation and private
-publication are complete. Start with [current maintenance and release status](MAINTENANCE.md)
-and [3.5.1 verification](releases/3.5.1-verification.md). The recorded checks below
+suites passed 617 automated cases with zero failures. Start with
+[current maintenance and release status](MAINTENANCE.md) for the released and
+installed baseline; later source fixes are not installed updates. The recorded checks below
 retain their original scopes; this documentation update adds no test result.
 The accepted compact windows and calling functions remain in place. All later
 authorised build and test work runs locally under [VALIDATION.md](VALIDATION.md).
@@ -17,6 +16,30 @@ failure gate retains the original error, makes one null-sound fallback attempt,
 and blocks further opens/connections until an explicit **Retry Audio** action.
 A null device supplies a software clock; it does not mean the microphone or
 speakers recovered.
+
+## Pending and slow feedback — source improvement, 26 October 2026
+
+Issue #64 adds presentation around the existing worker and failure gate. The
+application menu immediately shows an indeterminate indicator and **Trying
+audio…** while a current audio command is pending. After five monotonic seconds,
+it explains that audio is taking longer. Five seconds is a guidance threshold,
+not a backend timeout, estimated completion time or diagnosis of a driver hang.
+Run-loop timers can deliver late; the presentation checks elapsed monotonic time.
+
+The watchdog follows the current agent, endpoint generation and selection
+revision. Supersession starts feedback for the new command; completion, endpoint
+stop and termination remove the old indicator. A stale timer cannot change a
+newer command. Recovery is reported only after an observed failed-audio attempt
+actually completes without the failure gate. The software clock/null device is
+not a recovery result.
+
+The indicator does not cancel native work, clear its pending flag or failure,
+enable duplicate Retry, restart services or make automatic attempts. The native
+Retry menu action returns when an actual failed attempt finishes. Guidance stays
+within the existing application menu; compact call and Settings window sizes
+are unchanged. No device names, addresses, credentials or call contents are
+added to diagnostics. Physical device recovery and naturally occurring hang
+duration remain manual acceptance in #62.
 
 The application menu keeps **Audio unavailable: Retry Audio** available after
 the warning sheet is dismissed. Open **Sound Settings** to choose the intended

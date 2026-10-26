@@ -719,6 +719,7 @@
 		9B7527EE39264F648CA7152C /* DialPlanPreferencesViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 241F6DA315E2F2A78FB3DA3E /* DialPlanPreferencesViewControllerTests.swift */; };
 		9AD9DE953431417FAED683DF /* AccountRoutingRegressionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = FCCABEA1E3CFEAE96A328781 /* AccountRoutingRegressionTests.m */; };
 		8F8D569B45DC4E50AF53CE0A /* ContactsRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AB1AB760834DF4BEFBEE45 /* ContactsRecoveryTests.swift */; };
+		F9DE89208DBC4E8E8BF580B3 /* AudioRecoveryPresentationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 0FAC441E310B40BBBEB5A7D4 /* AudioRecoveryPresentationTests.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1626,6 +1627,7 @@
 		241F6DA315E2F2A78FB3DA3E /* DialPlanPreferencesViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialPlanPreferencesViewControllerTests.swift; sourceTree = "<group>"; };
 		FCCABEA1E3CFEAE96A328781 /* AccountRoutingRegressionTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AccountRoutingRegressionTests.m; sourceTree = "<group>"; };
 		A0AB1AB760834DF4BEFBEE45 /* ContactsRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContactsRecoveryTests.swift; path = TelephoneTests/ContactsRecoveryTests.swift; sourceTree = SOURCE_ROOT; };
+		0FAC441E310B40BBBEB5A7D4 /* AudioRecoveryPresentationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AudioRecoveryPresentationTests.m; path = TelephoneTests/AudioRecoveryPresentationTests.m; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2522,6 +2524,7 @@
 				8ABD6EAB1EE94C9100D01435 /* CallHistoryViewEventTargetFactory */,
 				8A778C071E0AE98F004B00B8 /* CallHistoryViewPresenter.swift */,
 				A0AB1AB760834DF4BEFBEE45 /* ContactsRecoveryTests.swift */,
+				0FAC441E310B40BBBEB5A7D4 /* AudioRecoveryPresentationTests.m */,
 				8A778C091E0AE9C7004B00B8 /* CallHistoryViewPresenterTests.swift */,
 				8A273C851E89689300B42A82 /* DefaultCallHistoryCallMakeUseCaseFactory.swift */,
 				8A1DA8101DEF2CAE00F5BA40 /* DefaultCallHistoryRecordAddUseCaseFactory.swift */,
@@ -4194,6 +4197,7 @@
 				8AB5A0C91D084DD800579CE8 /* DefaultStoreViewPresenterTests.swift in Sources */,
 				8A778C0E1E0C136C004B00B8 /* CallHistoryViewSpy.swift in Sources */,
 				8F8D569B45DC4E50AF53CE0A /* ContactsRecoveryTests.swift in Sources */,
+				F9DE89208DBC4E8E8BF580B3 /* AudioRecoveryPresentationTests.m in Sources */,
 				8A778C0A1E0AE9C7004B00B8 /* CallHistoryViewPresenterTests.swift in Sources */,
 				8AA748861D6F10B6000587DC /* SettingsAccounts.swift in Sources */,
 				8A0E8A8323E0A5D800FC7BC3 /* AKNSString+ScanningTests.swift in Sources */,

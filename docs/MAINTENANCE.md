@@ -60,7 +60,15 @@ Contacts recovery #63 is now implemented and verified with fresh local suites:
 Testing cases in the isolated Telephone host, all passing. Read
 [the Contacts record](maintenance/2026-10-26-contacts-recovery.md) for the source
 scope, synthetic permission checks and separate actual-OS acceptance boundary.
-Legacy dialler autocomplete remains #70. The next ranked source item is #64.
+Legacy dialler autocomplete remains #70.
+
+Audio recovery feedback #64 now shows current pending/slow attempts with a
+native indeterminate indicator and a presentation-only watchdog. Fresh isolated
+Telephone validation passed 328 XCTest + 48 Swift Testing cases; separate audio
+gate, real-worker lifecycle and source-wiring checks passed. Read
+[the audio progress record](maintenance/2026-10-26-audio-progress.md) for identity
+guards, actual counts and physical-device limits. The next ranked source item
+is #65. These source changes have not been installed or released.
 
 On 26 October the owner authorised **all remaining issues, one at a time**, with
 findings and outcomes logged in GitHub for other contributors. This resumes the

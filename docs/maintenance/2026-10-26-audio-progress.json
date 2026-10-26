@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-26",
+  "issue": 64,
+  "baseCommit": "810220849eaacae92ac69cc1834cf5eaf6ce354b",
+  "platform": {
+    "macOS": "27.0.1 (26A434)",
+    "Xcode": "27.1 (27A9275)",
+    "Swift": "6.4",
+    "architecture": "arm64",
+    "deploymentTarget": "macOS 15.6"
+  },
+  "result": "source implementation and controlled native verification complete; no installation/release",
+  "tests": {
+    "TelephoneXCTest": {
+      "cases": 328,
+      "failures": 0
+    },
+    "TelephoneSwiftTesting": {
+      "cases": 48,
+      "failures": 0
+    },
+    "newWatchdogCases": 19,
+    "newLifecycleCases": 2,
+    "audioGateComponentAssertions": 309,
+    "SIPLifecycleChecks": 32,
+    "sourceWiringChecks": 11
+  },
+  "sourceSHA256": {
+    "Telephone.xcodeproj/project.pbxproj": "ee8c943db646ffacdba88d42d6e7652c785b815fbe3b12ef99720d9bb44b45c5",
+    "Telephone/AKSIPUserAgent.h": "ec36cec16576c54216f6051fb851bd57e18aa30ae7eda03131c20b5aee5c18c5",
+    "Telephone/AKSIPUserAgent.m": "90c31cbe08a135115a8b0c5b2117a3dc89949f65aec9591e8c4b2b5ee9632496",
+    "Telephone/AppController.m": "03953fb3fa581f9f5620bb99d4ed9a780b01fe8c2c401c822ce713dd9c079e8a",
+    "TelephoneTests/PreferencesControllerLifecycleTests.m": "f600e1661a5a817463f52526c2e07e2383af93d6e9f7849d25696268bca37adc",
+    "TelephoneTests/AudioRecoveryPresentationTests.m": "ce61508ab20c40ae146dae60cfe77af93ab407e5440e3168547879277fe7db19"
+  },
+  "logSHA256": {
+    "/private/tmp/jps-audio64-verified-build-20261026.log": "a5ef584abfc4b08c8ae32fd47dc9dd763990cf48e4674cc0095ba12c9e81738c",
+    "/private/tmp/jps-audio64-verified-tests-20261026.log": "7a72e1f506d4b5e39e3fee0912c12498db319a7e958533217daeb1a56e3f0510",
+    "/private/tmp/jps-audio64-device-components-20261026.log": "95f9ed41344446c33f01743fb7bf3e7b0f1c10089f1c3bc2e6560cfe3796f541",
+    "/private/tmp/jps-audio64-final-wiring-20261026.log": "1e69b4aed4fa48c69f309efa6e3869cc3bc48e7f712235b6812ea01bd9320e3a",
+    "/private/tmp/jps-audio64-lifecycle-20261026.log": "f501c984a2471e8851e19387d76590bf3de19804bdfa644af2c87d67f1128fa9",
+    "/private/tmp/jps-audio64-lifecycle-20261026/results.json": "f8b6b63c48752d55b746638ea791cd44de143c09058d57d412d0a8fe1ff81530",
+    "/private/tmp/jps-audio64-lifecycle-20261026/provenance.json": "201d072d7decf20efe427b21dd433d506347320b912637cbd974bdec7bae1bc3"
+  },
+  "captureSHA256": {
+    "/private/tmp/jps-audio64-images-20261026/audio-recovery-trying-light.png": "08d971c2f207963654e381c9cbcfd9288f1b3299d6fdea3dc3365723f4402b1f",
+    "/private/tmp/jps-audio64-images-20261026/audio-recovery-slow-light.png": "be5a865bb49b267bf6155f27a4f3faebe64754d6c5e882c5c3316257bbed264e",
+    "/private/tmp/jps-audio64-images-20261026/audio-recovery-trying-dark.png": "c0e0440b2f1dd04e20c5639ddc89fb0f3ae3b85be0256ad20fe14c641b610f93",
+    "/private/tmp/jps-audio64-images-20261026/audio-recovery-slow-dark.png": "4a1decceae6b8c03ec6086da90b0170403ea378ab8ef5d9a34aa17a8372310e3"
+  },
+  "xcresult": "/private/tmp/jps-audio64-verified-20261026.xcresult",
+  "boundaries": [
+    "Isolated uniquely identified nib-free hosted startup; synthetic inert agents and held backend fixtures",
+    "Presentation-only five-second monotonic guidance; no timeout, native cancellation, pending release, automatic retry or ETA",
+    "Read-only selection identity; native worker/generation/selection completion ownership preserved",
+    "Four inspected native Trying/slow Light/Dark captures; no full installed or proficient VoiceOver acceptance",
+    "Real provider/hardware/microphone grant/hang-duration checks remain pending in #62",
+    "No real defaults/Contacts/Keychain/SIP accounts/history/recordings; no cloud workflow, package/install/release",
+    "Unchanged framework suites not rerun; component/source-wiring checks separate from 376 hosted suite cases"
+  ]
+}
