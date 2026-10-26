@@ -1,0 +1,358 @@
+{
+  "capturedAtUTC": "2026-10-26T18:23:12.102540+00:00",
+  "sourceCommit": "d8ad20a10921727a306d9ef1b5b6ed476adb535e",
+  "metadata": {
+    "macOS": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+    "Xcode": "Xcode 27.1\nBuild version 27A9275",
+    "machineModel": "MacBookPro17,1",
+    "architecture": "arm64"
+  },
+  "method": {
+    "secondsPerSample": 2,
+    "pairsPerWorkload": 4,
+    "warmup": "one discarded fresh-process 0.2-second sample per policy/workload; shared caches only",
+    "ordering": "fresh process per sample; AB/BA pairs; idle then paced; ProcessInfo initialised before both baselines",
+    "CPU": "getrusage RUSAGE_SELF timeval seconds+microseconds / monotonic wall duration; includes begin/end and snapshots",
+    "wakeups": "per-process package-idle and interrupt counter deltas; API failure aborts; zero does not establish per-counter coverage",
+    "pacedWorkload": "nanosleep at 200ms intervals; not SIP/ringing/audio or GUI polling"
+  },
+  "samples": [
+    {
+      "activityOptions": 0,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 1,
+      "packageIdleWakeups": 0,
+      "policy": "none",
+      "syntheticTicks": 0,
+      "systemCPUSeconds": 3.6e-05,
+      "userCPUSeconds": 1e-05,
+      "wallSeconds": 2.010014,
+      "workload": "idle",
+      "pair": 1,
+      "CPUPercent": 0.002288541273841874
+    },
+    {
+      "activityOptions": 15728639,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 1,
+      "packageIdleWakeups": 0,
+      "policy": "session",
+      "syntheticTicks": 0,
+      "systemCPUSeconds": 0.000269,
+      "userCPUSeconds": 0.000195,
+      "wallSeconds": 2.010117,
+      "workload": "idle",
+      "pair": 1,
+      "CPUPercent": 0.023083233463524755
+    },
+    {
+      "activityOptions": 15728639,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 1,
+      "packageIdleWakeups": 0,
+      "policy": "session",
+      "syntheticTicks": 0,
+      "systemCPUSeconds": 0.000233,
+      "userCPUSeconds": 0.000185,
+      "wallSeconds": 2.010084,
+      "workload": "idle",
+      "pair": 2,
+      "CPUPercent": 0.020795150849417236
+    },
+    {
+      "activityOptions": 0,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 1,
+      "packageIdleWakeups": 0,
+      "policy": "none",
+      "syntheticTicks": 0,
+      "systemCPUSeconds": 4.5e-05,
+      "userCPUSeconds": 1.2e-05,
+      "wallSeconds": 2.010017,
+      "workload": "idle",
+      "pair": 2,
+      "CPUPercent": 0.0028357969111704033
+    },
+    {
+      "activityOptions": 0,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 1,
+      "packageIdleWakeups": 0,
+      "policy": "none",
+      "syntheticTicks": 0,
+      "systemCPUSeconds": 4.3e-05,
+      "userCPUSeconds": 1e-05,
+      "wallSeconds": 2.010014,
+      "workload": "idle",
+      "pair": 3,
+      "CPUPercent": 0.0026367975546438983
+    },
+    {
+      "activityOptions": 15728639,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 1,
+      "packageIdleWakeups": 0,
+      "policy": "session",
+      "syntheticTicks": 0,
+      "systemCPUSeconds": 0.00027,
+      "userCPUSeconds": 0.000186,
+      "wallSeconds": 2.010116,
+      "workload": "idle",
+      "pair": 3,
+      "CPUPercent": 0.02268525796521196
+    },
+    {
+      "activityOptions": 15728639,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 1,
+      "packageIdleWakeups": 0,
+      "policy": "session",
+      "syntheticTicks": 0,
+      "systemCPUSeconds": 0.000349,
+      "userCPUSeconds": 0.000229,
+      "wallSeconds": 2.010232,
+      "workload": "idle",
+      "pair": 4,
+      "CPUPercent": 0.028752900162767287
+    },
+    {
+      "activityOptions": 0,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 1,
+      "packageIdleWakeups": 0,
+      "policy": "none",
+      "syntheticTicks": 0,
+      "systemCPUSeconds": 3.7e-05,
+      "userCPUSeconds": 1.2e-05,
+      "wallSeconds": 2.010015,
+      "workload": "idle",
+      "pair": 4,
+      "CPUPercent": 0.002437792752790402
+    },
+    {
+      "activityOptions": 0,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 10,
+      "packageIdleWakeups": 0,
+      "policy": "none",
+      "syntheticTicks": 10,
+      "systemCPUSeconds": 0.000202,
+      "userCPUSeconds": 9.7e-05,
+      "wallSeconds": 2.005848,
+      "workload": "paced",
+      "pair": 1,
+      "CPUPercent": 0.014906413646497642
+    },
+    {
+      "activityOptions": 15728639,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 10,
+      "packageIdleWakeups": 0,
+      "policy": "session",
+      "syntheticTicks": 10,
+      "systemCPUSeconds": 0.000511,
+      "userCPUSeconds": 0.000349,
+      "wallSeconds": 2.006807,
+      "workload": "paced",
+      "pair": 1,
+      "CPUPercent": 0.04285414591438041
+    },
+    {
+      "activityOptions": 15728639,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 10,
+      "packageIdleWakeups": 1,
+      "policy": "session",
+      "syntheticTicks": 10,
+      "systemCPUSeconds": 0.000444,
+      "userCPUSeconds": 0.000268,
+      "wallSeconds": 2.009448,
+      "workload": "paced",
+      "pair": 2,
+      "CPUPercent": 0.03543261632050195
+    },
+    {
+      "activityOptions": 0,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 10,
+      "packageIdleWakeups": 0,
+      "policy": "none",
+      "syntheticTicks": 10,
+      "systemCPUSeconds": 0.000257,
+      "userCPUSeconds": 0.000114,
+      "wallSeconds": 2.00963,
+      "workload": "paced",
+      "pair": 2,
+      "CPUPercent": 0.018461109756522345
+    },
+    {
+      "activityOptions": 0,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 10,
+      "packageIdleWakeups": 0,
+      "policy": "none",
+      "syntheticTicks": 10,
+      "systemCPUSeconds": 0.000216,
+      "userCPUSeconds": 0.000102,
+      "wallSeconds": 2.010063,
+      "workload": "paced",
+      "pair": 3,
+      "CPUPercent": 0.015820399659115157
+    },
+    {
+      "activityOptions": 15728639,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 10,
+      "packageIdleWakeups": 0,
+      "policy": "session",
+      "syntheticTicks": 10,
+      "systemCPUSeconds": 0.000484,
+      "userCPUSeconds": 0.000269,
+      "wallSeconds": 2.006154,
+      "workload": "paced",
+      "pair": 3,
+      "CPUPercent": 0.03753450632404092
+    },
+    {
+      "activityOptions": 15728639,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 10,
+      "packageIdleWakeups": 0,
+      "policy": "session",
+      "syntheticTicks": 10,
+      "systemCPUSeconds": 0.000432,
+      "userCPUSeconds": 0.000282,
+      "wallSeconds": 2.010097,
+      "workload": "paced",
+      "pair": 4,
+      "CPUPercent": 0.03552067387792729
+    },
+    {
+      "activityOptions": 0,
+      "idleSystemSleepDisabled": 0,
+      "interruptWakeups": 10,
+      "packageIdleWakeups": 0,
+      "policy": "none",
+      "syntheticTicks": 10,
+      "systemCPUSeconds": 0.000265,
+      "userCPUSeconds": 0.000122,
+      "wallSeconds": 2.008329,
+      "workload": "paced",
+      "pair": 4,
+      "CPUPercent": 0.019269751121454702
+    }
+  ],
+  "summaries": [
+    {
+      "workload": "idle",
+      "policy": "none",
+      "CPUPercent": {
+        "median": 0.0025372951537171503,
+        "min": 0.002288541273841874,
+        "max": 0.0028357969111704033
+      },
+      "packageIdleWakeups": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "interruptWakeups": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "workload": "idle",
+      "policy": "session",
+      "CPUPercent": {
+        "median": 0.022884245714368357,
+        "min": 0.020795150849417236,
+        "max": 0.028752900162767287
+      },
+      "packageIdleWakeups": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "interruptWakeups": [
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "workload": "paced",
+      "policy": "none",
+      "CPUPercent": {
+        "median": 0.01714075470781875,
+        "min": 0.014906413646497642,
+        "max": 0.019269751121454702
+      },
+      "packageIdleWakeups": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "interruptWakeups": [
+        10,
+        10,
+        10,
+        10
+      ]
+    },
+    {
+      "workload": "paced",
+      "policy": "session",
+      "CPUPercent": {
+        "median": 0.03652759010098411,
+        "min": 0.03543261632050195,
+        "max": 0.04285414591438041
+      },
+      "packageIdleWakeups": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "interruptWakeups": [
+        10,
+        10,
+        10,
+        10
+      ]
+    }
+  ],
+  "sourceSHA256": {
+    "Tests/ActivityPolicyMeasurementProbe.m": "7646e09a873fb261c7dd6ee45e92e35509e71f648f17a8aec64dbc7bc8a62235",
+    "Scripts/measure-activity-policy.py": "381d57871aaef307b941ab7d7bf44b9f99f10597072f18e8f42c2cd58158bf19",
+    "Telephone/BackgroundActivityUserAgentEventTarget.swift": "b6ef78a3d629bf4eb0b8ebf67e7548bfd75517422f6575bcc64d852710db2f0e"
+  },
+  "limitations": [
+    "CLI process overhead only; no Telephone App Nap eligibility or hidden AppKit state",
+    "No actual SIP registration, incoming-call delivery, audio, provider or sleep/wake measurement",
+    "No energy or battery measurement; near-zero differences do not establish equivalence or savings",
+    "No app launch, real profile, Contacts, credentials, history or recordings",
+    "Production policy unchanged; activity flag permits idle system sleep but is not a wake/readiness guarantee"
+  ],
+  "decision": {
+    "policy": "retain userInitiatedAllowingIdleSystemSleep for the started SIP session",
+    "productionChanged": false,
+    "reason": "No comparative real-app App Nap or provider/sleep-wake evidence justifies changing incoming-call scheduling. The bounded CLI comparison does not establish policy necessity, optimality or battery savings.",
+    "actualAcceptance": "pending in issue #62 by owner choice"
+  },
+  "verification": {
+    "productionActivityBalanceFixture": "passed: failed start, duplicate successful start, failed restart and repeated stop/restart",
+    "logSHA256": {
+      "/private/tmp/jps-activity66-verified-20261026.log": "32ff4b45fcf17e85c56208c4c97247d9d55ec158cfa1b2a5d78dbbe19416b0b8",
+      "/private/tmp/jps-activity66-regression-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "/private/tmp/jps-activity66-regression-run.log": "8486ceb5b2a3916fb26feff1a66ac6165d274ea3085e1168d8f654c5718c51f6"
+    },
+    "fullAppSuites": "not rerun; production source unchanged"
+  }
+}
