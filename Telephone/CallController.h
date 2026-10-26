@@ -86,6 +86,8 @@ typedef NS_ENUM(NSInteger, AKRecordingDestinationReason) {
 @property(nonatomic, readonly, copy) NSString *compactWindowTitle;
 @property(nonatomic, readonly, copy) NSString *presentationStatus;
 @property(nonatomic, readonly, copy) NSString *presentationDuration;
+// Consultation sheets retain elapsed time in their existing status slot.
+@property(nonatomic, readonly, copy) NSString *presentationTransferStatus;
 
 // Remote party name from the Address Book.
 @property(nonatomic, copy) NSString *nameFromAddressBook;
@@ -116,6 +118,11 @@ typedef NS_ENUM(NSInteger, AKRecordingDestinationReason) {
 // A Boolean value indicating whether the receiver's call is unhandled.
 @property(nonatomic, readonly, getter=isCallUnhandled) BOOL callUnhandled;
 @property(nonatomic, readonly) BOOL acceptsPendingCallResult;
+
+// Presentation admission is separate from asynchronously updated native call state.
+@property(nonatomic, readonly) BOOL callControlsEnabled;
+@property(nonatomic, readonly) BOOL holdChangePending;
+@property(nonatomic, readonly) BOOL muteChangePending;
 
 
 - (instancetype)initWithWindowNibName:(NSString *)windowNibName

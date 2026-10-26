@@ -45,6 +45,7 @@ static const NSTimeInterval kCallWindowAutoCloseTime = 1.5;
 
 // Redial button re-enable delay.
 static const NSTimeInterval kRedialButtonReenableTime = 1.0;
+static void *AKCallControlHoldObservationContext = &AKCallControlHoldObservationContext;
 
 @interface CallController ()
 - (NSRect)frameKeepingCallVisible:(NSRect)frame;
@@ -58,6 +59,14 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 @property(nonatomic) BOOL hangUpPending;
 @property(nonatomic) BOOL closeAfterHangUp;
 @property(nonatomic) BOOL closed;
+@property(nonatomic) BOOL callControlsRetired;
+@property(nonatomic, readwrite) BOOL holdChangePending;
+@property(nonatomic, readwrite) BOOL muteChangePending;
+@property(nonatomic) NSUInteger callControlGeneration;
+@property(nonatomic) AKSIPCall *observedControlCall;
+- (void)observeCallControls;
+- (void)removeCallControlObservations;
+- (void)refreshCallControls;
 @property(nonatomic, readwrite) AKCallRecordingStatus recordingStatus;
 @property(nonatomic, readwrite) AKRecordingDestinationReason recordingDestinationReason;
 @property(nonatomic, readwrite) AKRecordingDestinationReason recordingFallbackReason;
@@ -149,6 +158,17 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     return [NSString stringWithFormat:@"%02ld:%02ld:%02ld", (seconds / 3600) % 24, (seconds / 60) % 60, seconds % 60];
 }
 
++ (NSSet<NSString *> *)keyPathsForValuesAffectingPresentationTransferStatus {
+    return [NSSet setWithArray:@[@"status", @"presentationDuration"]];
+}
+
+- (NSString *)presentationTransferStatus {
+    if (self.callStartTime > 0 && [self.presentationStatus isEqualToString:NSLocalizedString(@"Connected", @"Connected call status.")]) {
+        return self.presentationDuration;
+    }
+    return self.status ?: @"";
+}
+
 - (void)refreshCompactPresentation {
     if (!self.isWindowLoaded || ![self.windowNibName isEqualToString:@"Call"]) return;
     NSArray *controllers = @[(id)_activeCallViewController ?: NSNull.null,
@@ -191,7 +211,17 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         [self.intermediateStatusTimer invalidate];
         self.intermediateStatusTimer = nil;
         if (self.recordingStartPending || self.recordingStatus != AKCallRecordingStatusDisabled) [self stopRecording];
+        [_activeCallViewController invalidateCallTimer];
+        self.callControlGeneration++;
+        self.holdChangePending = NO;
+        self.muteChangePending = NO;
+        self.hangUpPending = NO;
+        [self removeCallControlObservations];
+    } else {
+        [self observeCallControls];
     }
+    self.callControlsRetired = !callActive;
+    [self refreshCallControls];
     // A call may be created after the user agent has already reported failure.
     // Ended calls must still display their normal final SIP status.
     [self setStatus:self.statusWithoutAudioFailure];
@@ -199,6 +229,15 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 - (void)setCall:(AKSIPCall *)call {
     if (_call != call) {
+        [self removeCallControlObservations];
+        [_activeCallViewController invalidateCallTimer];
+        self.callControlGeneration++;
+        self.holdChangePending = NO;
+        self.muteChangePending = NO;
+        self.callControlsRetired = NO;
+        [self.intermediateStatusTimer invalidate];
+        self.intermediateStatusTimer = nil;
+        self.callStartTime = 0;
         [self stopRecording];
         if (_call.delegate == self) {
             _call.delegate = nil;
@@ -208,6 +247,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         self.closeAfterHangUp = NO;
         self.closed = NO;
         _call.delegate = self;
+        [self observeCallControls];
         _incomingCallViewController.representedObject = _call;
         _activeCallViewController.representedObject = _call;
         _endedCallViewController.representedObject = _call;
@@ -217,7 +257,30 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
             self.window.styleMask |= NSWindowStyleMaskClosable;
             [_activeCallViewController allowHangUp];
         }
+        [self refreshCallControls];
     }
+}
+
+- (void)observeCallControls {
+    if (self.closed || self.call == nil || self.observedControlCall == self.call) return;
+    self.observedControlCall = self.call;
+    [self.observedControlCall addObserver:self forKeyPath:@"localHold" options:0 context:AKCallControlHoldObservationContext];
+    [self.observedControlCall addObserver:self forKeyPath:@"remoteHold" options:0 context:AKCallControlHoldObservationContext];
+}
+
+- (void)removeCallControlObservations {
+    if (self.observedControlCall == nil) return;
+    [self.observedControlCall removeObserver:self forKeyPath:@"localHold" context:AKCallControlHoldObservationContext];
+    [self.observedControlCall removeObserver:self forKeyPath:@"remoteHold" context:AKCallControlHoldObservationContext];
+    self.observedControlCall = nil;
+}
+
+- (void)refreshCallControls {
+    [_activeCallViewController refreshControlPresentation];
+}
+
+- (BOOL)callControlsEnabled {
+    return !self.closed && !self.hangUpPending && !self.callControlsRetired;
 }
 
 - (CallTransferController *)callTransferController {
@@ -290,6 +353,8 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)dealloc {
+    [self removeCallControlObservations];
+    [_activeCallViewController invalidateCallTimer];
     [NSNotificationCenter.defaultCenter removeObserver:self
                                                  name:AKSIPUserAgentAudioStateDidChangeNotification
                                                object:_userAgent];
@@ -387,11 +452,14 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 - (void)hangUpCall {
     if (self.hangUpPending || self.call == nil || self.call.state == kAKSIPCallDisconnectedState) return;
     self.hangUpPending = YES;
+    [self refreshCallControls];
     [self.activeCallViewController disallowHangUp];
     AKSIPCall *call = self.call;
+    NSUInteger generation = self.callControlGeneration;
     [call requestHangUpWithCompletion:^(BOOL accepted) {
-        if (self.call != call) return;
+        if (self.call != call || self.callControlGeneration != generation) return;
         self.hangUpPending = NO;
+        [self refreshCallControls];
         if (!accepted && call.state != kAKSIPCallDisconnectedState) {
             self.closeAfterHangUp = NO;
             [self.activeCallViewController allowHangUp];
@@ -429,24 +497,40 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)toggleCallHold {
+    AKSIPCall *call = self.call;
+    NSUInteger generation = self.callControlGeneration;
     [self requestToggleCallHoldWithCompletion:^(BOOL accepted) {
+        if (self.call != call || self.closed || self.callControlGeneration != generation) return;
         if (!accepted) [self setIntermediateStatus:NSLocalizedString(@"Could not change hold. Try again.", @"Rejected local hold.")];
     }];
 }
 
 - (void)requestToggleCallHoldWithCompletion:(void (^)(BOOL))completion {
-    if (self.call.state != kAKSIPCallConfirmedState || self.call.isOnRemoteHold) { completion(NO); return; }
+    if (!self.callControlsEnabled || self.holdChangePending || self.call == nil ||
+        self.call.state != kAKSIPCallConfirmedState || self.call.isOnRemoteHold) { completion(NO); return; }
     AKSIPCall *call = self.call;
+    NSUInteger generation = self.callControlGeneration;
+    self.holdChangePending = YES;
+    [self refreshCallControls];
     [call requestToggleHoldWithCompletion:^(BOOL accepted) {
-        completion(accepted && self.call == call && self.call.state == kAKSIPCallConfirmedState);
+        if (self.call != call || self.closed || self.callControlGeneration != generation) { completion(NO); return; }
+        self.holdChangePending = NO;
+        [self refreshCallControls];
+        completion(accepted && self.call.state == kAKSIPCallConfirmedState);
     }];
 }
 
 - (void)toggleMicrophoneMute {
-    if (self.call.state != kAKSIPCallConfirmedState) return;
+    if (!self.callControlsEnabled || self.muteChangePending || self.call == nil ||
+        self.call.state != kAKSIPCallConfirmedState) return;
     AKSIPCall *call = self.call;
+    NSUInteger generation = self.callControlGeneration;
+    self.muteChangePending = YES;
+    [self refreshCallControls];
     [call requestToggleMicrophoneMuteWithCompletion:^(BOOL accepted) {
-        if (self.call != call) return;
+        if (self.call != call || self.closed || self.callControlGeneration != generation) return;
+        self.muteChangePending = NO;
+        [self refreshCallControls];
         if (!accepted) {
             [self setIntermediateStatus:NSLocalizedString(@"Could not change mute. Try again.", @"Mute failed.")];
         } else if (call.isMicrophoneMuted && !self.isCallOnHold) {
@@ -792,6 +876,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         [self setStatus:
          NSLocalizedString(@"mic muted", @"Microphone muted status text.")];
     } else if ([[self call] isActive]) {
+        [self setStatus:NSLocalizedString(@"Connected", @"Connected call status.")];
         [[self activeCallViewController] startCallTimer];
     }
     
@@ -809,13 +894,17 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     [self showActiveCallView];
     [self.activeCallViewController showProgress];
     [self.activeCallViewController disallowHangUp];
+    [self refreshCallControls];
 }
 
 - (void)showActiveCallView {
     [self showViewController:self.activeCallViewController];
+    [self refreshCallControls];
 }
 
 - (void)showEndedCallView {
+    [_activeCallViewController invalidateCallTimer];
+    [self refreshCallControls];
     self.window.styleMask |= NSWindowStyleMaskClosable;
     [self showViewController:self.endedCallViewController];
 }
@@ -826,7 +915,10 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 - (void)showViewController:(NSViewController *)viewController {
     if ([self shouldShowViewController:viewController]) {
-        if (viewController != _activeCallViewController) [_activeCallViewController closeKeypad];
+        if (viewController != _activeCallViewController) {
+            [_activeCallViewController invalidateCallTimer];
+            [_activeCallViewController closeKeypad];
+        }
         [self setCallInfoViewResizingWindow:viewController.view];
     }
 }
@@ -902,6 +994,14 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 - (void)windowWillClose:(NSNotification *)notification {
     self.closed = YES;
+    [self.intermediateStatusTimer invalidate];
+    self.intermediateStatusTimer = nil;
+    self.callControlGeneration++;
+    self.holdChangePending = NO;
+    self.muteChangePending = NO;
+    [self removeCallControlObservations];
+    [_activeCallViewController invalidateCallTimer];
+    [self refreshCallControls];
     if (self.isCallActive) [self hangUpCall];
     [self.delegate callControllerWillClose:self];
     [_incomingCallViewController removeObservations];
@@ -923,6 +1023,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     if (self.userAgent == nil || notification.object != self.userAgent) {
         return;
     }
+    [self refreshCallControls];
     if (self.userAgent.hasAudioFailure) {
         // Finalize the existing recording, but leave SIP signaling and the call
         // timer alone. A silent recording must not appear to keep running.
@@ -955,7 +1056,24 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     // Only a subsequent native active-media notification may resume recording.
 }
 
+- (void)SIPCallCalling:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
+    [self refreshCallControls];
+}
+
+- (void)SIPCallIncoming:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
+    [self refreshCallControls];
+}
+
+- (void)SIPCallConnecting:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
+    [self refreshCallControls];
+}
+
 - (void)SIPCallEarly:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
+    [self refreshCallControls];
     if (![[self call] isIncoming]) {
         NSNumber *sipEventCode = [notification userInfo][@"AKSIPEventCode"];
         if ([sipEventCode isEqualToNumber:@(PJSIP_SC_RINGING)]) {
@@ -966,6 +1084,8 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)SIPCallDidConfirm:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
+    [self refreshCallControls];
     [self setCallStartTime:[NSDate timeIntervalSinceReferenceDate]];
     [self showActiveCallView];
     [self.activeCallViewController showHangUp];
@@ -975,6 +1095,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)SIPCallDidDisconnect:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
     [self setCallActive:NO];
     [self stopRecording];
     [[self activeCallViewController] stopCallTimer];
@@ -1040,6 +1161,8 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)SIPCallMediaDidBecomeActive:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
+    [self refreshCallControls];
     if (!self.userAgent.hasAudioFailure) {
         [self startAutomaticRecordingIfNeeded];
         [self.call refreshRecordingConnections];
@@ -1054,18 +1177,24 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)SIPCallDidLocalHold:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
+    [self refreshCallControls];
     [self setCallOnHold:YES];
     [[self activeCallViewController] stopCallTimer];
     [self setStatus:NSLocalizedString(@"on hold", @"Call on local hold status text.")];
 }
 
 - (void)SIPCallDidRemoteHold:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
+    [self refreshCallControls];
     [self setCallOnHold:YES];
     [[self activeCallViewController] stopCallTimer];
     [self setStatus:NSLocalizedString(@"on remote hold", @"Call on remote hold status text.")];
 }
 
 - (void)SIPCallTransferStatusDidChange:(NSNotification *)notification {
+    if (notification.object != self.call || self.closed) return;
+    [self refreshCallControls];
     NSDictionary *userInfo = [notification userInfo];
     BOOL isFinal = [userInfo[@"AKFinalTransferNotification"] boolValue];
     
@@ -1090,7 +1219,11 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
-    if (object == self.defaults && [keyPath isEqualToString:UserDefaultsKeys.keepCallWindowOnTop]) {
+    if (context == AKCallControlHoldObservationContext) {
+        // NONE/ERROR media changes can clear cached hold flags without a named
+        // hold/active notification. Observe only this call's main-owned cache.
+        if (object == self.call && !self.closed) [self refreshCallControls];
+    } else if (object == self.defaults && [keyPath isEqualToString:UserDefaultsKeys.keepCallWindowOnTop]) {
         [self updateWindowFloating];
     } else {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];

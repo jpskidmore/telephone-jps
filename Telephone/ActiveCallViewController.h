@@ -41,6 +41,8 @@
 
 - (void)removeObservations;
 - (void)refreshPresentation;
+// Reconcile the visible controls after a call or action event, independently of duration.
+- (void)refreshControlPresentation;
 
 // Hangs up call.
 - (IBAction)hangUpCall:(id)sender;
@@ -62,6 +64,9 @@
 
 // Stops call timer.
 - (void)stopCallTimer;
+
+// Unconditionally retire the duration timer on replacement, removal or teardown.
+- (void)invalidateCallTimer;
 
 // Method to be called when call timer fires.
 - (void)callTimerTick:(NSTimer *)theTimer;

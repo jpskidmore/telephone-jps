@@ -26,6 +26,15 @@
 #import "EndedCallViewController.h"
 
 
+typedef NS_OPTIONS(NSUInteger, AKCallControlPresentation) {
+    AKCallControlConfirmed = 1 << 0,
+    AKCallControlMuted = 1 << 1,
+    AKCallControlLocalHold = 1 << 2,
+    AKCallControlRemoteHold = 1 << 3,
+    AKCallControlHoldPending = 1 << 4,
+    AKCallControlMutePending = 1 << 5,
+};
+
 @interface ActiveCallViewController () <NSMenuItemValidation, NSPopoverDelegate>
 
 @property(nonatomic, getter=isShowingProgress) BOOL showingProgress;
@@ -42,7 +51,10 @@
 @property(nonatomic) NSTextField *durationField;
 @property(nonatomic) NSPopover *keypadPopover;
 @property(nonatomic) NSTextField *keypadDigitsField;
-@property(nonatomic) BOOL updatesDurationStatus;
+@property(nonatomic) AKCallControlPresentation controlPresentationSnapshot;
+@property(nonatomic) BOOL hasControlPresentationSnapshot;
+@property(nonatomic) BOOL observationsRemoved;
+@property(nonatomic, weak) AKSIPCall *durationTimerCall;
 @property(nonatomic) NSButton *recordingStatusButton;
 @property(nonatomic) NSPopover *recordingPopover;
 @property(nonatomic) NSTextField *recordingSummaryField;
@@ -56,7 +68,21 @@
 @implementation ActiveCallViewController
 
 - (void)setRepresentedObject:(id)representedObject {
+    [self invalidateCallTimer];
+    BOOL restoreBindings = self.observationsRemoved && self.isViewLoaded;
     [super setRepresentedObject:representedObject];
+    self.observationsRemoved = NO;
+    if (restoreBindings) {
+        [self.displayedNameField bind:NSValueBinding toObject:self withKeyPath:@"callController.displayedName" options:nil];
+        [self.statusField bind:NSValueBinding toObject:self
+                  withKeyPath:[self.nibName isEqualToString:@"ActiveCallView"] ? @"callController.presentationStatus" : @"callController.presentationTransferStatus"
+                      options:nil];
+        [self.numberField bind:NSValueBinding toObject:self withKeyPath:@"callController.title" options:nil];
+        [self.durationField bind:NSValueBinding toObject:self withKeyPath:@"callController.presentationDuration" options:nil];
+    }
+    self.hasControlPresentationSnapshot = NO;
+    [self closeKeypad];
+    [self refreshControlPresentation];
     [self.enteredDTMF setString:@""];
     self.keypadDigitsField.stringValue = @"";
 }
@@ -81,6 +107,10 @@
     [super viewDidLoad];
     // Transfer subclasses retain their dedicated sheet layout and actions.
     if (![self.nibName isEqualToString:@"ActiveCallView"]) {
+        // The consultation sheet has one status slot rather than a separate
+        // duration field. Its derived binding follows the same duration-only tick.
+        [self.statusField unbind:NSValueBinding];
+        [self.statusField bind:NSValueBinding toObject:self withKeyPath:@"callController.presentationTransferStatus" options:nil];
         return;
     }
     NSButton *mute = [AKCallActionButton buttonWithTitle:@"" target:self action:@selector(toggleMicrophoneMute:)];
@@ -112,31 +142,79 @@
     [self refreshPresentation];
 }
 
+- (AKCallControlPresentation)currentControlPresentation {
+    AKSIPCall *call = self.callController.call;
+    AKCallControlPresentation snapshot = 0;
+    if (!self.observationsRemoved && self.callController.callControlsEnabled && call != nil &&
+        call.state == kAKSIPCallConfirmedState) snapshot |= AKCallControlConfirmed;
+    if (call.isMicrophoneMuted) snapshot |= AKCallControlMuted;
+    if (call.isOnLocalHold) snapshot |= AKCallControlLocalHold;
+    if (call.isOnRemoteHold) snapshot |= AKCallControlRemoteHold;
+    if (self.callController.holdChangePending) snapshot |= AKCallControlHoldPending;
+    if (self.callController.muteChangePending) snapshot |= AKCallControlMutePending;
+    return snapshot;
+}
+
 - (void)refreshVisibleCallControls {
+    [self refreshControlPresentation];
+}
+
+- (void)refreshControlPresentation {
+    if (self.visibleCallControls == nil) return;
+    AKCallControlPresentation snapshot = [self currentControlPresentation];
+    if (self.hasControlPresentationSnapshot && self.controlPresentationSnapshot == snapshot) return;
+    AKCallControlPresentation previous = self.controlPresentationSnapshot;
+    BOOL hadSnapshot = self.hasControlPresentationSnapshot;
+    self.controlPresentationSnapshot = snapshot;
+    self.hasControlPresentationSnapshot = YES;
+    BOOL confirmed = (snapshot & AKCallControlConfirmed) != 0;
+    BOOL remoteHold = (snapshot & AKCallControlRemoteHold) != 0;
     for (NSButton *button in self.visibleCallControls) {
-        NSMenuItem *validationItem = [[NSMenuItem alloc] initWithTitle:button.title
-                                                             action:button.action
-                                                      keyEquivalent:@""];
-        button.enabled = [self validateMenuItem:validationItem];
-        button.title = validationItem.title;
-        button.imagePosition = NSImageOnly;
-        button.toolTip = validationItem.title;
-        button.accessibilityLabel = validationItem.title;
+        BOOL enabled = confirmed;
+        BOOL selected = NO;
+        NSString *title = button.title;
+        NSString *symbol = nil;
+        BOOL selectable = NO;
         if (button.action == @selector(toggleMicrophoneMute:)) {
-            BOOL selected = self.callController.call.isMicrophoneMuted;
-            button.state = selected ? NSControlStateValueOn : NSControlStateValueOff;
-            button.image = [NSImage imageWithSystemSymbolName:selected ? @"mic.slash" : @"mic" accessibilityDescription:nil];
-            button.accessibilityValue = @(selected);
+            selectable = YES;
+            enabled &= !(snapshot & AKCallControlMutePending);
+            selected = (snapshot & AKCallControlMuted) != 0;
+            title = selected ? NSLocalizedString(@"Unmute", @"Unmute. Call menu item.")
+                             : NSLocalizedString(@"Mute", @"Mute. Call menu item.");
+            symbol = selected ? @"mic.slash" : @"mic";
         } else if (button.action == @selector(toggleCallHold:)) {
-            BOOL selected = self.callController.call.isOnLocalHold;
-            button.state = selected ? NSControlStateValueOn : NSControlStateValueOff;
-            button.image = [NSImage imageWithSystemSymbolName:selected ? @"play.fill" : @"pause.fill" accessibilityDescription:nil];
-            button.accessibilityValue = @(selected);
+            selectable = YES;
+            enabled &= !remoteHold && !(snapshot & AKCallControlHoldPending);
+            selected = (snapshot & AKCallControlLocalHold) != 0;
+            title = confirmed && selected ? NSLocalizedString(@"Resume", @"Resume. Call menu item.")
+                                          : NSLocalizedString(@"Hold", @"Hold. Call menu item.");
+            symbol = selected ? @"play.fill" : @"pause.fill";
+        } else if (button.action == @selector(showCallTransferSheet:)) {
+            enabled &= !remoteHold && !(snapshot & AKCallControlHoldPending);
+        }
+        if (button.enabled != enabled) button.enabled = enabled;
+        if (![button.title isEqualToString:title]) button.title = title;
+        if (![button.toolTip isEqualToString:title]) button.toolTip = title;
+        if (![button.accessibilityLabel isEqualToString:title]) button.accessibilityLabel = title;
+        if (selectable) {
+            NSControlStateValue state = selected ? NSControlStateValueOn : NSControlStateValueOff;
+            if (button.state != state) button.state = state;
+            // Native symbols are resolved only when their selected state changes.
+            AKCallControlPresentation selection = button.action == @selector(toggleMicrophoneMute:)
+                ? AKCallControlMuted : AKCallControlLocalHold;
+            if (!hadSnapshot || button.image == nil || ((previous ^ snapshot) & selection)) {
+                button.image = [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:nil];
+            }
+            if (![button.accessibilityValue isEqual:@(selected)]) button.accessibilityValue = @(selected);
         }
     }
+    if (!confirmed) [self closeKeypad];
 }
 
 - (void)removeObservations {
+    self.observationsRemoved = YES;
+    [self invalidateCallTimer];
+    [self refreshControlPresentation];
     [self.keypadPopover close];
     [self.recordingPopover close];
     [self.numberField unbind:NSValueBinding];
@@ -156,6 +234,7 @@
 
 - (void)viewWillDisappear {
     [super viewWillDisappear];
+    [self invalidateCallTimer];
     [self closeKeypad];
 }
 
@@ -164,7 +243,7 @@
 }
 
 - (IBAction)showKeypad:(NSButton *)sender {
-    if (self.callController.call.state != kAKSIPCallConfirmedState) return;
+    if (!self.callController.callControlsEnabled || self.callController.call.state != kAKSIPCallConfirmedState) return;
     if (self.keypadPopover.isShown) {
         [self.keypadPopover close];
         return;
@@ -220,7 +299,7 @@
 }
 
 - (IBAction)sendKeypadDigit:(NSButton *)sender {
-    if (self.callController.call.state == kAKSIPCallConfirmedState) {
+    if (self.callController.callControlsEnabled && self.callController.call.state == kAKSIPCallConfirmedState) {
         [self activeCallView:(AKActiveCallView *)self.view didReceiveText:sender.title];
     }
 }
@@ -240,58 +319,58 @@
 }
 
 - (IBAction)showCallTransferSheet:(id)sender {
+    AKCallControlPresentation snapshot = [self currentControlPresentation];
+    if (!(snapshot & AKCallControlConfirmed) || (snapshot & (AKCallControlRemoteHold | AKCallControlHoldPending))) return;
     CallTransferController *callTransferController = [[self callController] callTransferController];
     [callTransferController beginTransferSetup];
     [[[self callController] window] beginSheet:[callTransferController window] completionHandler:nil];
 }
 
 - (void)startCallTimer {
-    self.updatesDurationStatus = YES;
-    [self refreshVisibleCallControls];
-    if ([self callTimer] != nil && [[self callTimer] isValid]) {
-        return;
-    }
-    
-    [self setCallTimer:
-     [NSTimer scheduledTimerWithTimeInterval:0.2
-                                      target:self
-                                    selector:@selector(callTimerTick:)
-                                    userInfo:nil
-                                     repeats:YES]];
+    if (self.observationsRemoved || !self.callController.isCallActive ||
+        self.callController.call.state != kAKSIPCallConfirmedState) return;
+    if (self.callTimer.isValid && self.durationTimerCall == self.callController.call) return;
+    [self invalidateCallTimer];
+    self.durationTimerCall = self.callController.call;
+    __weak ActiveCallViewController *weakSelf = self;
+    NSTimer *timer = [NSTimer timerWithTimeInterval:1.0 repeats:YES block:^(NSTimer *timer) {
+        [weakSelf callTimerTick:timer];
+    }];
+    timer.tolerance = 0.2;
+    self.callTimer = timer;
+    [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
+    [self callTimerTick:timer];
 }
 
 - (void)stopCallTimer {
-    self.updatesDurationStatus = NO;
-    // Connected duration continues during hold/mute and intermediate feedback.
-    if (self.callController.isCallActive && self.callController.call.state == kAKSIPCallConfirmedState) {
-        [self refreshVisibleCallControls];
-        return;
-    }
-    if ([self callTimer] != nil) {
-        [[self callTimer] invalidate];
-        [self setCallTimer:nil];
-    }
-    // Hold and mute suspend the status timer. Refresh here so controls still
-    // reflect native local/remote hold notifications while that timer is idle.
-    [self refreshVisibleCallControls];
+    // Connected duration continues through hold/mute and intermediate feedback.
+    if (!self.observationsRemoved && self.callController.isCallActive &&
+        self.callController.call.state == kAKSIPCallConfirmedState &&
+        self.durationTimerCall == self.callController.call) return;
+    [self invalidateCallTimer];
+}
+
+- (void)invalidateCallTimer {
+    [self.callTimer invalidate];
+    self.callTimer = nil;
+    self.durationTimerCall = nil;
 }
 
 - (void)callTimerTick:(NSTimer *)theTimer {
-    [self refreshVisibleCallControls];
+    if (theTimer != nil && (theTimer != self.callTimer || self.durationTimerCall != self.callController.call)) return;
+    if (self.observationsRemoved || !self.callController.isCallActive ||
+        self.callController.call.state != kAKSIPCallConfirmedState) {
+        [self invalidateCallTimer];
+        return;
+    }
+    // presentationDuration derives elapsed seconds from the clock, so a delayed
+    // tick (including sleep/wake) catches up without accumulating timer drift.
     [self.callController willChangeValueForKey:@"presentationDuration"];
     [self.callController didChangeValueForKey:@"presentationDuration"];
-    if (!self.updatesDurationStatus) return;
-    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
-    NSInteger seconds = (NSInteger)(now - ([[self callController] callStartTime]));
-    
-    if (seconds < 3600) {
-        [[self callController] setStatus:[NSString stringWithFormat:@"%02ld:%02ld",
-                                          (seconds / 60) % 60, seconds % 60]];
-    } else {
-        [[self callController]
-         setStatus:[NSString stringWithFormat:@"%02ld:%02ld:%02ld",
-                    (seconds / 3600) % 24, (seconds / 60) % 60, seconds % 60]];
-    }
+}
+
+- (void)dealloc {
+    [_callTimer invalidate];
 }
 
 - (void)showProgress {
@@ -496,7 +575,8 @@
         }
     }
     
-    if (isDTMFValid && aString.length > 0 && self.callController.call.state == kAKSIPCallConfirmedState) {
+    if (isDTMFValid && aString.length > 0 && self.callController.callControlsEnabled &&
+        self.callController.call.state == kAKSIPCallConfirmedState) {
         [self.enteredDTMF appendString:aString];
         [self.callController.call sendDTMFDigits:aString];
         // Identity always remains in Caller; keypad has a separate named echo.
@@ -510,54 +590,24 @@
 #pragma mark NSMenuItemValidation protocol
 
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem {
-    if ([menuItem action] == @selector(toggleMicrophoneMute:)) {
-        if ([[[self callController] call] isMicrophoneMuted]) {
-            [menuItem setTitle:NSLocalizedString(@"Unmute", @"Unmute. Call menu item.")];
-        } else {
-            [menuItem setTitle:NSLocalizedString(@"Mute", @"Mute. Call menu item.")];
-        }
-        
-        if ([[[self callController] call] state] == kAKSIPCallConfirmedState) {
-            return YES;
-        } else {
-            return NO;
-        }
-        
-    } else if ([menuItem action] == @selector(toggleCallHold:)) {
-        if ([[[self callController] call] state] == kAKSIPCallConfirmedState &&
-            [[[self callController] call] isOnLocalHold]) {
-            [menuItem setTitle:NSLocalizedString(@"Resume", @"Resume. Call menu item.")];
-        } else {
-            [menuItem setTitle:NSLocalizedString(@"Hold", @"Hold. Call menu item.")];
-        }
-        
-        if ([[[self callController] call] state] == kAKSIPCallConfirmedState &&
-            ![[[self callController] call] isOnRemoteHold]) {
-            
-            return YES;
-            
-        } else {
-            return NO;
-        }
-        
-    } else if ([menuItem action] == @selector(showCallTransferSheet:)) {
-        if ([[[self callController] call] state] == kAKSIPCallConfirmedState &&
-            ![[[self callController] call] isOnRemoteHold]) {
-            
-            return YES;
-            
-        } else {
-            return NO;
-        }
-        
-    } else if ([menuItem action] == @selector(hangUpCall:)) {
-        [menuItem setTitle:NSLocalizedString(@"End Call", @"End Call. Call menu item.")];
-
+    AKCallControlPresentation snapshot = [self currentControlPresentation];
+    BOOL confirmed = (snapshot & AKCallControlConfirmed) != 0;
+    if (menuItem.action == @selector(toggleMicrophoneMute:)) {
+        menuItem.title = snapshot & AKCallControlMuted ? NSLocalizedString(@"Unmute", @"Unmute. Call menu item.")
+                                                       : NSLocalizedString(@"Mute", @"Mute. Call menu item.");
+        return confirmed && !(snapshot & AKCallControlMutePending);
+    } else if (menuItem.action == @selector(toggleCallHold:)) {
+        menuItem.title = confirmed && (snapshot & AKCallControlLocalHold)
+            ? NSLocalizedString(@"Resume", @"Resume. Call menu item.") : NSLocalizedString(@"Hold", @"Hold. Call menu item.");
+        return confirmed && !(snapshot & (AKCallControlRemoteHold | AKCallControlHoldPending));
+    } else if (menuItem.action == @selector(showCallTransferSheet:)) {
+        return confirmed && !(snapshot & (AKCallControlRemoteHold | AKCallControlHoldPending));
+    } else if (menuItem.action == @selector(hangUpCall:)) {
+        menuItem.title = NSLocalizedString(@"End Call", @"End Call. Call menu item.");
         return self.hangUpButton.isEnabled;
-    } else if ([menuItem action] == @selector(showKeypad:)) {
-        return self.callController.call.state == kAKSIPCallConfirmedState;
+    } else if (menuItem.action == @selector(showKeypad:)) {
+        return confirmed;
     }
-    
     return YES;
 }
 

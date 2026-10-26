@@ -721,6 +721,7 @@
 		8F8D569B45DC4E50AF53CE0A /* ContactsRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AB1AB760834DF4BEFBEE45 /* ContactsRecoveryTests.swift */; };
 		F9DE89208DBC4E8E8BF580B3 /* AudioRecoveryPresentationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 0FAC441E310B40BBBEB5A7D4 /* AudioRecoveryPresentationTests.m */; };
 		74D1D5A48A5D4BDDA2F371BE /* RecordingFeedbackTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A41D0F1C0DD04598B11E06F0 /* RecordingFeedbackTests.m */; };
+		901617CE8297448F8C08829D /* CallControlPresentationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B60A56106DE4BB3B3F3FD70 /* CallControlPresentationTests.m */; };
 		26C9A8A8D4294BDBAEECC5B8 /* RecordingStartOutcomeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 10FC4E2A2ADA4654945FF41B /* RecordingStartOutcomeTests.m */; };
 /* End PBXBuildFile section */
 
@@ -1631,6 +1632,7 @@
 		A0AB1AB760834DF4BEFBEE45 /* ContactsRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ContactsRecoveryTests.swift; path = TelephoneTests/ContactsRecoveryTests.swift; sourceTree = SOURCE_ROOT; };
 		0FAC441E310B40BBBEB5A7D4 /* AudioRecoveryPresentationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AudioRecoveryPresentationTests.m; path = TelephoneTests/AudioRecoveryPresentationTests.m; sourceTree = SOURCE_ROOT; };
 		A41D0F1C0DD04598B11E06F0 /* RecordingFeedbackTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = RecordingFeedbackTests.m; path = TelephoneTests/RecordingFeedbackTests.m; sourceTree = SOURCE_ROOT; };
+		0B60A56106DE4BB3B3F3FD70 /* CallControlPresentationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = CallControlPresentationTests.m; path = TelephoneTests/CallControlPresentationTests.m; sourceTree = SOURCE_ROOT; };
 		10FC4E2A2ADA4654945FF41B /* RecordingStartOutcomeTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = RecordingStartOutcomeTests.m; path = TelephoneTests/RecordingStartOutcomeTests.m; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -2530,6 +2532,7 @@
 				A0AB1AB760834DF4BEFBEE45 /* ContactsRecoveryTests.swift */,
 				0FAC441E310B40BBBEB5A7D4 /* AudioRecoveryPresentationTests.m */,
 				A41D0F1C0DD04598B11E06F0 /* RecordingFeedbackTests.m */,
+				0B60A56106DE4BB3B3F3FD70 /* CallControlPresentationTests.m */,
 				10FC4E2A2ADA4654945FF41B /* RecordingStartOutcomeTests.m */,
 				8A778C091E0AE9C7004B00B8 /* CallHistoryViewPresenterTests.swift */,
 				8A273C851E89689300B42A82 /* DefaultCallHistoryCallMakeUseCaseFactory.swift */,
@@ -4205,6 +4208,7 @@
 				8F8D569B45DC4E50AF53CE0A /* ContactsRecoveryTests.swift in Sources */,
 				F9DE89208DBC4E8E8BF580B3 /* AudioRecoveryPresentationTests.m in Sources */,
 				74D1D5A48A5D4BDDA2F371BE /* RecordingFeedbackTests.m in Sources */,
+				901617CE8297448F8C08829D /* CallControlPresentationTests.m in Sources */,
 				26C9A8A8D4294BDBAEECC5B8 /* RecordingStartOutcomeTests.m in Sources */,
 				8A778C0A1E0AE9C7004B00B8 /* CallHistoryViewPresenterTests.swift in Sources */,
 				8AA748861D6F10B6000587DC /* SettingsAccounts.swift in Sources */,

@@ -67,8 +67,7 @@ native indeterminate indicator and a presentation-only watchdog. Fresh isolated
 Telephone validation passed 328 XCTest + 48 Swift Testing cases; separate audio
 gate, real-worker lifecycle and source-wiring checks passed. Read
 [the audio progress record](maintenance/2026-10-26-audio-progress.md) for identity
-guards, actual counts and physical-device limits. The next ranked source item
-is #67. Recording feedback #65 is also source-verified: typed start/fallback
+guards, actual counts and physical-device limits. Recording feedback follows below. Recording feedback #65 is also source-verified: typed start/fallback
 outcomes, current-call retry and actual-folder details in the compact REC slot.
 Fresh isolated Telephone validation passed 359 XCTest + 48 Swift Testing cases,
 plus synthetic encoding/recovery and separate checks. Read
@@ -79,7 +78,15 @@ Activity-policy investigation #66 retains the current SIP-session activity after
 an isolated 16-sample comparison and a fresh token-balance fixture. It permits
 idle system sleep; no app energy/battery improvement or real readiness is claimed.
 Read [the measurement and retention decision](maintenance/2026-10-26-activity-policy.md).
-The next ranked source item is #67.
+The next ranked source item is #68.
+
+Call controls #67 now use current state events and diffed snapshots, with a
+one-second tolerant duration-only timer. Fresh isolated Telephone validation
+passed 377 XCTest + 48 Swift Testing cases; final 18 focused cases and bounded
+baseline/candidate counters plus Time Profiler captures passed. Read
+[the call-control record](maintenance/2026-10-26-call-controls.md) for event
+coverage, lifecycle checks and measurement limits. No battery or live-call gain
+is claimed. The next ranked source item is #68.
 
 On 26 October the owner authorised **all remaining issues, one at a time**, with
 findings and outcomes logged in GitHub for other contributors. This resumes the

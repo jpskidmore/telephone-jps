@@ -1,0 +1,331 @@
+{
+  "issue": 67,
+  "dateUTC": "2026-10-26T18:42:18.073052Z",
+  "baseline": "7e412da0ba5d7cf9fdb120b8d1de059becc277d6",
+  "status": "source_verified_not_installed_or_released",
+  "platform": {
+    "OS": "27.0.1",
+    "OSBuild": "26A434",
+    "Xcode": "Xcode 27.1\nBuild version 27A9275",
+    "architecture": "arm64",
+    "deploymentTarget": "macOS15.6"
+  },
+  "sourceSHA256": {
+    "Telephone/ActiveCallViewController.h": "c8bd741f35ec4c5d070c4ec5cac06fa55d14d76801cd2de827e811f163fe495a",
+    "Telephone/ActiveCallViewController.m": "29dc5d3f0a3fa8f8be39c49fdd8976c0bbbcd7411d1b1d217c2cab3a4d93bc3e",
+    "Telephone/CallController.h": "70810d0f7b924a25653c0b32aea7cbf3c20f3bacd3c80fdc5272765852869cb5",
+    "Telephone/CallController.m": "43d053042cb1276fc75085f0c0e9651896990043880851abb93fd00554a0e2bc",
+    "TelephoneTests/CallControlPresentationTests.m": "32d7a1d5b87ac0ea3db5775955baf2a00c9455479889b803a87f75f08cd1292f",
+    "Tests/test_audio_recovery_integration.py": "c8c5d4c6a535acb25ecb92ad3c1e65cae36dfbd046a1c48dafa064e110e6c072"
+  },
+  "baselineSourceSHA256": {
+    "Telephone/ActiveCallViewController.h": "1f554e7f3bf40ca8dfd9dd6ae1b16d3cb625c8c3b5328dd224651b37fae52692",
+    "Telephone/ActiveCallViewController.m": "a495ca2a23b6a3ba9a6c1b21dc93888c1bd479f9e15d7a2e84a8cf676fb244d7",
+    "Telephone/CallController.h": "28244d2978713d950cf744c1e18b39b90a83f01f236ad0a7b0b24918ad3565f4",
+    "Telephone/CallController.m": "07af961efd6936fec2483ad5df85e962c5b81764234b19ffc9b0edd2512bd60f"
+  },
+  "tests": {
+    "completeTelephoneSuite": {
+      "XCTest": 377,
+      "SwiftTesting": 48,
+      "failures": 0,
+      "log": "/private/tmp/jps-controls67-full.log",
+      "result": "/private/tmp/jps-controls67-full.xcresult",
+      "scope": "Final production code. Last extra reuse-binding test assertion added afterward; fresh final build and focused suite below verifies it."
+    },
+    "finalFocusedSuite": {
+      "XCTest": 18,
+      "failures": 0,
+      "log": "/private/tmp/jps-controls67-final-focused.log",
+      "result": "/private/tmp/jps-controls67-final-focused.xcresult",
+      "note": "Overlaps complete suite, not additive."
+    },
+    "baselineMeasurement": {
+      "XCTest": 1,
+      "failures": 0
+    },
+    "audioSourceWiring": {
+      "checks": 11,
+      "failures": 0
+    },
+    "recordingModelAndWiring": {
+      "checks": 6,
+      "failures": 0
+    },
+    "otherFrameworks": "Unchanged; earlier results retained as historical, not rerun or added to fresh count."
+  },
+  "measurements": {
+    "baseline": [
+      {
+        "accessibilityLabelAssignments": 44,
+        "accessibilityValueAssignments": 22,
+        "cards": 1,
+        "controlRefreshCalls": 0,
+        "durationNotifications": 22,
+        "enabledAssignments": 44,
+        "imageAssignments": 22,
+        "legacyControlRefreshCalls": 11,
+        "menuItemInitializations": 44,
+        "menuValidations": 44,
+        "presentationRefreshes": 11,
+        "processCPUPercent": 3.905801916150539,
+        "processCPUSeconds": 0.08594100000000005,
+        "scope": "synthetic real-nib AppKit cards; no SIP, audio, Contacts, Keychain or real defaults",
+        "stateAssignments": 22,
+        "statusAssignments": 11,
+        "timerFirings": 11,
+        "visible": true,
+        "wallSeconds": 2.200342000054661
+      },
+      {
+        "accessibilityLabelAssignments": 44,
+        "accessibilityValueAssignments": 22,
+        "cards": 1,
+        "controlRefreshCalls": 0,
+        "durationNotifications": 22,
+        "enabledAssignments": 44,
+        "imageAssignments": 22,
+        "legacyControlRefreshCalls": 11,
+        "menuItemInitializations": 44,
+        "menuValidations": 44,
+        "presentationRefreshes": 11,
+        "processCPUPercent": 3.3752831316897804,
+        "processCPUSeconds": 0.07432899999999987,
+        "scope": "synthetic real-nib AppKit cards; no SIP, audio, Contacts, Keychain or real defaults",
+        "stateAssignments": 22,
+        "statusAssignments": 11,
+        "timerFirings": 11,
+        "visible": false,
+        "wallSeconds": 2.202155999955721
+      },
+      {
+        "accessibilityLabelAssignments": 176,
+        "accessibilityValueAssignments": 88,
+        "cards": 4,
+        "controlRefreshCalls": 0,
+        "durationNotifications": 88,
+        "enabledAssignments": 176,
+        "imageAssignments": 88,
+        "legacyControlRefreshCalls": 44,
+        "menuItemInitializations": 176,
+        "menuValidations": 176,
+        "presentationRefreshes": 44,
+        "processCPUPercent": 11.951218072204728,
+        "processCPUSeconds": 0.2631809999999999,
+        "scope": "synthetic real-nib AppKit cards; no SIP, audio, Contacts, Keychain or real defaults",
+        "stateAssignments": 88,
+        "statusAssignments": 44,
+        "timerFirings": 44,
+        "visible": true,
+        "wallSeconds": 2.202127000025939
+      },
+      {
+        "accessibilityLabelAssignments": 176,
+        "accessibilityValueAssignments": 88,
+        "cards": 4,
+        "controlRefreshCalls": 0,
+        "durationNotifications": 88,
+        "enabledAssignments": 176,
+        "imageAssignments": 88,
+        "legacyControlRefreshCalls": 44,
+        "menuItemInitializations": 176,
+        "menuValidations": 176,
+        "presentationRefreshes": 44,
+        "processCPUPercent": 11.267034286306254,
+        "processCPUSeconds": 0.24802900000000005,
+        "scope": "synthetic real-nib AppKit cards; no SIP, audio, Contacts, Keychain or real defaults",
+        "stateAssignments": 88,
+        "statusAssignments": 44,
+        "timerFirings": 44,
+        "visible": false,
+        "wallSeconds": 2.2013690000167117
+      }
+    ],
+    "candidate": [
+      {
+        "accessibilityLabelAssignments": 0,
+        "accessibilityValueAssignments": 0,
+        "cards": 1,
+        "controlRefreshCalls": 0,
+        "durationNotifications": 2,
+        "enabledAssignments": 0,
+        "imageAssignments": 0,
+        "legacyControlRefreshCalls": 0,
+        "menuItemInitializations": 0,
+        "menuValidations": 0,
+        "presentationRefreshes": 0,
+        "processCPUPercent": 0.5671773684842784,
+        "processCPUSeconds": 0.012490000000000001,
+        "scope": "synthetic real-nib AppKit cards; no SIP, audio, Contacts, Keychain or real defaults",
+        "stateAssignments": 0,
+        "statusAssignments": 0,
+        "timerFirings": 2,
+        "visible": true,
+        "wallSeconds": 2.2021330000134185
+      },
+      {
+        "accessibilityLabelAssignments": 0,
+        "accessibilityValueAssignments": 0,
+        "cards": 1,
+        "controlRefreshCalls": 0,
+        "durationNotifications": 2,
+        "enabledAssignments": 0,
+        "imageAssignments": 0,
+        "legacyControlRefreshCalls": 0,
+        "menuItemInitializations": 0,
+        "menuValidations": 0,
+        "presentationRefreshes": 0,
+        "processCPUPercent": 0.7609114225842115,
+        "processCPUSeconds": 0.016755999999999993,
+        "scope": "synthetic real-nib AppKit cards; no SIP, audio, Contacts, Keychain or real defaults",
+        "stateAssignments": 0,
+        "statusAssignments": 0,
+        "timerFirings": 2,
+        "visible": false,
+        "wallSeconds": 2.202095999964513
+      },
+      {
+        "accessibilityLabelAssignments": 0,
+        "accessibilityValueAssignments": 0,
+        "cards": 4,
+        "controlRefreshCalls": 0,
+        "durationNotifications": 8,
+        "enabledAssignments": 0,
+        "imageAssignments": 0,
+        "legacyControlRefreshCalls": 0,
+        "menuItemInitializations": 0,
+        "menuValidations": 0,
+        "presentationRefreshes": 0,
+        "processCPUPercent": 1.3681173325981903,
+        "processCPUSeconds": 0.030113999999999974,
+        "scope": "synthetic real-nib AppKit cards; no SIP, audio, Contacts, Keychain or real defaults",
+        "stateAssignments": 0,
+        "statusAssignments": 0,
+        "timerFirings": 8,
+        "visible": true,
+        "wallSeconds": 2.2011270000366494
+      },
+      {
+        "accessibilityLabelAssignments": 0,
+        "accessibilityValueAssignments": 0,
+        "cards": 4,
+        "controlRefreshCalls": 0,
+        "durationNotifications": 8,
+        "enabledAssignments": 0,
+        "imageAssignments": 0,
+        "legacyControlRefreshCalls": 0,
+        "menuItemInitializations": 0,
+        "menuValidations": 0,
+        "presentationRefreshes": 0,
+        "processCPUPercent": 0.9868071192369084,
+        "processCPUSeconds": 0.021711000000000036,
+        "scope": "synthetic real-nib AppKit cards; no SIP, audio, Contacts, Keychain or real defaults",
+        "stateAssignments": 0,
+        "statusAssignments": 0,
+        "timerFirings": 8,
+        "visible": false,
+        "wallSeconds": 2.2001259999815375
+      }
+    ]
+  },
+  "timeProfiler": {
+    "baseline": {
+      "samples": 894,
+      "mainThreadSamples": 829,
+      "framesContainingSampleCounts": {
+        "callTimerTick": 88,
+        "refreshVisibleCallControls": 59,
+        "refreshControlPresentation": 0,
+        "validateMenuItem": 3,
+        "refreshPresentation": 33,
+        "menuInitializer": 4
+      },
+      "durationSeconds": 17.60164,
+      "endReason": "Target app exited"
+    },
+    "candidate": {
+      "samples": 373,
+      "mainThreadSamples": 310,
+      "framesContainingSampleCounts": {
+        "callTimerTick": 4,
+        "refreshVisibleCallControls": 1,
+        "refreshControlPresentation": 5,
+        "validateMenuItem": 0,
+        "refreshPresentation": 3,
+        "menuInitializer": 0
+      },
+      "durationSeconds": 18.137659,
+      "endReason": "Target app exited"
+    }
+  },
+  "artifacts": {
+    "/private/tmp/jps-controls67-final-build.log": {
+      "SHA256": "c8b28ef43b4f4b4bf08f3a020003df9ba20b91504e5ee507d772f8bc4310e947",
+      "bytes": 417468
+    },
+    "/private/tmp/jps-controls67-full.log": {
+      "SHA256": "e430dd4a54951f9997bf7e45847b5049d4bd82a9419a98a16168448d996526ee",
+      "bytes": 132948
+    },
+    "/private/tmp/jps-controls67-assertion-build.log": {
+      "SHA256": "3d7915346fa938e1bcacb6ab4c5a66a2bce3fce7cafb86c9d6d78b6890193737",
+      "bytes": 52873
+    },
+    "/private/tmp/jps-controls67-final-focused.log": {
+      "SHA256": "255025eec974ecadc9ae8d68024dfa28c7bc44a4f3eca05e93dbf072c0a0ab23",
+      "bytes": 13568
+    },
+    "/private/tmp/jps-controls67-baseline-final-build.log": {
+      "SHA256": "9ffe425232d33727d3cbb0e1b6e2346664163176f6b591d3609c247dd6b1f7d9",
+      "bytes": 48599
+    },
+    "/private/tmp/jps-controls67-baseline-measurement.log": {
+      "SHA256": "9d09a06eb6d4c5f8b3ab5a6784a0c942c03ffe6f92427fe53c172ab60c1c8ec9",
+      "bytes": 10034
+    },
+    "/private/tmp/jps-controls67-baseline-profile-v2.log": {
+      "SHA256": "9c947ccd5604f35b5a484098087fae2f0ab7c9b4c3046abba401885635dab2ec",
+      "bytes": 9506
+    },
+    "/private/tmp/jps-controls67-baseline-profile-v2.xctrace.log": {
+      "SHA256": "180385566e294d52548be97d3e7baeddac822595ca854c424a5bbe01a92c0f0a",
+      "bytes": 282
+    },
+    "/private/tmp/jps-controls67-candidate-profile-v2.log": {
+      "SHA256": "767f1bbb16e07115346fa51884dbbf5776677409625cb4948fae26f5d99a7c4b",
+      "bytes": 9459
+    },
+    "/private/tmp/jps-controls67-candidate-profile-v2.xctrace.log": {
+      "SHA256": "ca465f9630c1bb1b8df98884dad41d112ee45140f004d1f1d2272644bceb598f",
+      "bytes": 283
+    },
+    "/private/tmp/jps-controls67-audio-wiring-final.log": {
+      "SHA256": "496ee7982b97f1fb6cf3dd00e3143b374834e1b60138a9e13291bd03579b2b97",
+      "bytes": 1160
+    },
+    "/private/tmp/jps-controls67-recording-wiring.log": {
+      "SHA256": "ca8111f316a876b54ea801ed91088aec79bfd65357bace3944a6df85203b00f9",
+      "bytes": 720
+    },
+    "/private/tmp/jps-controls67-baseline-profile-samples.xml": {
+      "SHA256": "2e87a4e76bceaaa8c9b9320a093ef5cc0ea90db725f736a7349e2e460e02e76f",
+      "bytes": 2514538
+    },
+    "/private/tmp/jps-controls67-candidate-profile-samples.xml": {
+      "SHA256": "8e645168378ff993f15d960d0f4731ab4e508cd94ba875030b1a950d8b9e4e12",
+      "bytes": 943952
+    }
+  },
+  "tracePaths": [
+    "/private/tmp/jps-controls67-baseline-profile-v2.trace",
+    "/private/tmp/jps-controls67-candidate-profile-v2.trace"
+  ],
+  "limits": [
+    "Four 2.2-second unprofiled phases, one sample per configuration, fixed order; CPU process samples include test/run-loop/AppKit work. No statistical or battery/energy claim.",
+    "Visible/hidden refers to synthetic card windows ordered front/out, not actual process App Nap policy.",
+    "Time Profiler captures include attachment delay, fixture setup/teardown and all four phases; frame counts overlap and are not call counts or per-phase CPU comparisons.",
+    "Wall-clock jumps simulate delayed delivery; no actual sleep/wake or provider call.",
+    "Native request-pending ends at worker completion; actual hold state remains native media-owned and is never optimistically inferred.",
+    "Actual provider/audio/devices/grants/sleep-wake/proficient VoiceOver remain pending in #62."
+  ]
+}

@@ -97,7 +97,9 @@ class AudioRecoveryWiringTests(unittest.TestCase):
         media = call.split('- (void)SIPCallMediaDidBecomeActive:', 1)[1].split('- (void)SIPCallDidLocalHold:', 1)[0]
         self.assertIn('if (!self.userAgent.hasAudioFailure)', media)
         self.assertIn('[self setCallOnHold:NO]', media)
-        self.assertNotIn('return;', media)
+        # Admission may reject a stale/closed owner before the audio gate.
+        # Once admitted, failed audio must not bypass the signaling update.
+        self.assertNotIn('return;', media.split('if (!self.userAgent.hasAudioFailure)', 1)[1])
 
     def test_enumeration_releases_buffer_on_throw(self):
         text = source('Telephone/UserAgentAudioDevices.swift')
