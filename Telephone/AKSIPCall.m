@@ -29,6 +29,13 @@
 
 #define THIS_FILE "AKSIPCall.m"
 
+static void AKRemoveEmptyRecordingReservation(NSURL *URL) {
+    if (!URL.isFileURL) return;
+    NSDictionary *attributes = [NSFileManager.defaultManager attributesOfItemAtPath:URL.path error:nil];
+    if ([attributes[NSFileType] isEqual:NSFileTypeRegular] && [attributes[NSFileSize] unsignedLongLongValue] == 0)
+        [NSFileManager.defaultManager removeItemAtURL:URL error:nil];
+}
+
 @interface AKSIPCall () {
     URI *_remote;
     BOOL _incoming;
@@ -42,6 +49,9 @@
 @property(nonatomic, getter=isMicrophoneMuted) BOOL microphoneMuted;
 @property(atomic) BOOL nativeRecordingActive;
 @property(atomic) BOOL recordingStartPending;
+@property(atomic, strong, nullable) NSObject *recordingStartAttempt;
+@property(atomic, copy, nullable) NSURL *recordingStartDestinationURL;
+@property(nonatomic) AKRecordingStartResult recordingStartResult;
 @property(nonatomic, readwrite, copy, nullable) NSURL *recordingURL;
 @property(nonatomic, copy, nullable) NSURL *localRecordingURL;
 @property(nonatomic, copy, nullable) NSURL *remoteRecordingURL;
@@ -50,6 +60,13 @@
 @property(nonatomic, strong, nullable) NSURL *accessedRecordingDirectoryURL;
 
 - (BOOL)stopNativeRecorders;
+- (BOOL)hasRecordingAudioFailure;
+- (pjsua_conf_port_id)recordingCallPort;
+- (nullable NSURL *)createRecordingRecoveryDirectoryWithError:(NSError **)error;
+- (pj_status_t)createRecordingRecorderAtURL:(NSURL *)URL identifier:(pjsua_recorder_id *)identifier;
+- (pjsua_conf_port_id)recordingPortForRecorder:(pjsua_recorder_id)identifier;
+- (pj_status_t)connectRecordingAudioSource:(pjsua_conf_port_id)source destination:(pjsua_conf_port_id)destination;
+- (void)destroyRecordingRecorder:(pjsua_recorder_id)identifier;
 - (void)finalizeRecordingFromLocalURL:(NSURL *)localURL remoteURL:(NSURL *)remoteURL
                      destinationURL:(NSURL *)destinationURL completion:(void (^)(BOOL))completion;
 
@@ -331,33 +348,68 @@
 - (BOOL)requiresSIPControlThread { return YES; }
 
 - (void)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(NSURL *)directoryURL completion:(void (^)(BOOL))completion {
+    [self startRecordingToURL:URL accessedDirectoryURL:directoryURL resultCompletion:^(AKRecordingStartResult result) {
+        completion(result == AKRecordingStartResultSuccess);
+    }];
+}
+
+- (void)discardUnusedRecordingReservationAtURL:(NSURL *)URL {
+    if (!URL.isFileURL) return;
+    NSURL *canonical = URL.URLByResolvingSymlinksInPath.standardizedURL;
+    if ([canonical isEqual:self.recordingURL.URLByResolvingSymlinksInPath.standardizedURL] ||
+        [canonical isEqual:self.recordingStartDestinationURL.URLByResolvingSymlinksInPath.standardizedURL]) return;
+    AKRemoveEmptyRecordingReservation(URL);
+}
+
+- (void)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(NSURL *)directoryURL
+          resultCompletion:(void (^)(AKRecordingStartResult))completion {
     if (self.recordingStartPending || self.isRecording) {
-        [directoryURL stopAccessingSecurityScopedResource]; completion(NO); return;
+        [self discardUnusedRecordingReservationAtURL:URL];
+        [directoryURL stopAccessingSecurityScopedResource];
+        completion(AKRecordingStartResultBusy);
+        return;
     }
+    NSObject *attempt = [NSObject new];
+    self.recordingStartAttempt = attempt;
+    self.recordingStartDestinationURL = URL;
     self.recordingStartPending = YES;
     __block BOOL executed = NO;
+    __block AKRecordingStartResult result = AKRecordingStartResultStaleCall;
     [self performDialogOperation:^pj_status_t(pjsua_call_info *info) {
+        if (self.recordingStartAttempt != attempt || info->state != PJSIP_INV_STATE_CONFIRMED) return PJ_ECANCELLED;
         executed = YES;
-        return [self startRecordingToURL:URL accessedDirectoryURL:directoryURL] ? PJ_SUCCESS : PJ_EUNKNOWN;
+        // A legacy BOOL override still fails closed; the production setup sets
+        // the precise result at the operation that actually failed.
+        self.recordingStartResult = AKRecordingStartResultRecorderCreationFailure;
+        BOOL succeeded = [self startRecordingToURL:URL accessedDirectoryURL:directoryURL];
+        result = succeeded ? AKRecordingStartResultSuccess : self.recordingStartResult;
+        return succeeded ? PJ_SUCCESS : PJ_EUNKNOWN;
     } completion:^(pj_status_t status) {
+        if (self.recordingStartAttempt != attempt || status == PJ_ECANCELLED ||
+            (status != PJ_SUCCESS && result == AKRecordingStartResultSuccess)) result = AKRecordingStartResultStaleCall;
+        self.recordingStartDestinationURL = nil;
+        self.recordingStartAttempt = nil;
         self.recordingStartPending = NO;
         if (!executed) {
-            [NSFileManager.defaultManager removeItemAtURL:URL error:nil];
+            [self discardUnusedRecordingReservationAtURL:URL];
             [directoryURL stopAccessingSecurityScopedResource];
         }
-        completion(status == PJ_SUCCESS);
+        completion(result);
     }];
 }
 
 - (BOOL)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(NSURL *)directoryURL {
     // Do not replace an existing recording's access token, even for an equal URL.
     if ([self isRecording]) {
+        self.recordingStartResult = AKRecordingStartResultBusy;
+        [self discardUnusedRecordingReservationAtURL:URL];
         [directoryURL stopAccessingSecurityScopedResource];
         return NO;
     }
     if (![self startRecordingToURL:URL]) {
         // Remove the reserved placeholder while the consumed scope is valid.
-        [NSFileManager.defaultManager removeItemAtURL:URL error:nil];
+        // This is the admitted attempt, whose reservation is no longer needed.
+        AKRemoveEmptyRecordingReservation(URL);
         [directoryURL stopAccessingSecurityScopedResource];
         return NO;
     }
@@ -367,72 +419,95 @@
 
 - (BOOL)startRecordingToURL:(NSURL *)URL {
     if ([self isRecording]) {
-        return YES;
+        self.recordingStartResult = AKRecordingStartResultBusy;
+        return NO;
     }
-    if (![URL isFileURL] || [self state] != kAKSIPCallConfirmedState ||
-        [AKSIPUserAgent sharedUserAgent].hasAudioFailure) {
+    if (!URL.isFileURL || URL.path.length == 0 || URL.hasDirectoryPath) {
+        self.recordingStartResult = AKRecordingStartResultInvalidDestination;
+        return NO;
+    }
+    BOOL isDirectory = NO;
+    [NSFileManager.defaultManager fileExistsAtPath:URL.path isDirectory:&isDirectory];
+    if (isDirectory) {
+        self.recordingStartResult = AKRecordingStartResultInvalidDestination;
+        return NO;
+    }
+    if (self.state != kAKSIPCallConfirmedState) {
+        self.recordingStartResult = AKRecordingStartResultStaleCall;
+        return NO;
+    }
+    if ([self hasRecordingAudioFailure]) {
+        self.recordingStartResult = AKRecordingStartResultAudioFailure;
         return NO;
     }
 
-    pjsua_conf_port_id callPort = pjsua_call_get_conf_port((pjsua_call_id)[self identifier]);
+    pjsua_conf_port_id callPort = [self recordingCallPort];
     if (callPort == PJSUA_INVALID_ID) {
+        self.recordingStartResult = AKRecordingStartResultConnectionFailure;
         return NO;
     }
 
     NSError *directoryError = nil;
-    NSURL *temporaryDirectoryURL = AKCreateRecordingRecoveryDirectory(&directoryError);
+    NSURL *temporaryDirectoryURL = [self createRecordingRecoveryDirectoryWithError:&directoryError];
     if (temporaryDirectoryURL == nil) {
-        NSLog(@"Could not create a private temporary call-recording folder: %@", directoryError.localizedDescription);
+        self.recordingStartResult = AKRecordingStartResultPrivateStorageFailure;
+        NSLog(@"Could not create a private call-recording folder (error %ld)", (long)directoryError.code);
         return NO;
     }
     NSURL *localURL = [temporaryDirectoryURL URLByAppendingPathComponent:@"local.wav" isDirectory:NO];
     NSURL *remoteURL = [temporaryDirectoryURL URLByAppendingPathComponent:@"remote.wav" isDirectory:NO];
     AKRecordingJobOwnership *ownership = AKClaimRecordingJob(temporaryDirectoryURL, &directoryError);
-    if (!ownership) return NO;
+    if (!ownership) {
+        self.recordingStartResult = AKRecordingStartResultPrivateStorageFailure;
+        return NO;
+    }
     if (!AKPersistOwnedRecordingRecoveryJob(ownership, localURL, remoteURL, URL,
                                            AKRecordingJobPhaseCapturing, &directoryError)) {
         AKFinishRecordingRecoveryJob(ownership, NO);
         AKReportRecordingExportFailure(temporaryDirectoryURL, URL, directoryError);
+        self.recordingStartResult = AKRecordingStartResultPrivateStorageFailure;
         return NO;
     }
 
-    pj_str_t localFilename = [localURL.path pjString];
     pjsua_recorder_id localRecorderIdentifier = PJSUA_INVALID_ID;
-    pj_status_t status = pjsua_recorder_create(&localFilename, 0, NULL, 0, 0, &localRecorderIdentifier);
+    pj_status_t status = [self createRecordingRecorderAtURL:localURL identifier:&localRecorderIdentifier];
     if (status != PJ_SUCCESS) {
         NSLog(@"Could not create local call recorder (PJSIP error %d)", status);
         AKDiscardRecordingRecoveryJob(ownership);
+        self.recordingStartResult = AKRecordingStartResultRecorderCreationFailure;
         return NO;
     }
 
-    pj_str_t remoteFilename = [remoteURL.path pjString];
     pjsua_recorder_id remoteRecorderIdentifier = PJSUA_INVALID_ID;
-    status = pjsua_recorder_create(&remoteFilename, 0, NULL, 0, 0, &remoteRecorderIdentifier);
+    status = [self createRecordingRecorderAtURL:remoteURL identifier:&remoteRecorderIdentifier];
     if (status != PJ_SUCCESS) {
         NSLog(@"Could not create remote call recorder (PJSIP error %d)", status);
-        pjsua_recorder_destroy(localRecorderIdentifier);
+        [self destroyRecordingRecorder:localRecorderIdentifier];
         AKDiscardRecordingRecoveryJob(ownership);
+        self.recordingStartResult = AKRecordingStartResultRecorderCreationFailure;
         return NO;
     }
 
-    pjsua_conf_port_id localRecorderPort = pjsua_recorder_get_conf_port(localRecorderIdentifier);
-    pjsua_conf_port_id remoteRecorderPort = pjsua_recorder_get_conf_port(remoteRecorderIdentifier);
-    status = [[AKSIPUserAgent sharedUserAgent] connectAudioSource:callPort destination:remoteRecorderPort];
+    pjsua_conf_port_id localRecorderPort = [self recordingPortForRecorder:localRecorderIdentifier];
+    pjsua_conf_port_id remoteRecorderPort = [self recordingPortForRecorder:remoteRecorderIdentifier];
+    status = [self connectRecordingAudioSource:callPort destination:remoteRecorderPort];
     if (status != PJ_SUCCESS) {
         NSLog(@"Could not connect remote call audio to recorder (PJSIP error %d)", status);
-        pjsua_recorder_destroy(localRecorderIdentifier);
-        pjsua_recorder_destroy(remoteRecorderIdentifier);
+        [self destroyRecordingRecorder:localRecorderIdentifier];
+        [self destroyRecordingRecorder:remoteRecorderIdentifier];
         AKDiscardRecordingRecoveryJob(ownership);
+        self.recordingStartResult = AKRecordingStartResultConnectionFailure;
         return NO;
     }
 
     if (![self isMicrophoneMuted] && ![self isOnLocalHold]) {
-        status = [[AKSIPUserAgent sharedUserAgent] connectAudioSource:0 destination:localRecorderPort];
+        status = [self connectRecordingAudioSource:0 destination:localRecorderPort];
         if (status != PJ_SUCCESS) {
             NSLog(@"Could not connect microphone audio to recorder (PJSIP error %d)", status);
-            pjsua_recorder_destroy(localRecorderIdentifier);
-            pjsua_recorder_destroy(remoteRecorderIdentifier);
+            [self destroyRecordingRecorder:localRecorderIdentifier];
+            [self destroyRecordingRecorder:remoteRecorderIdentifier];
             AKDiscardRecordingRecoveryJob(ownership);
+            self.recordingStartResult = AKRecordingStartResultConnectionFailure;
             return NO;
         }
     }
@@ -447,16 +522,34 @@
     self.recordingTemporaryDirectoryURL = temporaryDirectoryURL;
     self.recordingJobOwnership = ownership;
     self.nativeRecordingActive = YES;
+    self.recordingStartResult = AKRecordingStartResultSuccess;
     NSLog(@"Recording separate local and remote call tracks");
     return YES;
 }
+
+// Narrow native boundaries also let isolated tests exercise the real setup and
+// recovery ownership without initialising PJSUA or opening an audio device.
+- (BOOL)hasRecordingAudioFailure { return [AKSIPUserAgent sharedUserAgent].hasAudioFailure; }
+- (pjsua_conf_port_id)recordingCallPort { return pjsua_call_get_conf_port((pjsua_call_id)self.identifier); }
+- (NSURL *)createRecordingRecoveryDirectoryWithError:(NSError **)error { return AKCreateRecordingRecoveryDirectory(error); }
+- (pj_status_t)createRecordingRecorderAtURL:(NSURL *)URL identifier:(pjsua_recorder_id *)identifier {
+    pj_str_t filename = URL.path.pjString;
+    return pjsua_recorder_create(&filename, 0, NULL, 0, 0, identifier);
+}
+- (pjsua_conf_port_id)recordingPortForRecorder:(pjsua_recorder_id)identifier { return pjsua_recorder_get_conf_port(identifier); }
+- (pj_status_t)connectRecordingAudioSource:(pjsua_conf_port_id)source destination:(pjsua_conf_port_id)destination {
+    return [[AKSIPUserAgent sharedUserAgent] connectAudioSource:source destination:destination];
+}
+- (void)destroyRecordingRecorder:(pjsua_recorder_id)identifier { pjsua_recorder_destroy(identifier); }
 
 - (void)stopRecording {
     [self stopRecordingWithCompletion:nil];
 }
 
 - (void)stopRecordingWithCompletion:(void (^)(BOOL))completion {
-    if (self.isRecording && self.requiresSIPControlThread && NSThread.isMainThread) {
+    BOOL pendingStart = self.recordingStartPending;
+    if (pendingStart && NSThread.isMainThread) self.recordingStartAttempt = nil;
+    if ((self.isRecording || pendingStart) && self.requiresSIPControlThread && NSThread.isMainThread) {
         [[AKSIPUserAgent sharedUserAgent] performSIPCleanupOperation:^pj_status_t {
             [self stopRecordingWithCompletion:completion]; return PJ_SUCCESS;
         } completion:^(pj_status_t status) {

@@ -1,9 +1,9 @@
 # Automatic call recording
 
-jps Telephone **3.5.1/build 163** includes optional automatic recording for
-connected calls. Start with [current maintenance and release status](docs/MAINTENANCE.md);
-the [3.5.1 verification record](docs/releases/3.5.1-verification.md) documents the
-completed local build, installation and private publication.
+jps Telephone includes optional automatic recording for connected calls.
+Start with [current maintenance and release status](docs/MAINTENANCE.md) for the
+installed and published baseline. Later source improvements do not update the
+installed application until a separate verified build is delivered.
 
 ## Use
 
@@ -22,6 +22,15 @@ The format choices deliberately keep technical settings out of the interface:
 - **Source — no added loss:** lossless 16-bit stereo PCM WAV at the call audio sample rate. This preserves the audio delivered by PJSIP without another lossy encoding step; it is decoded call audio, rather than the original RTP codec packets.
 
 The preference is off by default. Muted microphone audio is not added to the recording, and local microphone audio is disconnected from the recorder while the call is on local hold.
+
+## Recording feedback — source improvement, 26 October 2026
+
+The compact recording status opens details with the actual folder. **Starting**
+means capture is not yet confirmed; **Failed** offers Retry using current
+settings and Choose Folder; **REC** confirms capture, and **REC*** indicates a
+fallback folder. Reveal Folder opens that actual destination. A retry cannot
+recover earlier audio. Read [verification and limits](docs/maintenance/2026-10-26-recording-feedback.md).
+This source improvement has not been installed or released.
 
 ## Finalisation and normal Quit
 
@@ -47,8 +56,7 @@ Only enable recording when it is lawful and everyone who needs to consent has co
 
 ## Build
 
-The published **3.5.1/build 163** package targets Apple silicon and macOS 15.6 or
-later. Recorded SDK checks do not establish acceptance on every supported OS, including macOS 27.
+The supported baseline targets Apple silicon and macOS 15.6 or later. Recorded SDK checks do not establish acceptance on every supported OS, including macOS 27.
 For later authorised changes, follow [the maintenance entry point](docs/MAINTENANCE.md)
 and [local validation, build and packaging requirements](docs/VALIDATION.md).
 Use isolated synthetic tests, preserve user data and immutable releases, and

@@ -58,6 +58,17 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 @property(nonatomic) BOOL hangUpPending;
 @property(nonatomic) BOOL closeAfterHangUp;
 @property(nonatomic) BOOL closed;
+@property(nonatomic, readwrite) AKCallRecordingStatus recordingStatus;
+@property(nonatomic, readwrite) AKRecordingDestinationReason recordingDestinationReason;
+@property(nonatomic, readwrite) AKRecordingDestinationReason recordingFallbackReason;
+@property(nonatomic, readwrite) AKRecordingStartResult recordingStartResult;
+@property(nonatomic, readwrite) BOOL recordingUsesFallback;
+@property(nonatomic, readwrite, copy) NSURL *recordingDestinationFolderURL;
+@property(nonatomic, readwrite, copy) NSURL *recordingCapturedURL;
+@property(nonatomic) NSUInteger recordingAttemptGeneration;
+@property(nonatomic) BOOL recordingStartPending;
+@property(nonatomic) BOOL recordingFolderPanelPending;
+@property(nonatomic) BOOL recordingFolderSelectionFailed;
 
 // Call info view.
 @property(nonatomic, strong) NSView *callInfoView;
@@ -71,6 +82,12 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
 
 - (NSURL *)selectedRecordingDirectoryURL;
 - (NSURL *)defaultRecordingDirectoryURL;
+- (void)refreshRecordingPresentation;
+- (NSURL *)reserveRecordingURLInDirectory:(NSURL *)directoryURL filenameStem:(NSString *)stem
+                               extension:(NSString *)extension error:(NSError **)error;
+- (void)presentRecordingFolderPanelWithCompletion:(void (^)(NSURL *URL))completion;
+- (NSData *)recordingFolderBookmarkForURL:(NSURL *)URL error:(NSError **)error;
+- (void)revealRecordingDirectoryURL:(NSURL *)URL;
 
 @end
 
@@ -173,6 +190,7 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     if (!callActive) {
         [self.intermediateStatusTimer invalidate];
         self.intermediateStatusTimer = nil;
+        if (self.recordingStartPending || self.recordingStatus != AKCallRecordingStatusDisabled) [self stopRecording];
     }
     // A call may be created after the user agent has already reported failure.
     // Ended calls must still display their normal final SIP status.
@@ -441,72 +459,252 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
     }];
 }
 
+- (void)refreshRecordingPresentation {
+    [_activeCallViewController refreshRecordingPresentation];
+}
+
 - (void)startAutomaticRecordingIfNeeded {
-    if (self.userAgent.hasAudioFailure ||
-        ![self.defaults boolForKey:UserDefaultsKeys.automaticallyRecordCalls] ||
-        self.call.state != kAKSIPCallConfirmedState ||
-        self.call.isRecording) {
+    AKSIPCall *call = self.call;
+    if (call.isRecording && call.recordingURL != nil) {
+        self.recordingCapturedURL = call.recordingURL;
+        self.recordingDestinationFolderURL = [call.recordingURL URLByDeletingLastPathComponent];
+        self.recordingStatus = AKCallRecordingStatusCapturing;
+        [self refreshRecordingPresentation];
+        return;
+    }
+    if (![self.defaults boolForKey:UserDefaultsKeys.automaticallyRecordCalls]) {
+        if (!self.recordingStartPending) self.recordingStatus = AKCallRecordingStatusDisabled;
+        [self refreshRecordingPresentation];
+        return;
+    }
+    if (!self.isCallActive || call.state != kAKSIPCallConfirmedState || call == nil ||
+        self.recordingStartPending ||
+        (self.recordingStatus == AKCallRecordingStatusFailed &&
+         self.recordingStartResult != AKRecordingStartResultAudioFailure)) return;
+    if (self.userAgent.hasAudioFailure) {
+        self.recordingStartResult = AKRecordingStartResultAudioFailure;
+        self.recordingStatus = AKCallRecordingStatusFailed;
+        [self refreshRecordingPresentation];
         return;
     }
 
+    // Admit once before reserving a filename or acquiring a folder grant.
+    self.recordingStartPending = YES;
+    NSUInteger generation = ++self.recordingAttemptGeneration;
+    self.recordingStatus = AKCallRecordingStatusStarting;
+    self.recordingCapturedURL = nil;
+    self.recordingDestinationFolderURL = nil;
+    self.recordingDestinationReason = AKRecordingDestinationReasonNone;
+    self.recordingFallbackReason = AKRecordingDestinationReasonNone;
+    self.recordingUsesFallback = NO;
+    self.recordingFolderSelectionFailed = NO;
+    [self refreshRecordingPresentation];
     NSURL *accessedDirectoryURL = nil;
     NSURL *recordingURL = [self newRecordingURLAccessingDirectory:&accessedDirectoryURL];
     if (recordingURL == nil) {
-        NSLog(@"Could not create the call recordings folder");
+        self.recordingStartPending = NO;
+        self.recordingStartResult = AKRecordingStartResultInvalidDestination;
+        self.recordingStatus = AKCallRecordingStatusFailed;
+        [self refreshRecordingPresentation];
         return;
     }
-
-    // The call consumes this access lifetime even if recording setup fails.
-    AKSIPCall *call = self.call;
-    [call startRecordingToURL:recordingURL accessedDirectoryURL:accessedDirectoryURL completion:^(BOOL succeeded) {
-        if (self.call != call || !self.isCallActive) { if (succeeded) [call stopRecording]; return; }
-        [self.activeCallViewController setRecordingIndicatorVisible:succeeded];
+    self.recordingDestinationFolderURL = [recordingURL URLByDeletingLastPathComponent];
+    [self refreshRecordingPresentation];
+    // The call consumes the reservation and scope on every result. Stale UI
+    // completions never stop a possibly newer session on the same call.
+    __weak typeof(self) weakSelf = self;
+    [call startRecordingToURL:recordingURL accessedDirectoryURL:accessedDirectoryURL resultCompletion:^(AKRecordingStartResult result) {
+        CallController *controller = weakSelf;
+        if (controller == nil || controller.call != call ||
+            controller.recordingAttemptGeneration != generation || !controller.isCallActive) return;
+        controller.recordingStartPending = NO;
+        controller.recordingStartResult = result;
+        if (result == AKRecordingStartResultSuccess && call.isRecording && call.recordingURL != nil) {
+            controller.recordingCapturedURL = call.recordingURL;
+            controller.recordingDestinationFolderURL = [call.recordingURL URLByDeletingLastPathComponent];
+            controller.recordingStatus = AKCallRecordingStatusCapturing;
+        } else {
+            controller.recordingCapturedURL = nil;
+            controller.recordingStatus = AKCallRecordingStatusFailed;
+            if (result == AKRecordingStartResultSuccess) controller.recordingStartResult = AKRecordingStartResultStaleCall;
+        }
+        [controller refreshRecordingPresentation];
     }];
 }
 
 - (void)stopRecording {
-    [_activeCallViewController setRecordingIndicatorVisible:NO];
+    ++self.recordingAttemptGeneration;
+    self.recordingStartPending = NO;
+    self.recordingStatus = AKCallRecordingStatusDisabled;
+    self.recordingCapturedURL = nil;
+    self.recordingDestinationFolderURL = nil;
+    self.recordingDestinationReason = AKRecordingDestinationReasonNone;
+    self.recordingFallbackReason = AKRecordingDestinationReasonNone;
+    self.recordingUsesFallback = NO;
+    self.recordingFolderSelectionFailed = NO;
+    [self refreshRecordingPresentation];
     // Recorder IDs are cleared synchronously. Each call's asynchronous encoder
     // owns its own destination access, independent of this reusable window.
     [self.call stopRecording];
 }
 
+- (IBAction)retryRecording:(id)sender {
+    if (self.recordingStartPending || self.call.isRecording) return;
+    self.recordingStatus = AKCallRecordingStatusDisabled;
+    [self startAutomaticRecordingIfNeeded];
+}
+
+- (IBAction)chooseRecordingFolder:(id)sender {
+    if (self.recordingFolderPanelPending) return;
+    self.recordingFolderPanelPending = YES;
+    AKSIPCall *call = self.call;
+    NSUInteger generation = self.recordingAttemptGeneration;
+    __weak typeof(self) weakSelf = self;
+    [self presentRecordingFolderPanelWithCompletion:^(NSURL *URL) {
+        CallController *controller = weakSelf;
+        if (controller == nil) return;
+        controller.recordingFolderPanelPending = NO;
+        if (URL == nil || controller.call != call || controller.recordingAttemptGeneration != generation) return;
+        NSError *error = nil;
+        NSData *bookmark = [controller recordingFolderBookmarkForURL:URL error:&error];
+        if (bookmark == nil) {
+            controller.recordingFolderSelectionFailed = YES;
+            if (!controller.call.isRecording && !controller.recordingStartPending) {
+                controller.recordingStatus = AKCallRecordingStatusFailed;
+                controller.recordingStartResult = AKRecordingStartResultInvalidDestination;
+                controller.recordingDestinationReason = AKRecordingDestinationReasonAccessDenied;
+            }
+            [controller refreshRecordingPresentation];
+            return;
+        }
+        // A bookmark is changed only after this explicit native-panel action.
+        [controller.defaults setObject:bookmark forKey:UserDefaultsKeys.recordingFolderBookmark];
+        controller.recordingFolderSelectionFailed = NO;
+        if (controller.isCallActive) {
+            [controller retryRecording:nil];
+        }
+        [controller refreshRecordingPresentation];
+    }];
+}
+
+- (void)presentRecordingFolderPanelWithCompletion:(void (^)(NSURL *))completion {
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseDirectories = YES;
+    panel.canChooseFiles = NO;
+    panel.allowsMultipleSelection = NO;
+    panel.canCreateDirectories = YES;
+    panel.prompt = NSLocalizedString(@"Choose", @"Choose recordings folder panel button.");
+    panel.message = NSLocalizedString(@"Choose a folder for new call recordings.", @"Choose recordings folder panel message.");
+    [panel beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse response) {
+        completion(response == NSModalResponseOK ? panel.URL : nil);
+    }];
+}
+
+- (NSData *)recordingFolderBookmarkForURL:(NSURL *)URL error:(NSError **)error {
+    return [URL bookmarkDataWithOptions:NSURLBookmarkCreationWithSecurityScope
+        includingResourceValuesForKeys:nil relativeToURL:nil error:error];
+}
+
+- (IBAction)revealRecordingFolder:(id)sender {
+    if (self.recordingDestinationFolderURL != nil) [self revealRecordingDirectoryURL:self.recordingDestinationFolderURL];
+}
+
+- (void)revealRecordingDirectoryURL:(NSURL *)URL {
+    [NSWorkspace.sharedWorkspace openURL:URL];
+}
+
+- (NSString *)recordingExplanationForDestinationReason:(AKRecordingDestinationReason)reason {
+    switch (reason) {
+        case AKRecordingDestinationReasonInvalidBookmark: return NSLocalizedString(@"The saved folder permission could not be resolved.", @"Recording folder fallback reason.");
+        case AKRecordingDestinationReasonAccessDenied: return NSLocalizedString(@"The selected folder could not be accessed.", @"Recording folder fallback reason.");
+        case AKRecordingDestinationReasonCreationFailed: return NSLocalizedString(@"The selected folder could not be created or used.", @"Recording folder fallback reason.");
+        case AKRecordingDestinationReasonReservationFailed: return NSLocalizedString(@"A new recording file could not be reserved.", @"Recording destination failure.");
+        case AKRecordingDestinationReasonUnavailable: return NSLocalizedString(@"The recordings folder is unavailable.", @"Recording destination failure.");
+        case AKRecordingDestinationReasonNone: return @"";
+    }
+}
+
+- (NSString *)recordingDestinationExplanation {
+    return [self recordingExplanationForDestinationReason:self.recordingDestinationReason];
+}
+
+- (NSString *)recordingSummary {
+    if (self.recordingUsesFallback && self.recordingDestinationFolderURL != nil) {
+        return [NSString stringWithFormat:NSLocalizedString(@"Fallback folder: %@. %@", @"Recording fallback destination and reason."),
+                self.recordingDestinationFolderURL.path, [self recordingExplanationForDestinationReason:self.recordingFallbackReason]];
+    }
+    switch (self.recordingStatus) {
+        case AKCallRecordingStatusDisabled: return NSLocalizedString(@"Automatic recording is off", @"Recording state.");
+        case AKCallRecordingStatusStarting: return NSLocalizedString(@"Starting recording…", @"Recording state.");
+        case AKCallRecordingStatusFailed: return NSLocalizedString(@"Recording failed to start", @"Recording state.");
+        case AKCallRecordingStatusCapturing: return NSLocalizedString(@"Recording in progress", @"Recording state.");
+    }
+}
+
+- (NSString *)recordingDetail {
+    NSString *detail = @"";
+    if (self.recordingStatus == AKCallRecordingStatusCapturing) {
+        detail = [NSString stringWithFormat:NSLocalizedString(@"Recording in progress. New audio will be saved to %@.", @"Actual recording destination."), self.recordingDestinationFolderURL.path ?: @""];
+    } else if (self.recordingStatus == AKCallRecordingStatusStarting) {
+        detail = NSLocalizedString(@"Recording is starting. Audio capture has not yet been confirmed.", @"Pending recording explanation.");
+    } else if (self.recordingStatus == AKCallRecordingStatusFailed) {
+        switch (self.recordingStartResult) {
+            case AKRecordingStartResultAudioFailure: detail = NSLocalizedString(@"Call audio is unavailable. Recording can resume after audio recovers.", @"Recording start failure."); break;
+            case AKRecordingStartResultPrivateStorageFailure: detail = NSLocalizedString(@"Private recording recovery storage could not be prepared. No recording was created by this attempt.", @"Recording start failure."); break;
+            case AKRecordingStartResultRecorderCreationFailure: detail = NSLocalizedString(@"The audio recorder could not be created. No recording was created by this attempt.", @"Recording start failure."); break;
+            case AKRecordingStartResultConnectionFailure: detail = NSLocalizedString(@"The recorder could not connect to call audio. No recording was created by this attempt.", @"Recording start failure."); break;
+            case AKRecordingStartResultBusy: detail = NSLocalizedString(@"A recording operation is already in progress. Try again when it finishes.", @"Recording start failure."); break;
+            case AKRecordingStartResultStaleCall: detail = NSLocalizedString(@"The call changed before recording could start. No recording was created by this attempt.", @"Recording start failure."); break;
+            default: detail = self.recordingDestinationExplanation.length ? self.recordingDestinationExplanation : NSLocalizedString(@"The recording destination could not be prepared. No recording was created by this attempt.", @"Recording start failure."); break;
+        }
+        detail = [detail stringByAppendingString:NSLocalizedString(@" Retry uses your current recording settings. Earlier audio cannot be recovered.", @"Recording retry explanation.")];
+    }
+    if (self.recordingFolderSelectionFailed) detail = [detail stringByAppendingString:NSLocalizedString(@" The chosen folder permission could not be saved. Choose another folder.", @"Recording folder bookmark failure.")];
+    return detail;
+}
+
 - (NSURL *)newRecordingURLAccessingDirectory:(NSURL **)accessedDirectoryURL {
     *accessedDirectoryURL = nil;
-    NSURL *directoryURL = [self selectedRecordingDirectoryURL];
-    if (directoryURL == nil) {
-        return nil;
-    }
-
     BOOL usesCustomDirectory = [self.defaults dataForKey:UserDefaultsKeys.recordingFolderBookmark] != nil;
-    if (usesCustomDirectory) {
+    NSURL *directoryURL = [self selectedRecordingDirectoryURL];
+    if (usesCustomDirectory && directoryURL == nil) {
+        self.recordingDestinationReason = AKRecordingDestinationReasonInvalidBookmark;
+        self.recordingFallbackReason = AKRecordingDestinationReasonInvalidBookmark;
+        self.recordingUsesFallback = YES;
+        directoryURL = [self defaultRecordingDirectoryURL];
+    } else if (usesCustomDirectory) {
         if ([directoryURL startAccessingSecurityScopedResource]) {
             *accessedDirectoryURL = directoryURL;
         } else {
-            NSLog(@"The selected recordings folder could not be accessed; using the default folder");
+            self.recordingDestinationReason = AKRecordingDestinationReasonAccessDenied;
+            self.recordingFallbackReason = AKRecordingDestinationReasonAccessDenied;
+            self.recordingUsesFallback = YES;
             directoryURL = [self defaultRecordingDirectoryURL];
         }
+    }
+    if (directoryURL == nil) {
+        self.recordingDestinationReason = AKRecordingDestinationReasonUnavailable;
+        return nil;
     }
 
     NSError *error = nil;
     if (![NSFileManager.defaultManager createDirectoryAtURL:directoryURL
-                                withIntermediateDirectories:YES
-                                                 attributes:nil
-                                                      error:&error]) {
-        NSLog(@"Could not use the selected recordings folder: %@", error.localizedDescription);
+                                withIntermediateDirectories:YES attributes:nil error:&error]) {
         [*accessedDirectoryURL stopAccessingSecurityScopedResource];
         *accessedDirectoryURL = nil;
-
+        if (!usesCustomDirectory || self.recordingUsesFallback) {
+            self.recordingDestinationReason = AKRecordingDestinationReasonCreationFailed;
+            return nil;
+        }
+        self.recordingDestinationReason = AKRecordingDestinationReasonCreationFailed;
+        self.recordingFallbackReason = AKRecordingDestinationReasonCreationFailed;
+        self.recordingUsesFallback = YES;
         directoryURL = [self defaultRecordingDirectoryURL];
         if (directoryURL == nil ||
             ![NSFileManager.defaultManager createDirectoryAtURL:directoryURL
-                                     withIntermediateDirectories:YES
-                                                      attributes:nil
-                                                           error:&error]) {
-            NSLog(@"Could not create the default recordings folder: %@", error);
-            return nil;
-        }
+                                     withIntermediateDirectories:YES attributes:nil error:&error]) return nil;
     }
+    self.recordingDestinationFolderURL = directoryURL;
 
     NSString *party = self.displayedName.length > 0 ? self.displayedName : self.call.remoteURI.user;
     if (party.length == 0) {
@@ -533,43 +731,32 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
                               timestamp,
                               self.call.isIncoming ? @"Incoming" : @"Outgoing",
                               party];
-    NSURL *reservedURL = AKReserveRecordingURL(directoryURL, filenameStem, extension, &error);
+    NSURL *reservedURL = [self reserveRecordingURLInDirectory:directoryURL filenameStem:filenameStem extension:extension error:&error];
     if (reservedURL == nil) {
-        NSLog(@"Could not reserve a call-recording file: %@", error.localizedDescription);
+        self.recordingDestinationReason = AKRecordingDestinationReasonReservationFailed;
         [*accessedDirectoryURL stopAccessingSecurityScopedResource];
         *accessedDirectoryURL = nil;
     }
     return reservedURL;
 }
 
+- (NSURL *)reserveRecordingURLInDirectory:(NSURL *)directoryURL filenameStem:(NSString *)stem
+                               extension:(NSString *)extension error:(NSError **)error {
+    return AKReserveRecordingURL(directoryURL, stem, extension, error);
+}
+
 - (NSURL *)selectedRecordingDirectoryURL {
     NSData *bookmark = [self.defaults dataForKey:UserDefaultsKeys.recordingFolderBookmark];
-    if (bookmark == nil) {
-        return [self defaultRecordingDirectoryURL];
-    }
-
+    if (bookmark == nil) return [self defaultRecordingDirectoryURL];
     BOOL stale = NO;
-    NSError *error = nil;
-    NSURL *URL = [NSURL URLByResolvingBookmarkData:bookmark
-                                           options:NSURLBookmarkResolutionWithSecurityScope
-                                     relativeToURL:nil
-                               bookmarkDataIsStale:&stale
-                                             error:&error];
-    if (URL == nil) {
-        NSLog(@"Could not resolve the selected recordings folder; using the default folder: %@", error);
-        return [self defaultRecordingDirectoryURL];
-    }
-
-    if (stale) {
-        NSData *refreshedBookmark = [URL bookmarkDataWithOptions:NSURLBookmarkCreationWithSecurityScope
-                                  includingResourceValuesForKeys:nil
-                                                   relativeToURL:nil
-                                                           error:&error];
-        if (refreshedBookmark != nil) {
-            [self.defaults setObject:refreshedBookmark forKey:UserDefaultsKeys.recordingFolderBookmark];
-        } else {
-            NSLog(@"Could not refresh the selected recordings folder bookmark: %@", error);
-        }
+    // Do not replace a failed custom resolution with Downloads here: only the
+    // caller knows whether a security-scope request belongs to a custom URL.
+    NSURL *URL = [NSURL URLByResolvingBookmarkData:bookmark options:NSURLBookmarkResolutionWithSecurityScope
+                                    relativeToURL:nil bookmarkDataIsStale:&stale error:nil];
+    if (URL != nil && stale) {
+        NSData *refreshed = [URL bookmarkDataWithOptions:NSURLBookmarkCreationWithSecurityScope
+                        includingResourceValuesForKeys:nil relativeToURL:nil error:nil];
+        if (refreshed != nil) [self.defaults setObject:refreshed forKey:UserDefaultsKeys.recordingFolderBookmark];
     }
     return URL;
 }
@@ -740,6 +927,11 @@ static const NSTimeInterval kRedialButtonReenableTime = 1.0;
         // Finalize the existing recording, but leave SIP signaling and the call
         // timer alone. A silent recording must not appear to keep running.
         [self stopRecording];
+        if (self.isCallActive && [self.defaults boolForKey:UserDefaultsKeys.automaticallyRecordCalls]) {
+            self.recordingStatus = AKCallRecordingStatusFailed;
+            self.recordingStartResult = AKRecordingStartResultAudioFailure;
+            [self refreshRecordingPresentation];
+        }
         [self setStatus:self.statusWithoutAudioFailure];
         return;
     }

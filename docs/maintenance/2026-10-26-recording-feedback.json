@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-26",
+  "issue": 65,
+  "baseCommit": "e493bbbc8af754bd2e9de5fe2bd1098941951b10",
+  "result": "source verified; no installation/release",
+  "tests": {
+    "TelephoneXCTest": 359,
+    "TelephoneSwiftTesting": 48,
+    "failures": 0,
+    "newBackendCases": 16,
+    "newUIControllerCases": 15,
+    "recordingOwnershipAssertions": 102,
+    "lifecycleModelChecks": 6,
+    "audioWiringChecks": 11
+  },
+  "sourceSHA256": {
+    "Telephone.xcodeproj/project.pbxproj": "5db4786270987201057b0304a65cd7c138051ef9d1eb953c185328361adbe004",
+    "Telephone/AKSIPCall.h": "57349738931e5330d4809cc919e03f86b4d9e60d76b69db5dac2656e71470750",
+    "Telephone/AKSIPCall.m": "026233f4973d741bdec8eae8417b334402982014512c0c45096eb388831e05d8",
+    "Telephone/ActiveCallViewController.h": "1f554e7f3bf40ca8dfd9dd6ae1b16d3cb625c8c3b5328dd224651b37fae52692",
+    "Telephone/ActiveCallViewController.m": "a495ca2a23b6a3ba9a6c1b21dc93888c1bd479f9e15d7a2e84a8cf676fb244d7",
+    "Telephone/CallController.h": "28244d2978713d950cf744c1e18b39b90a83f01f236ad0a7b0b24918ad3565f4",
+    "Telephone/CallController.m": "07af961efd6936fec2483ad5df85e962c5b81764234b19ffc9b0edd2512bd60f",
+    "TelephoneTests/RecordingStartOutcomeTests.m": "834bb148566d96a0888dcb304d8337790374aa41ec32d8f4904c61239fc03835",
+    "TelephoneTests/RecordingFeedbackTests.m": "7d74ce75cf4a72aa9bf423ef0aa6b20bef98e2bb5f1876ad8aa2613b50b331b7"
+  },
+  "logSHA256": {
+    "/private/tmp/jps-recording65-final-build-20261026.log": "2a62943dbb52ac819723d561dcf78867ef6367f14dbe27ce4498fb45c789bce8",
+    "/private/tmp/jps-recording65-final-tests-20261026.log": "c517ff9adfc067519ab44d42558687f83168c80ebc452caa3e9bfde561ee202a",
+    "/private/tmp/jps-recording65-components-20261026.log": "7b5408443ae8de82b29b6d7c3853a9d3cc8a7b2ca735c9f76dfdd9dfc256023e",
+    "/private/tmp/jps-recording65-model-20261026.log": "ca8111f316a876b54ea801ed91088aec79bfd65357bace3944a6df85203b00f9",
+    "/private/tmp/jps-recording65-final-wiring-20261026.log": "7f996fde1206463de8b66dfebee80cbdd164e13fd239f12a0be4381145aadcb2"
+  },
+  "captureSHA256": {
+    "/private/tmp/jps-recording65-final-images/65452CAC-528F-4448-BC40-85C694A887D5.png": "ea939cac5a410bea2bac434bba9f3d2d76c9da0f96889403627af49f0fcfcbc5",
+    "/private/tmp/jps-recording65-final-images/CC599098-823D-4130-BF27-B64E77CBC805.png": "8a7efdc90d3f224f8d1b062174407289d9ab599eab9b9ccd64f47a260ea36671",
+    "/private/tmp/jps-recording65-final-images/42643346-C4FD-479F-AC91-DC23E6B03792.png": "106af37e580cbc97b1cf8bb56b02ebeeefffe3c9050215f320907290af5e9871",
+    "/private/tmp/jps-recording65-final-images/E2C7123B-725B-468D-90EF-0262ECF3CC75.png": "8f5aca1db70aa27f3bd6292d8ba55697629cc656fb0a989a704d2e3066241c41",
+    "/private/tmp/jps-recording65-final-images/5ECD3F1C-54D1-4206-8AC4-963D68118DBE.png": "1226560cf3343567442448bfdca15c23d36eac4ebecb888e04e2e2bf3152497f",
+    "/private/tmp/jps-recording65-final-images/A8C59A19-EA03-4C88-97B3-11C6CE7C0F72.png": "c29e6052290357938d1660fb21571af651803c096b4e6423b22bf8e77188a95b",
+    "/private/tmp/jps-recording65-final-images/D5533DFE-C09E-49FE-9440-3DBFBD11D414.png": "d21d12967eabd33ca8c70056adf813ea25cf2f57ffde9b1fc4d760532a0fc0d5",
+    "/private/tmp/jps-recording65-final-images/80334B06-62E6-4EB3-8378-0341B8E0423D.png": "ef20f72cd1e3acfefbbfc1384176ce45538637b2ffadeb49e5db51b8eef43aec",
+    "/private/tmp/jps-recording65-final-images/DA1DFB09-7ECA-49A2-8E2F-DCA4F20C7C14.png": "a6150004dbd8be366c691559cc74b083fe6e23eb53ab422089d2c23f2b681933",
+    "/private/tmp/jps-recording65-final-images/3DF2F94D-F46E-48BA-B461-7259B845AE3C.png": "568d14e7695fefcb63da65e6a48d81008e26f141c819f06b9ffcc6a253d119cf",
+    "/private/tmp/jps-recording65-final-images/6AB0011F-D7EF-4854-A93F-D0FF274C8E24.png": "97ce5297c9f7013b759e326fbe97b6302aca7f54e9bf0fd64b54afdb9ab321da",
+    "/private/tmp/jps-recording65-final-images/E07470DA-6F27-44AE-8E0A-A610B77E8059.png": "24995ee6ed8a23f7dcf17c2079a4a86093e660b0588fbaa1578a2ea5a0028196"
+  },
+  "boundaries": [
+    "Isolated unique-identity nib-free hosted suite; synthetic call/device/folder boundaries",
+    "Real synthetic encoding/export/recovery harness is not live capture",
+    "Twelve native captures exported; four representative captures inspected",
+    "Actual capture/provider/hardware/sandbox grants/VoiceOver pending in #62",
+    "No real profile/Keychain/Contacts/accounts/history/recordings, cloud workflow, installation or release"
+  ]
+}

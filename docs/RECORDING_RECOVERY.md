@@ -1,9 +1,9 @@
 # Recording and call-history recovery
 
 This describes recovery behaviour introduced by the published **3.0/build 161**
-repair and retained in **3.5.1/build 163**. Current local packaging, installation
-and private publication are complete; start with [current maintenance and release
-status](MAINTENANCE.md) and [3.5.1 verification](releases/3.5.1-verification.md).
+repair and retained in later releases. Start with [current maintenance and release
+status](MAINTENANCE.md) for the installed baseline; later source changes are not
+installed updates.
 The [repair map](REPAIR_VERIFICATION.md) preserves the controlled 3.0 evidence;
 [VALIDATION.md](VALIDATION.md) defines checks for later authorised changes. This
 documentation update adds no test result. Recovery uses compact native alerts
@@ -48,9 +48,8 @@ export inside that job is rejected so cleanup cannot delete the recovered file.
 Successful export and failure both finish the session's ownership exactly once;
 failed export retains the job independently of a closed call window.
 
-The source fix for [#57](maintenance/2026-10-19-recording-ownership.md), awaiting
-the combined roadmap release, makes that ownership exclusive across discovery
-and retry. A per-job process lock spans capture through finalisation/cleanup;
+The fix for [#57](maintenance/2026-10-19-recording-ownership.md), delivered in
+3.6/build 164, makes that ownership exclusive across discovery and retry. A per-job process lock spans capture through finalisation/cleanup;
 version 2 metadata records capturing, finalising, failed or completed. Owned
 jobs are hidden from failed recovery. After process death, unowned unfinished
 jobs and safe legacy/malformed jobs remain recoverable. Failed exports retain

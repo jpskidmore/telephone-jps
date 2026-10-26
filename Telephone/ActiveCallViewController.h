@@ -74,5 +74,6 @@
 
 // Shows or hides the visible recording indicator.
 - (void)setRecordingIndicatorVisible:(BOOL)visible;
+- (void)refreshRecordingPresentation;
 
 @end

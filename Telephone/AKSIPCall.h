@@ -50,6 +50,17 @@ typedef NS_ENUM(NSUInteger, AKSIPCallState) {
     kAKSIPCallDisconnectedState = PJSIP_INV_STATE_DISCONNECTED
 };
 
+typedef NS_ENUM(NSInteger, AKRecordingStartResult) {
+    AKRecordingStartResultSuccess,
+    AKRecordingStartResultBusy,
+    AKRecordingStartResultStaleCall,
+    AKRecordingStartResultInvalidDestination,
+    AKRecordingStartResultAudioFailure,
+    AKRecordingStartResultPrivateStorageFailure,
+    AKRecordingStartResultRecorderCreationFailure,
+    AKRecordingStartResultConnectionFailure
+};
+
 @class AKSIPAccount, AKSIPURI, PJSUACallInfo;
 
 @interface AKSIPCall : NSObject <Call>
@@ -108,6 +119,10 @@ typedef NS_ENUM(NSUInteger, AKSIPCallState) {
 // Pass nil when the destination did not require security-scoped access.
 - (BOOL)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(nullable NSURL *)directoryURL;
 - (void)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(nullable NSURL *)directoryURL completion:(void (^)(BOOL))completion;
+// Uses the same reservation/access ownership, and reports the actual setup stage.
+// Admit on main; completion is delivered on main after the serial native work.
+- (void)startRecordingToURL:(NSURL *)URL accessedDirectoryURL:(nullable NSURL *)directoryURL
+          resultCompletion:(void (^)(AKRecordingStartResult result))completion;
 
 // Stops the mono recorders and finalizes the selected stereo format off the main thread.
 - (void)stopRecording;

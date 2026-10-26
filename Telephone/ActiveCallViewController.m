@@ -43,6 +43,13 @@
 @property(nonatomic) NSPopover *keypadPopover;
 @property(nonatomic) NSTextField *keypadDigitsField;
 @property(nonatomic) BOOL updatesDurationStatus;
+@property(nonatomic) NSButton *recordingStatusButton;
+@property(nonatomic) NSPopover *recordingPopover;
+@property(nonatomic) NSTextField *recordingSummaryField;
+@property(nonatomic) NSTextField *recordingDetailField;
+@property(nonatomic) NSButton *recordingRetryButton;
+@property(nonatomic) NSButton *recordingChooseFolderButton;
+@property(nonatomic) NSButton *recordingRevealFolderButton;
 
 @end
 
@@ -100,6 +107,7 @@
     AKInstallCallPresentation(self.view, self.displayedNameField, self.numberField, self.statusField,
                               @[mute, hold, transfer, keypad, self.hangUpButton],
                               self.recordingIndicatorField, self.callProgressIndicator, self.durationField);
+    [self installRecordingStatusButton];
     [self refreshVisibleCallControls];
     [self refreshPresentation];
 }
@@ -130,6 +138,7 @@
 
 - (void)removeObservations {
     [self.keypadPopover close];
+    [self.recordingPopover close];
     [self.numberField unbind:NSValueBinding];
     [self.durationField unbind:NSValueBinding];
     [[self displayedNameField] unbind:NSValueBinding];
@@ -142,6 +151,7 @@
     self.numberField.toolTip = self.callController.title;
     self.displayedNameField.toolTip = self.callController.displayedName;
     AKUpdateCallPresentation(self.view, self.statusField);
+    [self refreshRecordingPresentation];
 }
 
 - (void)viewWillDisappear {
@@ -197,6 +207,10 @@
 }
 
 - (void)popoverDidClose:(NSNotification *)notification {
+    if (notification.object == self.recordingPopover) {
+        self.recordingStatusButton.accessibilityValue = @NO;
+        return;
+    }
     for (NSButton *button in self.visibleCallControls) {
         if (button.action == @selector(showKeypad:)) {
             button.accessibilityValue = @NO;
@@ -334,8 +348,125 @@
 }
 
 - (void)setRecordingIndicatorVisible:(BOOL)visible {
+    // Retained for callers using the old indicator API. The current call card
+    // presents its confirmed attempt state through refreshRecordingPresentation.
     self.recordingIndicatorField.hidden = !visible;
+    if (self.recordingStatusButton != nil) {
+        self.recordingIndicatorField.hidden = YES;
+        [self refreshRecordingPresentation];
+    }
 }
+
+- (void)installRecordingStatusButton {
+    if (self.recordingIndicatorField == nil || self.recordingStatusButton != nil) return;
+    NSButton *button = [NSButton buttonWithTitle:@"" target:self action:@selector(showRecordingDetails:)];
+    button.bordered = NO;
+    button.font = [NSFont systemFontOfSize:11 weight:NSFontWeightSemibold];
+    button.alignment = NSTextAlignmentRight;
+    button.identifier = @"RecordingStatus";
+    button.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:button];
+    [NSLayoutConstraint activateConstraints:@[
+        [button.leadingAnchor constraintEqualToAnchor:self.recordingIndicatorField.leadingAnchor],
+        [button.trailingAnchor constraintEqualToAnchor:self.recordingIndicatorField.trailingAnchor],
+        [button.topAnchor constraintEqualToAnchor:self.recordingIndicatorField.topAnchor],
+        [button.bottomAnchor constraintEqualToAnchor:self.recordingIndicatorField.bottomAnchor]
+    ]];
+    self.recordingIndicatorField.hidden = YES;
+    self.recordingStatusButton = button;
+    [self refreshRecordingPresentation];
+}
+
+- (void)refreshRecordingPresentation {
+    if (self.recordingStatusButton == nil) return;
+    AKCallRecordingStatus state = self.callController.recordingStatus;
+    self.recordingStatusButton.hidden = state == AKCallRecordingStatusDisabled;
+    if (state == AKCallRecordingStatusDisabled) [self.recordingPopover close];
+    NSString *title = @"";
+    NSColor *color = NSColor.secondaryLabelColor;
+    switch (state) {
+        case AKCallRecordingStatusDisabled: break;
+        case AKCallRecordingStatusStarting:
+            title = NSLocalizedString(@"Starting", @"Compact recording start indicator."); break;
+        case AKCallRecordingStatusFailed:
+            title = NSLocalizedString(@"Failed", @"Compact recording failure indicator.");
+            color = NSColor.systemOrangeColor; break;
+        case AKCallRecordingStatusCapturing:
+            title = self.callController.recordingUsesFallback ? @"REC*" : @"REC";
+            color = NSColor.systemRedColor; break;
+    }
+    self.recordingStatusButton.attributedTitle = [[NSAttributedString alloc] initWithString:title
+        attributes:@{NSForegroundColorAttributeName:color, NSFontAttributeName:self.recordingStatusButton.font}];
+    NSString *explanation = [NSString stringWithFormat:@"%@\n%@", self.callController.recordingSummary, self.callController.recordingDetail];
+    self.recordingStatusButton.toolTip = explanation;
+    self.recordingStatusButton.accessibilityLabel = self.callController.recordingSummary;
+    self.recordingStatusButton.accessibilityHelp = self.callController.recordingDetail;
+    self.recordingSummaryField.stringValue = self.callController.recordingSummary;
+    self.recordingDetailField.stringValue = self.callController.recordingDetail;
+    self.recordingRetryButton.enabled = state == AKCallRecordingStatusFailed && self.callController.isCallActive;
+    self.recordingChooseFolderButton.enabled = state != AKCallRecordingStatusStarting;
+    self.recordingRevealFolderButton.enabled = self.callController.recordingDestinationFolderURL != nil;
+    if (self.recordingPopover.isShown) {
+        [self.recordingPopover.contentViewController.view layoutSubtreeIfNeeded];
+        NSSize size = self.recordingPopover.contentViewController.view.fittingSize;
+        self.recordingPopover.contentSize = NSMakeSize(360, MAX(130, size.height));
+    }
+}
+
+- (void)prepareRecordingDetails {
+    if (self.recordingPopover != nil) return;
+    self.recordingSummaryField = [NSTextField wrappingLabelWithString:@""];
+    self.recordingSummaryField.font = [NSFont systemFontOfSize:12 weight:NSFontWeightSemibold];
+    self.recordingSummaryField.selectable = YES;
+    self.recordingSummaryField.accessibilityLabel = NSLocalizedString(@"Recording status and folder", @"Recording details accessibility label.");
+    self.recordingDetailField = [NSTextField wrappingLabelWithString:@""];
+    self.recordingDetailField.font = [NSFont systemFontOfSize:12];
+    self.recordingDetailField.selectable = YES;
+    self.recordingRetryButton = [NSButton buttonWithTitle:NSLocalizedString(@"Retry", @"Recording retry button.") target:self action:@selector(retryRecording:)];
+    self.recordingChooseFolderButton = [NSButton buttonWithTitle:NSLocalizedString(@"Choose Folder…", @"Recording choose folder button.") target:self action:@selector(chooseRecordingFolder:)];
+    self.recordingRevealFolderButton = [NSButton buttonWithTitle:NSLocalizedString(@"Reveal Folder", @"Recording reveal folder button.") target:self action:@selector(revealRecordingFolder:)];
+    NSStackView *actions = [NSStackView stackViewWithViews:@[self.recordingRetryButton, self.recordingChooseFolderButton, self.recordingRevealFolderButton]];
+    actions.spacing = 6;
+    NSStackView *stack = [NSStackView stackViewWithViews:@[self.recordingSummaryField, self.recordingDetailField, actions]];
+    stack.orientation = NSUserInterfaceLayoutOrientationVertical;
+    stack.alignment = NSLayoutAttributeLeading;
+    stack.spacing = 10;
+    stack.translatesAutoresizingMaskIntoConstraints = NO;
+    NSViewController *controller = [NSViewController new];
+    controller.view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 360, 190)];
+    [controller.view addSubview:stack];
+    [NSLayoutConstraint activateConstraints:@[
+        [stack.leadingAnchor constraintEqualToAnchor:controller.view.leadingAnchor constant:12],
+        [stack.trailingAnchor constraintEqualToAnchor:controller.view.trailingAnchor constant:-12],
+        [stack.topAnchor constraintEqualToAnchor:controller.view.topAnchor constant:12],
+        [stack.bottomAnchor constraintEqualToAnchor:controller.view.bottomAnchor constant:-12],
+        [stack.widthAnchor constraintEqualToConstant:336],
+        [self.recordingSummaryField.widthAnchor constraintEqualToAnchor:stack.widthAnchor],
+        [self.recordingDetailField.widthAnchor constraintEqualToAnchor:stack.widthAnchor]
+    ]];
+    self.recordingPopover = [NSPopover new];
+    self.recordingPopover.behavior = NSPopoverBehaviorTransient;
+    self.recordingPopover.delegate = self;
+    self.recordingPopover.contentViewController = controller;
+}
+
+- (IBAction)showRecordingDetails:(NSButton *)sender {
+    if (self.recordingPopover.isShown) { [self.recordingPopover close]; return; }
+    [self prepareRecordingDetails];
+    [self refreshRecordingPresentation];
+    [self.recordingPopover.contentViewController.view layoutSubtreeIfNeeded];
+    NSSize size = self.recordingPopover.contentViewController.view.fittingSize;
+    self.recordingPopover.contentSize = NSMakeSize(360, MAX(130, size.height));
+    [self.recordingPopover showRelativeToRect:sender.bounds ofView:sender preferredEdge:NSMinYEdge];
+    sender.accessibilityValue = @YES;
+}
+
+- (IBAction)retryRecording:(id)sender { [self.callController retryRecording:sender]; }
+- (IBAction)chooseRecordingFolder:(id)sender {
+    [self.recordingPopover close];
+    [self.callController chooseRecordingFolder:sender];
+}
+- (IBAction)revealRecordingFolder:(id)sender { [self.callController revealRecordingFolder:sender]; }
 
 
 #pragma mark -

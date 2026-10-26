@@ -27,6 +27,22 @@
 @class IncomingCallViewController, ActiveCallViewController;
 @class EndedCallViewController, CallTransferController;
 
+typedef NS_ENUM(NSInteger, AKCallRecordingStatus) {
+    AKCallRecordingStatusDisabled,
+    AKCallRecordingStatusStarting,
+    AKCallRecordingStatusFailed,
+    AKCallRecordingStatusCapturing,
+};
+
+typedef NS_ENUM(NSInteger, AKRecordingDestinationReason) {
+    AKRecordingDestinationReasonNone,
+    AKRecordingDestinationReasonInvalidBookmark,
+    AKRecordingDestinationReasonAccessDenied,
+    AKRecordingDestinationReasonCreationFailed,
+    AKRecordingDestinationReasonReservationFailed,
+    AKRecordingDestinationReasonUnavailable,
+};
+
 // A call controller.
 @interface CallController : NSWindowController <AKSIPCallDelegate> {
   @protected
@@ -128,6 +144,20 @@
 
 // Stops and finalizes the active recording.
 - (void)stopRecording;
+
+// Presentation belongs to the current start attempt; a reserved filename is not captured audio.
+@property(nonatomic, readonly) AKCallRecordingStatus recordingStatus;
+@property(nonatomic, readonly) AKRecordingDestinationReason recordingDestinationReason;
+@property(nonatomic, readonly) AKRecordingDestinationReason recordingFallbackReason;
+@property(nonatomic, readonly) AKRecordingStartResult recordingStartResult;
+@property(nonatomic, readonly) BOOL recordingUsesFallback;
+@property(nonatomic, readonly, copy, nullable) NSURL *recordingDestinationFolderURL;
+@property(nonatomic, readonly, copy, nullable) NSURL *recordingCapturedURL;
+@property(nonatomic, readonly, copy) NSString *recordingSummary;
+@property(nonatomic, readonly, copy) NSString *recordingDetail;
+- (IBAction)retryRecording:(id)sender;
+- (IBAction)chooseRecordingFolder:(id)sender;
+- (IBAction)revealRecordingFolder:(id)sender;
 
 // Sets intermediate call status. This status appears for the short period of time and then is being replaced with the
 // current call status.
