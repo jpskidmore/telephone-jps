@@ -70,6 +70,22 @@ struct SimpleContactMatchingIndexTests {
 
         #expect(sut.contact(forEmail: NormalizedLowercasedString("")) == nil)
     }
+
+    @Test(arguments: [ContactsLoadFailure.notDetermined, .denied, .restricted, .transient, .transientWithoutCache])
+    func discardsPartialEnumerationWhenLoadingFails(_ failure: ContactsLoadFailure) {
+        let contact = makeContact(number: 1)
+        let sut = SimpleContactMatchingIndex(
+            contacts: SimpleContacts([contact], failure: failure), maxPhoneNumberLength: 20
+        )
+
+        #expect(sut.contact(forPhone: ExtractedPhoneNumber(contact.phones[0].number, maxLength: 20)) == nil)
+        #expect(sut.contact(forEmail: NormalizedLowercasedString(contact.emails[0].address)) == nil)
+        guard case .failure(let reportedFailure) = sut.loadResult else {
+            Issue.record("A partial Contacts enumeration was reported as successful")
+            return
+        }
+        #expect(reportedFailure == failure)
+    }
 }
 
 private func makeContact(number: Int) -> Contact {

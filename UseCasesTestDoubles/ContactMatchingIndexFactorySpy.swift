@@ -27,8 +27,8 @@ public final class ContactMatchingIndexFactorySpy {
 }
 
 extension ContactMatchingIndexFactorySpy: ContactMatchingIndexFactory {
-    public func make() -> ContactMatchingIndex {
+    public func make() -> ContactMatchingIndexLoadResult {
         makeCallCount += 1
-        return ContactMatchingIndexDummy()
+        return .success(ContactMatchingIndexDummy())
     }
 }

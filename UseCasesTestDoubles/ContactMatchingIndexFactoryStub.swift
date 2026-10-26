@@ -20,18 +20,22 @@ import UseCases
 
 @ContactsActor
 public final class ContactMatchingIndexFactoryStub {
-    private let indexes: [ContactMatchingIndex]
-    private var callCount = 0
+    private let results: [ContactMatchingIndexLoadResult]
+    public private(set) var makeCallCount = 0
 
     public init(indexes: [ContactMatchingIndex]) {
-        self.indexes = indexes
+        self.results = indexes.map { .success($0) }
+    }
+
+    public init(results: [ContactMatchingIndexLoadResult]) {
+        self.results = results
     }
 }
 
 extension ContactMatchingIndexFactoryStub: ContactMatchingIndexFactory {
-    public func make() -> ContactMatchingIndex {
-        let result = indexes[callCount]
-        callCount += 1
+    public func make() -> ContactMatchingIndexLoadResult {
+        let result = results[makeCallCount]
+        makeCallCount += 1
         return result
     }
 }

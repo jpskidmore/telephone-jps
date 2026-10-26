@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-26",
+  "issue": 63,
+  "baseCommit": "09ae94f5f3d6f16490bf718c6614ae9ea8cafb89",
+  "platform": {
+    "macOS": "27.0.1 (26A434)",
+    "Xcode": "27.1 (27A9275)",
+    "Swift": "6.4",
+    "architecture": "arm64",
+    "deploymentTarget": "macOS 15.6"
+  },
+  "result": "source implementation and synthetic native verification complete; no installation or release",
+  "tests": {
+    "UseCasesXCTest": {
+      "cases": 203,
+      "failures": 0
+    },
+    "UseCasesSwiftTesting": {
+      "cases": 144,
+      "failures": 0
+    },
+    "TelephoneXCTest": {
+      "cases": 307,
+      "failures": 0
+    },
+    "TelephoneSwiftTesting": {
+      "cases": 48,
+      "failures": 0
+    },
+    "newContactsNativeCases": 18
+  },
+  "sourceSHA256": {
+    "Telephone.xcodeproj/project.pbxproj": "8dd68b80445b6dc4eb36dbec75e3d90f242890d7e65124cb96248bb473b3f11d",
+    "Telephone/CNContactStoreContactsChangeEventSource.swift": "ec6b123056f56b052e1fb72a984f9ffd7ad5c2b36969aa73f3058f9ce0b45f66",
+    "Telephone/CNContactStoreToContactsAdapter.swift": "163cbe6329e8b566e823738ae82a4bad46ae2bb0bdb2aff7bd2c88657106b479",
+    "Telephone/CompositionRoot.swift": "f92f1956e3ec831f653d8be7a21cd3581b30a291206b69f4fee28f42e053c3fe",
+    "Telephone/GeneralPreferencesViewController.h": "dc15968658fa52ad11773011379d3346e120aab91ad6a9e5ae8b0ca9873fb607",
+    "Telephone/GeneralPreferencesViewController.m": "66abd91cb3c898d711d0fa037c8c1a4656c8a2977f2d684a4b7827ae115f536a",
+    "Telephone/Telephone-Bridging-Header.h": "6127525006afd25ed16966567b366f66bf5deeb34740a5e146851bab32bd93ff",
+    "UseCases/ContactMatchingIndexFactory.swift": "62723f549a0ba2f3a9e78118d0380c390d6164835e57cf19bbef24aba01710f6",
+    "UseCases/Contacts.swift": "de4cb293274599e0b8016a28b136a9cabc5de46efc7edac8749d18e25b191c44",
+    "UseCases/LazyDiscardingContactMatchingIndex.swift": "e39c5a49105ab684506df6b70e1cc61347e1445f5073cc6ab88655dbe9df35d3",
+    "UseCases/SimpleContactMatchingIndex.swift": "7f400a679dbe48f4a51bd924f1229e9be395575950a4fa13df33a45818f6566f",
+    "UseCases/SimpleContactMatchingIndexFactory.swift": "6369cb8612465631512cbbd7b988921deb61231e021c1b60b7941ca3a0bb9204",
+    "UseCasesTestDoubles/ContactMatchingIndexFactorySpy.swift": "7d2d95ec965fcc80850689ce3d9a006ea8f607e5e6988a8f10a75a2fb85450f1",
+    "UseCasesTestDoubles/ContactMatchingIndexFactoryStub.swift": "be4426a31b49943069ad2799c913c9ff9c6dacd263ee6fc65fd479934ae687e4",
+    "UseCasesTestDoubles/SimpleContacts.swift": "3f7ff766056f730039792f6696324394fb9274e7ef3c519ab397e74ee5894d09",
+    "UseCasesTests/LazyDiscardingContactMatchingIndexTests.swift": "dc7cbfefa9ce854dcd3ff98a2d7424dd4c80f226e373f89df42329e7cbfd8ae1",
+    "UseCasesTests/SimpleContactMatchingIndexFactoryTests.swift": "32b4d32f85c668569353b4ebb612e2575afb1e181a9561bdccb8b5444840e3ee",
+    "UseCasesTests/SimpleContactMatchingIndexTests.swift": "c057ad25e6a01f2e544ee297adea0e9e3ab5cccc86829767929395cd210a91ef",
+    "TelephoneTests/ContactsRecoveryTests.swift": "55e34b24d3912fe24117a098da9023b73dfcb805a43ee72e42fabf2361e675be"
+  },
+  "logSHA256": {
+    "/private/tmp/jps-contacts-usecases-20261026.log": "6726b2908da673751cc3f6cd7606e8bf27f1fce28a1d3db8800d134a8f6cdc75",
+    "/private/tmp/jps-contacts-verified-build-20261026.log": "44953a391ecd4194a8a82fa8e09dc6f5ff981508a661282869e78343d0f44627",
+    "/private/tmp/jps-contacts-app-verified-20261026.log": "94bfe8a5bbe328fdc2d77fb902bd79caf1d65790957a0cc90a43b3ed1800f36b"
+  },
+  "results": [
+    "/private/tmp/jps-contacts-usecases-20261026/Logs/Test/Test-UseCasesTests-2026.10.26_08-21-23-+0000.xcresult",
+    "/private/tmp/jps-contacts-app-verified-20261026.xcresult"
+  ],
+  "boundaries": [
+    "Synthetic injectable authorisation/fetch/request/settings actions; no real CNContactStore in Contacts tests",
+    "Unique-identity nib-free hosted startup; native General pane nib loaded by the individual test",
+    "Native Light/Dark geometry, wrapping, accessibility labels and button routing asserted; inspected denied-state captures after background-only opaque composition; full installed acceptance remains separate",
+    "Actual OS Contacts denial/regrant, hardware/provider/audio and proficient VoiceOver remain unverified in issue #62",
+    "Legacy ABAddressBook dialler autocomplete is separate issue #70",
+    "No raw Contacts errors or contact values logged; no owner profile, accounts, Keychain, history or recording data used; no cloud workflow, install or release"
+  ],
+  "captureSHA256": {
+    "/private/tmp/jps-contacts-verified-images/contacts-general-denied-light-opaque.png": "10a669774258a48a733420daf8a040d4f450f391e24fd26f033d94472c527e0b",
+    "/private/tmp/jps-contacts-verified-images/contacts-general-denied-dark-opaque.png": "921868f7248da08a26a51f11fcde0ed048dd3355af4778215b0bb481e3b35622",
+    "/private/tmp/jps-contacts-composite.swift": "9e05f995c5f294da855e16c21b5ac963d0f204311594b6c2165d3b7ac2609134"
+  }
+}

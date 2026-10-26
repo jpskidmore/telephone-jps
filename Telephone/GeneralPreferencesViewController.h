@@ -19,7 +19,10 @@
 #import <Cocoa/Cocoa.h>
 
 
+@class ContactsRecoveryController;
+
 // A view controller to manage general preferences.
 @interface GeneralPreferencesViewController : NSViewController
+@property(nonatomic, strong) ContactsRecoveryController *contactsRecoveryController;
 
 @end

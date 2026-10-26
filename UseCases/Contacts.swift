@@ -18,5 +18,25 @@
 
 @ContactsActor
 public protocol Contacts: Sendable {
-    func enumerate(_ body: @escaping (Contact) -> Void)
+    /// A failure means callers must discard every contact yielded by this attempt.
+    func enumerate(_ body: @escaping (Contact) -> Void) -> Result<Void, ContactsLoadFailure>
+}
+
+/// These cases carry no contact values or underlying system error descriptions.
+public enum ContactsLoadFailure: Error, Equatable, Sendable {
+    case notDetermined
+    case denied
+    case restricted
+    /// A fetch failed while the previous snapshot's access scope is still valid.
+    case transient
+    /// A fetch failed after access narrowed; the previous snapshot may contain inaccessible contacts.
+    case transientWithoutCache
+}
+
+public enum ContactsLoadState: Equatable, Sendable {
+    case notLoaded
+    case loading
+    /// A complete successful load, including an empty address book or a genuine no-match.
+    case ready
+    case unavailable(ContactsLoadFailure)
 }

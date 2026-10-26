@@ -16,7 +16,7 @@
 //  GNU General Public License for more details.
 //
 
-import UseCases
+@testable import UseCases
 import XCTest
 import UseCasesTestDoubles
 
@@ -29,5 +29,33 @@ final class SimpleContactMatchingIndexFactoryTests: XCTestCase {
         _ = await sut.make()
 
         XCTAssertTrue(settings.didCallSignificantPhoneNumberLength)
+    }
+
+    func testSuccessfulEmptyAddressBookProducesSuccessfulIndex() async {
+        let sut = SimpleContactMatchingIndexFactory(
+            contacts: SimpleContacts([]), settings: ContactMatchingSettingsSpy()
+        )
+
+        guard case .success(let index) = await sut.make() else {
+            XCTFail("An empty but successfully loaded address book must remain distinguishable from failure")
+            return
+        }
+        let result = await index.contact(forEmail: NormalizedLowercasedString("nobody@example.invalid"))
+        XCTAssertNil(result)
+    }
+
+    func testReturnsTypedFailureRatherThanPublishingPartialIndex() async {
+        for expectedFailure in [ContactsLoadFailure.notDetermined, .denied, .restricted, .transient, .transientWithoutCache] {
+            let contacts = SimpleContacts(
+                [Contact(name: "Synthetic", phones: [], emails: [])], failure: expectedFailure
+            )
+            let sut = SimpleContactMatchingIndexFactory(contacts: contacts, settings: ContactMatchingSettingsSpy())
+
+            guard case .failure(let failure) = await sut.make() else {
+                XCTFail("A failed fetch must not publish a successful empty or partial index")
+                return
+            }
+            XCTAssertEqual(failure, expectedFailure)
+        }
     }
 }

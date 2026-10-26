@@ -19,22 +19,63 @@
 @preconcurrency import Contacts
 import UseCases
 
-final class CNContactStoreToContactsAdapter {
-    private let store: CNContactStore
+@ContactsActor
+final class CNContactStoreToContactsAdapter: UseCases.Contacts {
+    private let authorization: @Sendable () -> CNAuthorizationStatus
+    private let fetch: @ContactsActor (@escaping (Contact) -> Void) throws -> Void
+    private let request: @ContactsActor () async throws -> Bool
 
-    init(store: CNContactStore) {
-        self.store = store
-    }
-}
-
-extension CNContactStoreToContactsAdapter: Contacts {
-    func enumerate(_ body: @escaping (Contact) -> Void) {
-        do {
-            try store.enumerateContacts(with: CNContactFetchRequest(keysToFetch: keys)) { (contact, _) in
+    nonisolated convenience init(store: CNContactStore) {
+        self.init(authorization: { CNContactStore.authorizationStatus(for: .contacts) },
+                  fetch: { body in
+            try store.enumerateContacts(with: CNContactFetchRequest(keysToFetch: keys)) { contact, _ in
                 body(Contact(contact))
             }
+        }, request: { try await store.requestAccess(for: .contacts) })
+    }
+
+    nonisolated init(authorization: @escaping @Sendable () -> CNAuthorizationStatus,
+                     fetch: @escaping @ContactsActor (@escaping (Contact) -> Void) throws -> Void,
+                     request: @escaping @ContactsActor () async throws -> Bool) {
+        self.authorization = authorization
+        self.fetch = fetch
+        self.request = request
+    }
+
+    func enumerate(_ body: @escaping (Contact) -> Void) -> Swift.Result<Void, ContactsLoadFailure> {
+        if let failure = accessFailure { return .failure(failure) }
+        var snapshot: [Contact] = []
+        do {
+            try fetch { snapshot.append($0) }
+            // Never publish a partial fetch or contacts whose permission changed
+            // while enumeration was in progress. No raw system error is logged.
+            if let failure = accessFailure { return .failure(failure) }
+            snapshot.forEach(body)
+            return .success(())
         } catch {
-            NSLog("Could not enumerate contacts: \(error)")
+            let systemError = error as NSError
+            if systemError.domain == CNErrorDomain, systemError.code == CNError.Code.authorizationDenied.rawValue {
+                return .failure(.denied)
+            }
+            if let failure = accessFailure { return .failure(failure) }
+            return .failure(.transient)
+        }
+    }
+
+    // Called only by the explicit Settings action, never by enumeration/rechecks.
+    func requestAccessIfNeeded() async -> Bool {
+        guard authorization() == .notDetermined else { return true }
+        do { _ = try await request(); return true }
+        catch { return false }
+    }
+
+    private var accessFailure: ContactsLoadFailure? {
+        switch authorization() {
+        case .authorized: return nil
+        case .notDetermined: return .notDetermined
+        case .denied: return .denied
+        case .restricted: return .restricted
+        @unknown default: return .restricted
         }
     }
 }

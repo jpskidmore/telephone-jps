@@ -44,7 +44,7 @@ documents shared explanations and consistent account snapshots.
 The [issue #60 numbering record](maintenance/2026-10-20-numbering-transparency.md)
 documents visible coverage/version information and saved-versus-draft behaviour.
 
-## Current source work — 23 October 2026
+## Current source work — 26 October 2026
 
 The owner resumed open-issue repairs. Expanded history search/filter issue #61
 now has fresh native validation: 289 XCTest plus 48 Swift Testing cases, and
@@ -52,10 +52,23 @@ now has fresh native validation: 289 XCTest plus 48 Swift Testing cases, and
 menu and native Search clear defects found during acceptance are repaired.
 Read [the history filter record](maintenance/2026-10-23-history-filters.md).
 This is source work only; the released/installed baseline above is unchanged.
-The next ranked item is practical acceptance matrix #62. Keep all findings and
-verification outcomes on GitHub because other contributors are working here.
-The owner's current stop threshold is 10% remaining in the actual five-hour
-allowance; resume five minutes after the usage tool's reported reset.
+Issue #62 has a published [24-scenario practical matrix](MACOS_27_ACCEPTANCE.md)
+with all real-world checks explicitly pending, as the owner requested.
+
+Contacts recovery #63 is now implemented and verified with fresh local suites:
+203 XCTest + 144 Swift Testing cases in UseCases, and 307 XCTest + 48 Swift
+Testing cases in the isolated Telephone host, all passing. Read
+[the Contacts record](maintenance/2026-10-26-contacts-recovery.md) for the source
+scope, synthetic permission checks and separate actual-OS acceptance boundary.
+Legacy dialler autocomplete remains #70. The next ranked source item is #64.
+
+On 26 October the owner authorised **all remaining issues, one at a time**, with
+findings and outcomes logged in GitHub for other contributors. This resumes the
+previously deferred source work and supersedes the historical 25% release stop.
+After each issue and during long work, check actual five-hour allowance. At
+**10% remaining or below**, checkpoint and schedule continuation five minutes
+after the usage tool's reported reset. Recheck usage on resumption. Source fixes
+do not imply installation or release; preserve the released baseline above.
 
 ## Owner's execution controls
 
@@ -80,7 +93,7 @@ open. Version 3.6/build 164 completed installation and private publication on
 is deferred until the owner asks; the release-only wakeup is stopped.
 
 Read the actual five-hour usage window before work, between issues and during
-long-running work. If its remaining allowance falls **below 10%**, stop at a
+long-running work. If its remaining allowance falls **to 10% or below**, stop at a
 recoverable point and record the exact in-progress state. Schedule this chat to
 resume **five minutes after the reset reported by the usage tool**. Recheck the
 allowance on resumption; do not guess the reset from wall-clock time or substitute

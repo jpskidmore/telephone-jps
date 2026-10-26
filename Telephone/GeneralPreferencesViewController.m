@@ -23,6 +23,8 @@
 
 @interface GeneralPreferencesViewController ()
 
+@property(nonatomic, strong) NSTextField *contactsStatusField;
+@property(nonatomic, strong) NSButton *contactsActionButton;
 @property(nonatomic, weak) IBOutlet NSTextField *recordingFolderPathField;
 @property(nonatomic, weak) IBOutlet NSPopUpButton *recordingFormatPopUpButton;
 
@@ -62,7 +64,66 @@
     NSInteger selectedIndex = [format isEqualToString:@"mp3"] ? 1 : ([format isEqualToString:@"source"] ? 2 : 0);
     [self.recordingFormatPopUpButton selectItemAtIndex:selectedIndex];
     [self updateRecordingFolderDisplay];
+    [self installContactsStatus];
 }
+
+- (void)setContactsRecoveryController:(ContactsRecoveryController *)controller {
+    _contactsRecoveryController.presentationDidChange = nil;
+    _contactsRecoveryController = controller;
+    __weak GeneralPreferencesViewController *weakSelf = self;
+    controller.presentationDidChange = ^{ [weakSelf updateContactsStatus]; };
+    if (self.isViewLoaded) [self updateContactsStatus];
+}
+
+- (void)viewWillAppear {
+    [super viewWillAppear];
+    [self.contactsRecoveryController refresh];
+}
+
+- (void)installContactsStatus {
+    for (NSLayoutConstraint *constraint in self.view.constraints) {
+        if (constraint.firstItem == self.view && constraint.firstAttribute == NSLayoutAttributeBottom &&
+            [constraint.secondItem isKindOfClass:NSButton.class] &&
+            [(NSButton *)constraint.secondItem action] == @selector(chooseRecordingFolder:)) {
+            constraint.active = NO;
+        }
+    }
+    self.contactsStatusField = [NSTextField wrappingLabelWithString:@"Contacts: Not checked"];
+    self.contactsStatusField.font = [NSFont systemFontOfSize:11];
+    self.contactsStatusField.maximumNumberOfLines = 2;
+    self.contactsStatusField.accessibilityLabel = @"Call history contact lookup status";
+    self.contactsStatusField.accessibilityHelp = @"Names shown in call history. You can still dial numbers and SIP addresses without Contacts.";
+    [self.contactsStatusField setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+    self.contactsActionButton = [NSButton buttonWithTitle:@"Check Contacts" target:self action:@selector(contactsAction:)];
+    self.contactsActionButton.identifier = @"ContactsRecoveryAction";
+    [self.contactsActionButton setContentCompressionResistancePriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationHorizontal];
+    NSStackView *row = [NSStackView stackViewWithViews:@[self.contactsStatusField, self.contactsActionButton]];
+    row.identifier = @"ContactsRecoveryStatus";
+    row.translatesAutoresizingMaskIntoConstraints = NO;
+    row.spacing = 8;
+    row.alignment = NSLayoutAttributeCenterY;
+    [self.view addSubview:row];
+    [NSLayoutConstraint activateConstraints:@[
+        [row.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:16],
+        [row.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-16],
+        [row.topAnchor constraintEqualToAnchor:self.recordingFolderPathField.bottomAnchor constant:8],
+        [row.bottomAnchor constraintLessThanOrEqualToAnchor:self.view.bottomAnchor constant:-6]
+    ]];
+    [self updateContactsStatus];
+}
+
+- (void)updateContactsStatus {
+    if (!self.isViewLoaded) return;
+    self.contactsStatusField.stringValue = self.contactsRecoveryController.statusText ?: @"Contacts: Not checked";
+    self.contactsStatusField.toolTip = self.contactsStatusField.stringValue;
+    self.contactsActionButton.title = self.contactsRecoveryController.actionTitle ?: @"Check Contacts";
+    self.contactsActionButton.accessibilityLabel = self.contactsActionButton.title;
+    self.contactsActionButton.cell.accessibilityLabel = self.contactsActionButton.title;
+    self.contactsActionButton.enabled = self.contactsRecoveryController != nil && self.contactsRecoveryController.actionEnabled;
+    self.contactsActionButton.toolTip = self.contactsStatusField.stringValue;
+}
+
+- (void)contactsAction:(id)sender { [self.contactsRecoveryController performAction]; }
 
 - (IBAction)chooseRecordingFolder:(id)sender {
     NSOpenPanel *panel = [NSOpenPanel openPanel];

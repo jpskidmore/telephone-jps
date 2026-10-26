@@ -28,9 +28,15 @@ public final class SimpleContactMatchingIndexFactory {
 }
 
 extension SimpleContactMatchingIndexFactory: ContactMatchingIndexFactory {
-    public func make() async -> ContactMatchingIndex {
-        return SimpleContactMatchingIndex(
+    public func make() async -> ContactMatchingIndexLoadResult {
+        let index = SimpleContactMatchingIndex(
             contacts: contacts, maxPhoneNumberLength: await settings.significantPhoneNumberLength
         )
+        switch index.loadResult {
+        case .success:
+            return .success(index)
+        case .failure(let failure):
+            return .failure(failure)
+        }
     }
 }

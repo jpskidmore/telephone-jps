@@ -19,9 +19,20 @@
 @ContactsActor
 public struct SimpleContactMatchingIndex {
     private let index: [String: MatchedContact]
+    public let loadResult: Result<Void, ContactsLoadFailure>
 
     public init(contacts: Contacts, maxPhoneNumberLength: Int) {
-        index = makeMap(from: contacts, maxPhoneNumberLength: maxPhoneNumberLength)
+        var map: [String: MatchedContact] = [:]
+        loadResult = contacts.enumerate { contact in
+            update(&map, withPhonesOf: contact, maxPhoneNumberLength: maxPhoneNumberLength)
+            update(&map, withEmailsOf: contact)
+        }
+        switch loadResult {
+        case .success:
+            index = map
+        case .failure:
+            index = [:]
+        }
     }
 }
 
@@ -33,16 +44,6 @@ extension SimpleContactMatchingIndex: ContactMatchingIndex {
     public func contact(forEmail email: NormalizedLowercasedString) -> MatchedContact? {
         return index[email.value]
     }
-}
-
-@ContactsActor
-private func makeMap(from contacts: Contacts, maxPhoneNumberLength: Int) -> [String: MatchedContact] {
-    var result: [String: MatchedContact] = [:]
-    contacts.enumerate { contact in
-        update(&result, withPhonesOf: contact, maxPhoneNumberLength: maxPhoneNumberLength)
-        update(&result, withEmailsOf: contact)
-    }
-    return result
 }
 
 private func update(_ map: inout [String: MatchedContact], withPhonesOf contact: Contact, maxPhoneNumberLength: Int) {

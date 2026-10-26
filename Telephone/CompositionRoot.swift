@@ -48,6 +48,7 @@ final class CompositionRoot: NSObject {
     private let soundIOChangeEventSource: CoreAudioDefaultSystemSoundIOChangeEventSource
     private let accountsEventSource: PreferencesControllerAccountsEventSource
     private let callEventSource: AKSIPCallEventSource
+    private let contactsRecoveryController: ContactsRecoveryController
     private let contactsChangeEventSource: Any
     private let dayChangeEventSource: NSCalendarDayChangeEventSource
 
@@ -247,18 +248,30 @@ final class CompositionRoot: NSObject {
             )
         )
 
+        let contactsAdapter = CNContactStoreToContactsAdapter(store: CNContactStore())
+        let contactsRelay = ContactsStatusRelay()
         let contactMatchingSettings = SimpleContactMatchingSettings(settings: defaults)
         let contactMatchingIndex = LazyDiscardingContactMatchingIndex(
             factory: SimpleContactMatchingIndexFactory(
-                contacts: CNContactStoreToContactsAdapter(store: CNContactStore()), settings: contactMatchingSettings
-            )
-        )
-
-        contactsChangeEventSource = CNContactStoreContactsChangeEventSource(
-            center: NotificationCenter.default, target: contactMatchingIndex
+                contacts: contactsAdapter, settings: contactMatchingSettings
+            ), stateDidChange: { state in
+                contactsRelay.enqueue(state)
+            }
         )
 
         let dayChangeEventTargets = DayChangeEventTargets()
+        let contactsRecovery = ContactsRecoveryController(
+            index: contactMatchingIndex,
+            requestAccess: { await contactsAdapter.requestAccessIfNeeded() },
+            reloadHistory: { dayChangeEventTargets.dayDidChange() }
+        )
+        contactsRecoveryController = contactsRecovery
+        contactsRelay.controller = contactsRecovery
+        preferencesController.generalPreferencesViewController.contactsRecoveryController = contactsRecovery
+        contactsChangeEventSource = CNContactStoreContactsChangeEventSource(
+            center: NotificationCenter.default, target: contactMatchingIndex,
+            didChange: { Task { @MainActor in contactsRelay.controller?.refresh() } }
+        )
         dayChangeEventSource = NSCalendarDayChangeEventSource(center: NotificationCenter.default, target: dayChangeEventTargets)
 
         callHistoryViewEventTargetFactory = AsyncCallHistoryViewEventTargetFactory(

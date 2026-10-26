@@ -21,6 +21,7 @@ PJ_DECL(pj_status_t) jps_coreaudio_device_uid(pjmedia_aud_dev_index global_index
 #import "MusicPlayerFactory.h"
 #import "NameServers.h"
 #import "PreferencesController.h"
+#import "GeneralPreferencesViewController.h"
 #import "SoundIOPreferences.h"
 #import "SoundIOPresenterOutput.h"
 #import "SoundPreferencesView.h"

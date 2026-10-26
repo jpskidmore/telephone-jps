@@ -21,18 +21,25 @@ import UseCases
 @ContactsActor
 public final class SimpleContacts {
     private var contacts: [Contact]
+    private var failure: ContactsLoadFailure?
 
-    public init(_ contacts: [Contact]) {
+    public init(_ contacts: [Contact], failure: ContactsLoadFailure? = nil) {
         self.contacts = contacts
+        self.failure = failure
     }
 
     public func update(_ contacts: [Contact]) {
         self.contacts = contacts
     }
+
+    public func fail(with failure: ContactsLoadFailure?) {
+        self.failure = failure
+    }
 }
 
 extension SimpleContacts: Contacts {
-    public func enumerate(_ body: @escaping (Contact) -> Void) {
+    public func enumerate(_ body: @escaping (Contact) -> Void) -> Result<Void, ContactsLoadFailure> {
         contacts.forEach(body)
+        return failure.map { .failure($0) } ?? .success(())
     }
 }

@@ -2,10 +2,26 @@
 
 Start with [the current maintenance entry point](docs/MAINTENANCE.md). The owner
 authorised the ranked roadmap on 19 October 2026, **one issue at a time in order**.
-Read actual five-hour usage before/between issues and during long work; below
+Read actual five-hour usage before/between issues and during long work; at or below
 10% remaining, stop at a recoverable point and schedule this chat five minutes
 after the reported reset. Keep the weekly allowance separate. See the entry
 point for current baseline, execution controls and evidence boundaries.
+
+## Current owner update — 26 October 2026
+
+The owner has authorised fixing **all remaining issues, one at a time**, and
+requires progress, findings and verification to be logged in GitHub for the other
+contributors. This resumes the previously deferred source work and supersedes
+the historical 25% release stop below. Check actual five-hour allowance after
+each issue and during long work; at **10% remaining or below**, checkpoint and
+schedule continuation five minutes after the reported reset, then recheck usage.
+Issue #62's actual provider/hardware/grant/VoiceOver checks stay pending by the
+owner's explicit choice; they must not be represented as synthetic test passes.
+No new installation or release is implied by source fixes. Preserve the current
+public visibility and immutable release assets.
+
+## Historical owner instructions
+
 The owner updated delivery on **20 October 2026**: at **25% remaining in the
 actual five-hour allowance**, stop roadmap work, build and release the verified
 completed changes, and leave the rest for another day. This supersedes the

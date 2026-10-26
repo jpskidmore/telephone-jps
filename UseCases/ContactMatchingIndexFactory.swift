@@ -18,5 +18,10 @@
 
 @ContactsActor
 public protocol ContactMatchingIndexFactory: Sendable {
-    func make() async -> ContactMatchingIndex
+    func make() async -> ContactMatchingIndexLoadResult
+}
+
+public enum ContactMatchingIndexLoadResult: Sendable {
+    case success(ContactMatchingIndex)
+    case failure(ContactsLoadFailure)
 }
