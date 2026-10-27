@@ -1,5 +1,13 @@
 # Validation and release checks
 
+## Current 3.7 release — 27 October 2026
+
+Public [GitHub Latest v3.7](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.7), build 166, is verified from exact source/tag `58956a9906cbe1221640a926446341e6a71fdcb9`. Fresh local suites passed **920 cases**, zero failures: Domain 28 XCTest; UseCases 206 XCTest + 147 Swift Testing; ReceiptValidation 5 XCTest; isolated Telephone 486 XCTest + 48 Swift Testing. Separate component assertions are not added to this total.
+
+All seven downloaded assets match local sizes/SHA-256; app/source parity covers 57 regular app files, six symlinks and 1,510 Git blobs. Ad-hoc signatures, arm64, entitlements and ZIP extraction checks passed. An actual Release recovery controller received narrow idle Light/Dark inspection in a unique-identity nib-free copy with synthetic data/inert actions; no real AppController/profile was started. No local installation was performed. Previous releases/assets/tags and public visibility were preserved.
+
+Read [3.7 publication proof](releases/3.7-verification.md) and [full asset/hash proof](releases/3.7-verification.json). #62 actual provider/hardware/grants/playback/installed quit-reopen/VoiceOver checks remain pending. Historical validation below describes its original release, not this candidate.
+
 ## 3.6.1 centred dialler hotfix — 21 October 2026
 
 Fresh 694-case local validation, separate components, independent Light/Dark

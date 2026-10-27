@@ -1,0 +1,113 @@
+{
+  "status": "published_verified",
+  "verifiedAt": "2026-10-27T19:18:54.510158+00:00",
+  "version": "3.7",
+  "build": 166,
+  "releaseSourceCommit": "58956a9906cbe1221640a926446341e6a71fdcb9",
+  "compiledApplicationCommit": "58956a9906cbe1221640a926446341e6a71fdcb9",
+  "sourceTree": "c39e9e9cf9e288b0beb95e441c22727a77722496",
+  "freshSuiteCases": 920,
+  "suiteCounts": {
+    "DomainXCTest": 28,
+    "UseCasesXCTest": 206,
+    "UseCasesSwiftTesting": 147,
+    "ReceiptValidationXCTest": 5,
+    "TelephoneXCTest": 486,
+    "TelephoneSwiftTesting": 48
+  },
+  "appRegularFiles": 57,
+  "appSymlinks": 6,
+  "sourceGitBlobs": 1510,
+  "appPayloadParity": true,
+  "sourceBlobParity": true,
+  "localInstallation": false,
+  "assets": [
+    {
+      "name": "BUILD-VERIFICATION.md",
+      "size": 1391,
+      "sha256": "809e52b7cc692f760b4fd15b3e4bec1980ab17ce6fa7eaa7029da026842d7852",
+      "id": 682608306,
+      "digest": "sha256:809e52b7cc692f760b4fd15b3e4bec1980ab17ce6fa7eaa7029da026842d7852",
+      "downloadURL": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.7/BUILD-VERIFICATION.md",
+      "downloadVerified": true
+    },
+    {
+      "name": "DIAL-PLAN-NUMBERING.md",
+      "size": 8002,
+      "sha256": "f4beb21fb0668366ab23af977f02166c0594ac08973c05c6b757507a73591c2a",
+      "id": 682608146,
+      "digest": "sha256:f4beb21fb0668366ab23af977f02166c0594ac08973c05c6b757507a73591c2a",
+      "downloadURL": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.7/DIAL-PLAN-NUMBERING.md",
+      "downloadVerified": true
+    },
+    {
+      "name": "DIAL-PLANS.md",
+      "size": 8475,
+      "sha256": "43a6b379110d45b0b94c2d8a5682dba5d62dfc3556bd09c12b3e34f75dc16bcc",
+      "id": 682608189,
+      "digest": "sha256:43a6b379110d45b0b94c2d8a5682dba5d62dfc3556bd09c12b3e34f75dc16bcc",
+      "downloadURL": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.7/DIAL-PLANS.md",
+      "downloadVerified": true
+    },
+    {
+      "name": "RELEASE-NOTES.md",
+      "size": 1614,
+      "sha256": "9bf96d845a94218ac6f5fb9f539aa51d1e49da99691ef73bc273f48afeac7185",
+      "id": 682608324,
+      "digest": "sha256:9bf96d845a94218ac6f5fb9f539aa51d1e49da99691ef73bc273f48afeac7185",
+      "downloadURL": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.7/RELEASE-NOTES.md",
+      "downloadVerified": true
+    },
+    {
+      "name": "jps-Telephone-3.7-arm64.zip",
+      "size": 3539161,
+      "sha256": "cc94324e13ea7a21294aacab2f838cac76d7244135a83da2a0d52110d04c48dc",
+      "id": 682608213,
+      "digest": "sha256:cc94324e13ea7a21294aacab2f838cac76d7244135a83da2a0d52110d04c48dc",
+      "downloadURL": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.7/jps-Telephone-3.7-arm64.zip",
+      "downloadVerified": true
+    },
+    {
+      "name": "jps-Telephone-3.7-source.zip",
+      "size": 40840181,
+      "sha256": "e989af2c59684c2b078684ed6af237d333deb36d539cf8ef54681e491bda4461",
+      "id": 682608348,
+      "digest": "sha256:e989af2c59684c2b078684ed6af237d333deb36d539cf8ef54681e491bda4461",
+      "downloadURL": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.7/jps-Telephone-3.7-source.zip",
+      "downloadVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 529,
+      "sha256": "fe73152ec8591f71eb4f0be9d8dff3a01f5bca77c04a15e49dbe03b18a853062",
+      "id": 682608288,
+      "digest": "sha256:fe73152ec8591f71eb4f0be9d8dff3a01f5bca77c04a15e49dbe03b18a853062",
+      "downloadURL": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.7/SHA256SUMS.txt",
+      "downloadVerified": true
+    }
+  ],
+  "buildLogSHA256": "86d6cd687288e0f1f791a0c536cf52220b61d3aea112b33e2e33e79768689f5c",
+  "releaseID": 425883772,
+  "releaseURL": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.7",
+  "latest": true,
+  "draft": false,
+  "prerelease": false,
+  "public": true,
+  "visibilityChanged": false,
+  "previousReleasesPreserved": 7,
+  "previousAssetRecordsPreserved": 44,
+  "previousDistinctTagsPreserved": 12,
+  "previousTagRefRecordsPreserved": 13,
+  "downloadedAssetsVerified": true,
+  "nativeVisualInspection": {
+    "scope": "Actual Release recording recovery controller, idle Light/Dark, 650x460, three synthetic jobs; unique-identity nib-free copy, injected loader and inert actions; no production AppController or real profile.",
+    "idleLightPassed": true,
+    "idleDarkPassed": true,
+    "originalSignedApplicationUnchanged": true,
+    "captureSHA256": {
+      "recovery-dark.png": "dcf303c769b7bec1c2cb20917fb6a858641c45749ce18cadfc899388980810f3",
+      "recovery-light.png": "944209a390452c5e3c9a3332a1d03b30b37fdc2509f5409d8aacf9deefd96fc2"
+    },
+    "limit": "Pending-operation cached render showed clipped selected State text; full pending visual acceptance is not claimed. Actual provider/hardware/grants/playback/installed quit-reopen/VoiceOver remain pending in issue62."
+  }
+}

@@ -4,27 +4,15 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
-## Released and installed baseline
+## Current published release — 27 October 2026
 
-Checked on **21 October 2026**:
-
-- GitHub Latest and the installed application are **3.6.1/build 165**.
-- The immutable application release source is
-  `407bd1ceb8c39995a986180c8ec70dad87d1a8fc`. Read the
-  [3.6.1 publication proof](releases/3.6.1-verification.md) and
-  [release test record](releases/3.6.1-tests.json) for the fresh 694-case validation
-  and verified packaging/installation/publication. Previous 3.5.1 and earlier
-  release tags/assets remain unchanged.
-- The owner chose **public visibility on 21 October 2026** and explicitly said
-  to leave repository visibility alone. Do not change that setting. The
-  [19 October visibility record](maintenance/2026-10-19-visibility.md) retains
-  the earlier private-policy snapshot; it is superseded as current policy.
-- The original 50-issue repair gate (#2–51) completed on **8 October 2026**.
-  The [repair map](REPAIR_VERIFICATION.md) is completed historical evidence,
-  not a list of 50 outstanding tasks.
-- The supported baseline remains **Apple silicon and macOS 15.6 or later**.
-  macOS 27 behaviour must be checked against current Apple documentation;
-  newer API use must retain SDK/runtime guards and the older-OS fallback.
+- **3.7/build 166** is public [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.7), release ID 425883772, from immutable source/tag `58956a9906cbe1221640a926446341e6a71fdcb9`.
+- Fresh local validation passed **920 suite cases**, zero failures. All seven uploaded/downloaded assets, 57 app file payloads, six symlinks and 1,510 source Git blobs were verified. Read [3.7 delivery proof](releases/3.7-verification.md) and [the JSON record](releases/3.7-verification.json).
+- **No local installation was performed.** The 21 October [3.6.1 installation record](releases/3.6.1-verification.md) is historical; no `/Applications/jps Telephone.app` was present on the machine used for this release.
+- The owner chose public visibility on 21 October 2026; no visibility setting changed. All seven previous releases, 44 assets and 12 distinct tags remain unchanged.
+- Apple silicon and macOS 15.6 or later remain supported. The package is ad-hoc signed and unnotarised. Actual provider/hardware/grant/playback/installed quit-reopen/VoiceOver acceptance remains pending in #62.
+- Review current Apple documentation for macOS 27 behaviour. Newer API use must retain SDK/runtime guards and the older-OS fallback.
+- The original 50-issue repair gate (#2–51) completed on 8 October 2026. Its [repair map](REPAIR_VERIFICATION.md) remains historical evidence.
 
 The [ranked roadmap #52](https://github.com/jpskidmore/telephone-jps/issues/52)
 is the live source for new issue order and completion. Main may contain later
@@ -44,14 +32,16 @@ documents shared explanations and consistent account snapshots.
 The [issue #60 numbering record](maintenance/2026-10-20-numbering-transparency.md)
 documents visible coverage/version information and saved-versus-draft behaviour.
 
-## Current source work — 26 October 2026
+## Source work delivered in 3.7 — 27 October 2026
+
+Issues #61 and #63–69 are now included in the published 3.7 release. The dated source-validation counts below retain their original scope; fresh release validation is recorded above. #62 remains pending by owner choice. **Next: #70**, then #71, #73 and #74.
 
 The owner resumed open-issue repairs. Expanded history search/filter issue #61
 now has fresh native validation: 289 XCTest plus 48 Swift Testing cases, and
 68 separately counted AppKit component assertions. Startup, duplicate account
 menu and native Search clear defects found during acceptance are repaired.
 Read [the history filter record](maintenance/2026-10-23-history-filters.md).
-This is source work only; the released/installed baseline above is unchanged.
+These #61 source changes are now included in 3.7. No installation was performed for this release.
 Issue #62 has a published [24-scenario practical matrix](MACOS_27_ACCEPTANCE.md)
 with all real-world checks explicitly pending, as the owner requested.
 
@@ -72,13 +62,13 @@ outcomes, current-call retry and actual-folder details in the compact REC slot.
 Fresh isolated Telephone validation passed 359 XCTest + 48 Swift Testing cases,
 plus synthetic encoding/recovery and separate checks. Read
 [the recording feedback record](maintenance/2026-10-26-recording-feedback.md).
-These source changes have not been installed or released.
+These source changes are now included in 3.7; no local installation was performed.
 
 Activity-policy investigation #66 retains the current SIP-session activity after
 an isolated 16-sample comparison and a fresh token-balance fixture. It permits
 idle system sleep; no app energy/battery improvement or real readiness is claimed.
 Read [the measurement and retention decision](maintenance/2026-10-26-activity-policy.md).
-The next ranked source item is #69.
+The next ranked source item is #70.
 
 Call controls #67 now use current state events and diffed snapshots, with a
 one-second tolerant duration-only timer. Fresh isolated Telephone validation
@@ -86,7 +76,7 @@ passed 377 XCTest + 48 Swift Testing cases; final 18 focused cases and bounded
 baseline/candidate counters plus Time Profiler captures passed. Read
 [the call-control record](maintenance/2026-10-26-call-controls.md) for event
 coverage, lifecycle checks and measurement limits. No battery or live-call gain
-is claimed. The next ranked source item is #69.
+is claimed. The next ranked source item is #70.
 
 Recording recovery #68 now has a selectable native manager and a generation-checked
 asynchronous index; menu validation reads cached state. Owned retry/report/discard
@@ -95,7 +85,7 @@ confirmation before discard. Fresh isolated Telephone validation passed 428 XCTe
 + 48 Swift Testing cases, plus separate 105 recording ownership assertions, 32 native
 lifecycle checks, 11 audio wiring and 6 model/wiring checks. Light/Dark captures
 were inspected. Read [the recovery manager record](maintenance/2026-10-26-recording-recovery-browser.md).
-The next ranked source item is #69. These changes have not been installed/released.
+The next ranked source item is #70. These changes are now included in 3.7; no local installation was performed.
 
 History recording attachments #69 are implemented, locally source-verified and
 published in main at bdb60c2be44c3bad301422e42e21f0623e639fad. New calls/segments have exact optional identities,
@@ -106,8 +96,7 @@ Final validation passed 486 XCTest + 48 Swift Testing in the isolated app and
 cooperating-process catalogue tests. Read [the verification record](maintenance/2026-10-27-history-recordings.md)
 for source hashes, corrected fixtures and the conservative parent-directory-sync
 grant boundary. Actual grants/player/provider/VoiceOver remains pending in #62.
-No installation or release is implied. The owner requested immediate GitHub release on27October; 3.7/build166 is being
-packaged before #70. Source publication is separate from binary release.
+These changes are included in published 3.7/build 166. No local installation was performed. The next ranked source item is #70.
 
 On 26 October the owner authorised **all remaining issues, one at a time**, with
 findings and outcomes logged in GitHub for other contributors. This resumes the
@@ -187,7 +176,6 @@ Recheck the applicable official documentation for each implementation issue.
 ## Owner release request — 27 October 2026
 
 The owner explicitly authorised releasing the latest verified build on GitHub now,
-overriding the current usage pause for this release. Package and verify 3.7/build166
-locally, preserve all earlier releases, and verify uploaded/downloaded artifacts.
+overriding the usage pause for this release. 3.7/build 166 was packaged locally, published and verified; all earlier releases and uploaded assets were preserved.
 Do not install locally without a separate request. The remaining practical #62
 checks stay pending; no real profile/provider/grant testing is authorised.

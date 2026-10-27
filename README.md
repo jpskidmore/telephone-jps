@@ -1,10 +1,10 @@
-Version **3.5.1/build 163** fixes the crash in **More → Guided routes…**. It is built and installed locally and published as [private GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1). The owner tested it and accepted it. Read [hotfix notes](docs/releases/3.5.1.md) and [completion proof](docs/releases/3.5.1-verification.md).
+Version **3.7/build 166** is published as [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.7). It includes the latest history, Contacts, audio and recording fixes through #69. **920 fresh local suite cases passed**, and all seven release downloads match their recorded hashes. No local installation was performed. Read [3.7 publication proof](docs/releases/3.7-verification.md).
 
 For current status, the ordered roadmap and maintenance instructions, start with
 [Current maintenance](docs/MAINTENANCE.md). Older release and audit records are
 dated evidence, not outstanding work or new test results.
 
-Version **3.5/build 162** adds one compact dialler, configurable Guided routes and combined call history. It was built, tested, installed and published locally. Read [the dial-plan guide](docs/DIAL_PLANS.md) and [3.5 release notes](docs/releases/3.5.md).
+Historical version **3.5/build 162** added one compact dialler, configurable Guided routes and combined call history. It was built, tested, installed and published locally. Read [the dial-plan guide](docs/DIAL_PLANS.md) and [3.5 release notes](docs/releases/3.5.md).
 
 <p align="center">
 
@@ -18,7 +18,7 @@ Version **3.5/build 162** adds one compact dialler, configurable Guided routes a
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1">Latest release: 3.5.1 (163)</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.7">Latest release: 3.7 (166)</a>
   <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained baseline: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
@@ -26,14 +26,18 @@ Version **3.5/build 162** adds one compact dialler, configurable Guided routes a
 </p>
 
 > [!IMPORTANT]
-> **3.5.1 is published and installed locally.** The Guided routes menu crash is fixed; the compact dialler, routing and combined history remain unchanged. For the 8 October 2026 release, all four local suites passed **665 test cases, zero failures**. Built from [`e111e5d`](https://github.com/jpskidmore/telephone-jps/commit/e111e5daee9e57f26c66c9a42d40b6f1f4f25edc), installed at `/Applications/jps Telephone.app`, and published as [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1). All seven uploads match local sizes and SHA-256 digests. The owner reported “tested - looks good”. Read [3.5.1 verification](docs/releases/3.5.1-verification.md). The separate 170 routing cases remain historical 3.5 evidence bound to unchanged inputs.
+> **3.7 is published on GitHub; it has not been installed locally.** Fresh validation passed 920 suite cases, and all seven uploaded/downloaded asset sizes and SHA-256 hashes match. The immutable release source is [`58956a9`](https://github.com/jpskidmore/telephone-jps/commit/58956a9906cbe1221640a926446341e6a71fdcb9). Read [delivery proof](docs/releases/3.7-verification.md). Real provider/hardware/grant/playback and proficient VoiceOver acceptance remain pending in #62.
 >
-> Read [the verified repair map](docs/REPAIR_VERIFICATION.md), [tracked evidence](docs/audit-2.1.8/repair-progress.json), [3.0 notes](docs/releases/3.0.md) and [maintenance handover](docs/BUG_FIX_HANDOVER.md). The repository stays private, work stays on main, and all builds remain local with `[skip ci]` commits and no cloud dispatch.
+> Read [the verified repair map](docs/REPAIR_VERIFICATION.md), [tracked evidence](docs/audit-2.1.8/repair-progress.json), [3.0 notes](docs/releases/3.0.md) and [maintenance handover](docs/BUG_FIX_HANDOVER.md). The owner chose public repository visibility on 21 October 2026. Work stays on main, and all builds remain local with `[skip ci]` commits and no cloud dispatch.
 >
 > [Audio recovery](docs/AUDIO_RECOVERY.md) keeps repeated failures gated and moves native work off the interface thread. One native driver operation can still stall its worker; real SIP/audio and VoiceOver remain manual acceptance limits. [Recording recovery](docs/RECORDING_RECOVERY.md) retains captured audio after export failure.
 > Call recording is disabled by default. Only enable it when recording is lawful and everyone whose consent is required has consented.
 
-## 3.5 release and Guided routes
+## Historical 3.5.1 hotfix — 8 October 2026
+
+**3.5.1/build 163 was published and installed on 8 October 2026.** The Guided routes menu crash is fixed; the compact dialler, routing and combined history remain unchanged. For the 8 October 2026 release, all four local suites passed **665 test cases, zero failures**. Built from [`e111e5d`](https://github.com/jpskidmore/telephone-jps/commit/e111e5daee9e57f26c66c9a42d40b6f1f4f25edc), installed at `/Applications/jps Telephone.app`, and published as [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.5.1). All seven uploads match local sizes and SHA-256 digests. The owner reported “tested - looks good”. Read [3.5.1 verification](docs/releases/3.5.1-verification.md). The separate 170 routing cases remain historical 3.5 evidence bound to unchanged inputs.
+
+## Historical 3.5 release and Guided routes
 
 Open **Settings → Dial plan** to set country/area defaults and assign outgoing
 connections or blocks by number category. Add precise prefix exceptions and use
@@ -50,7 +54,7 @@ installed copies; all 1,417 source ZIP payloads match the tagged commit. Read
 [JSON record](docs/releases/3.5-verification.json) and
 [the user/maintenance guide](docs/DIAL_PLANS.md). The package is ad-hoc signed and
 unnotarised; provider/physical-device and proficient VoiceOver acceptance remain
-manual boundaries. Repository access and downloads require authorised GitHub access.
+manual boundaries. That release was private when published; the owner chose public repository visibility on 21 October 2026.
 
 ## Historical 3.0 release and private access
 
@@ -65,7 +69,7 @@ file payloads; all 1,400 source ZIP file payloads match the release commit.
 See [publication and package proof](docs/releases/3.0-verification.md) and its
 [JSON record](docs/releases/3.0-verification.json).
 
-Repository contents, issues and downloads require authorised GitHub access.
+At that historical publication, repository contents, issues and downloads required authorised GitHub access. Current repository access is public by the owner’s 21 October 2026 choice.
 The historical [2.1.8 release](https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8)
 remains unchanged: build 160 from `9a32ae8`, with its original app/source ZIPs,
 checksums and verification files. The accepted design is preserved: Icon rail
