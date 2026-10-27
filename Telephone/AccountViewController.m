@@ -61,7 +61,7 @@ static NSArray<NSLayoutConstraint *> *FullSizeConstraintsForView(NSView *view);
 - (NSMenu *)callHistoryActionsMenu {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@""];
     for (NSMenuItem *item in self.callHistoryViewController.actionsMenu.itemArray) {
-        if (item.action == @selector(deleteAll:)) {
+        if (item.action == @selector(deleteAll:) || item.tag == 690) {
             [menu addItem:[item copy]];
         }
     }

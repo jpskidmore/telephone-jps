@@ -25,6 +25,7 @@
 #import "AKSIPAccount.h"
 #import "AKSIPCall.h"
 #import "AKStereoRecording.h"
+#import "AKRecordingCatalogue.h"
 #import "RecordingRecoveryController.h"
 
 #import "AccountController.h"
@@ -75,6 +76,9 @@ static const NSTimeInterval AKAudioRecoverySlowInterval = 5.0;
 @property(nonatomic) BOOL audioRecoveryDidRecover;
 @property(nonatomic, nullable) NSMenuItem *recordingRecoveryMenuItem;
 @property(nonatomic) RecordingRecoveryController *recordingRecoveryController;
+@property(nonatomic, nullable) AKRecordingCatalogue *recordingCatalogue;
+@property(nonatomic, nullable) RecordingHistoryActions *recordingHistoryActions;
+@property(atomic, nullable) NSError *recordingAttachmentError;
 @property(nonatomic) BOOL presentingHistoryError;
 @property(nonatomic) AccountsMenuItems *accountsMenuItems;
 @property(nonatomic) SharedDialerController *sharedDialler;
@@ -100,6 +104,9 @@ static const NSTimeInterval AKAudioRecoverySlowInterval = 5.0;
 - (void)refreshRecordingRecoveryJobsWithCompletion:(void (^)(BOOL, NSArray *, NSError * _Nullable))completion;
 - (void)updateRecordingRecoveryMenuItem;
 - (BOOL)confirmQuitWithRecordingRecoveryError:(NSError *)error;
+- (void)configureRecordingAttachmentsWithCatalogue:(AKRecordingCatalogue *)catalogue;
+- (void)refreshRecordingAttachmentsWithCompletion:(void (^)(NSError * _Nullable))completion;
+- (void)reconcileRecordingAttachmentsWithCompletion:(void (^)(BOOL, NSError * _Nullable))completion;
 
 @end
 
@@ -114,11 +121,13 @@ NS_ASSUME_NONNULL_END
 
 - (RecordingRecoveryController *)recordingRecoveryController {
     if (_recordingRecoveryController == nil) {
+        __weak AppController *weakSelf = self;
         _recordingRecoveryController = [[RecordingRecoveryController alloc] initWithLoader:^NSArray *(NSError **error) {
+            NSError *attachmentError = weakSelf.recordingAttachmentError;
+            if (attachmentError != nil) { if (error) *error = attachmentError; return nil; }
             return AKPendingRecordingRecoveryJobsWithError(error);
         }];
         _recordingRecoveryController.actionsEnabled = !self.isTerminating;
-        __weak AppController *weakSelf = self;
         _recordingRecoveryController.stateDidChange = ^{ [weakSelf updateRecordingRecoveryMenuItem]; };
     }
     return _recordingRecoveryController;
@@ -334,6 +343,7 @@ NS_ASSUME_NONNULL_END
     if (_terminating != terminating) self.terminationGeneration++;
     _terminating = terminating;
     _recordingRecoveryController.actionsEnabled = !terminating;
+    _recordingHistoryActions.actionsEnabled = !terminating;
     if (!terminating) return;
     [self invalidateAudioRecoveryWatchdog];
     if (self.retryAudioMenuItem != nil) {
@@ -488,7 +498,7 @@ NS_ASSUME_NONNULL_END
         if (self.isTerminating) return NO;
         AKRecordingRecoveryIndex *index = self.recordingRecoveryController.index;
         // Validation is a cache read, including unknown/loading/failed discovery.
-        return !index.hasLoaded || index.isRefreshing || index.error != nil || self.recordingRecoveryController.managedJobCount > 0;
+        return !index.hasLoaded || index.isRefreshing || index.error != nil || self.recordingAttachmentError != nil || self.recordingRecoveryController.managedJobCount > 0;
     }
     return YES;
 }
@@ -872,6 +882,7 @@ NS_ASSUME_NONNULL_END
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     NSWindow.allowsAutomaticWindowTabbing = NO;
+    [self configureRecordingAttachmentsWithCatalogue:AKRecordingCatalogue.sharedCatalogue];
     [self installAudioRecoveryMenuItem];
     NSMenu *applicationMenu = self.preferencesMenuItem.menu;
     self.recordingRecoveryMenuItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Recover Recordings…", @"Recording recovery menu.") action:@selector(recoverRecordings:) keyEquivalent:@""];
@@ -1036,11 +1047,53 @@ NS_ASSUME_NONNULL_END
 }
 
 - (NSArray<NSDictionary *> *)pendingRecordingRecoveryJobs { return self.recordingRecoveryController.index.jobs; }
-- (void)refreshRecordingRecoveryJobsWithCompletion:(void (^)(BOOL, NSArray *, NSError * _Nullable))completion {
-    AKRecordingRecoveryIndex *index = self.recordingRecoveryController.index;
-    [index refreshWithCompletion:^(BOOL current) { completion(current, index.jobs, index.error); }];
+- (void)configureRecordingAttachmentsWithCatalogue:(AKRecordingCatalogue *)catalogue {
+    // Construction and factory wiring do no file work. Only actual application
+    // launch installs the production publisher; isolated tests inject a store.
+    self.recordingCatalogue = catalogue;
+    self.recordingHistoryActions = [[RecordingHistoryActions alloc] initWithCatalogue:catalogue];
+    self.recordingHistoryActions.actionsEnabled = !self.isTerminating;
+    self.callHistoryViewEventTargetFactory.recordingHistoryActions = self.recordingHistoryActions;
+    AKSetRecordingAttachmentPublisher(^BOOL(NSDictionary *attachment, NSError **error) {
+        return [catalogue persistAttachment:attachment error:error];
+    });
 }
-- (void)waitForRecordingFinalizations:(dispatch_block_t)completion { AKWaitForPendingRecordingFinalizations(completion); }
+
+- (void)reconcileRecordingAttachmentsWithCompletion:(void (^)(BOOL, NSError * _Nullable))completion {
+    AKReconcilePendingRecordingAttachments(completion);
+}
+
+- (void)refreshRecordingAttachmentsWithCompletion:(void (^)(NSError * _Nullable))completion {
+    AKRecordingCatalogue *catalogue = self.recordingCatalogue;
+    if (catalogue == nil) { completion(nil); return; }
+    // Reconciliation is metadata-only and admitted to the recording drain. It
+    // must finish before the recovery list decides which retained jobs remain.
+    [self reconcileRecordingAttachmentsWithCompletion:^(BOOL succeeded, NSError *error) {
+        [catalogue refreshWithCompletion:^(BOOL loaded) {
+            NSError *result = error ?: catalogue.error;
+            if (!succeeded && result == nil) result = [NSError errorWithDomain:AKRecordingCatalogueErrorDomain code:9
+                userInfo:@{NSLocalizedDescriptionKey:NSLocalizedString(@"Recording links could not be checked. Existing audio and recovery files have been kept.", @"Attachment reconciliation failure.")}];
+            self.recordingAttachmentError = result;
+            completion(result);
+        }];
+    }];
+}
+
+- (void)refreshRecordingRecoveryJobsWithCompletion:(void (^)(BOOL, NSArray *, NSError * _Nullable))completion {
+    [self refreshRecordingAttachmentsWithCompletion:^(NSError *attachmentError) {
+        AKRecordingRecoveryIndex *index = self.recordingRecoveryController.index;
+        [index refreshWithCompletion:^(BOOL current) {
+            completion(current, index.jobs, attachmentError ?: index.error);
+        }];
+    }];
+}
+- (void)waitForRecordingFinalizations:(dispatch_block_t)completion {
+    RecordingHistoryActions *actions = self.recordingHistoryActions;
+    if (actions == nil) { AKWaitForPendingRecordingFinalizations(completion); return; }
+    // Playback/reveal may own a resolved grant even after its history row has
+    // gone. Close admission first, then release those scopes before replying.
+    [actions waitForPendingActionsWithCompletion:^{ AKWaitForPendingRecordingFinalizations(completion); }];
+}
 - (void)finishPendingHistoryWrites:(dispatch_block_t)completion { [HistoryPersistenceCoordinator finishPendingWritesWithCompletion:completion]; }
 - (void)retryFailedHistoryWrites:(void (^)(BOOL))completion { [HistoryPersistenceCoordinator retryFailedWritesWithCompletion:completion]; }
 - (void)replyToTermination:(BOOL)shouldTerminate { [NSApp replyToApplicationShouldTerminate:shouldTerminate]; }

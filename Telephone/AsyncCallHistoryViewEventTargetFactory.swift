@@ -16,17 +16,31 @@
 //  GNU General Public License for more details.
 //
 
+import Foundation
 import UseCases
 
 @MainActor
 final class AsyncCallHistoryViewEventTargetFactory: NSObject {
     private let origin: CallHistoryViewEventTargetFactory
+    @objc var recordingHistoryActions: RecordingHistoryActions? {
+        didSet {
+            historyViews.allObjects.forEach { $0.recordingHistoryActions = recordingHistoryActions }
+        }
+    }
+    private let historyViews = NSHashTable<CallHistoryViewController>.weakObjects()
+
+    private func configureRecordingActions(for view: CallHistoryView) {
+        guard let historyView = view as? CallHistoryViewController else { return }
+        historyViews.add(historyView)
+        historyView.recordingHistoryActions = recordingHistoryActions
+    }
 
     init(origin: CallHistoryViewEventTargetFactory) {
         self.origin = origin
     }
 
     @objc func make(account: Account, view: CallHistoryView, purchaseCheck: UseCase, completion: @escaping (CallHistoryViewEventTarget) -> Void) {
+        configureRecordingActions(for: view)
         Task {
             completion(await origin.make(account: account, view: view, purchaseCheck: purchaseCheck))
         }
@@ -36,6 +50,7 @@ final class AsyncCallHistoryViewEventTargetFactory: NSObject {
     func makeGlobal(accounts: [CallHistoryAccount], view: CallHistoryView,
                     callDestinationHandler: @escaping @MainActor @Sendable (String, String, String) -> Void,
                     completion: @escaping (CallHistoryViewEventTarget) -> Void) {
+        configureRecordingActions(for: view)
         let request = origin.prepareGlobalAccounts(accounts)
         Task {
             completion(await origin.makeGlobal(accounts: accounts, view: view, route: callDestinationHandler, request: request))

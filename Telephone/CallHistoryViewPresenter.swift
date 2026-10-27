@@ -58,7 +58,8 @@ private extension CallHistoryViewPresenter {
             isIncoming: record.origin.isIncoming,
             isMissed: record.origin.isMissed,
             accountUUID: record.origin.originAccountUUID,
-            accountName: record.origin.originAccountName ?? ""
+            accountName: record.origin.originAccountName ?? "",
+            recordingCallIdentifier: record.origin.recordingCallIdentifier
         )
     }
 }

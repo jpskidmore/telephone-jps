@@ -2,7 +2,23 @@
 #import <objc/runtime.h>
 
 #import "AKSIPCall.h"
+#import "AKSIPURI.h"
 #import "AKStereoRecording.h"
+
+// An inert constructor snapshot: no SIP parser, account, provider or audio calls.
+@interface RSOIdentityInfo : NSObject
+@property(nonatomic) NSInteger identifier;
+@property(nonatomic, copy) NSString *dialogIdentifier;
+@property(nonatomic) AKSIPCallState state;
+@property(nonatomic, copy) NSString *stateText;
+@property(nonatomic) NSInteger lastStatus;
+@property(nonatomic, copy) NSString *lastStatusText;
+@property(nonatomic, strong) AKSIPURI *localURI;
+@property(nonatomic, strong) AKSIPURI *remoteURI;
+@property(nonatomic, getter=isIncoming) BOOL incoming;
+@end
+@implementation RSOIdentityInfo
+@end
 
 @interface AKSIPCall (RecordingStartOutcomeTests)
 - (void)performDialogOperation:(pj_status_t (^)(pjsua_call_info *))operation completion:(void (^)(pj_status_t))completion;
@@ -101,6 +117,24 @@
 @property(nonatomic, strong) NSMutableArray<RSOCall *> *calls;
 @end
 @implementation RecordingStartOutcomeTests
+- (void)testRecordingCallIdentityIsUniqueAndSurvivesSlotDurationAndStateChanges {
+    RSOIdentityInfo *info = [RSOIdentityInfo new];
+    info.identifier = 3; info.dialogIdentifier = @"same-dialog-snapshot";
+    info.state = kAKSIPCallDisconnectedState;
+    info.stateText = @"Disconnected"; info.lastStatusText = @"";
+    info.localURI = [AKSIPURI SIPURIWithUser:@"local" host:@"example.invalid" displayName:@""];
+    info.remoteURI = [AKSIPURI SIPURIWithUser:@"remote" host:@"example.invalid" displayName:@""];
+    // RSOCall replaces all native boundaries, including deallocation cleanup.
+    id account = [NSObject new];
+    RSOCall *first = [[RSOCall alloc] initWithSIPAccount:account info:(id)info];
+    RSOCall *redial = [[RSOCall alloc] initWithSIPAccount:account info:(id)info];
+    NSString *identity = first.recordingCallIdentifier;
+    XCTAssertNotNil([[NSUUID alloc] initWithUUIDString:identity]);
+    XCTAssertNotEqualObjects(identity, redial.recordingCallIdentifier);
+    first.identifier = 9; first.duration = 600; first.state = kAKSIPCallConfirmedState;
+    XCTAssertEqualObjects(first.recordingCallIdentifier, identity);
+}
+
 - (void)drainFinalizations {
     XCTestExpectation *drained = [self expectationWithDescription:@"owned recording cleanup drained"];
     AKWaitForPendingRecordingFinalizations(^{ [drained fulfill]; });

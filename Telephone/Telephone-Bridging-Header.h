@@ -16,6 +16,7 @@ PJ_DECL(pj_status_t) jps_coreaudio_device_uid(pjmedia_aud_dev_index global_index
 #import "AKSIPAccount.h"
 #import "AKSIPCall.h"
 #import "AKSIPCallNotifications.h"
+#import "AKRecordingCatalogue.h"
 #import "AKSIPURI.h"
 #import "AKSIPUserAgent.h"
 #import "MusicPlayerFactory.h"

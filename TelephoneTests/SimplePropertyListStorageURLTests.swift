@@ -24,6 +24,46 @@ import UseCases
 import UseCasesTestDoubles
 
 final class SimplePropertyListStorageURLTests: XCTestCase {
+    @CallHistoryActor
+    func testLinkedGlobalHistoryDeletionPreservesRecordingAndCatalogueAndLateCompletionCannotReinsertHistory() async throws {
+        let directory = URL(fileURLWithPath: "/private/tmp").appendingPathComponent("jps-recording69-deletion-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recording = directory.appendingPathComponent("synthetic.wav")
+        let audio = Data("synthetic retained output".utf8)
+        try audio.write(to: recording)
+        let catalogueURL = directory.appendingPathComponent("catalogue.plist")
+        let catalogue = AKRecordingCatalogue(store: catalogueURL)
+        let attachment: [AnyHashable: Any] = ["callIdentifier": "exact-call", "segmentIdentifier": "first-segment",
+                                              "state": "available", "destination": recording.path,
+                                              "outputBookmark": Data("synthetic-bookmark-seam".utf8),
+                                              "outputIdentity": ["dev": "synthetic", "ino": "synthetic"]]
+        try catalogue.persistAttachment(attachment)
+        let originalCatalogue = try Data(contentsOf: catalogueURL)
+        let storage = Telephone.SimplePropertyListStorage(url: directory.appendingPathComponent("history.plist"), manager: .default)
+        let history = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+        let linked = CallHistoryRecord(uri: URI(user: "desk", host: "example.invalid", displayName: "Synthetic"),
+                                       date: Date(timeIntervalSinceReferenceDate: 12), duration: 3,
+                                       isIncoming: false, isMissed: false, recordingCallIdentifier: "exact-call")
+        history.add(linked)
+        let global = GlobalCallHistory(histories: NativeGlobalHistoryMap(stores: ["account": history]))
+        global.updateAccounts([CallHistoryAccount(uuid: "account", name: "Synthetic", domain: "example.invalid")])
+        global.remove(global.allRecords[0])
+        XCTAssertTrue(global.allRecords.isEmpty)
+        XCTAssertEqual(try Data(contentsOf: recording), audio)
+        XCTAssertEqual(try Data(contentsOf: catalogueURL), originalCatalogue)
+        var lateSegment = attachment; lateSegment["segmentIdentifier"] = "late-segment"
+        try catalogue.persistAttachment(lateSegment)
+        XCTAssertTrue(global.allRecords.isEmpty, "Late export metadata must never add history records")
+        history.add(linked)
+        global.removeAll()
+        XCTAssertTrue(global.allRecords.isEmpty)
+        XCTAssertEqual(try Data(contentsOf: recording), audio)
+        let reopened = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+        XCTAssertTrue(reopened.allRecords.isEmpty)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: catalogueURL.path))
+    }
+
     func testUsesNameAsFileNameAndPlistAsExtension() {
         let name = "any-name"
 

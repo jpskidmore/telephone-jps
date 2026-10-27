@@ -78,12 +78,37 @@ void AKReportRecordingExportFailure(NSURL *directory, NSURL *destination, NSErro
 void AKRetryRecordingRecoveryJob(NSDictionary *job, NSURL *destination,
                                  void (^completion)(BOOL succeeded));
 
+// The app supplies the serial durable catalogue. A nil publisher keeps legacy
+// callers and standalone encoding tools independent of the app's data store.
+// The block is copied atomically and runs on the recording utility worker.
+typedef BOOL (^AKRecordingAttachmentPublisher)(NSDictionary *attachment, NSError **error);
+void AKSetRecordingAttachmentPublisher(AKRecordingAttachmentPublisher _Nullable publisher);
+BOOL AKRecordingAttachmentPublicationEnabled(void);
+// Bind one opaque call and segment before capture. Existing IDs are immutable;
+// missing legacy IDs are never inferred from a filename or directory identity.
+BOOL AKSetOwnedRecordingIdentity(AKRecordingJobOwnership *owner, NSString *callIdentifier,
+                                  NSString *segmentIdentifier, NSError **error);
+// Journalled export: durable exact-file proof and catalogue publication precede
+// raw cleanup. Failure retains raw audio and any completed export for metadata
+// repair; completion and all work are included in the recording quit drain.
+void AKFinalizeOwnedRecordingAsync(AKRecordingJobOwnership *owner, NSURL *local, NSURL *remote,
+    NSURL *destination, void (^completion)(BOOL succeeded));
+// Metadata-only restart repair. Never encodes, overwrites or guesses an output.
+// The caller may refresh recovery UI after this asynchronous main completion.
+void AKReconcilePendingRecordingAttachmentsAtRoot(NSURL *root,
+    void (^completion)(BOOL succeeded, NSError * _Nullable error));
+void AKReconcilePendingRecordingAttachments(void (^completion)(BOOL succeeded, NSError * _Nullable error));
+
 // Atomically reserves a collision-free file in directoryURL. The caller owns the
 // empty file and should remove it if recording cannot be started.
 NSURL * _Nullable AKReserveRecordingURL(NSURL *directoryURL,
                                         NSString *filenameStem,
                                         NSString *extension,
                                         NSError **error);
+
+// Removes only the still-empty inode reserved by AKReserveRecordingURL. Legacy
+// nil-publisher callers retain their prior empty-placeholder compatibility.
+void AKRemoveUnusedRecordingReservation(NSURL *URL);
 
 // Interleaves synchronized mono WAV files into a stereo WAV, MP3, or Ogg/Opus file.
 // The local file becomes the left channel and the remote file becomes the right channel.

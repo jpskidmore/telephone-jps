@@ -14,6 +14,20 @@ Quit closes new recovery admission and waits for recording and history drains, t
 
 Actual installed save panels, sandbox grants, quit/reopen, provider/hardware and proficient VoiceOver remain pending in [#62's matrix](MACOS_27_ACCEPTANCE.md). [Fresh source evidence and limits](maintenance/2026-10-26-recording-recovery-browser.md) are separate from installation/release.
 
+## Recordings in call history on current main
+
+New calls carry an optional opaque recording key. Each stop/start produces a distinct segment keyed to that exact call, including segments completed after disconnection or a redial. Older history and recordings remain unlinked; filenames are never used to guess an association.
+
+Select a call and open **More → Recording**, or its history context menu. A single segment offers **Play in Default App** and **Reveal in Finder**; multiple segments have individual submenus. Capturing, saving, failed-start, discarded and recovery states cannot be played. Missing or changed files and unsupported playback show an explanation. **Refresh Recording Details** reloads cached catalogue metadata; **jps Telephone → Recover Recordings…** also attempts retained export-link repair.
+
+A separate versioned `Recording Catalogue.plist` stores attachment metadata. History deletion, clearing all history and removing an account preserve exported recordings and raw recovery files. A later export updates its attachment metadata only and cannot recreate deleted history. The catalogue contains file bookmarks, not an additional capture owner.
+
+File verification and bookmark resolution run off main when an action is chosen. The bookmark may follow a renamed resource; device/inode, length and content checks reject replaced or modified files. This deliberately refuses a new copy at the old path, even with a similar filename. Scoped access remains owned until the player-launch callback or Finder reveal request returns, and Quit drains admitted actions.
+
+Export records an owned journal before writing output, including an exact reservation/file identity and expected encoded content. A successful conversion is not sufficient to remove raw audio: verified output and the available catalogue entry must be durable first. If saving the link fails, retained proof allows metadata-only repair after restart or Retry, without re-encoding into an existing filename. Save Elsewhere creates the explicitly chosen new file and preserves any older export. An unrelated file is never overwritten or adopted.
+
+The durability checks are conservative: a file-only save grant may permit writing the output but deny opening/syncing its parent directory. That outcome retains the encoded output and raw recovery data and reports failure, including during later repair; it does not claim a fully durable link. Real save-panel grants, player/Finder handoff and installed quit/reopen remain unverified in #62. Source and synthetic verification are recorded separately in the dated maintenance evidence.
+
 ## Durable data and ownership
 
 Each recording stores its two raw WAV tracks and `recovery.plist` in a unique job
@@ -26,7 +40,7 @@ or damaged but both default raw tracks survive.
 
 Each native recorder/session owns its own tracks, destination reservation and
 folder-access lifetime. Encoder work is serial and finalization is asynchronous.
-The export completion cleans the raw job only after successful conversion. An
+For linked jobs, export completion cleans the raw job only after verified output and durable catalogue publication; legacy unlinked jobs retain their established successful-conversion cleanup. An
 export inside that job is rejected so cleanup cannot delete the recovered file.
 Successful export and failure both finish the session's ownership exactly once;
 failed export retains the job independently of a closed call window.

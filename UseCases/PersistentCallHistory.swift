@@ -192,7 +192,8 @@ private extension CallHistoryRecord {
             isMissed: dictionary[Keys.missed.rawValue] as? Bool ?? false,
             canonicalDestination: dictionary[Keys.canonicalDestination.rawValue] as? String,
             originAccountUUID: dictionary[Keys.originAccountUUID.rawValue] as? String,
-            originAccountName: dictionary[Keys.originAccountName.rawValue] as? String
+            originAccountName: dictionary[Keys.originAccountName.rawValue] as? String,
+            recordingCallIdentifier: dictionary[Keys.recordingCallIdentifier.rawValue] as? String
         )
     }
 }
@@ -213,6 +214,7 @@ private func dictionaries(from records: [CallHistoryRecord]) -> [[String: Any]] 
         if let value = $0.canonicalDestination { result[Keys.canonicalDestination.rawValue] = value }
         if let value = $0.originAccountUUID { result[Keys.originAccountUUID.rawValue] = value }
         if let value = $0.originAccountName { result[Keys.originAccountName.rawValue] = value }
+        if let value = $0.recordingCallIdentifier { result[Keys.recordingCallIdentifier.rawValue] = value }
         return result
     }
 }
@@ -220,6 +222,7 @@ private func dictionaries(from records: [CallHistoryRecord]) -> [[String: Any]] 
 private enum Keys: String {
     case user, host, name, date, duration, incoming, missed
     case port, transport, canonicalDestination, originAccountUUID, originAccountName
+    case recordingCallIdentifier
 }
 
 private func historyTransport(from value: String?) -> Transport {

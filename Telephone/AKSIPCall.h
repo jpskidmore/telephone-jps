@@ -68,6 +68,7 @@ typedef NS_ENUM(NSInteger, AKRecordingStartResult) {
 @property(nonatomic, readonly) AKSIPAccount<Account> *account;
 @property(nonatomic) NSInteger identifier;
 @property(nonatomic, readonly, copy) NSString *dialogIdentifier;
+@property(nonatomic, readonly, copy) NSString *recordingCallIdentifier;
 @property(nonatomic, copy, nullable) NSString *canonicalDestination;
 
 @property(nonatomic, weak) id<AKSIPCallDelegate> delegate;

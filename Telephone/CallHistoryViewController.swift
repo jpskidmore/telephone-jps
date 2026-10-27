@@ -38,8 +38,10 @@ final class CallHistoryViewController: NSViewController {
         return records.count
     }
     @objc var historyExpanded: Bool { isExpanded }
+    @objc var recordingHistoryActions: RecordingHistoryActions?
     @objc var actionsMenu: NSMenu {
         _ = view
+        updateRecordingMenu()
         return tableView.menu!
     }
     private var isExpanded = true
@@ -76,6 +78,7 @@ final class CallHistoryViewController: NSViewController {
         // to leave no selection rather than silently selecting another call.
         tableView.allowsEmptySelection = true
         tableView.setAccessibilityLabel(NSLocalizedString("Call history", comment: "Call history accessibility label."))
+        tableView.menu?.delegate = self
         configureFindControls()
         if let scroll = tableView.enclosingScrollView {
             scroll.translatesAutoresizingMaskIntoConstraints = false
@@ -508,4 +511,25 @@ private func makeDeletionAlert(messageText text: String) -> NSAlert {
     delete.hasDestructiveAction = true
     a.addButton(withTitle: NSLocalizedString("Cancel", comment: "Cancel button.")).keyEquivalent = "\u{1b}"
     return a
+}
+
+// Build at menu-open time so the context menu follows the visible clicked row
+// and the dialler action menu follows the visible selection. The resulting
+// actions capture immutable recording IDs instead of retaining a row index.
+extension CallHistoryViewController: NSMenuDelegate {
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        if menu === tableView.menu { updateRecordingMenu() }
+    }
+
+    private func updateRecordingMenu() {
+        guard let menu = tableView.menu else { return }
+        for item in menu.items where item.tag == 690 { menu.removeItem(item) }
+        guard let actions = recordingHistoryActions else { return }
+        let row = clickedOrSelectedRow()
+        let identifier = visibleRecords.indices.contains(row) ? visibleRecords[row].recordingCallIdentifier : nil
+        let item = NSMenuItem(title: "Recording", action: nil, keyEquivalent: "")
+        item.tag = 690
+        item.submenu = actions.menu(forCallIdentifier: identifier)
+        menu.insertItem(item, at: min(2, menu.numberOfItems))
+    }
 }

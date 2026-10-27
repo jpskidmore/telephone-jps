@@ -63,3 +63,7 @@ For later authorised changes, follow [the maintenance entry point](docs/MAINTENA
 and [local validation, build and packaging requirements](docs/VALIDATION.md).
 Use isolated synthetic tests, preserve user data and immutable releases, and
 keep all builds local. This documentation update adds no build or test result.
+
+## Find a new recording from call history
+
+On current main, choose the call and use **More → Recording** or the history context menu, then **Play in Default App** or **Reveal in Finder**. Multiple recording segments have individual submenus. Older calls remain unlinked; history deletion preserves audio files. Failed or unavailable files show feedback rather than appearing playable. This source feature has not been installed/released; actual grants and playback remain pending in #62. Read [recording and history recovery](docs/RECORDING_RECOVERY.md) for retained-export link repair and the conservative directory-sync boundary.

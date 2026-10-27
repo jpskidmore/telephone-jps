@@ -41,9 +41,10 @@ final class PresentationCallHistoryRecord: NSObject {
     @objc let accountUUID: String?
     @objc let accountName: String
     @objc let accountBadge: String
+    let recordingCallIdentifier: String?
 
     init(identifier: String, contact: PresentationContact, date: String, duration: String, isIncoming: Bool,
-         isMissed: Bool = false, accountUUID: String? = nil, accountName: String = "") {
+         isMissed: Bool = false, accountUUID: String? = nil, accountName: String = "", recordingCallIdentifier: String? = nil) {
         self.identifier = identifier
         self.contact = contact
         self.date = date
@@ -52,6 +53,7 @@ final class PresentationCallHistoryRecord: NSObject {
         status = isMissed ? .missed : isIncoming ? .incoming : .outgoing
         self.accountUUID = accountUUID
         self.accountName = accountName
+        self.recordingCallIdentifier = recordingCallIdentifier
         accountBadge = accountName.trimmingCharacters(in: .whitespacesAndNewlines).first.map { String($0).uppercased() } ?? ""
     }
 }
@@ -72,6 +74,7 @@ extension PresentationCallHistoryRecord {
         hasher.combine(status)
         hasher.combine(accountUUID)
         hasher.combine(accountName)
+        hasher.combine(recordingCallIdentifier)
         return hasher.finalize()
     }
 
@@ -83,7 +86,8 @@ extension PresentationCallHistoryRecord {
             duration == record.duration &&
             isIncoming == record.isIncoming &&
             status == record.status &&
-            accountUUID == record.accountUUID && accountName == record.accountName
+            accountUUID == record.accountUUID && accountName == record.accountName &&
+            recordingCallIdentifier == record.recordingCallIdentifier
     }
 }
 

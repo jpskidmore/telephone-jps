@@ -23,6 +23,48 @@ import UseCasesTestDoubles
 
 @CallHistoryActor
 struct PersistentCallHistoryTests {
+    @Test func linkedRecordCanBeRemovedAfterRestartAndGlobalQualification() {
+        let storage = MemoryPropertyListStorage()
+        let linked = CallHistoryRecord(uri: URI(user: "desk", host: "example.invalid", displayName: ""),
+                                       date: Date(timeIntervalSinceReferenceDate: 12), duration: 3,
+                                       isIncoming: false, isMissed: false, recordingCallIdentifier: "call-key")
+        let first = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+        first.add(linked)
+        let reopened = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+        let qualified = reopened.allRecords[0].qualified(accountUUID: "account-a", accountName: "Provider")
+        #expect(qualified.recordingCallIdentifier == "call-key")
+        let stored = reopened.allRecords.first { $0.accountRecordIdentifier == qualified.accountRecordIdentifier }
+        #expect(stored != nil)
+        if let stored { reopened.remove(stored) }
+        #expect(PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage).allRecords.isEmpty)
+    }
+
+    @Test func recordingCallKeySurvivesRestartAndUnlinkedLegacyRowsStayUnlinked() {
+        let storage = MemoryPropertyListStorage()
+        let base = makeRecord1()
+        let linked = CallHistoryRecord(uri: base.uri, date: base.date, duration: base.duration,
+                                       isIncoming: base.isIncoming, isMissed: base.isMissed,
+                                       recordingCallIdentifier: "call-key")
+        let history = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+        let legacy = makeRecord2()
+        history.add(linked)
+        history.add(legacy)
+        let reopened = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+        #expect(reopened.allRecords == [linked, legacy])
+        #expect(reopened.allRecords[0].recordingCallIdentifier == "call-key")
+        #expect(reopened.allRecords[1].recordingCallIdentifier == nil)
+    }
+
+    @Test func malformedOrAbsentRecordingCallKeyIsNotInferredOrWrittenOnRead() {
+        for value: Any in [42, ""] {
+            let storage = FaultingHistoryStorage()
+            storage.records = [["user": "desk", "host": "example.invalid", "recordingCallIdentifier": value]]
+            let history = PersistentCallHistory(origin: TruncatingCallHistory(), storage: storage)
+            #expect(history.allRecords[0].recordingCallIdentifier == nil)
+            #expect(storage.saveCount == 0)
+        }
+    }
+
     @Test func canonicalOriginAndExplicitSIPPortTransportSurviveReload() {
         let storage = MemoryPropertyListStorage()
         let record = CallHistoryRecord(uri: URI(user: "office", address: ServiceAddress(host: "[2001:db8::1]", port: "5071"),
@@ -47,10 +89,12 @@ struct PersistentCallHistoryTests {
         #expect(storage.saveCount == 0)
         #expect(history.allRecords[0].canonicalDestination == nil)
         #expect(history.allRecords[0].originAccountUUID == nil)
+        #expect(history.allRecords[0].recordingCallIdentifier == nil)
         #expect(history.allRecords[0].callbackDestination == "123456")
         history.add(makeRecord2())
         #expect(storage.records[0]["canonicalDestination"] == nil)
         #expect(storage.records[0]["originAccountUUID"] == nil)
+        #expect(storage.records[0]["recordingCallIdentifier"] == nil)
     }
 
     @Test func hostRemovalRetainsCallTimeCanonicalDestinationAndOriginMetadata() {

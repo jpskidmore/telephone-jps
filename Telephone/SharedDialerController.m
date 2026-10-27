@@ -321,7 +321,8 @@
 }
 - (NSMenu *)moreActionsMenu {
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@""];
-    for (NSMenuItem *item in self.history.actionsMenu.itemArray) if (item.action == NSSelectorFromString(@"deleteAll:")) [menu addItem:[item copy]];
+    for (NSMenuItem *item in self.history.actionsMenu.itemArray)
+        if (item.action == NSSelectorFromString(@"deleteAll:") || item.tag == 690) [menu addItem:[item copy]];
     for (AccountController *account in self.accounts.all) if (account.hasPendingRoutedCalls) {
         NSMenuItem *cancel = [[NSMenuItem alloc] initWithTitle:@"Cancel pending calls" action:@selector(cancelPendingCalls:) keyEquivalent:@""];
         cancel.target = self; [menu addItem:cancel]; break;

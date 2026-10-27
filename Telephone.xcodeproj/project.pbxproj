@@ -731,6 +731,13 @@
 		C5A50A594E4047C2A1DB0DE8 /* RecordingRecoveryAsyncTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1745F844FBA54421A7E30E96 /* RecordingRecoveryAsyncTests.m */; };
 		B351090F53B341A9811BBE51 /* RecordingRecoveryPerformanceTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8903A69AD5D34340A87C08A9 /* RecordingRecoveryPerformanceTests.m */; };
 		1CB259787A424DAC9D61531A /* RecordingRecoveryIntegrationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = FC0EB2D62DFE45D2A8CBBC04 /* RecordingRecoveryIntegrationTests.m */; };
+		13347479713941308786A8D4 /* AKRecordingCatalogue.m in Sources */ = {isa = PBXBuildFile; fileRef = 8874DCD61DA041F3926ABD83 /* AKRecordingCatalogue.m */; };
+		AA3B4388B15F460AB12D651C /* RecordingHistoryActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60FCBB26C6F743E58C5B32F3 /* RecordingHistoryActions.swift */; };
+		17FAE9BD72F94FA388500E79 /* RecordingCatalogueTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 095573240FD54A7384AF738B /* RecordingCatalogueTests.m */; };
+		F187EB1272B84CD98ACC5C88 /* RecordingAttachmentJournalTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8EB5BBA809CA4B8AA768EB7B /* RecordingAttachmentJournalTests.m */; };
+		2F92FD72F61C44CAB1815746 /* RecordingAttachmentIntegrationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 453F0FFB678A483EBC8B59AB /* RecordingAttachmentIntegrationTests.m */; };
+		69DAF9D0071448CBA9EE06E9 /* RecordingHistoryActionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60E23858C27402CAE6752C7 /* RecordingHistoryActionsTests.swift */; };
+		50F0C63F9C60405A83B1D313 /* RecordingHistoryActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60FCBB26C6F743E58C5B32F3 /* RecordingHistoryActions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1652,6 +1659,13 @@
 		1745F844FBA54421A7E30E96 /* RecordingRecoveryAsyncTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = RecordingRecoveryAsyncTests.m; path = TelephoneTests/RecordingRecoveryAsyncTests.m; sourceTree = SOURCE_ROOT; };
 		8903A69AD5D34340A87C08A9 /* RecordingRecoveryPerformanceTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = RecordingRecoveryPerformanceTests.m; path = TelephoneTests/RecordingRecoveryPerformanceTests.m; sourceTree = SOURCE_ROOT; };
 		FC0EB2D62DFE45D2A8CBBC04 /* RecordingRecoveryIntegrationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = RecordingRecoveryIntegrationTests.m; path = TelephoneTests/RecordingRecoveryIntegrationTests.m; sourceTree = SOURCE_ROOT; };
+		CA9E793522D4493FA1F21379 /* AKRecordingCatalogue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AKRecordingCatalogue.h; path = Telephone/AKRecordingCatalogue.h; sourceTree = SOURCE_ROOT; };
+		8874DCD61DA041F3926ABD83 /* AKRecordingCatalogue.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AKRecordingCatalogue.m; path = Telephone/AKRecordingCatalogue.m; sourceTree = SOURCE_ROOT; };
+		60FCBB26C6F743E58C5B32F3 /* RecordingHistoryActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecordingHistoryActions.swift; path = Telephone/RecordingHistoryActions.swift; sourceTree = SOURCE_ROOT; };
+		095573240FD54A7384AF738B /* RecordingCatalogueTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = RecordingCatalogueTests.m; path = TelephoneTests/RecordingCatalogueTests.m; sourceTree = SOURCE_ROOT; };
+		8EB5BBA809CA4B8AA768EB7B /* RecordingAttachmentJournalTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = RecordingAttachmentJournalTests.m; path = TelephoneTests/RecordingAttachmentJournalTests.m; sourceTree = SOURCE_ROOT; };
+		453F0FFB678A483EBC8B59AB /* RecordingAttachmentIntegrationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = RecordingAttachmentIntegrationTests.m; path = TelephoneTests/RecordingAttachmentIntegrationTests.m; sourceTree = SOURCE_ROOT; };
+		E60E23858C27402CAE6752C7 /* RecordingHistoryActionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RecordingHistoryActionsTests.swift; path = TelephoneTests/RecordingHistoryActionsTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -3207,6 +3221,13 @@
 				B0CE59B6D1AE42D797949A15 /* RecordingRecoveryIndexTests.m */,
 				D459687491414E6EAEBD0466 /* AKRecordingRecoveryIndex.m */,
 				EA68243AA1E7469F9F8CD685 /* AKRecordingRecoveryIndex.h */,
+				E60E23858C27402CAE6752C7 /* RecordingHistoryActionsTests.swift */,
+				453F0FFB678A483EBC8B59AB /* RecordingAttachmentIntegrationTests.m */,
+				8EB5BBA809CA4B8AA768EB7B /* RecordingAttachmentJournalTests.m */,
+				095573240FD54A7384AF738B /* RecordingCatalogueTests.m */,
+				60FCBB26C6F743E58C5B32F3 /* RecordingHistoryActions.swift */,
+				8874DCD61DA041F3926ABD83 /* AKRecordingCatalogue.m */,
+				CA9E793522D4493FA1F21379 /* AKRecordingCatalogue.h */,
 				AAE33B101BA7269600C6E48B /* AKSIPCallDelegate.h */,
 				8A11B3DB1DDCC028002EDA93 /* AKSIPCallEventSource.swift */,
 				8A11B3DD1DDCC07E002EDA93 /* AKSIPCallEventSourceTests.swift */,
@@ -3759,6 +3780,8 @@
 				1F8A00030000000000000003 /* AKStereoRecording.m in Sources */,
 				56E87C956F69404FAA4466B2 /* RecordingRecoveryController.m in Sources */,
 				EE719147125E4AC7A17D9D75 /* AKRecordingRecoveryIndex.m in Sources */,
+				AA3B4388B15F460AB12D651C /* RecordingHistoryActions.swift in Sources */,
+				13347479713941308786A8D4 /* AKRecordingCatalogue.m in Sources */,
 				8AA891DE1F83F6EA0064B2EA /* SanitizedCallDestination.swift in Sources */,
 				8A8495F624350641000A3A90 /* TCPTransportSettingsMigration.swift in Sources */,
 				8AB5A0CB1D084E4F00579CE8 /* PresentationProduct.swift in Sources */,
@@ -4244,6 +4267,11 @@
 				B351090F53B341A9811BBE51 /* RecordingRecoveryPerformanceTests.m in Sources */,
 				C5A50A594E4047C2A1DB0DE8 /* RecordingRecoveryAsyncTests.m in Sources */,
 				1405FCAD0901465B8527C551 /* RecordingRecoveryPresentationTests.m in Sources */,
+				50F0C63F9C60405A83B1D313 /* RecordingHistoryActions.swift in Sources */,
+				69DAF9D0071448CBA9EE06E9 /* RecordingHistoryActionsTests.swift in Sources */,
+				2F92FD72F61C44CAB1815746 /* RecordingAttachmentIntegrationTests.m in Sources */,
+				F187EB1272B84CD98ACC5C88 /* RecordingAttachmentJournalTests.m in Sources */,
+				17FAE9BD72F94FA388500E79 /* RecordingCatalogueTests.m in Sources */,
 				C04A8B4B145F44D6948A6AC5 /* RecordingRecoveryIndexTests.m in Sources */,
 				26C9A8A8D4294BDBAEECC5B8 /* RecordingStartOutcomeTests.m in Sources */,
 				8A778C0A1E0AE9C7004B00B8 /* CallHistoryViewPresenterTests.swift in Sources */,

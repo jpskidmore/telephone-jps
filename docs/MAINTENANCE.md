@@ -97,6 +97,17 @@ lifecycle checks, 11 audio wiring and 6 model/wiring checks. Light/Dark captures
 were inspected. Read [the recovery manager record](maintenance/2026-10-26-recording-recovery-browser.md).
 The next ranked source item is #69. These changes have not been installed/released.
 
+History recording attachments #69 are implemented and locally source-verified;
+publication is still pending. New calls/segments have exact optional identities,
+a versioned catalogue and journalled export-link repair. Native history/More menus
+provide scoped, verified Play/Reveal actions; history deletion preserves audio.
+Final validation passed 486 XCTest + 48 Swift Testing in the isolated app and
+206 XCTest + 147 Swift Testing in UseCases, plus separate component gates and
+cooperating-process catalogue tests. Read [the verification record](maintenance/2026-10-27-history-recordings.md)
+for source hashes, corrected fixtures and the conservative parent-directory-sync
+grant boundary. Actual grants/player/provider/VoiceOver remains pending in #62.
+No installation or release is implied. Complete #69 publication before #70.
+
 On 26 October the owner authorised **all remaining issues, one at a time**, with
 findings and outcomes logged in GitHub for other contributors. This resumes the
 previously deferred source work and supersedes the historical 25% release stop.

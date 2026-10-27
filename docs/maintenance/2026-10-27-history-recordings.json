@@ -1,0 +1,228 @@
+{
+  "status": "source_verified_unpublished_evidence_and_publication_remaining",
+  "baseline": "97e0dd25edcfec41ea37c5ad7b1f8776334808fd",
+  "nativeSuite": {
+    "XCTest": 486,
+    "SwiftTesting": 48,
+    "failures": 0
+  },
+  "UseCasesSuite": {
+    "XCTest": 206,
+    "SwiftTesting": 147,
+    "failures": 0
+  },
+  "separateChecks": {
+    "recordingOwnershipAssertions": 105,
+    "nativeLifecycle": 32,
+    "recordingModel": 6,
+    "audioWiring": 11
+  },
+  "catalogueProcessProof": {
+    "test": "eight fresh stores; simultaneous separate processes, 100 independent attachments each",
+    "allPassed": true,
+    "trials": [
+      {
+        "trial": 0,
+        "root": "/private/tmp/jps-recording69-catalogue-process-k5s64xy5",
+        "attachmentCount": 200,
+        "counts": {
+          "process-a": 100,
+          "process-b": 100
+        },
+        "lockMode": "0o600",
+        "processExitCodes": [
+          0,
+          0
+        ],
+        "stderr": [
+          "",
+          ""
+        ],
+        "catalogueSHA256": "87e04406c9d76c72657bc4044c4e33220600d170b1c699ad1d3a782d5b67fed4"
+      },
+      {
+        "trial": 1,
+        "root": "/private/tmp/jps-recording69-catalogue-process-a4fpxt3q",
+        "attachmentCount": 200,
+        "counts": {
+          "process-a": 100,
+          "process-b": 100
+        },
+        "lockMode": "0o600",
+        "processExitCodes": [
+          0,
+          0
+        ],
+        "stderr": [
+          "",
+          ""
+        ],
+        "catalogueSHA256": "f52381028d56e9a2a568d851347775da93310a0708ff2ead2c40e37c74a264fa"
+      },
+      {
+        "trial": 2,
+        "root": "/private/tmp/jps-recording69-catalogue-process-cuv7rl_1",
+        "attachmentCount": 200,
+        "counts": {
+          "process-a": 100,
+          "process-b": 100
+        },
+        "lockMode": "0o600",
+        "processExitCodes": [
+          0,
+          0
+        ],
+        "stderr": [
+          "",
+          ""
+        ],
+        "catalogueSHA256": "a03b9f89d0f26a4a80feac7ed6a1c54432232c1450c5c48121d61fd9fb2dd305"
+      },
+      {
+        "trial": 3,
+        "root": "/private/tmp/jps-recording69-catalogue-process-78ly2m_6",
+        "attachmentCount": 200,
+        "counts": {
+          "process-a": 100,
+          "process-b": 100
+        },
+        "lockMode": "0o600",
+        "processExitCodes": [
+          0,
+          0
+        ],
+        "stderr": [
+          "",
+          ""
+        ],
+        "catalogueSHA256": "295fc4d333c4677b0b9a505746e81112e5785bbb8b54e054690bba4cb6ef0a8c"
+      },
+      {
+        "trial": 4,
+        "root": "/private/tmp/jps-recording69-catalogue-process-0cb5dz3n",
+        "attachmentCount": 200,
+        "counts": {
+          "process-a": 100,
+          "process-b": 100
+        },
+        "lockMode": "0o600",
+        "processExitCodes": [
+          0,
+          0
+        ],
+        "stderr": [
+          "",
+          ""
+        ],
+        "catalogueSHA256": "c9a62652604d1a1551d4de42b6c2a091b1b7f03c0d677f775496a4a7f3571bd0"
+      },
+      {
+        "trial": 5,
+        "root": "/private/tmp/jps-recording69-catalogue-process-6o1t1qde",
+        "attachmentCount": 200,
+        "counts": {
+          "process-a": 100,
+          "process-b": 100
+        },
+        "lockMode": "0o600",
+        "processExitCodes": [
+          0,
+          0
+        ],
+        "stderr": [
+          "",
+          ""
+        ],
+        "catalogueSHA256": "164b1984eeabf1846a2aa12d7e05bc1f10dca520c9cbf42a82e8ec0c967ab940"
+      },
+      {
+        "trial": 6,
+        "root": "/private/tmp/jps-recording69-catalogue-process-0r3vw__5",
+        "attachmentCount": 200,
+        "counts": {
+          "process-a": 100,
+          "process-b": 100
+        },
+        "lockMode": "0o600",
+        "processExitCodes": [
+          0,
+          0
+        ],
+        "stderr": [
+          "",
+          ""
+        ],
+        "catalogueSHA256": "8420091cf49038946f8240b99a1ddff8459ed2b6bd56022f16d93b90450d2093"
+      },
+      {
+        "trial": 7,
+        "root": "/private/tmp/jps-recording69-catalogue-process-j2iyzlgp",
+        "attachmentCount": 200,
+        "counts": {
+          "process-a": 100,
+          "process-b": 100
+        },
+        "lockMode": "0o600",
+        "processExitCodes": [
+          0,
+          0
+        ],
+        "stderr": [
+          "",
+          ""
+        ],
+        "catalogueSHA256": "56a1b934de30e6d30383eb25b703fd54d8f767c4574ac4624222f9923a027616"
+      }
+    ],
+    "lockTimeout": {
+      "elapsedSeconds": 2.717417542,
+      "processExitCode": 5,
+      "error": "Error Domain=NSPOSIXErrorDomain Code=60 \"Operation timed out\"",
+      "storeWasNotCreated": true
+    }
+  },
+  "sourceSHA256": {
+    "RECORDING.md": "c02f5c316f4e7057d5e9d57441888c1344bfcb6966a383802038cccdbf3acb91",
+    "Telephone.xcodeproj/project.pbxproj": "ab5bf748858fc7e3949402bced7e1ab114fb655c4a2ea80f4d91eb829435bba5",
+    "Telephone/AKSIPCall.h": "b2d8a3dccee0e9e492236c084d40751ce8f74890e0f22e8f01b06da536e9faa3",
+    "Telephone/AKSIPCall.m": "ab975a5eefd27f304f582cfca072adebe7b6d6ae7049289eea10962e56a268b6",
+    "Telephone/AKStereoRecording.h": "8b65927337a50269e4a7f58b1fa221b8e4954609963b771629a5848280045150",
+    "Telephone/AKStereoRecording.m": "c67a1cca030c47bb3bb36af30ceec5914b849e14c60ed1a2880f3b5d654283a1",
+    "Telephone/AccountViewController.m": "7e77498f89040267541f17cef9cfd8d67c6fe0ff769872dd757b136c21a1a5a5",
+    "Telephone/AppController.m": "85d5b2900e6dd2fff5c5677e9fa8e58d039c22634d37728031073d584c35851d",
+    "Telephone/AsyncCallHistoryViewEventTargetFactory.swift": "1d2140360a54fd8c3267fab5bba498e20a00d09a36ce9ee9588ccf9b2ebb1ac1",
+    "Telephone/CallHistoryViewController.swift": "53ea21d816be369e919500051ba4e9049f1d97ec44fb7151cd1247e8159ba093",
+    "Telephone/CallHistoryViewPresenter.swift": "708f1e7c67e10672988d33315fb79064666b40ceb459f8f25e326a1d7379fc6e",
+    "Telephone/PresentationCallHistoryRecord.swift": "c1c3e88f812ae4176817a5b6942dee9054d80d9c0467cb3cdd2c60e7452e337a",
+    "Telephone/SharedDialerController.m": "e281193590bba2f394dc9780a70752d73f1c30c8a3308d0684d8686e0923dcf5",
+    "Telephone/Telephone-Bridging-Header.h": "0b2c8e67da101c0630d2e59b6cd0748a6042f426ebd12b13121916cbbaa6dfd3",
+    "TelephoneTests/CallHistoryViewPresenterTests.swift": "038fcbe2ed062e1ef1d7e610faac1e16d59745dd63c9a13ded061e487892186a",
+    "TelephoneTests/RecordingStartOutcomeTests.m": "a41f1e04a1aadb8f6ee8f0198a1f24c2a102928c5f150a506a082de8aaeaf0a8",
+    "TelephoneTests/SimplePropertyListStorageURLTests.swift": "3fdd0604f3134f8cf955df18b3a047cee2122c2e8b5e02e954d7273bb2c803f1",
+    "UseCases/Call.swift": "b49e3d42cfb630f3d88135322b4035eefd5eb4ddd1159b5bb924ac6b62b675a5",
+    "UseCases/CallHistoryRecord.swift": "0a4cf6ee7baee42718121af605d3e8a006ecbfeddb91a20fd9ffd9d35107e71f",
+    "UseCases/PersistentCallHistory.swift": "f033e4e7acfa4466f542515a76e71eb62fa62b449d7d14eee7c14118c01c92bc",
+    "UseCasesTests/CallHistoryCallEventTargetTests.swift": "ba9a8d11d44f9439b8e7c95107d461ffee117f284ebb29b6eb2d8be751984d5b",
+    "UseCasesTests/CallHistoryRecordTests.swift": "7693ee6df008ad85babb9d891c0c5d62fba153fbebb1f4ac24ec3e0f50129dde",
+    "UseCasesTests/PersistentCallHistoryTests.swift": "914a59e5d6706f1eadeae6a7b529765498f3f2dd63c75c9518f850accd67d890",
+    "docs/RECORDING_RECOVERY.md": "15ee14707d8fa193a01fcc33c45ff8cf100af1de59be60611deeac25c61b026f",
+    "Telephone/AKRecordingCatalogue.h": "0c5c32ba5121ec789b1b3174354e04d1b2f3ca0c24b44107d52c3c55d487fea5",
+    "Telephone/AKRecordingCatalogue.m": "34cee1cb7967e317d89a5b517af998061e403569cbcf25e2b8749a7d58e7fb61",
+    "Telephone/RecordingHistoryActions.swift": "12cc003a986d9b7c292b6f54c4edee8c648f07242918ecceac6667adb4f068a9",
+    "TelephoneTests/RecordingAttachmentIntegrationTests.m": "72924eeb67d9523c4a920e81da872f8ec45c7178b8ad15557f304c67120971dc",
+    "TelephoneTests/RecordingAttachmentJournalTests.m": "4a17057c43f67abeb3fd01a7aa863e7c3befdceabfd82ff994f2f27db19ce9e9",
+    "TelephoneTests/RecordingCatalogueTests.m": "898b1608709629afee5b6dab979a750108bca951e60a934b3ba6b2decde1c746",
+    "TelephoneTests/RecordingHistoryActionsTests.swift": "0be343f15e324b0d500adfe526001e67d337d44f9c3a4def18a3d0f758eaf1f1",
+    "Tests/RecordingCatalogueProcessHarness.m": "4efb5128db75dd3e6a5ce88475670cec5e138ac2a927ac1de4f07dff89bd7211"
+  },
+  "logsSHA256": {
+    "/private/tmp/jps-recording69-integration-v5-build.log": "603b9535dcbf490cafb0c43257b4408b6eac4fb973e7a44d8d40c4e586b380b6",
+    "/private/tmp/jps-recording69-integration-v6-build.log": "95a6127cd013969783f08729508890a6a029548a0d3767498db04bcc36717192",
+    "/private/tmp/jps-recording69-final-v6-full.log": "c7037519da522a9a228fcb63b282342769e8aba83afbe3accb875a525ef7dbc7",
+    "/private/tmp/jps-recording69-final-usecases.log": "54b0442d77fe8063b178147731b39b6be1e9fc356ab46febea3dbed80aadba81",
+    "/private/tmp/jps-recording69-journal-final-harness.log": "269465512858f31feb333112fead05e5ef6ec3762aeb9153ee9edec4156841f6",
+    "/private/tmp/jps-recording69-final-v5-native-lifecycle.log": "64ccc9363d035300d7c6b73a27c51a9e2dad4cfdf812cd2cfec94190173f5ab3",
+    "/private/tmp/jps-recording69-final-recording-model.log": "ca8111f316a876b54ea801ed91088aec79bfd65357bace3944a6df85203b00f9",
+    "/private/tmp/jps-recording69-final-audio-wiring.log": "496ee7982b97f1fb6cf3dd00e3143b374834e1b60138a9e13291bd03579b2b97"
+  }
+}

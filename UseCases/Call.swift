@@ -26,4 +26,6 @@ import Foundation
     var isIncoming: Bool  { get }
     var isMissed: Bool  { get }
     @objc optional var canonicalDestination: String? { get }
+    /// Opaque call identity for recording attachments, independent of call duration and SIP slot reuse.
+    @objc optional var recordingCallIdentifier: String? { get }
 }

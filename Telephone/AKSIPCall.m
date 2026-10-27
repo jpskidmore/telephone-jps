@@ -30,10 +30,7 @@
 #define THIS_FILE "AKSIPCall.m"
 
 static void AKRemoveEmptyRecordingReservation(NSURL *URL) {
-    if (!URL.isFileURL) return;
-    NSDictionary *attributes = [NSFileManager.defaultManager attributesOfItemAtPath:URL.path error:nil];
-    if ([attributes[NSFileType] isEqual:NSFileTypeRegular] && [attributes[NSFileSize] unsignedLongLongValue] == 0)
-        [NSFileManager.defaultManager removeItemAtURL:URL error:nil];
+    AKRemoveUnusedRecordingReservation(URL);
 }
 
 @interface AKSIPCall () {
@@ -187,6 +184,7 @@ static void AKRemoveEmptyRecordingReservation(NSURL *URL) {
     _account = account;
     _identifier = info.identifier;
     _dialogIdentifier = [info.dialogIdentifier copy];
+    _recordingCallIdentifier = NSUUID.UUID.UUIDString;
 
     _date = [NSDate date];
 
@@ -461,7 +459,11 @@ static void AKRemoveEmptyRecordingReservation(NSURL *URL) {
         self.recordingStartResult = AKRecordingStartResultPrivateStorageFailure;
         return NO;
     }
-    if (!AKPersistOwnedRecordingRecoveryJob(ownership, localURL, remoteURL, URL,
+    // Each start owns a fresh segment, including repeated starts on one call.
+    // Bind before capture so disconnect/redial cannot retarget its eventual export.
+    if ((self.recordingCallIdentifier.length &&
+         !AKSetOwnedRecordingIdentity(ownership, self.recordingCallIdentifier, NSUUID.UUID.UUIDString, &directoryError)) ||
+        !AKPersistOwnedRecordingRecoveryJob(ownership, localURL, remoteURL, URL,
                                            AKRecordingJobPhaseCapturing, &directoryError)) {
         AKFinishRecordingRecoveryJobAsync(ownership, NO, URL, directoryError, nil);
         self.recordingStartResult = AKRecordingStartResultPrivateStorageFailure;
@@ -603,6 +605,13 @@ static void AKRemoveEmptyRecordingReservation(NSURL *URL) {
     }
     // Transfer the same claim to this finalizer before another segment starts.
     self.recordingJobOwnership = nil;
+    if (AKRecordingAttachmentPublicationEnabled() && self.recordingCallIdentifier.length) {
+        AKFinalizeOwnedRecordingAsync(ownership, localURL, remoteURL, destinationURL, ^(BOOL succeeded) {
+            [accessedDirectoryURL stopAccessingSecurityScopedResource];
+            if (completion) completion(succeeded);
+        });
+        return;
+    }
     [self finalizeRecordingFromLocalURL:localURL remoteURL:remoteURL destinationURL:destinationURL completion:^(BOOL succeeded) {
         // Admit cleanup before the encoder's main callback can release its
         // finalization count. The termination barrier includes this nested job.

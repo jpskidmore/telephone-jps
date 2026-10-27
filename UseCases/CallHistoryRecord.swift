@@ -30,16 +30,20 @@ public struct CallHistoryRecord: Sendable {
     public let canonicalDestination: String?
     public let originAccountUUID: String?
     public let originAccountName: String?
+    /// Optional recording catalogue key. Legacy records stay unlinked; never infer this from filenames.
+    public let recordingCallIdentifier: String?
 
     public init(uri: URI, date: Date, duration: Int, isIncoming: Bool, isMissed: Bool,
-                canonicalDestination: String? = nil, originAccountUUID: String? = nil, originAccountName: String? = nil) {
+                canonicalDestination: String? = nil, originAccountUUID: String? = nil, originAccountName: String? = nil,
+                recordingCallIdentifier: String? = nil) {
         self.init(uri: uri, date: date, duration: duration, isIncoming: isIncoming, isMissed: isMissed,
                   canonicalDestination: canonicalDestination, originAccountUUID: originAccountUUID,
-                  originAccountName: originAccountName, identityAccountUUID: nil)
+                  originAccountName: originAccountName, recordingCallIdentifier: recordingCallIdentifier, identityAccountUUID: nil)
     }
 
     private init(uri: URI, date: Date, duration: Int, isIncoming: Bool, isMissed: Bool,
-                 canonicalDestination: String?, originAccountUUID: String?, originAccountName: String?, identityAccountUUID: String?) {
+                 canonicalDestination: String?, originAccountUUID: String?, originAccountName: String?,
+                 recordingCallIdentifier: String?, identityAccountUUID: String?) {
         let recordIdentifier = "\(uri.user)@\(uri.host)|\(date.timeIntervalSinceReferenceDate)|\(duration)|\(isIncoming ? 1 : 0)"
         accountRecordIdentifier = recordIdentifier
         identifier = identityAccountUUID.map { "\($0)|\(recordIdentifier)" } ?? recordIdentifier
@@ -51,12 +55,13 @@ public struct CallHistoryRecord: Sendable {
         self.canonicalDestination = canonicalDestination
         self.originAccountUUID = originAccountUUID
         self.originAccountName = originAccountName
+        self.recordingCallIdentifier = recordingCallIdentifier.flatMap { $0.isEmpty ? nil : $0 }
     }
 
     public func qualified(accountUUID: String, accountName: String) -> CallHistoryRecord {
         CallHistoryRecord(uri: uri, date: date, duration: duration, isIncoming: isIncoming, isMissed: isMissed,
                           canonicalDestination: canonicalDestination, originAccountUUID: accountUUID,
-                          originAccountName: accountName, identityAccountUUID: accountUUID)
+                          originAccountName: accountName, recordingCallIdentifier: recordingCallIdentifier, identityAccountUUID: accountUUID)
     }
 
     /// Legacy number/service users enter today's plan without a historical provider host.
@@ -76,7 +81,8 @@ public struct CallHistoryRecord: Sendable {
             isMissed: isMissed,
             canonicalDestination: canonicalDestination,
             originAccountUUID: originAccountUUID,
-            originAccountName: originAccountName
+            originAccountName: originAccountName,
+            recordingCallIdentifier: recordingCallIdentifier
         )
     }
 }
@@ -101,7 +107,8 @@ extension CallHistoryRecord: Equatable {
             lhs.identifier == rhs.identifier &&
             lhs.canonicalDestination == rhs.canonicalDestination &&
             lhs.originAccountUUID == rhs.originAccountUUID &&
-            lhs.originAccountName == rhs.originAccountName
+            lhs.originAccountName == rhs.originAccountName &&
+            lhs.recordingCallIdentifier == rhs.recordingCallIdentifier
     }
 }
 
@@ -115,7 +122,8 @@ extension CallHistoryRecord {
             isMissed: call.isMissed,
             canonicalDestination: call.canonicalDestination ?? nil,
             originAccountUUID: call.account.uuid,
-            originAccountName: originAccountName
+            originAccountName: originAccountName,
+            recordingCallIdentifier: call.recordingCallIdentifier ?? nil
         )
     }
 }

@@ -24,6 +24,21 @@ import Cocoa
 
 @MainActor
 final class CallHistoryViewPresenterTests: XCTestCase {
+    func testRecordingCallKeyReachesExactPresentationRow() async {
+        var displayed: [PresentationCallHistoryRecord] = []
+        let sut = CallHistoryViewPresenter(view: CallHistoryViewSpy { displayed = $0 },
+                                          dateFormatter: ShortRelativeDateTimeFormatter(), durationFormatter: DurationFormatter())
+        let base = CallHistoryRecordTestFactory().makeRecord(number: 1)
+        let linked = CallHistoryRecord(uri: base.uri, date: base.date, duration: base.duration,
+                                       isIncoming: false, isMissed: false, recordingCallIdentifier: "exact-call")
+        await sut.update(records: [linked, base].map {
+            ContactCallHistoryRecord(origin: $0, contact: makeContact(number: 1))
+        })
+        XCTAssertEqual(displayed.map(\.recordingCallIdentifier), ["exact-call", nil])
+        XCTAssertEqual(displayed[0].identifier, displayed[1].identifier)
+        XCTAssertNotEqual(displayed[0], displayed[1])
+    }
+
     func testHistoryStatusComesFromMissedAndIncomingFlagsIndependentlyOfColour() async {
         var displayed: [PresentationCallHistoryRecord] = []
         let sut = CallHistoryViewPresenter(view: CallHistoryViewSpy { displayed = $0 },

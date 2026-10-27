@@ -10,6 +10,7 @@
 #import <opus.h>
 #import <opusenc.h>
 #import <objc/runtime.h>
+#import <CommonCrypto/CommonDigest.h>
 
 #include <errno.h>
 #include <dirent.h>
@@ -24,6 +25,27 @@ NSString *const AKRecordingExportDidFailNotification = @"AKRecordingExportDidFai
 static NSString *const RecoveryManifestName = @"recovery.plist";
 static NSString *const RecoveryLockName = @".owner.lock";
 static char LegacyRecordingReportContextKey;
+static char RecordingWorkerQueueKey;
+static char RecordingReservationIdentityKey;
+
+static AKRecordingAttachmentPublisher AttachmentPublisher;
+static NSObject *AttachmentPublisherLock(void) {
+    static NSObject *lock; static dispatch_once_t once;
+    dispatch_once(&once, ^{ lock = [NSObject new]; }); return lock;
+}
+void AKSetRecordingAttachmentPublisher(AKRecordingAttachmentPublisher publisher) {
+    @synchronized (AttachmentPublisherLock()) { AttachmentPublisher = [publisher copy]; }
+}
+static AKRecordingAttachmentPublisher CurrentAttachmentPublisher(void) {
+    @synchronized (AttachmentPublisherLock()) { return [AttachmentPublisher copy]; }
+}
+BOOL AKRecordingAttachmentPublicationEnabled(void) { return CurrentAttachmentPublisher() != nil; }
+static void QueueOwnedAttachmentState(AKRecordingJobOwnership *owner);
+static void QueueRecordingAttachmentSnapshot(NSDictionary *snapshot, AKRecordingAttachmentPublisher publisher);
+static NSDictionary *RecordingAttachmentSnapshot(NSDictionary *manifest);
+static BOOL FinishJournalledExport(AKRecordingJobOwnership *owner, NSError **error);
+static BOOL ExportOwnedRecording(AKRecordingJobOwnership *owner, NSURL *local, NSURL *remote,
+    NSURL *destination, BOOL reserved, NSError **error);
 
 static dispatch_group_t RecordingFinalizations(void) {
     static dispatch_group_t group;
@@ -38,6 +60,7 @@ static dispatch_queue_t RecordingWorkerQueue(void) {
     dispatch_once(&onceToken, ^{
         queue = dispatch_queue_create("com.tlphn.Telephone.recording-encoder",
             dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_UTILITY, 0));
+        dispatch_queue_set_specific(queue, &RecordingWorkerQueueKey, &RecordingWorkerQueueKey, NULL);
     });
     return queue;
 }
@@ -55,6 +78,7 @@ static void RecordingPOSIXError(NSError **error, int code) {
 @property(nonatomic, readwrite, copy) NSURL *directoryURL;
 @property(nonatomic, readonly) int directoryDescriptor;
 @property(nonatomic, copy) NSString *lastManifestRevision;
+@property(nonatomic, copy) AKRecordingAttachmentPublisher attachmentPublisher;
 - (instancetype)initWithDirectory:(NSURL *)directory directoryDescriptor:(int)directoryDescriptor
                    lockDescriptor:(int)lockDescriptor;
 - (BOOL)isCurrent;
@@ -69,6 +93,7 @@ static void RecordingPOSIXError(NSError **error, int code) {
         _directoryURL = [directory copy];
         _directoryDescriptor = directoryDescriptor;
         _lockDescriptor = lockDescriptor;
+        _attachmentPublisher = CurrentAttachmentPublisher();
     }
     return self;
 }
@@ -220,8 +245,8 @@ static BOOL WriteOwnedRecordingManifest(AKRecordingJobOwnership *owner, NSDictio
     }
     // The atomic rename publishes one complete state. Sync the directory where
     // supported as well; the track retention rule does not depend on this call.
-    fsync(owner.directoryDescriptor);
     owner.lastManifestRevision = revision;
+    if (fsync(owner.directoryDescriptor) != 0) { RecordingPOSIXError(error, errno); return NO; }
     return YES;
 }
 
@@ -263,7 +288,44 @@ static BOOL PersistRecordingManifest(AKRecordingJobOwnership *owner, NSURL *loca
         NSMutableDictionary *manifest = [@{@"version": state ? @2 : @1, @"local": localName,
             @"remote": remoteName, @"destination": destination.path,
             @"created": [previous[@"created"] isKindOfClass:NSDate.class] ? previous[@"created"] : NSDate.date} mutableCopy];
+        // Rewrites preserve the exact owned identity and export proof. Legacy
+        // jobs stay unlinked; directory names and filenames grant no identity.
+        for (NSString *key in @[@"callIdentifier", @"segmentIdentifier", @"exportJournal", @"reservedOutputIdentity"])
+            if (previous[key]) manifest[key] = previous[key];
+        if ([state isEqualToString:@"capturing"] && !previous[@"reservedOutputIdentity"]) {
+            NSDictionary *reservation = objc_getAssociatedObject(destination, &RecordingReservationIdentityKey);
+            if (reservation) manifest[@"reservedOutputIdentity"] = reservation;
+            else if (!owner.attachmentPublisher) {
+                // Legacy standalone callers historically provide their own empty
+                // file. App captures use only proof from the exclusive reservation.
+                struct stat reserved;
+                if (lstat(destination.fileSystemRepresentation, &reserved) == 0 && S_ISREG(reserved.st_mode) && reserved.st_size == 0)
+                    manifest[@"reservedOutputIdentity"] = @{@"dev": [NSString stringWithFormat:@"%llu", (unsigned long long)reserved.st_dev],
+                        @"ino": [NSString stringWithFormat:@"%llu", (unsigned long long)reserved.st_ino], @"size": @0};
+            }
+        }
         if (state) manifest[@"state"] = state;
+        BOOL persisted = WriteOwnedRecordingManifest(owner, manifest, error);
+        if (persisted) QueueOwnedAttachmentState(owner);
+        return persisted;
+    }
+}
+
+static BOOL ValidOpaqueRecordingIdentifier(id value) {
+    return [value isKindOfClass:NSString.class] && [value length] > 0 && [value length] <= 1024;
+}
+BOOL AKSetOwnedRecordingIdentity(AKRecordingJobOwnership *owner, NSString *callIdentifier,
+                                  NSString *segmentIdentifier, NSError **error) {
+    @synchronized (owner) {
+        if (![owner isCurrent] || !ValidOpaqueRecordingIdentifier(callIdentifier) || !ValidOpaqueRecordingIdentifier(segmentIdentifier)) {
+            RecordingPOSIXError(error, EINVAL); return NO;
+        }
+        NSMutableDictionary *manifest = [OwnedRecordingManifest(owner) mutableCopy] ?: [NSMutableDictionary dictionary];
+        if ((manifest[@"callIdentifier"] && ![manifest[@"callIdentifier"] isEqual:callIdentifier]) ||
+            (manifest[@"segmentIdentifier"] && ![manifest[@"segmentIdentifier"] isEqual:segmentIdentifier])) {
+            RecordingPOSIXError(error, ESTALE); return NO;
+        }
+        manifest[@"callIdentifier"] = [callIdentifier copy]; manifest[@"segmentIdentifier"] = [segmentIdentifier copy];
         return WriteOwnedRecordingManifest(owner, manifest, error);
     }
 }
@@ -288,6 +350,10 @@ void AKFinishRecordingRecoveryJob(AKRecordingJobOwnership *owner, BOOL succeeded
     @synchronized (owner) {
         if (![owner isCurrent]) { [owner releaseClaim]; return; }
         NSMutableDictionary *manifest = [OwnedRecordingManifest(owner) mutableCopy] ?: [NSMutableDictionary dictionary];
+        // A linked export may be retired only after its durable catalogue
+        // acknowledgement. Public legacy callers cannot bypass that boundary.
+        if (succeeded && owner.attachmentPublisher && ValidOpaqueRecordingIdentifier(manifest[@"callIdentifier"]) &&
+            ![manifest[@"attachmentPublished"] boolValue]) succeeded = NO;
         manifest[@"version"] = @2;
         manifest[@"state"] = succeeded ? @"completed" : @"failed";
         WriteOwnedRecordingManifest(owner, manifest, nil);
@@ -298,6 +364,12 @@ void AKFinishRecordingRecoveryJob(AKRecordingJobOwnership *owner, BOOL succeeded
 
 void AKDiscardRecordingRecoveryJob(AKRecordingJobOwnership *owner) {
     @synchronized (owner) {
+        NSMutableDictionary *manifest = [OwnedRecordingManifest(owner) mutableCopy];
+        if (manifest) {
+            manifest[@"state"] = @"failed"; manifest[@"discarded"] = @YES; manifest[@"startFailed"] = @YES;
+            manifest[@"reason"] = @"Recording did not start; no exported audio is available.";
+            if (WriteOwnedRecordingManifest(owner, manifest, nil)) QueueOwnedAttachmentState(owner);
+        }
         RemoveOwnedRecordingDirectory(owner);
         [owner releaseClaim];
     }
@@ -417,6 +489,9 @@ static NSDictionary *RecordingRecoveryJobForOwnerWithError(AKRecordingJobOwnersh
                  @"retainedRawBytes": @((unsigned long long)localInfo.st_size + (unsigned long long)remoteInfo.st_size),
                  @"lastErrorDescription": errorDescription} mutableCopy];
         if (lastError) job[@"lastError"] = lastError;
+        for (NSString *key in @[@"callIdentifier", @"segmentIdentifier"])
+            if (ValidOpaqueRecordingIdentifier(manifest[key])) job[key] = manifest[key];
+        if ([manifest[@"exportJournal"] isKindOfClass:NSDictionary.class]) job[@"exportPendingLink"] = @YES;
         return job;
     }
 }
@@ -609,7 +684,13 @@ BOOL AKDiscardPendingRecordingRecoveryJob(NSDictionary *job, NSError **error) {
             if (!error || !*error) RecordingPOSIXError(error, ESTALE);
             return NO;
         }
+        NSMutableDictionary *discarded = [RecordingAttachmentSnapshot(OwnedRecordingManifest(owner)) mutableCopy];
         BOOL removed = RetireOwnedRecordingDirectory(owner, @".discarded-", error);
+        if (removed && discarded) {
+            discarded[@"state"] = @"failed"; discarded[@"discarded"] = @YES;
+            discarded[@"reason"] = @"The retained recovery audio was discarded. Any exported file was preserved.";
+            QueueRecordingAttachmentSnapshot([discarded copy], owner.attachmentPublisher);
+        }
         [owner releaseClaim];
         return removed;
     }
@@ -647,6 +728,7 @@ static void RecordOwnedExportFailure(AKRecordingJobOwnership *owner, NSError *er
         if (error) manifest[@"lastError"] = @{@"domain": error.domain, @"code": @(error.code),
                                                  @"description": error.localizedDescription};
         WriteOwnedRecordingManifest(owner, manifest, nil);
+        QueueOwnedAttachmentState(owner);
     }
 }
 
@@ -768,7 +850,315 @@ static BOOL PublishRecoveredRecording(NSURL *staged, NSURL *destination, NSError
     return YES;
 }
 
+static NSDictionary *RecordingAttachmentSnapshot(NSDictionary *manifest) {
+    if (!ValidOpaqueRecordingIdentifier(manifest[@"callIdentifier"]) || !ValidOpaqueRecordingIdentifier(manifest[@"segmentIdentifier"])) return nil;
+    NSMutableDictionary *attachment = [NSMutableDictionary dictionary];
+    for (NSString *key in @[@"callIdentifier", @"segmentIdentifier", @"created", @"destination", @"state", @"discarded", @"startFailed", @"reason"])
+        if (manifest[key]) attachment[key] = manifest[key];
+    NSDictionary *journal = [manifest[@"exportJournal"] isKindOfClass:NSDictionary.class] ? manifest[@"exportJournal"] : nil;
+    if (journal) {
+        for (NSString *key in @[@"outputIdentity", @"outputBookmark", @"bookmarkIsDirectory"])
+            if (journal[key]) attachment[key] = journal[key];
+    }
+    return [attachment copy];
+}
+
+static void QueueOwnedAttachmentState(AKRecordingJobOwnership *owner) {
+    QueueRecordingAttachmentSnapshot(RecordingAttachmentSnapshot(OwnedRecordingManifest(owner)), owner.attachmentPublisher);
+}
+static void QueueRecordingAttachmentSnapshot(NSDictionary *snapshot, AKRecordingAttachmentPublisher publisher) {
+    if (!publisher || !snapshot) return;
+    if (dispatch_get_specific(&RecordingWorkerQueueKey)) {
+        // Already inside an admitted worker operation. Publish before its
+        // completion so restart refresh cannot race these state updates.
+        publisher(snapshot, nil); return;
+    }
+    dispatch_group_enter(RecordingFinalizations());
+    dispatch_async(RecordingWorkerQueue(), ^{
+        publisher(snapshot, nil); // Raw manifest remains authoritative after a metadata failure.
+        dispatch_group_leave(RecordingFinalizations());
+    });
+}
+
+static NSDictionary *RecordingFileIdentity(int descriptor, BOOL hash, NSError **error) {
+    struct stat before, after;
+    if (fstat(descriptor, &before) != 0) { RecordingPOSIXError(error, errno); return nil; }
+    if (!S_ISREG(before.st_mode) || before.st_size < 0) { RecordingPOSIXError(error, EINVAL); return nil; }
+    NSMutableDictionary *identity = [@{@"dev": [NSString stringWithFormat:@"%llu", (unsigned long long)before.st_dev],
+        @"ino": [NSString stringWithFormat:@"%llu", (unsigned long long)before.st_ino], @"size": @(before.st_size)} mutableCopy];
+    if (hash) {
+        if (lseek(descriptor, 0, SEEK_SET) < 0) { RecordingPOSIXError(error, errno); return nil; }
+        CC_SHA256_CTX context; CC_SHA256_Init(&context);
+        unsigned char bytes[64 * 1024];
+        for (;;) {
+            ssize_t count = read(descriptor, bytes, sizeof(bytes));
+            if (count < 0 && errno == EINTR) continue;
+            if (count < 0) { RecordingPOSIXError(error, errno); return nil; }
+            if (!count) break;
+            CC_SHA256_Update(&context, bytes, (CC_LONG)count);
+        }
+        unsigned char digest[CC_SHA256_DIGEST_LENGTH]; CC_SHA256_Final(digest, &context);
+        NSMutableString *hex = [NSMutableString stringWithCapacity:64];
+        for (NSUInteger index = 0; index < sizeof(digest); index++) [hex appendFormat:@"%02x", digest[index]];
+        identity[@"sha256"] = hex;
+    }
+    if (fstat(descriptor, &after) != 0 || before.st_dev != after.st_dev || before.st_ino != after.st_ino ||
+        before.st_size != after.st_size || before.st_mtimespec.tv_sec != after.st_mtimespec.tv_sec ||
+        before.st_mtimespec.tv_nsec != after.st_mtimespec.tv_nsec) { RecordingPOSIXError(error, ESTALE); return nil; }
+    return [identity copy];
+}
+
+static BOOL RecordingIdentityMatches(NSDictionary *actual, NSDictionary *expected, BOOL content) {
+    if (![actual isKindOfClass:NSDictionary.class] || ![expected isKindOfClass:NSDictionary.class]) return NO;
+    for (NSString *key in content ? @[@"dev", @"ino", @"size", @"sha256"] : @[@"dev", @"ino"])
+        if (!actual[key] || ![actual[key] isEqual:expected[key]]) return NO;
+    return YES;
+}
+
+static BOOL RecordingDestinationPathsEqual(NSString *left, NSString *right) {
+    if (!left.isAbsolutePath || !right.isAbsolutePath) return NO;
+    return [[NSURL fileURLWithPath:left].URLByResolvingSymlinksInPath.standardizedURL
+        isEqual:[NSURL fileURLWithPath:right].URLByResolvingSymlinksInPath.standardizedURL];
+}
+
+static BOOL WriteOwnedExportJournal(AKRecordingJobOwnership *owner, NSDictionary *journal, NSError **error) {
+    NSMutableDictionary *manifest = [OwnedRecordingManifest(owner) mutableCopy];
+    if (!manifest) { RecordingPOSIXError(error, ESTALE); return NO; }
+    manifest[@"exportJournal"] = journal;
+    if ([journal[@"destination"] isKindOfClass:NSString.class] && [journal[@"destination"] isAbsolutePath])
+        manifest[@"destination"] = journal[@"destination"];
+    return WriteOwnedRecordingManifest(owner, manifest, error);
+}
+
+static BOOL SyncRecordingOutputParent(NSURL *destination, NSError **error) {
+    int descriptor = open(destination.URLByDeletingLastPathComponent.fileSystemRepresentation, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (descriptor < 0) { RecordingPOSIXError(error, errno); return NO; }
+    int code = fsync(descriptor) != 0 ? errno : 0;
+    close(descriptor);
+    if (code) { RecordingPOSIXError(error, code); return NO; }
+    return YES;
+}
+
+static BOOL FinishJournalledExport(AKRecordingJobOwnership *owner, NSError **error) {
+    NSDictionary *manifest = OwnedRecordingManifest(owner);
+    AKRecordingAttachmentPublisher publisher = owner.attachmentPublisher;
+    if (!publisher || !RecordingAttachmentSnapshot(manifest)) return YES;
+    NSDictionary *journal = [manifest[@"exportJournal"] isKindOfClass:NSDictionary.class] ? manifest[@"exportJournal"] : nil;
+    NSDictionary *expected = [journal[@"outputIdentity"] isKindOfClass:NSDictionary.class] ? journal[@"outputIdentity"] : nil;
+    NSString *destinationPath = [journal[@"destination"] isKindOfClass:NSString.class] ? journal[@"destination"] : nil;
+    if (![@[@"publishing", @"ready"] containsObject:journal[@"phase"] ?: @""] || !destinationPath.isAbsolutePath || !expected[@"sha256"]) {
+        RecordingPOSIXError(error, EINVAL); return NO;
+    }
+    NSURL *destination = [NSURL fileURLWithPath:destinationPath];
+    BOOL access = NO;
+    NSData *bookmark = [journal[@"outputBookmark"] isKindOfClass:NSData.class] ? journal[@"outputBookmark"] : nil;
+    if (bookmark) {
+        BOOL stale = NO;
+        NSURL *resolved = [NSURL URLByResolvingBookmarkData:bookmark options:NSURLBookmarkResolutionWithSecurityScope | NSURLBookmarkResolutionWithoutUI
+            relativeToURL:nil bookmarkDataIsStale:&stale error:error];
+        if (!resolved) return NO;
+        destination = resolved;
+        access = [destination startAccessingSecurityScopedResource];
+    }
+    int descriptor = open(destination.fileSystemRepresentation, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK);
+    NSDictionary *actual = descriptor >= 0 ? RecordingFileIdentity(descriptor, YES, error) : nil;
+    if (descriptor < 0) RecordingPOSIXError(error, errno);
+    if (descriptor >= 0 && actual && fsync(descriptor) != 0) { RecordingPOSIXError(error, errno); actual = nil; }
+    if (descriptor >= 0) close(descriptor);
+    BOOL succeeded = RecordingIdentityMatches(actual, expected, YES);
+    if (succeeded) succeeded = SyncRecordingOutputParent(destination, error);
+    if (!succeeded && (!error || !*error)) RecordingPOSIXError(error, ESTALE);
+    if (succeeded) {
+        // The publishing journal was committed before any output bytes. A
+        // completed inode+length+digest also repairs a crash before ready write.
+        NSMutableDictionary *ready = [journal mutableCopy]; ready[@"phase"] = @"ready";
+        ready[@"destination"] = destination.path;
+        NSData *freshBookmark = [destination bookmarkDataWithOptions:NSURLBookmarkCreationWithSecurityScope
+            includingResourceValuesForKeys:nil relativeToURL:nil error:error];
+        if (!freshBookmark) succeeded = NO;
+        else {
+            ready[@"outputBookmark"] = freshBookmark; ready[@"bookmarkIsDirectory"] = @NO;
+            succeeded = WriteOwnedExportJournal(owner, ready, error);
+        }
+        if (succeeded) {
+            NSMutableDictionary *attachment = [RecordingAttachmentSnapshot(OwnedRecordingManifest(owner)) mutableCopy];
+            attachment[@"state"] = @"available"; attachment[@"destination"] = destination.path;
+            succeeded = publisher([attachment copy], error);
+            if (!succeeded && (!error || !*error)) {
+                if (error) *error = [NSError errorWithDomain:@"com.tlphn.Telephone.recording" code:2
+                    userInfo:@{NSLocalizedDescriptionKey: @"The audio was exported, but its history link could not be saved. The audio and recovery tracks have been kept."}];
+            }
+            if (succeeded) {
+                NSMutableDictionary *linked = [OwnedRecordingManifest(owner) mutableCopy];
+                linked[@"attachmentPublished"] = @YES;
+                // Failure here also retains raw: restart publication is idempotent.
+                succeeded = WriteOwnedRecordingManifest(owner, linked, error);
+            }
+        }
+    }
+    if (access) [destination stopAccessingSecurityScopedResource];
+    return succeeded;
+}
+
+static BOOL ExportOwnedRecording(AKRecordingJobOwnership *owner, NSURL *local, NSURL *remote,
+    NSURL *destination, BOOL reserved, NSError **error) {
+    NSDictionary *original = OwnedRecordingManifest(owner);
+    if ([original[@"exportJournal"] isKindOfClass:NSDictionary.class] &&
+        RecordingDestinationPathsEqual(original[@"exportJournal"][@"destination"], destination.path)) {
+        // Retry at the recorded destination is metadata-only. Save Elsewhere
+        // is a distinct request and must create the newly selected output.
+        return FinishJournalledExport(owner, error);
+    }
+    NSString *name = [[@".export-" stringByAppendingString:NSUUID.UUID.UUIDString] stringByAppendingPathExtension:destination.pathExtension];
+    NSURL *stage = [owner.directoryURL URLByAppendingPathComponent:name];
+    if (!AKMergeMonoRecordingsIntoStereo(local, remote, stage)) {
+        if (error) *error = [NSError errorWithDomain:@"com.tlphn.Telephone.recording" code:3
+            userInfo:@{NSLocalizedDescriptionKey: @"The captured audio could not be encoded. Its raw tracks have been kept."}];
+        return NO;
+    }
+    int input = openat(owner.directoryDescriptor, name.fileSystemRepresentation, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+    if (input < 0) { RecordingPOSIXError(error, errno); return NO; }
+    NSDictionary *stageIdentity = RecordingFileIdentity(input, YES, error);
+    if (!stageIdentity || [stageIdentity[@"size"] unsignedLongLongValue] == 0 || fsync(input) != 0) {
+        if (stageIdentity && (!error || !*error)) RecordingPOSIXError(error, errno ?: EIO); close(input); return NO;
+    }
+    // Record the immutable stage before claiming the output. A crash at any
+    // later point retains both raw audio and this complete encoded source.
+    NSMutableDictionary *journal = [@{@"version": @1, @"phase": @"prepared", @"stage": name,
+        @"stageIdentity": stageIdentity, @"destination": destination.path} mutableCopy];
+    if (!WriteOwnedExportJournal(owner, journal, error)) { close(input); return NO; }
+    int flags = O_RDWR | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK;
+    int output = open(destination.fileSystemRepresentation, flags | (reserved ? 0 : O_CREAT | O_EXCL), 0600);
+    if (output < 0) { int code = errno; close(input); RecordingPOSIXError(error, code); return NO; }
+    NSDictionary *outputIdentity = RecordingFileIdentity(output, NO, error);
+    BOOL valid = outputIdentity && [outputIdentity[@"size"] unsignedLongLongValue] == 0;
+    if (reserved) valid = valid && RecordingIdentityMatches(outputIdentity, original[@"reservedOutputIdentity"], NO);
+    if (!valid) { close(input); close(output); if (!error || !*error) RecordingPOSIXError(error, ESTALE); return NO; }
+    NSMutableDictionary *proof = [outputIdentity mutableCopy];
+    proof[@"size"] = stageIdentity[@"size"]; proof[@"sha256"] = stageIdentity[@"sha256"];
+    journal[@"outputIdentity"] = proof; journal[@"phase"] = @"publishing";
+    NSData *bookmark = [destination bookmarkDataWithOptions:NSURLBookmarkCreationWithSecurityScope includingResourceValuesForKeys:nil relativeToURL:nil error:error];
+    if (bookmark) { journal[@"outputBookmark"] = bookmark; journal[@"bookmarkIsDirectory"] = @NO; }
+    // This identity+expected content is durable BEFORE the first output byte.
+    // A crash after exclusive create but before this write leaves only an empty
+    // unproved reservation, which is never overwritten or called available.
+    if (!bookmark || !WriteOwnedExportJournal(owner, journal, error)) { close(input); close(output); return NO; }
+    int copyError = lseek(input, 0, SEEK_SET) < 0 ? errno : 0;
+    unsigned char bytes[64 * 1024];
+    while (!copyError) {
+        ssize_t count = read(input, bytes, sizeof(bytes));
+        if (count < 0 && errno == EINTR) continue;
+        if (count < 0) { copyError = errno; break; }
+        if (!count) break;
+        for (ssize_t offset = 0; offset < count;) {
+            ssize_t written = write(output, bytes + offset, (size_t)(count - offset));
+            if (written < 0 && errno == EINTR) continue;
+            if (written <= 0) { copyError = written < 0 ? errno : EIO; break; }
+            offset += written;
+        }
+    }
+    if (!copyError && fsync(output) != 0) copyError = errno;
+    close(input); if (close(output) != 0 && !copyError) copyError = errno;
+    if (copyError) { RecordingPOSIXError(error, copyError); return NO; }
+    if (!SyncRecordingOutputParent(destination, error)) return NO;
+    journal[@"phase"] = @"ready";
+    if (!WriteOwnedExportJournal(owner, journal, error)) return NO;
+    return FinishJournalledExport(owner, error);
+}
+
+void AKFinalizeOwnedRecordingAsync(AKRecordingJobOwnership *owner, NSURL *local, NSURL *remote,
+    NSURL *destination, void (^completion)(BOOL)) {
+    NSURL *capturedLocal = [local copy], *capturedRemote = [remote copy], *capturedDestination = [destination copy];
+    if (!owner.attachmentPublisher) owner.attachmentPublisher = CurrentAttachmentPublisher();
+    dispatch_group_enter(RecordingFinalizations());
+    dispatch_async(RecordingWorkerQueue(), ^{
+        NSError *error = nil;
+        BOOL succeeded = ExportOwnedRecording(owner, capturedLocal, capturedRemote, capturedDestination, YES, &error);
+        if (succeeded) AKFinishRecordingRecoveryJob(owner, YES);
+        else { RecordOwnedExportFailure(owner, error); [owner releaseClaim]; }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!succeeded) NotifyRecordingExportFailure(owner.directoryURL, capturedDestination, error);
+            if (completion) completion(succeeded);
+            dispatch_group_leave(RecordingFinalizations());
+        });
+    });
+}
+
+void AKReconcilePendingRecordingAttachmentsAtRoot(NSURL *root, void (^completion)(BOOL, NSError *)) {
+    NSURL *capturedRoot = [root copy];
+    AKRecordingAttachmentPublisher admittedPublisher = CurrentAttachmentPublisher();
+    dispatch_group_enter(RecordingFinalizations());
+    dispatch_async(RecordingWorkerQueue(), ^{
+        NSError *error = nil;
+        BOOL succeeded = YES;
+        // Enumerate manifests independently of raw-track discovery: a complete
+        // exported journal can still repair metadata after external raw loss.
+        int rootDescriptor = admittedPublisher ? open(capturedRoot.fileSystemRepresentation, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC) : -1;
+        if (!admittedPublisher) errno = ENOENT;
+        DIR *entries = rootDescriptor >= 0 ? fdopendir(rootDescriptor) : NULL;
+        if (!entries && errno != ENOENT) { RecordingPOSIXError(&error, errno); succeeded = NO; }
+        if (!entries && rootDescriptor >= 0) close(rootDescriptor);
+        if (entries) {
+            struct dirent *entry;
+            for (;;) {
+                errno = 0; entry = readdir(entries);
+                if (!entry) {
+                    if (errno) { RecordingPOSIXError(&error, errno); succeeded = NO; }
+                    break;
+                }
+                if (entry->d_name[0] == '.') continue;
+                struct stat named;
+                if (fstatat(rootDescriptor, entry->d_name, &named, AT_SYMLINK_NOFOLLOW) != 0 || !S_ISDIR(named.st_mode)) continue;
+                NSString *name = [NSFileManager.defaultManager stringWithFileSystemRepresentation:entry->d_name length:strlen(entry->d_name)];
+                if (!name.length) continue;
+                NSError *claimError = nil;
+                AKRecordingJobOwnership *owner = AKClaimRecordingJob([capturedRoot URLByAppendingPathComponent:name isDirectory:YES], &claimError);
+                if (!owner && claimError && claimError.code != EWOULDBLOCK && claimError.code != EAGAIN &&
+                    claimError.code != ENOENT && claimError.code != ESTALE) {
+                    succeeded = NO; error = error ?: claimError;
+                }
+                if (owner) owner.attachmentPublisher = admittedPublisher;
+                struct stat held;
+                BOOL current = owner && fstat(owner.directoryDescriptor, &held) == 0 &&
+                    held.st_dev == named.st_dev && held.st_ino == named.st_ino;
+                NSError *manifestError = nil;
+                NSDictionary *manifest = current ? OwnedRecordingManifestWithError(owner, &manifestError) : nil;
+                if (!manifest && !manifestError && current) {
+                    struct stat metadata;
+                    if (fstatat(owner.directoryDescriptor, RecoveryManifestName.fileSystemRepresentation, &metadata, AT_SYMLINK_NOFOLLOW) == 0)
+                        manifestError = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError
+                            userInfo:@{NSLocalizedDescriptionKey: @"Recording recovery metadata is damaged. Its retained files were left untouched."}];
+                }
+                if (manifestError) { succeeded = NO; error = error ?: manifestError; }
+                if (RecordingAttachmentSnapshot(manifest) && !IsCompletedRecordingManifest(manifest)) {
+                    NSError *jobError = nil;
+                    if ([manifest[@"exportJournal"] isKindOfClass:NSDictionary.class]) {
+                        if (FinishJournalledExport(owner, &jobError)) AKFinishRecordingRecoveryJob(owner, YES);
+                        else { succeeded = NO; error = error ?: jobError; RecordOwnedExportFailure(owner, jobError); }
+                    } else {
+                        // A claimable capture/finalisation survived its process.
+                        // It is recovery work, never an active recording now.
+                        if ([@[@"capturing", @"finalising"] containsObject:manifest[@"state"] ?: @""])
+                            RecordOwnedExportFailure(owner, nil);
+                        else QueueOwnedAttachmentState(owner);
+                    }
+                }
+                [owner releaseClaim];
+            }
+            closedir(entries);
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion(succeeded, error);
+            dispatch_group_leave(RecordingFinalizations());
+        });
+    });
+}
+void AKReconcilePendingRecordingAttachments(void (^completion)(BOOL, NSError *)) {
+    AKReconcilePendingRecordingAttachmentsAtRoot(RecordingRecoveryRoot(), completion);
+}
+
 void AKRetryRecordingRecoveryJob(NSDictionary *job, NSURL *destination, void (^completion)(BOOL)) {
+    AKRecordingAttachmentPublisher admittedPublisher = CurrentAttachmentPublisher();
     NSDictionary *snapshot = RecordingJobSnapshot(job);
     NSURL *chosenDestination = [destination copy];
     NSString *identity = snapshot[@"directoryIdentity"];
@@ -793,6 +1183,7 @@ void AKRetryRecordingRecoveryJob(NSDictionary *job, NSURL *destination, void (^c
         // The dictionary is a presentation snapshot. Only the claimed current
         // manifest selects tracks, and the selected inode must still match.
         AKRecordingJobOwnership *owner = AKClaimRecordingJob(directory, nil);
+        if (owner) owner.attachmentPublisher = admittedPublisher;
         NSDictionary *current = owner ? RecordingRecoveryJobForOwner(owner) : nil;
         BOOL eligible = current && [identity isEqualToString:current[@"directoryIdentity"]] &&
             [owner.directoryURL isEqual:directory.standardizedURL];
@@ -803,17 +1194,27 @@ void AKRetryRecordingRecoveryJob(NSDictionary *job, NSURL *destination, void (^c
             accessGranted = [chosenDestination startAccessingSecurityScopedResource];
             // Preflight, manifest write and conversion share one serial block.
             // Two admitted jobs cannot both pass an absent destination check.
+            NSDictionary *manifest = OwnedRecordingManifest(owner);
+            BOOL linked = owner.attachmentPublisher && RecordingAttachmentSnapshot(manifest);
+            BOOL repairing = linked && [manifest[@"exportJournal"] isKindOfClass:NSDictionary.class] &&
+                RecordingDestinationPathsEqual(manifest[@"exportJournal"][@"destination"], chosenDestination.path);
             BOOL exists = chosenDestination && [NSFileManager.defaultManager fileExistsAtPath:chosenDestination.path];
-            if (exists) {
+            if (repairing) {
+                succeeded = FinishJournalledExport(owner, &error);
+            } else if (exists) {
                 error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteFileExistsError
                     userInfo:@{NSLocalizedDescriptionKey: @"Choose a new filename to recover this recording."}];
             } else if (AKPersistOwnedRecordingRecoveryJob(owner, current[@"localURL"], current[@"remoteURL"],
                                                           chosenDestination, AKRecordingJobPhaseFinalising, &error)) {
-                NSString *stagedName = [[@".export-" stringByAppendingString:NSUUID.UUID.UUIDString]
-                    stringByAppendingPathExtension:chosenDestination.pathExtension];
-                NSURL *staged = [owner.directoryURL URLByAppendingPathComponent:stagedName];
-                if (AKMergeMonoRecordingsIntoStereo(current[@"localURL"], current[@"remoteURL"], staged))
-                    succeeded = PublishRecoveredRecording(staged, chosenDestination, &error);
+                error = nil;
+                if (linked) succeeded = ExportOwnedRecording(owner, current[@"localURL"], current[@"remoteURL"], chosenDestination, NO, &error);
+                else {
+                    NSString *stagedName = [[@".export-" stringByAppendingString:NSUUID.UUID.UUIDString]
+                        stringByAppendingPathExtension:chosenDestination.pathExtension];
+                    NSURL *staged = [owner.directoryURL URLByAppendingPathComponent:stagedName];
+                    if (AKMergeMonoRecordingsIntoStereo(current[@"localURL"], current[@"remoteURL"], staged))
+                        succeeded = PublishRecoveredRecording(staged, chosenDestination, &error);
+                }
             }
             if (succeeded) AKFinishRecordingRecoveryJob(owner, YES);
             else RecordOwnedExportFailure(owner, error);
@@ -850,11 +1251,19 @@ NSURL *AKReserveRecordingURL(NSURL *directoryURL,
         NSURL *candidate = [directoryURL URLByAppendingPathComponent:filename isDirectory:NO];
         int descriptor = open(candidate.fileSystemRepresentation, O_WRONLY | O_CREAT | O_EXCL, 0600);
         if (descriptor >= 0) {
-            if (close(descriptor) == 0) {
+            struct stat reserved;
+            BOOL identified = fstat(descriptor, &reserved) == 0;
+            int identityError = identified ? 0 : errno;
+            if (close(descriptor) == 0 && identified) {
+                NSDictionary *proof = @{@"dev": [NSString stringWithFormat:@"%llu", (unsigned long long)reserved.st_dev],
+                    @"ino": [NSString stringWithFormat:@"%llu", (unsigned long long)reserved.st_ino], @"size": @0};
+                objc_setAssociatedObject(candidate, &RecordingReservationIdentityKey, proof, OBJC_ASSOCIATION_COPY_NONATOMIC);
                 return candidate;
             }
-            int closeError = errno;
-            unlink(candidate.fileSystemRepresentation);
+            int closeError = identityError ?: errno;
+            struct stat named;
+            if (identified && lstat(candidate.fileSystemRepresentation, &named) == 0 && S_ISREG(named.st_mode) &&
+                named.st_dev == reserved.st_dev && named.st_ino == reserved.st_ino) unlink(candidate.fileSystemRepresentation);
             if (error != NULL) {
                 *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:closeError userInfo:nil];
             }
@@ -871,6 +1280,22 @@ NSURL *AKReserveRecordingURL(NSURL *directoryURL,
         *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:EEXIST userInfo:nil];
     }
     return nil;
+}
+
+void AKRemoveUnusedRecordingReservation(NSURL *URL) {
+    if (!URL.isFileURL) return;
+    NSDictionary *expected = objc_getAssociatedObject(URL, &RecordingReservationIdentityKey);
+    if (!expected && CurrentAttachmentPublisher()) return;
+    int descriptor = open(URL.fileSystemRepresentation, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK);
+    if (descriptor < 0) return;
+    NSDictionary *actual = RecordingFileIdentity(descriptor, NO, nil);
+    struct stat named, held;
+    BOOL current = actual && [actual[@"size"] unsignedLongLongValue] == 0 &&
+        (!expected || RecordingIdentityMatches(actual, expected, NO)) && fstat(descriptor, &held) == 0 &&
+        lstat(URL.fileSystemRepresentation, &named) == 0 && S_ISREG(named.st_mode) &&
+        named.st_dev == held.st_dev && named.st_ino == held.st_ino;
+    if (current) unlink(URL.fileSystemRepresentation);
+    close(descriptor);
 }
 
 void AKWaitForPendingRecordingFinalizations(dispatch_block_t completion) {

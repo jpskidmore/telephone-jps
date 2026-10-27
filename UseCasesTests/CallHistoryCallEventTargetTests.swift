@@ -46,6 +46,7 @@ final class CallHistoryCallEventTargetTests: XCTestCase {
         XCTAssertEqual(result?.originAccountUUID, "origin")
         XCTAssertEqual(result?.originAccountName, "First provider")
         XCTAssertEqual(result?.uri.user, "123456")
+        XCTAssertEqual(result?.recordingCallIdentifier, call.recordingCallIdentifier)
     }
     func testCreatesUseCaseWithExpectedArgumentsOnDidDisconnect() {
         let account = SimpleAccount(uuid: "any-id", domain: "any-domain")
@@ -118,6 +119,7 @@ final class CallHistoryCallEventTargetTests: XCTestCase {
 }
 
 private final class CanonicalHistoryCall: NSObject, Call, @unchecked Sendable {
+    let recordingCallIdentifier: String? = "call-time-recording-key"
     let account: Account = SimpleAccount(uuid: "origin", domain: "provider")
     let remote = URI(user: "123456", host: "provider", displayName: "")
     let date = Date(timeIntervalSinceReferenceDate: 10)

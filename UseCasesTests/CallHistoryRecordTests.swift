@@ -20,6 +20,41 @@ import UseCases
 import XCTest
 
 final class CallHistoryRecordTests: XCTestCase {
+    func testRecordingCallKeySurvivesHistoryTransformsWithoutChangingLegacyIdentity() {
+        let uri = URI(user: "desk", host: "example.invalid", displayName: "Desk")
+        let date = Date(timeIntervalSinceReferenceDate: 10)
+        let legacy = CallHistoryRecord(uri: uri, date: date, duration: 2, isIncoming: false, isMissed: false)
+        let linked = CallHistoryRecord(uri: uri, date: date, duration: 2, isIncoming: false, isMissed: false,
+                                       recordingCallIdentifier: "opaque-call")
+        XCTAssertNil(legacy.recordingCallIdentifier)
+        XCTAssertEqual(linked.identifier, legacy.identifier)
+        XCTAssertEqual(linked.accountRecordIdentifier, legacy.accountRecordIdentifier)
+        XCTAssertNotEqual(linked, legacy, "Attachment metadata changes must propagate to readers")
+        let qualified = linked.qualified(accountUUID: "account-a", accountName: "Provider")
+        XCTAssertEqual(qualified.recordingCallIdentifier, "opaque-call")
+        XCTAssertEqual(qualified.accountRecordIdentifier, linked.accountRecordIdentifier)
+        XCTAssertEqual(qualified.removingHost().recordingCallIdentifier, "opaque-call")
+    }
+
+    func testRecordingCallKeyDoesNotDependOnFinalDurationOrRemoteAddress() {
+        let records = [2, 200].map { duration in
+            CallHistoryRecord(uri: URI(user: "desk", host: "example.invalid", displayName: ""),
+                              date: Date(timeIntervalSinceReferenceDate: 10), duration: duration, isIncoming: false,
+                              isMissed: false, recordingCallIdentifier: "same-call")
+        }
+        XCTAssertNotEqual(records[0].identifier, records[1].identifier)
+        XCTAssertEqual(records[0].recordingCallIdentifier, records[1].recordingCallIdentifier)
+        let redial = CallHistoryRecord(uri: records[0].uri, date: records[0].date, duration: 2,
+                                       isIncoming: false, isMissed: false, recordingCallIdentifier: "different-call")
+        XCTAssertNotEqual(redial.recordingCallIdentifier, records[0].recordingCallIdentifier)
+    }
+
+    func testEmptyRecordingCallKeyRemainsUnlinked() {
+        let record = CallHistoryRecord(uri: URI(user: "desk", host: "", displayName: ""), date: Date(),
+                                       duration: 0, isIncoming: false, isMissed: false, recordingCallIdentifier: "")
+        XCTAssertNil(record.recordingCallIdentifier)
+    }
+
     func testLegacyDispatchFallbackProtectsLiteralsWhileExplicitSIPMetadataRetainsItsDestination() {
         for literal in ["999", "112", "*21*123#", "12P34", "+441442123456"] {
             let record = CallHistoryRecord(uri: URI(user: literal, host: "historical-provider.invalid", displayName: ""),
