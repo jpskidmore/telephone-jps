@@ -21,13 +21,20 @@ xcrun swiftc -swift-version 6 -target "$(uname -m)-apple-macos15.6" -emit-module
 # An optional historical controller enables before/after reproduction without
 # changing production source. No source rewriting is performed.
 controller_source=${JPS_HISTORY_FILTER_CONTROLLER_SOURCE:-$project_root/Telephone/CallHistoryViewController.swift}
+# The optional recording menu is part of the production controller's type graph.
+# Compile its real metadata/action dependencies; the fixture never constructs a
+# catalogue or invokes a player, so storage, grants and SIP remain untouched.
+xcrun clang -target "$(uname -m)-apple-macos15.6" -fobjc-arc -fmodules -c -I "$project_root/Telephone" \
+    "$project_root/Telephone/AKRecordingCatalogue.m" -o "$build_directory/AKRecordingCatalogue.o"
 xcrun swiftc -swift-version 6 -target "$(uname -m)-apple-macos15.6" -enable-upcoming-feature InferIsolatedConformances \
-    -import-objc-header "$project_root/Tests/FoundationOnly.h" \
+    -import-objc-header "$project_root/Telephone/AKRecordingCatalogue.h" \
     -I "$build_directory" -L "$build_directory" -lUseCases \
     -Xlinker -rpath -Xlinker "$build_directory" \
     "$controller_source" "$project_root/Telephone/CallHistoryView.swift" \
     "$project_root/Telephone/PresentationCallHistoryRecord.swift" \
     "$project_root/Telephone/PresentationContact.swift" \
+    "$project_root/Telephone/RecordingHistoryActions.swift" \
+    "$build_directory/AKRecordingCatalogue.o" \
     "$project_root/Tests/HistoryFilterRegressionHarness.swift" \
     -o "$build_directory/history-filter-regression-harness"
 "$build_directory/history-filter-regression-harness" "$@"
