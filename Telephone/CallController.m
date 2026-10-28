@@ -36,6 +36,7 @@
 #import "EndedCallViewController.h"
 #import "IncomingCallViewController.h"
 #import "SIPResponseLocalization.h"
+#import "SharedDialerController.h"
 
 #import "Telephone-Swift.h"
 
@@ -82,6 +83,7 @@ static void *AKCallControlHoldObservationContext = &AKCallControlHoldObservation
 // Call info view.
 @property(nonatomic, strong) NSView *callInfoView;
 - (void)refreshCompactPresentation;
+- (void)synchroniseCompactWindowFootprint;
 
 // Closes call window.
 - (void)closeCallWindow;
@@ -179,16 +181,22 @@ static void *AKCallControlHoldObservationContext = &AKCallControlHoldObservation
             [controller refreshPresentation];
         }
     }
-    if (self.callInfoView != nil) {
-        CGFloat delta = self.callInfoView.frame.size.height - self.window.contentView.frame.size.height;
-        if (fabs(delta) > 0.1) {
-            NSRect frame = self.window.frame;
-            frame.size.height += delta;
-            frame.origin.y -= delta;
-            frame = [self frameKeepingCallVisible:frame];
-            [self.window setFrame:frame display:YES];
-        }
-    }
+    [self synchroniseCompactWindowFootprint];
+}
+
+- (void)synchroniseCompactWindowFootprint {
+    if (![self.windowNibName isEqualToString:@"Call"]) return;
+    NSSize size = JPSCompactDiallerContentSize();
+    NSWindow *window = self.window;
+    NSRect oldFrame = window.frame;
+    NSRect frame = [window frameRectForContentRect:NSMakeRect(0, 0, size.width, size.height)];
+    if (fabs(frame.size.width - oldFrame.size.width) <= 0.1 &&
+        fabs(frame.size.height - oldFrame.size.height) <= 0.1) return;
+    // Correct legacy saved sizes before display, preserving the existing top
+    // edge and horizontal position unless the visible screen requires a clamp.
+    frame.origin = NSMakePoint(oldFrame.origin.x, NSMaxY(oldFrame) - frame.size.height);
+    frame = [self frameKeepingCallVisible:frame];
+    [window setFrame:frame display:YES animate:NO];
 }
 
 - (NSRect)frameKeepingCallVisible:(NSRect)frame {
@@ -376,6 +384,7 @@ static void *AKCallControlHoldObservationContext = &AKCallControlHoldObservation
 
 - (void)awakeFromNib {
     self.window.movableByWindowBackground = YES;
+    [self synchroniseCompactWindowFootprint];
     [self updateWindowFloating];
     [self subscribeToWindowFloatingChanges];
     [self updateWindowTitle];
@@ -396,26 +405,32 @@ static void *AKCallControlHoldObservationContext = &AKCallControlHoldObservation
 }
 
 - (void)setCallInfoViewResizingWindow:(NSView *)newView {
-    if ([self.windowNibName isEqualToString:@"Call"]) newView.autoresizingMask = NSViewNotSizable;
-    // Compute view size delta.
-    NSSize currentCallInfoViewSize = [[self callInfoView] frame].size;
-    NSSize newViewSize = [newView frame].size;
-    CGFloat deltaWidth = newViewSize.width - currentCallInfoViewSize.width;
-    CGFloat deltaHeight = newViewSize.height - currentCallInfoViewSize.height;
-    
-    if (currentCallInfoViewSize.width > 0.0 && currentCallInfoViewSize.height > 0.0 &&
-        (fabs(deltaWidth) > 0.1 || fabs(deltaHeight) > 0.1)) {
-        // Compute new window size.
-        NSRect windowFrame = [[self window] frame];
-        windowFrame.size.height += deltaHeight;
-        windowFrame.origin.y -= deltaHeight;
-        windowFrame.size.width += deltaWidth;
-        
-        windowFrame = [self frameKeepingCallVisible:windowFrame];
-        // Set new window frame.
-        [[self window] setFrame:windowFrame display:YES animate:YES];
+    if ([self.windowNibName isEqualToString:@"Call"]) {
+        NSSize size = JPSCompactDiallerContentSize();
+        newView.autoresizingMask = NSViewNotSizable;
+        newView.frame = NSMakeRect(0, 0, size.width, size.height);
+        [self synchroniseCompactWindowFootprint];
+    } else {
+        // Dedicated transfer sheets retain their existing layout and resize.
+        NSSize currentCallInfoViewSize = [[self callInfoView] frame].size;
+        NSSize newViewSize = [newView frame].size;
+        CGFloat deltaWidth = newViewSize.width - currentCallInfoViewSize.width;
+        CGFloat deltaHeight = newViewSize.height - currentCallInfoViewSize.height;
+
+        if (currentCallInfoViewSize.width > 0.0 && currentCallInfoViewSize.height > 0.0 &&
+            (fabs(deltaWidth) > 0.1 || fabs(deltaHeight) > 0.1)) {
+            // Compute new window size.
+            NSRect windowFrame = [[self window] frame];
+            windowFrame.size.height += deltaHeight;
+            windowFrame.origin.y -= deltaHeight;
+            windowFrame.size.width += deltaWidth;
+
+            windowFrame = [self frameKeepingCallVisible:windowFrame];
+            // Set new window frame.
+            [[self window] setFrame:windowFrame display:YES animate:YES];
+        }
     }
-    
+
     CGFloat minYBorderThickness = [[self window] contentBorderThicknessForEdge:NSMinYEdge];
     if (minYBorderThickness > 0.0) {
         CGRect newViewFrame = [newView frame];

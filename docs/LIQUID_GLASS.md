@@ -67,7 +67,10 @@ exist, independently below the field, without changing compact geometry.
 
 ## Calls: Pocket card
 
-The call card returns to the original 300-point width. Caller, number, status,
+The ordinary call card shares the standard compact dialler’s 368 × 104-point
+content footprint; native chrome determines its matching outer size. This source
+change follows release 3.7 and does not follow manually widened or expanded
+history windows. Caller, number, status,
 duration and recording state remain legible above a single row of icon controls:
 Mute, Hold, Transfer, Keypad and End. Core call controls have 44-point hit targets,
 tooltips and accessible action names. Enabled and selected states follow the
@@ -80,8 +83,9 @@ controllers. Closing a call window retains its existing end-call behavior;
 floating-call preferences remain effective. Account identity, when enabled,
 moves into the native window header rather than reserving a separate footer.
 
-Status text can expand for long failures instead of permanently reserving a large
-empty area. Useful caller and status text remains selectable. Icon controls use
+The footprint stays fixed across call phases. Long status text uses a native
+single-line ellipsis; its full value remains available in its tooltip and
+accessibility value. Useful caller and status text remains selectable. Icon controls use
 semantic system colors and native focus/press/disabled behavior.
 
 ## Liquid Glass, appearance and accessibility

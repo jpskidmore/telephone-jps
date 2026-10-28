@@ -1,4 +1,5 @@
 #import "AKLiquidGlass.h"
+#import "SharedDialerController.h"
 #import <objc/runtime.h>
 
 @implementation AKWindowMaterialView
@@ -226,16 +227,15 @@ void AKStyleCallButton(NSButton *button, NSString *title, NSString *symbol, BOOL
 void AKUpdateCallPresentation(NSView *view, NSTextField *status) {
     NSLayoutConstraint *height = objc_getAssociatedObject(view, AKCallStatusHeightKey);
     if (height == nil) return; // Dedicated transfer sheets retain their layout.
-    CGFloat availableWidth = MAX(180, status.bounds.size.width);
-    NSRect textBounds = [status.stringValue boundingRectWithSize:NSMakeSize(availableWidth, CGFLOAT_MAX)
-                                                       options:NSStringDrawingUsesLineFragmentOrigin
-                                                    attributes:@{NSFontAttributeName:status.font}];
-    CGFloat statusHeight = MAX(14, MIN(42, ceil(textBounds.size.height)));
-    height.constant = statusHeight;
+    // The compact dialler and every ordinary call phase share one footprint.
+    // A long status remains a native truncated label, with the complete value
+    // available to its tooltip and accessibility clients; it cannot move actions.
+    height.constant = 14;
     NSRect frame = view.frame;
-    frame.size = NSMakeSize(300, 112 + statusHeight - 14);
+    frame.size = JPSCompactDiallerContentSize();
     view.frame = frame;
     status.toolTip = status.stringValue;
+    status.accessibilityValue = status.stringValue;
 }
 
 void AKInstallCallPresentation(NSView *view, NSTextField *caller, NSTextField *number, NSTextField *status,
@@ -244,7 +244,8 @@ void AKInstallCallPresentation(NSView *view, NSTextField *caller, NSTextField *n
     [NSLayoutConstraint deactivateConstraints:view.constraints];
     for (NSView *control in buttons) [NSLayoutConstraint deactivateConstraints:control.constraints];
     [NSLayoutConstraint deactivateConstraints:status.constraints];
-    view.frame = NSMakeRect(0, 0, 300, 112);
+    NSSize size = JPSCompactDiallerContentSize();
+    view.frame = NSMakeRect(0, 0, size.width, size.height);
 
     caller.font = [NSFont systemFontOfSize:13 weight:NSFontWeightSemibold];
     caller.textColor = NSColor.labelColor;
@@ -260,10 +261,10 @@ void AKInstallCallPresentation(NSView *view, NSTextField *caller, NSTextField *n
     [view addSubview:number];
     status.font = [NSFont systemFontOfSize:11];
     status.textColor = NSColor.secondaryLabelColor;
-    status.lineBreakMode = NSLineBreakByWordWrapping;
-    status.cell.wraps = YES;
+    status.lineBreakMode = NSLineBreakByTruncatingTail;
+    status.cell.wraps = NO;
     status.cell.scrollable = NO;
-    status.maximumNumberOfLines = 3;
+    status.maximumNumberOfLines = 1;
     status.selectable = YES;
     status.accessibilityLabel = NSLocalizedString(@"Call status", @"Call status accessibility label.");
 
@@ -287,15 +288,15 @@ void AKInstallCallPresentation(NSView *view, NSTextField *caller, NSTextField *n
     NSMutableArray<NSLayoutConstraint *> *constraints = [@[
         [caller.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:16],
         [caller.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:progress ? -40 : -16],
-        [caller.topAnchor constraintEqualToAnchor:view.topAnchor constant:8],
+        [caller.topAnchor constraintEqualToAnchor:view.topAnchor constant:4],
         [caller.heightAnchor constraintEqualToConstant:16],
         [number.leadingAnchor constraintEqualToAnchor:caller.leadingAnchor],
         [number.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:recording ? -76 : -16],
-        [number.topAnchor constraintEqualToAnchor:caller.bottomAnchor constant:2],
+        [number.topAnchor constraintEqualToAnchor:caller.bottomAnchor],
         [number.heightAnchor constraintEqualToConstant:14],
         [status.leadingAnchor constraintEqualToAnchor:caller.leadingAnchor],
         [status.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:duration ? -80 : -16],
-        [status.topAnchor constraintEqualToAnchor:number.bottomAnchor constant:2],
+        [status.topAnchor constraintEqualToAnchor:number.bottomAnchor],
         statusHeight,
         [bar.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:16],
         [bar.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:-16],

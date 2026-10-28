@@ -1,4 +1,5 @@
 #import <XCTest/XCTest.h>
+#import "SharedDialerController.h"
 #import <objc/runtime.h>
 #import <errno.h>
 #import "AKSIPCall.h"
@@ -416,7 +417,7 @@ static void RF65ScopeStop(NSURL *URL, SEL selector) {
 - (void)testNativeRecordingSlotPopoverAndActionsFitBothAppearances {
     ActiveCallViewController *viewController = self.controller.activeCallViewController;
     NSView *card = viewController.view;
-    self.controller.syntheticWindow = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 300, 112)
+    self.controller.syntheticWindow = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, JPSCompactDiallerContentSize().width, JPSCompactDiallerContentSize().height)
         styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
     self.controller.syntheticWindow.contentView = card;
     [self.controller.syntheticWindow orderFront:nil];
@@ -445,7 +446,8 @@ static void RF65ScopeStop(NSURL *URL, SEL selector) {
                 [self.call completeAttempt:attempt + 1 result:AKRecordingStartResultSuccess];
             }
             [card layoutSubtreeIfNeeded];
-            XCTAssertEqualWithAccuracy(NSWidth(card.bounds), 300, 0.1);
+            XCTAssertEqualWithAccuracy(NSWidth(card.bounds), JPSCompactDiallerContentSize().width, 0.1);
+            XCTAssertEqualWithAccuracy(NSHeight(card.bounds), JPSCompactDiallerContentSize().height, 0.1);
             XCTAssertEqualWithAccuracy(NSWidth(status.frame), 52, 0.1);
             XCTAssertEqualWithAccuracy(NSHeight(status.frame), 14, 0.1);
             XCTAssertTrue(NSContainsRect(card.bounds, status.frame));

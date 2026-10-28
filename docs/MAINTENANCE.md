@@ -34,7 +34,7 @@ documents visible coverage/version information and saved-versus-draft behaviour.
 
 ## Source work delivered in 3.7 — 27 October 2026
 
-Issues #61 and #63–69 are now included in the published 3.7 release. The dated source-validation counts below retain their original scope; fresh release validation is recorded above. #62 remains pending by owner choice. **Owner priority update — 28 October:** the owner-prioritised #73 credential source repair is implemented and verified. It is not part of the immutable 3.7 release. **Next: #70**, then #71 and #74. The original roadmap remains 16/19 complete; #73 is an additional reported issue.
+Issues #61 and #63–69 are now included in the published 3.7 release. The dated source-validation counts below retain their original scope; fresh release validation is recorded above. #62 remains pending by owner choice. **Owner priority update — 28 October:** the owner-prioritised #73 credential source repair is implemented and verified. It is not part of the immutable 3.7 release. **Owner priority update — later 28 October:** #74 now also has verified source changes matching the standard compact dialler footprint. **Next: #70**, then #71. The original roadmap remains 16/19 complete; #73 and #74 are additional reported issues.
 
 The owner resumed open-issue repairs. Expanded history search/filter issue #61
 now has fresh native validation: 289 XCTest plus 48 Swift Testing cases, and
@@ -103,6 +103,12 @@ These changes are included in published 3.7/build 166. No local installation was
 Registration and Accounts now share typed, asynchronous, coalesced credential reads. Authentication presentation no longer rereads Keychain; cancellation/denial does not become an empty password or an automatic retry. Account, UI and lifecycle generations fence stale work. Hidden Accounts construction performs no lookup, unchanged saves perform no reread, and closing the window clears its credential fields. The storage namespace, Keychain permissions and signing policy are unchanged.
 
 Current validation passed **964 suite cases**, including the final isolated app run of 530 XCTest + 48 Swift Testing. Separate recording/SIP/source gates and unsigned Release compilation passed. Read [the source verification and limits](maintenance/2026-10-28-keychain-reads.md) and [hash record](maintenance/2026-10-28-keychain-reads.json). No real credential/profile/grant test or new release/installation is claimed. Distinct items and ad-hoc signing changes can still require legitimate separate OS prompts; #62 practical acceptance remains pending.
+
+## Compact call-window footprint — issue #74, 28 October 2026
+
+Ordinary call windows now share the standard compact dialler content size of **368 × 104 points**, with native window-frame conversion for matching outer dimensions (368 × 136 on the validation Mac). Opening, ringing/connecting, active and ended panes keep that footprint; caller details, duration, REC feedback and 44-point controls fit inside it. Long status text uses one native truncated line with its complete value retained in help and accessibility. Existing window placement is retained subject to visible-screen clamping. Manually widened or history-expanded diallers are outside this standard-footprint scope; transfer sheets retain their own layout.
+
+Fresh local validation passed **968 suite cases**, 50 overlapping focused cases, the separate 105 recording assertions and unsigned Release compilation. Ten native Light/Dark side-by-side captures and geometry records were inspected. Read [the verification and practical limits](maintenance/2026-10-28-call-window-footprint.md) and [hash record](maintenance/2026-10-28-call-window-footprint.json). This is a source repair after 3.7, with no release or installation; actual different physical displays/provider/VoiceOver acceptance remains pending in #62.
 
 On 26 October the owner authorised **all remaining issues, one at a time**, with
 findings and outcomes logged in GitHub for other contributors. This resumes the

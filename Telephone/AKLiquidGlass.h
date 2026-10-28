@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface AKCallActionButton : NSButton
 @end
 
-/// Reuses the nib's bound labels and actions in a 300pt compact call card.
+/// Reuses the nib's bound labels/actions in the shared compact dialler footprint.
 FOUNDATION_EXPORT void AKInstallCallPresentation(NSView *view,
                                                 NSTextField *caller,
                                                 NSTextField *number,
@@ -32,7 +32,7 @@ FOUNDATION_EXPORT void AKInstallCallPresentation(NSView *view,
                                                 NSTextField * _Nullable recording,
                                                 NSProgressIndicator * _Nullable progress,
                                                 NSTextField * _Nullable duration);
-/// Fits up to three status lines without enlarging the ordinary 112pt body.
+/// Keeps a fixed body; full status remains available in its native tooltip/AX value.
 FOUNDATION_EXPORT void AKUpdateCallPresentation(NSView *view, NSTextField *status);
 FOUNDATION_EXPORT void AKStyleCallButton(NSButton *button, NSString *title, NSString *symbol, BOOL destructive);
 

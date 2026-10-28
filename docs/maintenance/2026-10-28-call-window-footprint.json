@@ -1,0 +1,292 @@
+{
+  "issue": 74,
+  "date": "2026-10-28",
+  "verifiedAtUTC": "2026-10-28T13:29:21.160756+00:00",
+  "baseCommit": "56d8ebf309d1a2821ce46428dbe6309030e98dad",
+  "scope": "Local source validation of the default compact call-window footprint. Publication is recorded separately.",
+  "contract": {
+    "defaultDiallerContentPoints": {
+      "width": 368,
+      "height": 104
+    },
+    "observedNativeOuterPoints": {
+      "width": 368,
+      "height": 136
+    },
+    "backingScale": 2,
+    "reference": "An actual empty-account SharedDialerController with no history factory, default compact layout.",
+    "exclusions": [
+      "Manually resized dialler windows",
+      "Expanded call-history dialler layout",
+      "Dedicated transfer-sheet layouts"
+    ],
+    "states": [
+      "initial nib load",
+      "legacy saved call frame",
+      "calling",
+      "incoming/ringing",
+      "connecting",
+      "active/confirmed",
+      "ended",
+      "long recording error",
+      "recording starting",
+      "recording failed",
+      "recording capturing",
+      "long duration"
+    ],
+    "statusPresentation": "A bounded single-line tail-truncated status label retains the full string as its tooltip and accessibility value.",
+    "controls": "44-point call action hit targets, spacing, native chrome, actions, and physical hit-testing remain covered.",
+    "placement": "Retains horizontal position and top edge away from screen bounds; screen-safety clamping may change origin, never the compact size."
+  },
+  "environment": {
+    "os": "macOS 27.2 (26B123)",
+    "xcode": "27.1 (27A9275)",
+    "architecture": "arm64",
+    "host": "Local unique-identity nib-free native test host; synthetic call snapshots and no restored account profile."
+  },
+  "validation": {
+    "focused": {
+      "xctest": 50,
+      "failures": 0,
+      "suites": {
+        "CallControlPresentationTests": 18,
+        "CompactCallCardTests": 17,
+        "RecordingFeedbackTests": 15
+      }
+    },
+    "full": {
+      "Domain": {
+        "xctest": 28
+      },
+      "UseCases": {
+        "xctest": 206,
+        "swiftTesting": 147
+      },
+      "ReceiptValidation": {
+        "xctest": 5
+      },
+      "Telephone": {
+        "xctest": 534,
+        "swiftTesting": 48
+      },
+      "totalXCTest": 773,
+      "totalSwiftTesting": 195,
+      "totalCases": 968,
+      "failures": 0
+    },
+    "recordingOwnershipAssertions": 105,
+    "repairGate": "All 50 baseline findings have recorded verified fixes.",
+    "vendorGate": "Passed hashes, inventory, arm64, metadata and entitlements; 7 source files, 24 static archives, 21 linked libraries. This is not a vulnerability scan or source-to-binary reproducibility proof.",
+    "unsignedReleaseBuild": "passed",
+    "fullValidationArtifactDirectory": "/private/tmp/jps-telephone-validation.Y1RonJ"
+  },
+  "testedInputManifest": {
+    "path": "work/call74-tested-inputs.json",
+    "sha256": "739ad6c0bb1be38c8e4c69cc21b61a7c3da62c5027d72b2a01853ac675f04e1f",
+    "allCurrentSourceHashesMatch": true
+  },
+  "sourceSHA256": {
+    "Telephone/AKLiquidGlass.h": "ec129f3bac04006b2e5cd3a4f546e990e1401f769e73d39708491f4d40b21345",
+    "Telephone/AKLiquidGlass.m": "47a45140d41df4726b512fce68b87337cce3204fe2cd5b2b4e934ab97321260e",
+    "Telephone/Base.lproj/Call.xib": "a18b6b83007d36dc2669f8f016a465ed73d10e0f9a832d8e61d199bb8ab868b0",
+    "Telephone/CallController.m": "5d38975b31d48c46e279d316ad45cf762327e70d359bcbac7ebf96f9a1d6e243",
+    "Telephone/SharedDialerController.h": "834194baa6c3dbef45702800e36f865bcfb5702b6218f127950eae5604286704",
+    "Telephone/SharedDialerController.m": "a5724f3263b6731be82ae762e01a1e123c304f044cfe090a75b5fd0556170c22",
+    "TelephoneTests/CallControlPresentationTests.m": "fa3376ef8a62de4a4933b06747ca10bdcd24c1a139a77166c814c811ad0d57dd",
+    "TelephoneTests/CallControllerLifecycleTests.m": "ada450a308a44277211716ebc68f2e12e35967bfd337d8d401a590202c1f3af8",
+    "TelephoneTests/RecordingFeedbackTests.m": "c39a5b13d3bf4c4cc27eb0a52f330376a147f07a3dc8ebe8e410e64977bb85f8"
+  },
+  "logSHA256": {
+    "work/call74-build-v1.log": "abfc1206784136a3177f244a377af465b3723c0399efc65686f4c7d70156dedd",
+    "work/call74-focused-v1.log": "6610cf58c7c5525611a6959cfd387766f288a0e62553e2334c84f5b83e7aea9d",
+    "work/call74-full-validation.log": "b3b9230da0e49ffc18c3d41210fdbac0cb34dde45e1322ecea6ebaf6146ab69b"
+  },
+  "visualReview": {
+    "reviewer": "Parent agent",
+    "result": "All 10 actual native Light/Dark side-by-side PNGs visually inspected; matching full outer theme frames and readable details/controls.",
+    "states": [
+      "incoming",
+      "connecting",
+      "active",
+      "long-status-recording",
+      "ended"
+    ],
+    "appearances": [
+      "light",
+      "dark"
+    ],
+    "captureCount": 10,
+    "geometryCount": 10,
+    "publishedRepresentativeSHA256": {
+      "docs/maintenance/assets/call74-long-status-recording-dark.png": "b640c484913a2816b186e41aa71da49429b1ef94c4fcf1a1cf5f41f8dd7f2ace",
+      "docs/maintenance/assets/call74-long-status-recording-light.png": "df92f4753be0330a350b687728b4f011000374e74422594548b42c1523155689"
+    }
+  },
+  "captureSHA256": {
+    "work/call74-reviewed/call74-active-dark.png": "ddb9f3722082abb424d9e53824fd1838458f88571ab6f1c7f7a922e48fa89e9b",
+    "work/call74-reviewed/call74-active-light.png": "19addfda7d922ece4b03d51cde2a5a70909097a2f66b3ba6494df4e26aff989a",
+    "work/call74-reviewed/call74-connecting-dark.png": "ba81f8eec5d69fb1ec8519b2a3a3ead9a949a6d230e8c63f65315dc6da408ce2",
+    "work/call74-reviewed/call74-connecting-light.png": "4139a1000af3c72182a105282a563b8933a2ac1cfbd950ebd9df34ef0ba9a30b",
+    "work/call74-reviewed/call74-ended-dark.png": "9b8d7701b9b065b6c0981c7ba7a47854c56b3bcb2e3e5254e804b4ab71957985",
+    "work/call74-reviewed/call74-ended-light.png": "fe417454b592faf5fc18270c8abed84fbc9803ed394c4f0518ac1c273cbfc69e",
+    "work/call74-reviewed/call74-geometry-active-dark.json": "6bbd6eec088fdb54bb5c60d34c6fb52b55778769372ef5af2e5923489d0feb52",
+    "work/call74-reviewed/call74-geometry-active-light.json": "96596548ffd716ff4042cfabb8a1fb1690b1a1624b80b26869592eacaa566976",
+    "work/call74-reviewed/call74-geometry-connecting-dark.json": "43ffd4c7a666c58bd7b470141a6996e7f708c7ed96a73355eb0edc92b40f0b6b",
+    "work/call74-reviewed/call74-geometry-connecting-light.json": "61ac2859029095a656866e55ea5ad27080a61054c5c6c0976d16b28d46235f9e",
+    "work/call74-reviewed/call74-geometry-ended-dark.json": "620f6e2964b9715007d974dbaaa44c8e51808debf41cf93c9969429273d86b0c",
+    "work/call74-reviewed/call74-geometry-ended-light.json": "d76785a5f1b3c6a7278166ed7f7535d988a7965f9b24f9c0e5aa9084a970933c",
+    "work/call74-reviewed/call74-geometry-incoming-dark.json": "73e8bc7a14428aa32066a4502953e1c21e142530176130aa378010e775cfce02",
+    "work/call74-reviewed/call74-geometry-incoming-light.json": "f8ae80a58ff285232fa8f0451b55b13ed9db5471948e8f16e31e88e135451eb1",
+    "work/call74-reviewed/call74-geometry-long-status-recording-dark.json": "95a2e4e0249e6b6e072845337d8119acf11d1283fa05aaa97aa7f6ca4137e066",
+    "work/call74-reviewed/call74-geometry-long-status-recording-light.json": "a94ff5d7e2f4eb04e2b3aba211bae79e4da2361fb1d699e741af43e6f667e803",
+    "work/call74-reviewed/call74-incoming-dark.png": "5bd27707b760f743576efeb97473ecf921cf32a812d3dee331b82c1b76b76f88",
+    "work/call74-reviewed/call74-incoming-light.png": "f16744056b3cc54178fc5edc037ce5fa833fbb2aedc7e50a87f47fef4cd84a22",
+    "work/call74-reviewed/call74-long-status-recording-dark.png": "b640c484913a2816b186e41aa71da49429b1ef94c4fcf1a1cf5f41f8dd7f2ace",
+    "work/call74-reviewed/call74-long-status-recording-light.png": "df92f4753be0330a350b687728b4f011000374e74422594548b42c1523155689"
+  },
+  "geometry": [
+    {
+      "path": "work/call74-reviewed/call74-geometry-active-dark.json",
+      "sha256": "6bbd6eec088fdb54bb5c60d34c6fb52b55778769372ef5af2e5923489d0feb52",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "dark",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "active",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    },
+    {
+      "path": "work/call74-reviewed/call74-geometry-active-light.json",
+      "sha256": "96596548ffd716ff4042cfabb8a1fb1690b1a1624b80b26869592eacaa566976",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "light",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "active",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    },
+    {
+      "path": "work/call74-reviewed/call74-geometry-connecting-dark.json",
+      "sha256": "43ffd4c7a666c58bd7b470141a6996e7f708c7ed96a73355eb0edc92b40f0b6b",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "dark",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "connecting",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    },
+    {
+      "path": "work/call74-reviewed/call74-geometry-connecting-light.json",
+      "sha256": "61ac2859029095a656866e55ea5ad27080a61054c5c6c0976d16b28d46235f9e",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "light",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "connecting",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    },
+    {
+      "path": "work/call74-reviewed/call74-geometry-ended-dark.json",
+      "sha256": "620f6e2964b9715007d974dbaaa44c8e51808debf41cf93c9969429273d86b0c",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "dark",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "ended",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    },
+    {
+      "path": "work/call74-reviewed/call74-geometry-ended-light.json",
+      "sha256": "d76785a5f1b3c6a7278166ed7f7535d988a7965f9b24f9c0e5aa9084a970933c",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "light",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "ended",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    },
+    {
+      "path": "work/call74-reviewed/call74-geometry-incoming-dark.json",
+      "sha256": "73e8bc7a14428aa32066a4502953e1c21e142530176130aa378010e775cfce02",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "dark",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "incoming",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    },
+    {
+      "path": "work/call74-reviewed/call74-geometry-incoming-light.json",
+      "sha256": "f8ae80a58ff285232fa8f0451b55b13ed9db5471948e8f16e31e88e135451eb1",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "light",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "incoming",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    },
+    {
+      "path": "work/call74-reviewed/call74-geometry-long-status-recording-dark.json",
+      "sha256": "95a2e4e0249e6b6e072845337d8119acf11d1283fa05aaa97aa7f6ca4137e066",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "dark",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "long-status-recording",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    },
+    {
+      "path": "work/call74-reviewed/call74-geometry-long-status-recording-light.json",
+      "sha256": "a94ff5d7e2f4eb04e2b3aba211bae79e4da2361fb1d699e741af43e6f667e803",
+      "callOuter": "{{0, 67}, {368, 136}}",
+      "diallerContent": "{{0, 0}, {368, 104}}",
+      "backingScale": 2,
+      "appearance": "light",
+      "scope": "Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider.",
+      "callContent": "{{0, 0}, {368, 104}}",
+      "callThemeFrame": "{{0, 0}, {368, 136}}",
+      "state": "long-status-recording",
+      "diallerOuter": "{{0, 67}, {368, 136}}"
+    }
+  ],
+  "pendingAcceptance": {
+    "issue": 62,
+    "items": [
+      "Actual provider calls and recording/playback",
+      "Hardware/audio behaviour",
+      "Real permission grants, profiles, Keychain and Contacts",
+      "Sleep/wake",
+      "Actual VoiceOver acceptance",
+      "Other displays, backing scales and screen arrangements"
+    ],
+    "note": "Synthetic local tests and captures do not complete the owner-deferred real acceptance matrix."
+  },
+  "delivery": "No installation or GitHub release is part of this evidence. Existing immutable release assets remain unchanged."
+}

@@ -6,6 +6,8 @@
 #import "AKSIPURI.h"
 #import "Telephone-Swift.h"
 
+NSSize JPSCompactDiallerContentSize(void) { return NSMakeSize(368, 104); }
+
 @interface JPSCompactAvailabilityPopUp : NSPopUpButton
 @end
 @implementation JPSCompactAvailabilityPopUp
@@ -40,7 +42,8 @@
 - (instancetype)initWithAccounts:(AccountControllers *)accounts
                  historyFactory:(AsyncCallHistoryViewEventTargetFactory *)factory
                   routeResolver:(SharedDialerRouteResolver)routeResolver {
-    NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0,0,368,104)
+    NSSize compactSize = JPSCompactDiallerContentSize();
+    NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0,0,compactSize.width,compactSize.height)
         styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskMiniaturizable|NSWindowStyleMaskResizable
         backing:NSBackingStoreBuffered defer:NO];
     if ((self = [super initWithWindow:window])) {
@@ -49,11 +52,11 @@
         window.delegate = self;
         window.releasedWhenClosed = NO;
         window.tabbingMode = NSWindowTabbingModeDisallowed;
-        window.contentMinSize = NSMakeSize(368,104);
-        window.contentMaxSize = NSMakeSize(CGFLOAT_MAX,104);
+        window.contentMinSize = compactSize;
+        window.contentMaxSize = NSMakeSize(CGFLOAT_MAX,compactSize.height);
         window.excludedFromWindowsMenu = YES;
-        _expandedSize = NSMakeSize(368,268);
-        AKWindowMaterialView *body = [[AKWindowMaterialView alloc] initWithFrame:NSMakeRect(0,0,368,104)];
+        _expandedSize = NSMakeSize(compactSize.width,268);
+        AKWindowMaterialView *body = [[AKWindowMaterialView alloc] initWithFrame:NSMakeRect(0,0,compactSize.width,compactSize.height)];
         body.usesOpaqueTitlebarBackground = YES;
         body.material = NSVisualEffectMaterialWindowBackground;
         body.blendingMode = NSVisualEffectBlendingModeBehindWindow;
@@ -298,9 +301,10 @@
 }
 - (void)resizeForHistory:(BOOL)expanded {
     NSRect old = self.window.frame;
-    NSSize content = NSMakeSize(MAX(368,self.window.contentView.bounds.size.width),expanded ? self.expandedSize.height : 104);
+    NSSize compactSize = JPSCompactDiallerContentSize();
+    NSSize content = NSMakeSize(MAX(compactSize.width,self.window.contentView.bounds.size.width),expanded ? self.expandedSize.height : compactSize.height);
     self.adjustingFrame = YES;
-    self.window.contentMaxSize = NSMakeSize(CGFLOAT_MAX,expanded ? CGFLOAT_MAX : 104);
+    self.window.contentMaxSize = NSMakeSize(CGFLOAT_MAX,expanded ? CGFLOAT_MAX : compactSize.height);
     NSRect frame = [self.window frameRectForContentRect:NSMakeRect(0,0,content.width,content.height)];
     frame.origin = NSMakePoint(old.origin.x,NSMaxY(old)-frame.size.height);
     NSScreen *screen = self.window.screen ?: NSScreen.mainScreen;

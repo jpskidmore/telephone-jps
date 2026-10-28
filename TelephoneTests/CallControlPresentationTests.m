@@ -1,4 +1,5 @@
 #import <XCTest/XCTest.h>
+#import "SharedDialerController.h"
 #import <objc/runtime.h>
 #import <sys/resource.h>
 #import <time.h>
@@ -156,7 +157,7 @@ static NSTimeInterval CC67CPUTime(struct rusage value) {
 - (CC67Controller *)makeFixture {
     CC67Controller *controller = [[CC67Controller alloc] initWithWindowNibName:@"Call" accountController:nil userAgent:(id)self.agent delegate:nil];
     [controller setValue:self.defaults forKey:@"defaults"];
-    controller.syntheticWindow = [[NSWindow alloc] initWithContentRect:NSMakeRect(80 + self.fixtures.count * 320, 100, 300, 112)
+    controller.syntheticWindow = [[NSWindow alloc] initWithContentRect:NSMakeRect(80 + self.fixtures.count * (JPSCompactDiallerContentSize().width + 20), 100, JPSCompactDiallerContentSize().width, JPSCompactDiallerContentSize().height)
         styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable backing:NSBackingStoreBuffered defer:NO];
     controller.syntheticWindow.releasedWhenClosed = NO;
     controller.title = @"020 7946 0123"; controller.displayedName = @"Synthetic call controls";

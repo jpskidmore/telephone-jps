@@ -515,6 +515,8 @@
 #import "IncomingCallViewController.h"
 #import "EndedCallViewController.h"
 #import "AKLiquidGlass.h"
+#import "SharedDialerController.h"
+#import "AccountControllers.h"
 
 @interface AKCompactAccountFixture : NSObject
 @property(nonatomic, copy) NSString *accountDescription;
@@ -584,6 +586,7 @@
 @property(nonatomic) AKCompactAccountFixture *account;
 @property(nonatomic) NSUserDefaults *defaults;
 @property(nonatomic) NSString *defaultsSuite;
+@property(nonatomic) SharedDialerController *referenceDialler;
 @end
 
 @implementation CompactCallCardTests
@@ -608,6 +611,7 @@
     self.controller.callActive = NO;
     [self.controller.activeCallViewController stopCallTimer];
     [self.controller.window close];
+    [self.referenceDialler.window close]; self.referenceDialler = nil;
     self.controller = nil;
     self.call = nil;
     [self.defaults removePersistentDomainForName:self.defaultsSuite];
@@ -621,13 +625,28 @@
     }
     return nil;
 }
+- (SharedDialerController *)defaultDiallerReference {
+    if (!self.referenceDialler) {
+        // Nil factory means no saved-frame restoration, history loading or
+        // provider composition; the reference is the real native dialler.
+        self.referenceDialler = [[SharedDialerController alloc] initWithAccounts:[AccountControllers new] historyFactory:nil];
+    }
+    return self.referenceDialler;
+}
+- (void)assertDefaultFootprint {
+    NSWindow *reference = self.defaultDiallerReference.window;
+    XCTAssertEqualWithAccuracy(reference.contentView.bounds.size.width, 368, 0.1);
+    XCTAssertEqualWithAccuracy(reference.contentView.bounds.size.height, 104, 0.1);
+    XCTAssertEqualWithAccuracy(self.controller.window.frame.size.width, reference.frame.size.width, 0.1);
+    XCTAssertEqualWithAccuracy(self.controller.window.frame.size.height, reference.frame.size.height, 0.1);
+}
 - (void)assertCompactView:(NSView *)view actionCount:(NSUInteger)count {
     [self.controller.window.contentView layoutSubtreeIfNeeded];
-    XCTAssertEqualWithAccuracy(view.frame.size.width, 300, 0.1);
-    XCTAssertEqualWithAccuracy(view.frame.size.height, 112, 0.1);
-    XCTAssertEqualWithAccuracy(self.controller.window.contentView.frame.size.height, 112, 0.1);
-    NSRect expected = [self.controller.window frameRectForContentRect:NSMakeRect(0, 0, 300, 112)];
-    XCTAssertEqualWithAccuracy(self.controller.window.frame.size.height, expected.size.height, 0.1);
+    [self assertDefaultFootprint];
+    NSSize compact = JPSCompactDiallerContentSize();
+    XCTAssertEqualWithAccuracy(view.frame.size.width, compact.width, 0.1);
+    XCTAssertEqualWithAccuracy(view.frame.size.height, compact.height, 0.1);
+    XCTAssertEqualWithAccuracy(self.controller.window.contentView.frame.size.height, compact.height, 0.1);
     XCTAssertEqualWithAccuracy([self.controller.window contentBorderThicknessForEdge:NSMinYEdge], 0, 0.1);
     XCTAssertFalse((self.controller.window.styleMask & NSWindowStyleMaskFullSizeContentView) != 0);
     XCTAssertNotNil([self.controller.window standardWindowButton:NSWindowCloseButton]);
@@ -736,20 +755,143 @@
     [self.controller showEndedCallView];
     [self assertCompactView:self.controller.endedCallViewController.view actionCount:1];
 }
-- (void)testLongErrorExpandsThenOrdinaryStatusRestoresSmallBody {
+- (void)testLongErrorRetainsFootprintAndFullAccessibleStatus {
     [self.controller showActiveCallView];
+    NSRect original = self.controller.window.frame;
     self.controller.status = @"The remote telephone could not be reached. Please check the number and try the call again.";
     [self.controller.window.contentView layoutSubtreeIfNeeded];
     NSView *view = self.controller.activeCallViewController.view;
     NSTextField *status = [self.controller.activeCallViewController valueForKey:@"statusField"];
-    XCTAssertGreaterThan(view.frame.size.height, 112);
-    XCTAssertLessThanOrEqual(view.frame.size.height, 140);
-    XCTAssertEqualWithAccuracy(self.controller.window.contentView.frame.size.height, view.frame.size.height, 0.1);
-    XCTAssertEqualWithAccuracy(view.frame.origin.y, 0, 0.1);
-    XCTAssertTrue(NSContainsRect(view.bounds, status.frame));
+    [self assertCompactView:view actionCount:5];
+    XCTAssertEqualWithAccuracy(self.controller.window.frame.size.height, original.size.height, 0.1);
+    XCTAssertEqualWithAccuracy(self.controller.window.frame.size.width, original.size.width, 0.1);
+    XCTAssertTrue(NSContainsRect(view.bounds, [status convertRect:status.bounds toView:view]));
+    XCTAssertEqual(status.maximumNumberOfLines, 1);
+    XCTAssertEqual(status.lineBreakMode, NSLineBreakByTruncatingTail);
+    XCTAssertEqualObjects(status.stringValue, self.controller.status);
     XCTAssertEqualObjects(status.toolTip, self.controller.status);
+    XCTAssertEqualObjects(status.accessibilityValue, self.controller.status);
+    for (NSView *child in view.subviews) if ([child isKindOfClass:AKGlassControlContainer.class]) {
+        XCTAssertFalse(NSIntersectsRect([status convertRect:status.bounds toView:view], child.frame));
+    }
     self.controller.status = @"00:12";
     [self assertCompactView:view actionCount:5];
+}
+- (void)testInitialAndSavedLegacyWindowUseDiallerFootprintBeforeFirstCallPane {
+    [self assertDefaultFootprint];
+    NSUserDefaults *isolatedDefaults = NSUserDefaults.standardUserDefaults;
+    NSString *key = @"NSWindow Frame Call";
+    id previous = [isolatedDefaults objectForKey:key];
+    NSWindow *legacy = [[NSWindow alloc] initWithContentRect:NSMakeRect(80, 120, 300, 112)
+        styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable backing:NSBackingStoreBuffered defer:NO];
+    legacy.releasedWhenClosed = NO;
+    AKCompactCallController *restored;
+    @try {
+        // The unique-identity nib-free host owns this registration-domain test
+        // state. Never run against the production application profile.
+        [legacy saveFrameUsingName:@"Call"];
+        restored = [[AKCompactCallController alloc] initWithWindowNibName:@"Call"
+            accountController:(id)self.account userAgent:nil delegate:nil];
+        [restored setValue:self.defaults forKey:@"defaults"];
+        NSWindow *window = restored.window;
+        XCTAssertEqualWithAccuracy(window.frame.size.width, self.defaultDiallerReference.window.frame.size.width, 0.1);
+        XCTAssertEqualWithAccuracy(window.frame.size.height, self.defaultDiallerReference.window.frame.size.height, 0.1);
+        window.frameAutosaveName = @"";
+        [window close];
+    } @finally {
+        [legacy close];
+        if (previous) [isolatedDefaults setObject:previous forKey:key]; else [isolatedDefaults removeObjectForKey:key];
+    }
+}
+- (void)testCallPhasesRetainSameOuterFrameAwayFromScreenEdges {
+    NSScreen *screen = NSScreen.mainScreen;
+    XCTAssertNotNil(screen);
+    [self.controller showActiveCallView];
+    NSRect visible = screen.visibleFrame;
+    [self.controller.window setFrameOrigin:NSMakePoint(NSMidX(visible) - 184, NSMidY(visible) - 80)];
+    NSRect original = self.controller.window.frame;
+    for (NSNumber *state in @[@(kAKSIPCallCallingState), @(kAKSIPCallConnectingState), @(kAKSIPCallIncomingState),
+                             @(kAKSIPCallConfirmedState), @(kAKSIPCallDisconnectedState)]) {
+        self.call.state = state.unsignedIntegerValue;
+        if (self.call.state == kAKSIPCallIncomingState) [self.controller showIncomingCallView];
+        else if (self.call.state == kAKSIPCallDisconnectedState) [self.controller showEndedCallView];
+        else [self.controller showActiveCallView];
+        [self assertDefaultFootprint];
+        XCTAssertEqualWithAccuracy(NSMinX(self.controller.window.frame), NSMinX(original), 0.1);
+        XCTAssertEqualWithAccuracy(NSMaxY(self.controller.window.frame), NSMaxY(original), 0.1);
+    }
+}
+- (void)testRecordingFeedbackAndLongDurationCannotResizeCall {
+    [self.controller showActiveCallView];
+    self.controller.callActive = YES;
+    self.controller.callStartTime = NSDate.timeIntervalSinceReferenceDate - 3905;
+    [self.controller setValue:[NSURL fileURLWithPath:@"/synthetic/call74/recordings"] forKey:@"recordingDestinationFolderURL"];
+    for (NSNumber *state in @[@(AKCallRecordingStatusStarting), @(AKCallRecordingStatusFailed), @(AKCallRecordingStatusCapturing)]) {
+        [self.controller setValue:state forKey:@"recordingStatus"];
+        [self.controller.activeCallViewController refreshPresentation];
+        [self assertCompactView:self.controller.activeCallViewController.view actionCount:5];
+        NSTextField *duration = [self.controller.activeCallViewController valueForKey:@"durationField"];
+        XCTAssertTrue(NSContainsRect(self.controller.activeCallViewController.view.bounds, duration.frame));
+        XCTAssertEqualObjects(duration.stringValue, self.controller.presentationDuration);
+    }
+}
+- (NSImage *)cachedWindowFrame:(NSWindow *)window {
+    NSView *frame = window.contentView.superview;
+    [frame layoutSubtreeIfNeeded]; [window displayIfNeeded]; [frame displayIfNeeded];
+    NSBitmapImageRep *bitmap = [frame bitmapImageRepForCachingDisplayInRect:frame.bounds];
+    XCTAssertNotNil(bitmap);
+    [frame cacheDisplayInRect:frame.bounds toBitmapImageRep:bitmap];
+    return [[NSImage alloc] initWithData:bitmap.TIFFRepresentation];
+}
+- (void)attachDiallerAndCallForState:(NSString *)state appearance:(NSString *)appearance {
+    NSWindow *dialler = self.defaultDiallerReference.window;
+    [self assertDefaultFootprint];
+    NSImage *left = [self cachedWindowFrame:dialler], *right = [self cachedWindowFrame:self.controller.window];
+    CGFloat margin = 12, heading = 26;
+    NSSize size = NSMakeSize(left.size.width + right.size.width + margin * 3, MAX(left.size.height, right.size.height) + heading + margin * 2);
+    NSImage *image = [[NSImage alloc] initWithSize:size];
+    [image lockFocus];
+    [self.controller.window.effectiveAppearance performAsCurrentDrawingAppearance:^{
+        [NSColor.windowBackgroundColor setFill]; NSRectFill(NSMakeRect(0, 0, size.width, size.height));
+        [left drawAtPoint:NSMakePoint(margin, margin) fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1];
+        [right drawAtPoint:NSMakePoint(left.size.width + margin * 2, margin) fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1];
+        NSDictionary *attributes = @{NSFontAttributeName:[NSFont systemFontOfSize:12], NSForegroundColorAttributeName:NSColor.labelColor};
+        [@"Dialler" drawAtPoint:NSMakePoint(margin, size.height - heading) withAttributes:attributes];
+        [state drawAtPoint:NSMakePoint(left.size.width + margin * 2, size.height - heading) withAttributes:attributes];
+    }];
+    [image unlockFocus];
+    XCTAttachment *capture = [XCTAttachment attachmentWithImage:image];
+    capture.name = [NSString stringWithFormat:@"call74-%@-%@", state, appearance];
+    capture.lifetime = XCTAttachmentLifetimeKeepAlways; [self addAttachment:capture];
+    NSDictionary *geometry = @{@"state": state, @"appearance": appearance,
+        @"diallerOuter": NSStringFromRect(dialler.frame), @"callOuter": NSStringFromRect(self.controller.window.frame),
+        @"diallerContent": NSStringFromRect(dialler.contentView.bounds),
+        @"callContent": NSStringFromRect(self.controller.window.contentView.bounds),
+        @"callThemeFrame": NSStringFromRect(self.controller.window.contentView.superview.bounds),
+        @"backingScale": @(self.controller.window.backingScaleFactor),
+        @"scope": @"Real native nibs/window chrome and synthetic call snapshots only; no SIP, profile, Keychain or provider."};
+    NSData *data = [NSJSONSerialization dataWithJSONObject:geometry options:NSJSONWritingPrettyPrinted error:nil];
+    XCTAttachment *metadata = [XCTAttachment attachmentWithData:data uniformTypeIdentifier:@"public.json"];
+    metadata.name = [NSString stringWithFormat:@"call74-geometry-%@-%@", state, appearance];
+    metadata.lifetime = XCTAttachmentLifetimeKeepAlways; [self addAttachment:metadata];
+}
+- (void)testNativeSideBySideCallFootprintInBothAppearances {
+    for (NSString *appearance in @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]) {
+        self.controller.window.appearance = [NSAppearance appearanceNamed:appearance];
+        self.defaultDiallerReference.window.appearance = self.controller.window.appearance;
+        NSString *name = [appearance isEqualToString:NSAppearanceNameDarkAqua] ? @"dark" : @"light";
+        self.call.state = kAKSIPCallIncomingState; self.controller.status = @"Incoming call";
+        [self.controller showIncomingCallView]; [self attachDiallerAndCallForState:@"incoming" appearance:name];
+        self.call.state = kAKSIPCallCallingState; self.controller.status = @"Connecting…";
+        [self.controller showActiveCallView]; [self attachDiallerAndCallForState:@"connecting" appearance:name];
+        self.call.state = kAKSIPCallConfirmedState; self.controller.status = @"00:12";
+        [self attachDiallerAndCallForState:@"active" appearance:name];
+        [self.controller setValue:@(AKCallRecordingStatusFailed) forKey:@"recordingStatus"];
+        self.controller.status = @"The remote telephone could not be reached. Please check the number and try the call again.";
+        [self.controller.activeCallViewController refreshPresentation]; [self attachDiallerAndCallForState:@"long-status-recording" appearance:name];
+        self.call.state = kAKSIPCallDisconnectedState; self.controller.status = @"Call ended";
+        [self.controller showEndedCallView]; [self attachDiallerAndCallForState:@"ended" appearance:name];
+    }
 }
 - (void)testConnectingAndConfirmedControlsUseExistingCallValidation {
     [self.controller prepareForCall];
