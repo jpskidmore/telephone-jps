@@ -55,6 +55,7 @@
 }
 
 - (void)setObject:(AccountController *)object atIndexedSubscript:(NSInteger)index {
+    if (self.controllers[index] != object) [self.controllers[index] setCredentialAccessSuspended:YES];
     self.controllers[index] = object;
 }
 
@@ -67,6 +68,7 @@
 }
 
 - (void)removeControllerAtIndex:(NSInteger)index {
+    [self.controllers[index] setCredentialAccessSuspended:YES];
     [self.controllers removeObjectAtIndex:index];
 }
 
@@ -124,6 +126,10 @@
     for (AccountController *controller in self.controllers) {
         controller.callsShouldDisplayAccountInfo = shouldDisplay;
     }
+}
+
+- (void)setCredentialAccessSuspended:(BOOL)suspended {
+    for (AccountController *controller in self.all) [controller setCredentialAccessSuspended:suspended];
 }
 
 - (void)hangUpCallsAndRemoveAccountsFromUserAgent {

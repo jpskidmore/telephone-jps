@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A73000000000000000000032 /* CredentialAccountTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A73000000000000000000031 /* CredentialAccountTests.m */; };
+		A73000000000000000000022 /* CredentialPreferencesTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A73000000000000000000021 /* CredentialPreferencesTests.m */; };
+		A73000000000000000000012 /* CredentialBrokerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A73000000000000000000011 /* CredentialBrokerTests.m */; };
         A63000000000000000000002 /* AppTerminationRegressionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A63000000000000000000001 /* AppTerminationRegressionTests.m */; };
         A62000000000000000000002 /* PreferencesControllerLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */; };
         A61000000000000000000003 /* AKLiquidGlass.m in Sources */ = {isa = PBXBuildFile; fileRef = A61000000000000000000002 /* AKLiquidGlass.m */; };
@@ -874,6 +877,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A73000000000000000000031 /* CredentialAccountTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CredentialAccountTests.m; sourceTree = "<group>"; };
+		A73000000000000000000021 /* CredentialPreferencesTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CredentialPreferencesTests.m; sourceTree = "<group>"; };
+		A73000000000000000000011 /* CredentialBrokerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CredentialBrokerTests.m; sourceTree = "<group>"; };
         A63000000000000000000001 /* AppTerminationRegressionTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppTerminationRegressionTests.m; sourceTree = "<group>"; };
         A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PreferencesControllerLifecycleTests.m; sourceTree = "<group>"; };
         A61000000000000000000001 /* AKLiquidGlass.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AKLiquidGlass.h; sourceTree = "<group>"; };
@@ -2878,6 +2884,9 @@
 				80BEA5F45C4BF11FAA36CDED /* SharedDialerControllerTests.m */,
 				B20000020000000000000002 /* CallControllerLifecycleTests.m */,
                 A62000000000000000000001 /* PreferencesControllerLifecycleTests.m */,
+                A73000000000000000000031 /* CredentialAccountTests.m */,
+                A73000000000000000000021 /* CredentialPreferencesTests.m */,
+                A73000000000000000000011 /* CredentialBrokerTests.m */,
                 A63000000000000000000001 /* AppTerminationRegressionTests.m */,
 				8A68C9511FFE6A8C005125AF /* ApplicationDataLocationsFake.swift */,
 				8A778C0D1E0C136C004B00B8 /* CallHistoryViewSpy.swift */,
@@ -4191,6 +4200,9 @@
 				BEFAEDCA5BE1F8B83CDB623D /* SharedDialerControllerTests.m in Sources */,
 				B20000010000000000000001 /* CallControllerLifecycleTests.m in Sources */,
                 A62000000000000000000002 /* PreferencesControllerLifecycleTests.m in Sources */,
+                A73000000000000000000032 /* CredentialAccountTests.m in Sources */,
+                A73000000000000000000022 /* CredentialPreferencesTests.m in Sources */,
+                A73000000000000000000012 /* CredentialBrokerTests.m in Sources */,
                 A63000000000000000000002 /* AppTerminationRegressionTests.m in Sources */,
 				AAC0FFBF1BE38B3800A5C7E5 /* AKSIPUserAgentEventSource.swift in Sources */,
 				8A68C9521FFE6A8C005125AF /* ApplicationDataLocationsFake.swift in Sources */,

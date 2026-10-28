@@ -361,6 +361,7 @@
 
 #import "AccountSetupController.h"
 #import "AuthenticationFailureController.h"
+#import "AccountController.h"
 #import "ActiveAccountViewController.h"
 #import "AKSIPURI.h"
 #import "AKKeychain.h"
@@ -437,7 +438,8 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
 @end
 @implementation V30AccountEditor
 - (NSUserDefaults *)accountDefaults { return (id)self.memory; }
-- (NSString *)savedPasswordForService:(NSString *)service account:(NSString *)account { self.reads++; return @"unchanged"; }
+- (void)readPasswordForService:(NSString *)service account:(NSString *)account completion:(AKCredentialReadCompletion)completion { self.reads++; completion([AKCredentialReadResult successWithPassword:@"unchanged"]); }
+- (AKCredentialBroker *)credentialBroker { return nil; }
 - (BOOL)savePassword:(NSString *)password service:(NSString *)service account:(NSString *)account error:(NSError **)error {
     self.saves++;
     if (!self.allowsSave && error) { *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:errSecReadOnly userInfo:nil]; }
@@ -578,7 +580,11 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
 }
 
 - (void)testAuthenticationKeepsInvalidAndUnsavedInputAvailable {
-    V30Auth *controller = [[V30Auth alloc] initWithAccountController:nil userAgent:nil];
+    AccountController *owner = [AccountController new];
+    AKSIPAccount *account = [[AKSIPAccount alloc] initWithDictionary:@{@"UUID": NSUUID.UUID.UUIDString,
+        @"FullName": @"Synthetic", @"Realm": @"*", @"Username": @"synthetic", @"Domain": @"example.invalid"} parser:nil];
+    [owner setValue:account forKey:@"account"]; [owner setValue:@YES forKey:@"_enabled"];
+    V30Auth *controller = [[V30Auth alloc] initWithAccountController:owner userAgent:nil];
     (void)controller.window;
     for (NSString *username in @[@"", @" \t\n"]) {
         controller.usernameField.stringValue = username; controller.passwordField.stringValue = @"synthetic-secret";
@@ -600,8 +606,11 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
     V30AccountEditor *controller = [[V30AccountEditor alloc] init]; (void)controller.view;
     V30SelectedTable *table = [[V30SelectedTable alloc] init]; controller.accountsTable = table;
     controller.memory = [V30AccountMemory new];
-    NSDictionary *old = @{@"UUID": @"synthetic", @"AccountEnabled": @NO, @"Domain": @"old-domain", @"Username": @"old-user"};
+    NSDictionary *old = @{@"UUID": @"synthetic", @"AccountEnabled": @NO, @"Domain": @"old-domain", @"Username": @"old-user", @"FullName": @""};
     controller.memory.accounts = @[old];
+    [controller populateFieldsForAccountAtIndex:0];
+    [controller viewWillAppear];
+    controller.reads = 0;
     controller.passwordField.stringValue = @"unchanged";
     for (NSArray *values in @[@[@"", @"user"], @[@"domain", @""], @[@" \t\n", @" \t\n"]]) {
         controller.domainField.enabled = controller.usernameField.enabled = YES;
@@ -625,7 +634,8 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
     controller.accountEnabledCheckBox.state = NSControlStateValueOff; [controller changeAccountEnabled:nil];
     XCTAssertTrue(controller.domainField.enabled);
     controller.domainField.stringValue = @""; controller.SIPAddressField.stringValue = @"sip:synthetic@example.invalid";
-    controller.registrarField.stringValue = @"example.invalid"; controller.accountEnabledCheckBox.state = NSControlStateValueOn;
+    controller.registrarField.stringValue = @"example.invalid"; controller.passwordField.stringValue = @"deliberate-new-credential";
+    controller.accountEnabledCheckBox.state = NSControlStateValueOn;
     [controller changeAccountEnabled:nil]; XCTAssertEqual(controller.memory.writes, 3);
 }
 
@@ -653,7 +663,7 @@ static NSUInteger V30AddCalls, V30UpdateCalls;
 }
 
 - (void)testActualNibsHaveAccurateNativeAccessibilityPurposes {
-    [NSUserDefaults.standardUserDefaults registerDefaults:@{@"Accounts": @[], @"STUNServerHost": @"", @"OutboundProxyHost": @""}];
+    [NSUserDefaults.standardUserDefaults registerDefaults:@{@"Accounts": @[], @"STUNServerHost": @"", @"OutboundProxyHost": @"", @"RingingSound": @""}];
     PreferencesController *preferences = [[PreferencesController alloc] initWithWindowNibName:@"Preferences"]; (void)preferences.window;
     [self assertPurpose:@"Recording format" control:[preferences.generalPreferencesViewController valueForKey:@"recordingFormatPopUpButton"]];
     (void)preferences.soundPreferencesViewController.view;

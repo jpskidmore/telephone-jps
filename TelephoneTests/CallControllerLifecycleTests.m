@@ -18,28 +18,31 @@
 - (void)presentCredentialError:(NSString *)message field:(NSTextField *)field;
 @end
 @interface AKAsyncAuthenticationAgent : NSObject
-@property(nonatomic) NSUInteger adds;
+@property(nonatomic) NSUInteger adds, removals;
 @property(nonatomic,copy) void (^addCompletion)(BOOL);
 - (void)addAccount:(AKSIPAccount *)account withPassword:(NSString *)password completion:(void (^)(BOOL))completion;
 - (void)removeAccount:(AKSIPAccount *)account completion:(void (^)(BOOL))completion;
 @end
 @implementation AKAsyncAuthenticationAgent
 - (void)addAccount:(AKSIPAccount *)account withPassword:(NSString *)password completion:(void (^)(BOOL))completion { self.adds++; self.addCompletion=completion; }
-- (void)removeAccount:(AKSIPAccount *)account completion:(void (^)(BOOL))completion { completion(YES); }
+- (void)removeAccount:(AKSIPAccount *)account completion:(void (^)(BOOL))completion { self.removals++; completion(YES); }
 @end
 @interface AKAsyncAuthenticationAccountController : AccountController
 @property(nonatomic) NSUInteger removals, connecting, unavailable;
 @property(nonatomic,copy) void (^removeCompletion)(BOOL);
 @end
 @implementation AKAsyncAuthenticationAccountController
-- (void)removeAccountFromUserAgentWithCompletion:(void (^)(BOOL))completion { self.removals++; self.removeCompletion=completion; }
+- (void)removeAccountFromUserAgentWithCompletion:(void (^)(BOOL))completion { [self invalidateCredentialAccess]; self.removals++; self.removeCompletion=completion; }
 - (void)showConnectingState { self.connecting++; }
 - (void)showUnavailableState { self.unavailable++; }
 @end
 @interface AKAsyncAuthenticationController : AuthenticationFailureController
-@property(nonatomic) NSUInteger dismissals, errors;
+@property(nonatomic) NSUInteger dismissals, errors, saves;
 @end
 @implementation AKAsyncAuthenticationController
+- (BOOL)savePassword:(NSString *)password service:(NSString *)service account:(NSString *)account error:(NSError **)error {
+    self.saves++; return YES; // Synthetic boundary even if a stale-sheet guard regresses.
+}
 - (void)closeSheet:(id)sender { self.dismissals++; }
 - (void)presentCredentialError:(NSString *)message field:(NSTextField *)field { self.errors++; }
 @end
@@ -80,6 +83,33 @@
     [self.sheet changeUsernameAndPassword:nil]; self.owner.removeCompletion(YES); self.agent.addCompletion(NO);
     XCTAssertEqual(self.sheet.errors,1u); XCTAssertEqual(self.sheet.dismissals,0u); XCTAssertEqual(self.owner.unavailable,1u);
     [self.sheet changeUsernameAndPassword:nil]; XCTAssertEqual(self.owner.removals,2u);
+}
+- (void)testOldRemovalCompletionCannotUnlockNewerRetry {
+    [self.sheet changeUsernameAndPassword:nil];
+    void (^oldCompletion)(BOOL) = self.owner.removeCompletion;
+    [self.sheet prepareWithUsername:@"new" password:@"synthetic-second"];
+    [self.sheet changeUsernameAndPassword:nil];
+    oldCompletion(YES);
+    XCTAssertTrue([[self.sheet valueForKey:@"retryPending"] boolValue]);
+    [self.sheet changeUsernameAndPassword:nil];
+    XCTAssertEqual(self.owner.removals, 2u); XCTAssertEqual(self.agent.adds, 0u);
+}
+- (void)testOldAddCompletionCannotUnlockOrRemoveNewerRetry {
+    [self.sheet changeUsernameAndPassword:nil]; self.owner.removeCompletion(YES);
+    void (^oldCompletion)(BOOL) = self.agent.addCompletion;
+    [self.sheet prepareWithUsername:@"new" password:@"synthetic-second"];
+    [self.sheet changeUsernameAndPassword:nil];
+    oldCompletion(YES);
+    XCTAssertTrue([[self.sheet valueForKey:@"retryPending"] boolValue]);
+    [self.sheet changeUsernameAndPassword:nil];
+    XCTAssertEqual(self.owner.removals, 2u); XCTAssertEqual(self.agent.removals, 0u);
+}
+- (void)testInvalidatedSheetCannotWriteOrReconnect {
+    self.sheet.mustSaveCheckBox.state = NSControlStateValueOn;
+    [self.owner setCredentialAccessSuspended:YES];
+    [self.sheet changeUsernameAndPassword:nil];
+    XCTAssertEqual(self.owner.removals, 0u); XCTAssertEqual(self.agent.adds, 0u); XCTAssertEqual(self.sheet.saves, 0u);
+    XCTAssertEqual(self.sheet.errors, 1u);
 }
 - (void)testDisablingAccountWhileDeleteIsPendingCancelsRetry {
     [self.sheet changeUsernameAndPassword:nil]; [self.owner setValue:@NO forKey:@"_enabled"]; self.owner.removeCompletion(YES);

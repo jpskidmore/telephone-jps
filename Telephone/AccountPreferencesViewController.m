@@ -34,18 +34,232 @@ static NSString * const kAKSIPAccountPboardType = @"AKSIPAccountPboardType";
 // Maximum number of accounts.
 static const NSUInteger kAccountsMax = 32;
 
+@interface AccountPreferencesViewController ()
+@property(nonatomic) NSUInteger credentialGeneration;
+@property(nonatomic, copy) NSDictionary *credentialAccountSnapshot;
+@property(nonatomic, copy) NSString *credentialService;
+@property(nonatomic, copy) NSString *credentialUsername;
+@property(nonatomic, copy) NSString *loadedCredentialPassword;
+@property(nonatomic) AKCredentialReadStatus credentialReadStatus;
+@property(nonatomic) BOOL credentialReadPending;
+@property(nonatomic) BOOL credentialPasswordWasEdited;
+@property(nonatomic) BOOL credentialRequiresReplacement;
+@property(nonatomic) BOOL credentialPresentationActive;
+@property(nonatomic) BOOL credentialRetryAwaitingEnable;
+@property(nonatomic, weak) NSWindow *credentialObservedWindow;
+@end
+
 @implementation AccountPreferencesViewController
 
 - (NSUserDefaults *)accountDefaults { return NSUserDefaults.standardUserDefaults; }
 
-- (NSString *)savedPasswordForService:(NSString *)service account:(NSString *)account {
-    return [AKKeychain passwordForService:service account:account];
+- (AKCredentialBroker *)credentialBroker { return AKCredentialBroker.sharedBroker; }
+
+- (void)readPasswordForService:(NSString *)service account:(NSString *)account completion:(AKCredentialReadCompletion)completion {
+    [[self credentialBroker] readPasswordForService:service account:account completion:completion];
 }
 
 - (BOOL)savePassword:(NSString *)password service:(NSString *)service account:(NSString *)account error:(NSError **)error {
     return [AKKeychain addItemWithService:service account:account password:password error:error];
 }
 
+- (NSString *)credentialServiceForAccount:(NSDictionary *)account {
+    NSString *registrar = account[AKSIPAccountKeys.registrar];
+    return [NSString stringWithFormat:@"SIP: %@", registrar.length ? registrar : (account[AKSIPAccountKeys.domain] ?: @"")];
+}
+
+- (void)resetCredentialSnapshot {
+    self.credentialGeneration++;
+    self.credentialAccountSnapshot = nil;
+    self.credentialService = nil;
+    self.credentialUsername = nil;
+    self.loadedCredentialPassword = nil;
+    self.credentialReadStatus = AKCredentialReadStatusSuperseded;
+    self.credentialReadPending = NO;
+    self.credentialPasswordWasEdited = NO;
+    self.credentialRequiresReplacement = NO;
+    self.credentialRetryAwaitingEnable = NO;
+    self.passwordField.stringValue = @"";
+    self.passwordField.placeholderString = nil;
+    self.passwordField.accessibilityHelp = nil;
+    self.passwordField.toolTip = nil;
+    self.accountEnabledCheckBox.accessibilityHelp = nil;
+    self.accountEnabledCheckBox.toolTip = nil;
+}
+
+- (BOOL)selectedAccountMatchesCredentialSnapshot {
+    NSArray *accounts = [[self accountDefaults] arrayForKey:UserDefaultsKeys.accounts];
+    NSInteger row = self.accountsTable.selectedRow;
+    return self.credentialAccountSnapshot && row >= 0 && (NSUInteger)row < accounts.count &&
+        [accounts[(NSUInteger)row] isEqualToDictionary:self.credentialAccountSnapshot];
+}
+
+- (NSString *)currentCredentialService {
+    NSCharacterSet *spaces = NSCharacterSet.whitespaceAndNewlineCharacterSet;
+    NSString *registrar = [self.registrarField.stringValue stringByTrimmingCharactersInSet:spaces];
+    NSString *domain = [self.domainField.stringValue stringByTrimmingCharactersInSet:spaces];
+    return [NSString stringWithFormat:@"SIP: %@", registrar.length ? registrar : domain];
+}
+
+- (BOOL)formUsesLoadedCredentialIdentity {
+    return [[self currentCredentialService] isEqualToString:self.credentialService] &&
+        [[self.usernameField.stringValue stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet]
+            isEqualToString:self.credentialUsername];
+}
+
+- (NSString *)credentialReadHelpForStatus:(AKCredentialReadStatus)status {
+    switch (status) {
+        case AKCredentialReadStatusMissing:
+            return NSLocalizedString(@"No password is saved. Enter a password before enabling this account.", @"Missing account credential.");
+        case AKCredentialReadStatusCancelled:
+            return NSLocalizedString(@"Keychain access was cancelled. Enter a replacement password, or enable the account to request access again.", @"Cancelled account credential lookup.");
+        case AKCredentialReadStatusDenied:
+            return NSLocalizedString(@"Keychain access was denied. Enter a replacement password, or enable the account to request access again.", @"Denied account credential lookup.");
+        case AKCredentialReadStatusInvalidData:
+            return NSLocalizedString(@"The saved password could not be read. Enter a replacement password, or enable the account to try again.", @"Invalid account credential data.");
+        default:
+            return NSLocalizedString(@"The password is unavailable. Enter a replacement password, or enable the account to try again.", @"Unavailable account credential lookup.");
+    }
+}
+
+- (void)loadCredentialForAccount:(NSDictionary *)account {
+    self.credentialGeneration++;
+    NSUInteger generation = self.credentialGeneration;
+    self.credentialAccountSnapshot = [account copy];
+    self.credentialService = [self credentialServiceForAccount:account];
+    self.credentialUsername = account[AKSIPAccountKeys.username] ?: @"";
+    self.loadedCredentialPassword = nil;
+    self.credentialReadPending = NO;
+    self.credentialReadStatus = AKCredentialReadStatusSuperseded;
+    if (!self.credentialPresentationActive) return;
+    self.credentialReadPending = YES;
+    self.passwordField.placeholderString = NSLocalizedString(@"Loading password…", @"Pending account credential lookup.");
+    self.passwordField.accessibilityHelp = NSLocalizedString(@"The saved password is being requested. You may enter a replacement password while waiting.", @"Pending account credential help.");
+    self.passwordField.toolTip = self.passwordField.accessibilityHelp;
+    __weak typeof(self) weakSelf = self;
+    [self readPasswordForService:self.credentialService account:self.credentialUsername completion:^(AKCredentialReadResult *result) {
+        AccountPreferencesViewController *controller = weakSelf;
+        if (!controller || !controller.credentialPresentationActive || controller.credentialGeneration != generation ||
+            ![controller selectedAccountMatchesCredentialSnapshot] || ![controller formUsesLoadedCredentialIdentity]) return;
+        controller.credentialReadPending = NO;
+        controller.credentialReadStatus = result.status;
+        if (result.status == AKCredentialReadStatusSuccess) {
+            controller.loadedCredentialPassword = result.password;
+            if (!controller.credentialPasswordWasEdited) controller.passwordField.stringValue = result.password;
+            controller.passwordField.placeholderString = nil;
+            controller.passwordField.accessibilityHelp = nil;
+            controller.passwordField.toolTip = nil;
+            NSString *readyHelp = controller.credentialRetryAwaitingEnable
+                ? NSLocalizedString(@"Password loaded. Enable this account again to continue.", @"Explicit credential retry completed.") : nil;
+            controller.accountEnabledCheckBox.accessibilityHelp = readyHelp;
+            controller.accountEnabledCheckBox.toolTip = readyHelp;
+        } else {
+            NSString *help = [controller credentialReadHelpForStatus:result.status];
+            controller.passwordField.placeholderString = NSLocalizedString(@"Password unavailable", @"Failed account credential lookup.");
+            controller.passwordField.accessibilityHelp = help;
+            controller.passwordField.toolTip = help;
+            controller.accountEnabledCheckBox.accessibilityHelp = help;
+            controller.accountEnabledCheckBox.toolTip = help;
+        }
+        NSAccessibilityPostNotification(controller.passwordField, NSAccessibilityValueChangedNotification);
+    }];
+}
+
+- (void)credentialFieldDidChange:(NSNotification *)notification {
+    if (!self.credentialPresentationActive) {
+        if (notification.object == self.passwordField) self.passwordField.stringValue = @"";
+        return;
+    }
+    if (notification.object == self.passwordField) {
+        self.credentialPasswordWasEdited = YES;
+        self.credentialRetryAwaitingEnable = NO;
+        self.accountEnabledCheckBox.accessibilityHelp = nil;
+        self.accountEnabledCheckBox.toolTip = nil;
+        return;
+    }
+    // Identity edits make the in-flight result belong to the old form. Keep
+    // deliberately entered text, but never copy the old saved secret to a new key.
+    if (![self formUsesLoadedCredentialIdentity]) {
+        self.credentialGeneration++;
+        self.credentialReadPending = NO;
+        self.credentialReadStatus = AKCredentialReadStatusSuperseded;
+        self.credentialRetryAwaitingEnable = NO;
+        self.loadedCredentialPassword = nil;
+        if (!self.credentialPasswordWasEdited) self.passwordField.stringValue = @"";
+        NSString *help = NSLocalizedString(@"The credential destination changed. Enter a password before enabling this account.", @"Changed account credential identity.");
+        self.passwordField.placeholderString = NSLocalizedString(@"Enter password", @"Replacement account credential.");
+        self.passwordField.accessibilityHelp = help;
+        self.passwordField.toolTip = help;
+    }
+}
+
+- (void)resumeCredentialPresentation {
+    if (self.credentialPresentationActive) return;
+    self.credentialPresentationActive = YES;
+    if ([self selectedAccountMatchesCredentialSnapshot]) {
+        if (self.credentialRequiresReplacement || ![self formUsesLoadedCredentialIdentity]) {
+            self.passwordField.placeholderString = NSLocalizedString(@"Enter password", @"Replacement account credential.");
+            self.passwordField.accessibilityHelp = NSLocalizedString(@"Enter the replacement password again before enabling this account.", @"Discarded unsaved credential help.");
+        } else if (!self.credentialReadPending) {
+            [self loadCredentialForAccount:self.credentialAccountSnapshot];
+        }
+    } else {
+        [self populateFieldsForAccountAtIndex:self.accountsTable.selectedRow];
+    }
+}
+
+- (void)suspendCredentialPresentation {
+    self.credentialPresentationActive = NO;
+    self.credentialRequiresReplacement = self.credentialRequiresReplacement || self.credentialPasswordWasEdited ||
+        (self.loadedCredentialPassword && ![self.passwordField.stringValue isEqualToString:self.loadedCredentialPassword]);
+    self.credentialGeneration++;
+    self.credentialReadPending = NO;
+    self.credentialReadStatus = AKCredentialReadStatusSuperseded;
+    self.credentialPasswordWasEdited = NO;
+    self.credentialRetryAwaitingEnable = NO;
+    self.loadedCredentialPassword = nil;
+    self.passwordField.stringValue = @"";
+    self.passwordField.placeholderString = nil;
+    self.passwordField.accessibilityHelp = nil;
+    self.passwordField.toolTip = nil;
+    self.accountEnabledCheckBox.accessibilityHelp = nil;
+    self.accountEnabledCheckBox.toolTip = nil;
+}
+
+
+- (void)viewWillAppear {
+    [super viewWillAppear];
+    [self resumeCredentialPresentation];
+}
+
+- (void)viewDidAppear {
+    [super viewDidAppear];
+    NSWindow *window = self.view.window;
+    if (self.credentialObservedWindow == window) return;
+    NSNotificationCenter *centre = NSNotificationCenter.defaultCenter;
+    if (self.credentialObservedWindow) {
+        [centre removeObserver:self name:NSWindowWillCloseNotification object:self.credentialObservedWindow];
+        [centre removeObserver:self name:NSWindowDidBecomeKeyNotification object:self.credentialObservedWindow];
+    }
+    self.credentialObservedWindow = window;
+    if (window) {
+        [centre addObserver:self selector:@selector(credentialWindowWillClose:) name:NSWindowWillCloseNotification object:window];
+        [centre addObserver:self selector:@selector(credentialWindowDidBecomeKey:) name:NSWindowDidBecomeKeyNotification object:window];
+    }
+}
+
+- (void)viewWillDisappear {
+    [super viewWillDisappear];
+    [self suspendCredentialPresentation];
+}
+
+- (void)credentialWindowWillClose:(NSNotification *)notification {
+    if (self.view.window == notification.object) [self suspendCredentialPresentation];
+}
+
+- (void)credentialWindowDidBecomeKey:(NSNotification *)notification {
+    if (self.view.window == notification.object) [self resumeCredentialPresentation];
+}
 
 @synthesize accountSetupController = _accountSetupController;
 
@@ -80,6 +294,10 @@ static const NSUInteger kAccountsMax = 32;
     self.proxyPortField.cell.accessibilityLabel = NSLocalizedString(@"Account proxy port", @"Accessible control purpose.");
     self.SIPAddressField.cell.accessibilityLabel = NSLocalizedString(@"SIP address", @"Accessible control purpose.");
     self.registrarField.cell.accessibilityLabel = NSLocalizedString(@"Registrar", @"Accessible control purpose.");
+    for (NSTextField *field in @[self.passwordField, self.usernameField, self.domainField, self.registrarField]) {
+        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(credentialFieldDidChange:)
+                                                   name:NSControlTextDidChangeNotification object:field];
+    }
 
     NSString *connectionScope = NSLocalizedString(@"Connection settings for the selected account.", @"Account Connection tab scope.");
     NSView *connectionView = self.proxyHostField.superview;
@@ -106,7 +324,7 @@ static const NSUInteger kAccountsMax = 32;
         [self populateFieldsForAccountAtIndex:row];
     }
     
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [self accountDefaults];
     NSUInteger accountsCount = [[defaults arrayForKey:UserDefaultsKeys.accounts] count];
     if (accountsCount >= kAccountsMax) {
         [[self addAccountButton] setEnabled:NO];
@@ -174,9 +392,14 @@ static const NSUInteger kAccountsMax = 32;
 }
 
 - (void)removeAccountAtIndex:(NSInteger)index {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [self accountDefaults];
     NSMutableArray *savedAccounts = [NSMutableArray arrayWithArray:[defaults arrayForKey:UserDefaultsKeys.accounts]];
-    NSString *uuid = savedAccounts[index][AKSIPAccountKeys.uuid];
+    if (index < 0 || (NSUInteger)index >= savedAccounts.count) return;
+    NSDictionary *removedAccount = savedAccounts[(NSUInteger)index];
+    NSString *uuid = removedAccount[AKSIPAccountKeys.uuid];
+    [[self credentialBroker] invalidateService:[self credentialServiceForAccount:removedAccount]
+                                     account:removedAccount[AKSIPAccountKeys.username] ?: @""];
+    [self resetCredentialSnapshot];
     [savedAccounts removeObjectAtIndex:index];
     [defaults setObject:savedAccounts forKey:UserDefaultsKeys.accounts];
     
@@ -191,6 +414,7 @@ static const NSUInteger kAccountsMax = 32;
     
     // Select none, last or previous account.
     if ([savedAccounts count] == 0) {
+        [self populateFieldsForAccountAtIndex:-1];
         return;
         
     } else if (index >= ([savedAccounts count] - 1)) {
@@ -207,10 +431,11 @@ static const NSUInteger kAccountsMax = 32;
 }
 
 - (void)populateFieldsForAccountAtIndex:(NSInteger)index {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [self accountDefaults];
     NSArray *savedAccounts = [defaults arrayForKey:UserDefaultsKeys.accounts];
+    [self resetCredentialSnapshot];
     
-    if (index >= 0) {
+    if (index >= 0 && (NSUInteger)index < savedAccounts.count) {
         NSDictionary *accountDict = savedAccounts[index];
         
         [[self accountEnabledCheckBox] setEnabled:YES];
@@ -310,17 +535,9 @@ static const NSUInteger kAccountsMax = 32;
         // User Name.
         [[self usernameField] setStringValue:accountDict[AKSIPAccountKeys.username]];
         
-        NSString *keychainService;
-        if ([accountDict[AKSIPAccountKeys.registrar] length] > 0) {
-            keychainService = [NSString stringWithFormat:@"SIP: %@", accountDict[AKSIPAccountKeys.registrar]];
-        } else {
-            keychainService = [NSString stringWithFormat:@"SIP: %@", accountDict[AKSIPAccountKeys.domain]];
-        }
-        
-        // Password.
-        [[self passwordField] setStringValue:[AKKeychain passwordForService:keychainService
-                                                                    account:accountDict[AKSIPAccountKeys.username]]];
-        
+        // The shared broker supplies the password after all identity fields are populated.
+        self.passwordField.stringValue = @"";
+
         // Reregister every...
         if ([accountDict[AKSIPAccountKeys.reregistrationTime] integerValue] > 0) {
             [[self reregistrationTimeField] setStringValue:[accountDict[AKSIPAccountKeys.reregistrationTime] stringValue]];
@@ -407,6 +624,9 @@ static const NSUInteger kAccountsMax = 32;
             [[self updateIPAddressCheckBox] setAllowsMixedState:NO];
             [[self updateIPAddressCheckBox] setState:NSControlStateValueOff];
         }
+        // The Accounts nib is also loaded merely to measure the Settings
+        // layout. The admission helper stages metadata until this pane appears.
+        [self loadCredentialForAccount:accountDict];
 
     } else {  // if (index >= 0)
         [[self accountEnabledCheckBox] setState:NSControlStateValueOff];
@@ -470,10 +690,8 @@ static const NSUInteger kAccountsMax = 32;
 
 - (IBAction)changeAccountEnabled:(id)sender {
     NSInteger index = [[self accountsTable] selectedRow];
-    if (index == -1) {
-        return;
-    }
-    
+    if (index < 0) return;
+
     NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
     
     userInfo[kAccountIndex] = @(index);
@@ -482,7 +700,13 @@ static const NSUInteger kAccountsMax = 32;
     
     NSMutableArray *savedAccounts = [NSMutableArray arrayWithArray:[defaults arrayForKey:UserDefaultsKeys.accounts]];
     
+    if ((NSUInteger)index >= savedAccounts.count) return;
     NSMutableDictionary *accountDict = [NSMutableDictionary dictionaryWithDictionary:savedAccounts[index]];
+    if (!self.credentialPresentationActive) {
+        self.accountEnabledCheckBox.state = [accountDict[UserDefaultsKeys.accountEnabled] boolValue]
+            ? NSControlStateValueOn : NSControlStateValueOff;
+        return;
+    }
     
     BOOL isChecked = [[self accountEnabledCheckBox] state] == NSControlStateValueOn;
     accountDict[UserDefaultsKeys.accountEnabled] = @(isChecked);
@@ -522,19 +746,51 @@ static const NSUInteger kAccountsMax = 32;
         }
         
         NSString *keychainAccount = username;
-        
-        NSString *keychainPassword = [self savedPasswordForService:keychainService account:keychainAccount];
-        
-        NSString *currentPassword = [[self passwordField] stringValue];
-        
-        // Save password only if it's been changed.
-        if (![keychainPassword isEqualToString:currentPassword]) {
+        NSString *currentPassword = self.passwordField.stringValue;
+        BOOL passwordEdited = self.credentialPasswordWasEdited ||
+            (self.loadedCredentialPassword != nil && ![currentPassword isEqualToString:self.loadedCredentialPassword]);
+        if (![self selectedAccountMatchesCredentialSnapshot]) {
+            [self presentAccountEditError:NSLocalizedString(@"This account changed while it was being edited. Select it again before enabling it.", @"Stale account settings.") field:self.usernameField];
+            return;
+        }
+        BOOL sameCredential = [keychainService isEqualToString:self.credentialService] &&
+            [keychainAccount isEqualToString:self.credentialUsername];
+        if (self.credentialRequiresReplacement && !passwordEdited) {
+            [self presentAccountEditError:NSLocalizedString(@"Enter the replacement password again before enabling this account.", @"Discarded unsaved credential help.") field:self.passwordField];
+            return;
+        }
+        if (!sameCredential && !passwordEdited) {
+            [self presentAccountEditError:NSLocalizedString(@"The credential destination changed. Enter a password before enabling this account.", @"Changed account credential identity.") field:self.passwordField];
+            return;
+        }
+        if (!passwordEdited && (self.credentialReadPending || self.credentialReadStatus != AKCredentialReadStatusSuccess)) {
+            if (self.credentialReadPending || self.credentialReadStatus == AKCredentialReadStatusMissing) {
+                NSString *help = self.credentialReadPending
+                    ? NSLocalizedString(@"Wait for the password lookup to finish before enabling this account.", @"Pending credential enablement.")
+                    : [self credentialReadHelpForStatus:self.credentialReadStatus];
+                [self presentAccountEditError:help field:self.passwordField];
+            } else {
+                // Enabling is a deliberate retry. It requests access again but
+                // never treats cancellation/denial as an empty password.
+                self.accountEnabledCheckBox.state = NSControlStateValueOff;
+                [[self credentialBroker] invalidateService:keychainService account:keychainAccount];
+                self.credentialRetryAwaitingEnable = YES;
+                [self loadCredentialForAccount:savedAccounts[(NSUInteger)index]];
+                self.accountEnabledCheckBox.accessibilityHelp = NSLocalizedString(@"Password access is being requested. Enable the account again after it finishes, or enter a replacement password.", @"Explicit credential retry help.");
+                self.accountEnabledCheckBox.toolTip = self.accountEnabledCheckBox.accessibilityHelp;
+            }
+            return;
+        }
+        // The admitted snapshot is sufficient for an unchanged save. No second
+        // Keychain read is made merely to compare the form with stored data.
+        if (passwordEdited) {
             NSError *saveError;
             if (![self savePassword:currentPassword service:keychainService account:keychainAccount error:&saveError]) {
                 [self presentAccountEditError:[NSString stringWithFormat:NSLocalizedString(@"Password could not be saved. %@", @"Credential save failure."), saveError.localizedDescription]
                                         field:self.passwordField];
                 return;
             }
+            [[self credentialBroker] invalidateService:keychainService account:keychainAccount];
         }
         
         accountDict[AKSIPAccountKeys.reregistrationTime] = @([[self reregistrationTimeField] integerValue]);
@@ -656,6 +912,22 @@ static const NSUInteger kAccountsMax = 32;
     savedAccounts[index] = accountDict;
     
     [defaults setObject:savedAccounts forKey:UserDefaultsKeys.accounts];
+    self.credentialGeneration++;
+    self.credentialReadPending = NO;
+    self.credentialAccountSnapshot = [accountDict copy];
+    self.credentialService = [self credentialServiceForAccount:accountDict];
+    self.credentialUsername = accountDict[AKSIPAccountKeys.username] ?: @"";
+    if (isChecked) {
+        self.loadedCredentialPassword = self.passwordField.stringValue;
+        self.credentialReadStatus = AKCredentialReadStatusSuccess;
+        self.credentialPasswordWasEdited = NO;
+        self.credentialRequiresReplacement = NO;
+        self.credentialRetryAwaitingEnable = NO;
+        self.passwordField.accessibilityHelp = nil;
+        self.passwordField.toolTip = nil;
+        self.accountEnabledCheckBox.accessibilityHelp = nil;
+        self.accountEnabledCheckBox.toolTip = nil;
+    }
     
     [[NSNotificationCenter defaultCenter]
      postNotificationName:AKPreferencesControllerDidChangeAccountEnabledNotification
@@ -689,7 +961,7 @@ static const NSUInteger kAccountsMax = 32;
 #pragma mark NSTableView data source
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)aTableView {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [self accountDefaults];
     return [[defaults arrayForKey:UserDefaultsKeys.accounts] count];
 }
 
@@ -697,7 +969,7 @@ static const NSUInteger kAccountsMax = 32;
         objectValueForTableColumn:(NSTableColumn *)aTableColumn
         row:(NSInteger)rowIndex {
     
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [self accountDefaults];
     
     NSDictionary *accountDict = [defaults arrayForKey:UserDefaultsKeys.accounts][rowIndex];
     
@@ -770,7 +1042,7 @@ static const NSUInteger kAccountsMax = 32;
     }
     NSInteger draggingRow = [indexes firstIndex];
     
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [self accountDefaults];
     NSMutableArray *accounts = [[defaults arrayForKey:UserDefaultsKeys.accounts] mutableCopy];
     id selectedAccount = accounts[[[self accountsTable] selectedRow]];
     
@@ -816,7 +1088,7 @@ static const NSUInteger kAccountsMax = 32;
     [[self accountsTable] reloadData];
     
     // Select the newly added account.
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [self accountDefaults];
     NSUInteger accountsCount = [[defaults arrayForKey:UserDefaultsKeys.accounts] count];
     NSUInteger index = accountsCount - 1;
     if (index != 0) {

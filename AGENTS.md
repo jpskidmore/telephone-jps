@@ -37,7 +37,7 @@ Existing dated release records retain the visibility checked at their original t
 The owner authorised issue #72 **Fix A**, then installation and publication of a
 **3.6.1/build 165 hotfix**. The remaining roadmap #61–71 stays deferred.
 
-## Current released baseline — 21 October 2026
+## Historical 3.6.1 baseline — 21 October 2026
 
 **3.6.1/build 165** is installed and published as public Latest from immutable
 source `407bd1ceb8c39995a986180c8ec70dad87d1a8fc`. Issue #72 Fix A restores the

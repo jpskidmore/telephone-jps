@@ -58,6 +58,10 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
 @property(nonatomic, copy) NSString *destinationToCall;
 @property(nonatomic) AccountWindowControllerAccountState desiredAvailability;
 @property(nonatomic) BOOL addingAccount;
+@property(nonatomic, readwrite) NSUInteger credentialAccessGeneration;
+@property(nonatomic, readwrite) BOOL credentialAccessSuspended;
+@property(nonatomic) BOOL credentialReadBlocked;
+@property(nonatomic, copy) NSString *admittedPassword;
 
 @end
 
@@ -82,6 +86,7 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
                                      object:reachability];
         }
     } else {
+        [self invalidateCredentialAccess];
         [self cancelPendingRoutedCalls];
         if ([self registrarReachability] != nil) {
             [notificationCenter removeObserver:self
@@ -99,6 +104,10 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
 
 - (void)setAccountRegistered:(BOOL)flag {
     [self invalidateReRegistrationTimer];
+    // Positive admission is closed during sleep, session suspension and quit,
+    // including accounts already present in the native registry. Unregistering
+    // an existing account remains possible while admission is suspended.
+    if (flag && (!self.isEnabled || self.credentialAccessSuspended || self.sleepStatus.isSleeping)) return;
     self.account.desiredRegistered = flag;
     if (!self.userAgent.isStarted) {
         self.attemptingToRegisterAccount = flag;
@@ -110,28 +119,99 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
         self.account.registered = flag;
         return;
     }
-    if (self.addingAccount || self.desiredAvailability == AccountWindowControllerAccountStateOffline) return;
+    if (self.addingAccount || self.credentialReadBlocked || self.credentialAccessSuspended ||
+        !self.isEnabled || self.sleepStatus.isSleeping ||
+        self.desiredAvailability == AccountWindowControllerAccountStateOffline) return;
     self.addingAccount = YES;
-    NSString *service = [NSString stringWithFormat:@"SIP: %@", self.account.registrar];
-    NSString *password = [AKKeychain passwordForService:service account:self.account.username];
+    AKSIPAccount *account = self.account;
+    AKSIPUserAgent *agent = self.userAgent;
+    NSString *service = [NSString stringWithFormat:@"SIP: %@", account.registrar];
+    NSString *username = [account.username copy];
+    NSUInteger generation = ++self.credentialAccessGeneration;
     [self showConnectingState];
-    [self.userAgent addAccount:self.account withPassword:password completion:^(BOOL added) {
-        self.addingAccount = NO;
-        if (self.desiredAvailability == AccountWindowControllerAccountStateOffline || !self.isEnabled) {
-            if (added) [self.userAgent removeAccount:self.account completion:^(BOOL removed) {}];
-            [self showOfflineState];
-        } else if (added) {
-            if (!flag) {
-                [self showUnavailableState];
-                [self dispatchPendingRoutedCalls];
-            }
-        } else {
-            BOOL hadPendingCalls = self.hasPendingRoutedCalls;
-            [self cancelPendingRoutedCalls];
-            [self showUnavailableState];
-            if (hadPendingCalls) [DialPlanCoordinator.shared presentFailure:[NSString stringWithFormat:@"%@ could not connect. No other connection was used.", self.accountDescription]];
+    __weak AccountController *weakSelf = self;
+    [self.credentialBroker readPasswordForService:service account:username completion:^(AKCredentialReadResult *result) {
+        AccountController *controller = weakSelf;
+        if (![controller credentialRequestIsCurrent:generation account:account service:service username:username]) return;
+        if (result.status != AKCredentialReadStatusSuccess) {
+            controller.addingAccount = NO;
+            controller.credentialReadBlocked = YES;
+            controller.admittedPassword = nil;
+            controller.attemptingToRegisterAccount = NO;
+            controller.attemptingToUnregisterAccount = NO;
+            [controller cancelPendingRoutedCalls];
+            [controller showUnavailableState];
+            if (result.status != AKCredentialReadStatusSuperseded) [controller presentCredentialReadFailure:result];
+            return;
         }
+        controller.admittedPassword = result.password;
+        [agent addAccount:account withPassword:result.password completion:^(BOOL added) {
+            AccountController *current = weakSelf;
+            if (![current credentialRequestIsCurrent:generation account:account service:service username:username]) {
+                BOOL newerOwner = current.account == account && current.isEnabled && !current.credentialAccessSuspended &&
+                    current.desiredAvailability != AccountWindowControllerAccountStateOffline &&
+                    current.credentialAccessGeneration != generation;
+                if (added && !newerOwner) [agent removeAccount:account completion:^(BOOL removed) {}];
+                return;
+            }
+            current.addingAccount = NO;
+            if (added) {
+                if (!account.desiredRegistered) {
+                    [current showUnavailableState];
+                    [current dispatchPendingRoutedCalls];
+                }
+            } else {
+                current.admittedPassword = nil;
+                BOOL hadPendingCalls = current.hasPendingRoutedCalls;
+                [current cancelPendingRoutedCalls];
+                [current showUnavailableState];
+                if (hadPendingCalls) [DialPlanCoordinator.shared presentFailure:[NSString stringWithFormat:@"%@ could not connect. No other connection was used.", current.accountDescription]];
+            }
+        }];
     }];
+}
+
+- (AKCredentialBroker *)credentialBroker { return AKCredentialBroker.sharedBroker; }
+
+- (BOOL)credentialRequestIsCurrent:(NSUInteger)generation account:(AKSIPAccount *)account
+                          service:(NSString *)service username:(NSString *)username {
+    return self != nil && self.credentialAccessGeneration == generation && self.account == account &&
+        self.isEnabled && !self.credentialAccessSuspended && self.userAgent.isStarted && !self.sleepStatus.isSleeping &&
+        self.desiredAvailability != AccountWindowControllerAccountStateOffline &&
+        [account.username isEqualToString:username] &&
+        [[NSString stringWithFormat:@"SIP: %@", account.registrar] isEqualToString:service];
+}
+
+- (void)invalidateCredentialAccess {
+    self.credentialAccessGeneration++;
+    self.addingAccount = NO;
+    self.admittedPassword = nil;
+    // Do not load a sheet solely to erase an uncreated field.
+    [_authenticationFailureController clearCredentialPresentation];
+    if (self.account.username != nil && self.account.registrar != nil) {
+        [self.credentialBroker invalidateService:[NSString stringWithFormat:@"SIP: %@", self.account.registrar]
+                                        account:self.account.username];
+    }
+}
+
+- (void)setCredentialAccessSuspended:(BOOL)suspended {
+    _credentialAccessSuspended = suspended;
+    if (suspended) [self invalidateCredentialAccess];
+}
+
+- (void)presentCredentialReadFailure:(AKCredentialReadResult *)result {
+    NSString *message;
+    switch (result.status) {
+        case AKCredentialReadStatusCancelled:
+            message = NSLocalizedString(@"Keychain access was cancelled. Choose Online to try again when you are ready.", @"Cancelled credential read."); break;
+        case AKCredentialReadStatusMissing:
+            message = NSLocalizedString(@"No saved password was found. Enter it in Settings → Accounts, then choose Online.", @"Missing credential read."); break;
+        case AKCredentialReadStatusDenied:
+            message = NSLocalizedString(@"Keychain access was denied. Choose Online to deliberately try again, or update the password in Settings → Accounts.", @"Denied credential read."); break;
+        default:
+            message = NSLocalizedString(@"The saved password could not be read. Update it in Settings → Accounts, then choose Online to try again.", @"Failed credential read."); break;
+    }
+    [DialPlanCoordinator.shared presentFailure:message];
 }
 
 - (BOOL)isAccountAdded {
@@ -186,6 +266,7 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
 }
 
 - (void)dealloc {
+    [_authenticationFailureController clearCredentialPresentation];
     [self.routedCallTimeout invalidate];
     for (CallController *aCallController in [self callControllers]) {
         [aCallController close];
@@ -232,6 +313,7 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
 }
 
 - (void)removeAccountFromUserAgentWithCompletion:(void (^)(BOOL))completion {
+    [self invalidateCredentialAccess];
     [self cancelPendingRoutedCalls];
     [self.account cancelPendingOutgoingCalls];
     self.attemptingToRegisterAccount = NO;
@@ -474,6 +556,8 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
 - (NSInteger)windowNumber { return NSApp.mainWindow.windowNumber; }
 
 - (void)changeAccountState:(AccountWindowControllerAccountState)state {
+    [self invalidateCredentialAccess];
+    if (state != AccountWindowControllerAccountStateOffline) self.credentialReadBlocked = NO;
     self.desiredAvailability = state;
     self.attemptingToRegisterAccount = NO;
     self.attemptingToUnregisterAccount = NO;
@@ -569,6 +653,7 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
         return;
     }
     if ([[self account] isRegistered]) {
+        self.admittedPassword = nil;
         [self invalidateReRegistrationTimer];
 
         // If the account was offline and the user chose Unavailable state, -unregisterAccount will add the account
@@ -592,21 +677,15 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
         if ([[self account] registrationStatus] == PJSIP_SC_UNAUTHORIZED &&
             [[self account] registrationErrorCode] == PJSIP_EFAILEDCREDENTIAL) {
 
-            [[[self authenticationFailureController] informativeText] setStringValue:
-             [NSString stringWithFormat:
-              NSLocalizedString(@"Telephone was unable to login to %@. "
-                                 "Change user name or password and try again.",
-                                @"Registrar authentication failed."),
-              [[self account] registrar]]];
-            
-            NSString *service = [NSString stringWithFormat:@"SIP: %@", [[self account] registrar]];
-            NSString *password = [AKKeychain passwordForService:service account:[[self account] username]];
-            
-            [[[self authenticationFailureController] usernameField] setStringValue:[[self account] username]];
-            [[[self authenticationFailureController] passwordField] setStringValue:password];
-
+            NSString *admittedPassword = self.admittedPassword;
+            self.admittedPassword = nil;
+            [self.credentialBroker invalidateService:[NSString stringWithFormat:@"SIP: %@", account.registrar]
+                                            account:account.username];
+            [self.authenticationFailureController prepareWithUsername:account.username password:admittedPassword];
             [DialPlanCoordinator.shared showDialler];
-            [NSApp.mainWindow beginSheet:self.authenticationFailureController.window completionHandler:nil];
+            if (self.authenticationFailureController.window.sheetParent == nil && NSApp.mainWindow != nil) {
+                [NSApp.mainWindow beginSheet:self.authenticationFailureController.window completionHandler:nil];
+            }
 
         } else if (([[self account] registrationStatus] / 100 != 2) &&
                    ([[self account] registrationExpireTime] == kAKSIPAccountRegistrationExpireTimeNotSpecified)) {
@@ -655,6 +734,7 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
 }
 
 - (void)SIPAccountWillRemove:(AKSIPAccount *)account {
+    self.admittedPassword = nil;
     [self invalidateReRegistrationTimer];
 }
 

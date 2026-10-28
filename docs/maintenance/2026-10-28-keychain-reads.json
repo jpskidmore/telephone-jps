@@ -1,0 +1,85 @@
+{
+  "issue": 73,
+  "verifiedUTC": "2026-10-28T08:31:38.728529+00:00",
+  "scope": "Verified source repair; no new release or local installation",
+  "baseCommit": "386cdf543c02e60d3e2550fb40ef65bdb77ea231",
+  "releasedBaseline": {
+    "version": "3.7",
+    "build": 166,
+    "immutableSource": "58956a9906cbe1221640a926446341e6a71fdcb9"
+  },
+  "environment": {
+    "macOS": "27.2",
+    "Xcode": "Xcode 27.1\nBuild version 27A9275",
+    "macOSSDK": "27.0"
+  },
+  "suiteCases": {
+    "DomainXCTest": 28,
+    "UseCasesXCTest": 206,
+    "UseCasesSwiftTesting": 147,
+    "ReceiptValidationXCTest": 5,
+    "TelephoneXCTest": 530,
+    "TelephoneSwiftTesting": 48,
+    "total": 964,
+    "failures": 0
+  },
+  "overlappingFocusedCases": 67,
+  "validationSequence": "Fresh four-bundle pipeline passed 962 cases. Only AppController wake ordering and its two tests changed afterward; final isolated Telephone run passed 578 cases and final unsigned Release built. All framework inputs stayed unchanged, yielding 964 current suite cases.",
+  "separateChecks": {
+    "recordingOwnershipAssertions": 105,
+    "nativeSIPLifecycle": 32,
+    "nativeURIAssertions": 18,
+    "nativeCallbacks": 11,
+    "audioWiring": 11,
+    "recordingLifecycleModel": 6
+  },
+  "broker": {
+    "successAndMissingCacheSeconds": 300,
+    "expiryPurgeIntervalMaximumSeconds": 30,
+    "maximumCachedEntries": 64,
+    "failurePolicy": "Retain until explicit invalidation; reject new admission rather than evict blocked entries",
+    "storageNamespaceChanged": false,
+    "signingOrACLChanged": false,
+    "secretZeroisationClaimed": false,
+    "admittedDeliveryRetention": "Already-admitted main-queue deliveries retain their result until delivery/invalidation; consumers own their copies"
+  },
+  "sourceSHA256": {
+    "Telephone.xcodeproj/project.pbxproj": "40a63b1938a97e71b8490416b6ed2cc5b96a7952375d48cb27fb4ec096d85541",
+    "Telephone/AKKeychain.h": "9d01592687c1e88ee5fb1cda1941e9f511300149f8944a3c9a995ff632c699e5",
+    "Telephone/AKKeychain.m": "de598dc822d304416d88c29f36b207b74f1466239589ebd44ea48db45b861b99",
+    "Telephone/AccountController.h": "3ce0c5c9757b13cb34cf198535ec74dd694ae1b0651fc2d9ba9c9e7cb3566cad",
+    "Telephone/AccountController.m": "6a02992b40ea778bcc4473ae447260ff50a87642e2e02e82670a9b0736568be7",
+    "Telephone/AccountControllers.h": "c15daea9821f7991694ad265ea89e2b40e3b8346cf0af46b030dacb0d992d7f6",
+    "Telephone/AccountControllers.m": "e0a456858d51abc28a372693258959ede7b404ec4a215af6ec3144021b9a94f3",
+    "Telephone/AccountPreferencesViewController.m": "01188231e387a88fb57821b25ee0bda75fca64ea9d8e98f52bd9b9035320e837",
+    "Telephone/AppController.m": "10d5e252827002779aabdc85b6cfc4cbc0e4cb67ea55fb7222e00503249f930d",
+    "Telephone/AuthenticationFailureController.h": "a72cbb3fb71b68d7153e4a1fa50f2aef8aa07590e8248bc19437432a928e2208",
+    "Telephone/AuthenticationFailureController.m": "0fbd54fb4ce778da9760f8e4e65447b478c277ba12d473b63e5fe9ef29b84ac7",
+    "TelephoneTests/AccountRoutingRegressionTests.m": "d22e1d7c97a448e35c896a2b10b00064e317f913c4791c4be16ab2d75765d144",
+    "TelephoneTests/CallControllerLifecycleTests.m": "0a7882cae1fa2ebd46a1be1b7a5dc32ec4f06f6a7cf151b00d5d56b9b88ea624",
+    "TelephoneTests/CredentialAccountTests.m": "e4fa76a7f5b77059cc74936d6fc7a9047cf159db8ba44e974fd278555773d960",
+    "TelephoneTests/CredentialBrokerTests.m": "00df4ae0a0ec85cc35ff16a50925a56893b704b040ba0fbf3d74741eb4bd9c47",
+    "TelephoneTests/CredentialPreferencesTests.m": "22a4aee5696831e23aca3ff1bf456a78e1ce2f8573910f84d93cab80d65cce39",
+    "TelephoneTests/PreferencesControllerLifecycleTests.m": "dddebc3a4eaf050afdfbba6f305c928c310bd69dc63d520d71e645203b00c4b8"
+  },
+  "logSHA256": {
+    "keychain73-build-v5.log": "623c02ad0790b3ab62b880c330b1cefe24d16217ba2d9e000000f7691d250d50",
+    "keychain73-focused-v5.log": "6951329075e224a5e416d398d1592b826b499d9320bcca5f50a1a7412ccaab88",
+    "keychain73-final-full-validation.log": "6bcebca92a8f5135038f702c876dd9a3092485eb7925b452933d801d836469aa",
+    "keychain73-final-build-v6.log": "7a1c27726bd8d4948d83ddcae77f5169bdaf832023ab99229d883d643194b84e",
+    "keychain73-final-v6-full.log": "620042927fcace6338215f8c8db2e74c0438202534defeb33ea5bd94f3ac891c",
+    "keychain73-final-v6-release.log": "8b9ff5787126d9f4eaeb8953d9a640b3de9acd502cc16bdf5ebc57fcfc8542d9",
+    "keychain73-final-lifecycle.log": "de99602b270092fea8f8af0b97799f1e7761ecb6ffc3013f076c68863b0d82dd",
+    "keychain73-final-uri.log": "05b139ede836319d396b5262f6789b0931db5f976a40ed57196afc1cccb4568b",
+    "keychain73-final-callbacks.log": "479daa7e1376704474d715d60620030cedb01b0dfa1f699474c59cde6c5638b4",
+    "keychain73-final-audio-wiring.log": "0e47e81cb74b49fe7a07b888fe205375d63f8de4cd57c5e2411c4bb4d7791a51",
+    "keychain73-final-recording-model.log": "ca8111f316a876b54ea801ed91088aec79bfd65357bace3944a6df85203b00f9"
+  },
+  "limits": [
+    "No real Keychain/profile/provider/grant or credential data was accessed by tests",
+    "Distinct protected items and ad-hoc signing changes may still cause legitimate separate OS prompts",
+    "Writes remain synchronous in the existing three UI action paths; read broker does not claim arbitrary concurrent-write transaction safety",
+    "Actual Keychain prompts/grants, signed-upgrade continuity, provider calling and proficient VoiceOver remain pending in issue62",
+    "No new distributable, GitHub release, local installation or visibility change"
+  ]
+}

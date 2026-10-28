@@ -28,7 +28,7 @@ extern NSString * const kEmailSIPLabel;
 // Queue changes are delivered on the main thread without controller or URI payloads.
 FOUNDATION_EXPORT NSNotificationName const JPSPendingRoutedCallsDidChangeNotification;
 
-@class AKSIPURI, AKNetworkReachability;
+@class AKSIPURI, AKNetworkReachability, AKCredentialBroker;
 @class AsyncCallHistoryPurchaseCheckUseCaseFactory, AsyncCallHistoryViewEventTargetFactory;
 @class CallTransferController, SanitizedCallDestination, StoreWindowPresenter, WorkspaceSleepStatus;
 @protocol RingtonePlaybackUseCase;
@@ -71,6 +71,12 @@ FOUNDATION_EXPORT NSNotificationName const JPSPendingRoutedCallsDidChangeNotific
        purchaseCheckUseCaseFactory:(AsyncCallHistoryPurchaseCheckUseCaseFactory *)purchaseCheckUseCaseFactory
               storeWindowPresenter:(StoreWindowPresenter *)storeWindowPresenter;
 
+// Credential requests are fenced independently of native SIP operations.
+@property(nonatomic, readonly) NSUInteger credentialAccessGeneration;
+@property(nonatomic, readonly) BOOL credentialAccessSuspended;
+- (AKCredentialBroker *)credentialBroker;
+- (void)invalidateCredentialAccess;
+- (void)setCredentialAccessSuspended:(BOOL)suspended;
 - (void)registerAccount;
 - (void)resumeRegistrationIfDesired;
 - (void)unregisterAccount;

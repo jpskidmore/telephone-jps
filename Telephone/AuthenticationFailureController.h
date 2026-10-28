@@ -50,6 +50,10 @@ extern NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPas
 
 - (instancetype)initWithAccountController:(AccountController *)accountController userAgent:(AKSIPUserAgent *)userAgent;
 
+// Uses only the credential already admitted by the account owner; never reads Keychain.
+- (void)prepareWithUsername:(NSString *)username password:(nullable NSString *)password;
+- (void)clearCredentialPresentation;
+
 // Closes a sheet.
 - (IBAction)closeSheet:(id)sender;
 

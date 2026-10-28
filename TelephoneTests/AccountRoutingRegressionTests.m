@@ -16,6 +16,10 @@
 // credentials, real preferences, reachability and PJSIP endpoint operations.
 @interface JPSRoutingAccountFixture : NSObject
 @property(nonatomic, copy) NSString *uuid;
+// These routing-only collaborators have no stored credential identity. The
+// real controller can still fence credential admission when routing goes Offline.
+@property(nonatomic, copy) NSString *username;
+@property(nonatomic) id registrar;
 @property(nonatomic) NSInteger identifier;
 @property(nonatomic, getter=isRegistered) BOOL registered;
 @property(nonatomic) BOOL desiredRegistered;

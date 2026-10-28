@@ -21,6 +21,7 @@
 @import UseCases;
 
 #import "AKNetworkReachability.h"
+#import "AKKeychain.h"
 #import "AKNSString+Scanning.h"
 #import "AKSIPAccount.h"
 #import "AKSIPCall.h"
@@ -342,6 +343,10 @@ NS_ASSUME_NONNULL_END
 - (void)setTerminating:(BOOL)terminating {
     if (_terminating != terminating) self.terminationGeneration++;
     _terminating = terminating;
+    if ([self.accountControllers respondsToSelector:@selector(setCredentialAccessSuspended:)]) {
+        [self.accountControllers setCredentialAccessSuspended:terminating || self.sleepStatus.isSleeping || !self.isUserSessionActive];
+    }
+    if (terminating) [AKCredentialBroker.sharedBroker invalidateAll];
     _recordingRecoveryController.actionsEnabled = !terminating;
     _recordingHistoryActions.actionsEnabled = !terminating;
     if (!terminating) return;
@@ -1240,25 +1245,38 @@ NS_ASSUME_NONNULL_END
 #pragma mark NSWorkspace notifications
 
 - (void)workspaceWillSleep:(NSNotification *)notification {
+    [self.accountControllers setCredentialAccessSuspended:YES];
+    [AKCredentialBroker.sharedBroker invalidateAll];
     if (self.userAgent.isStarted) {
         [self stopUserAgentAndWait];
     }
 }
 
 - (void)workspaceDidWake:(NSNotification *)notification {
-    if (self.isUserSessionActive) {
-        [self.accountControllers registerReachableAccounts];
-    }
+    // WorkspaceSleepStatus receives the same notification. Observer order is
+    // unspecified, so let all wake observers publish their state before retrying.
+    __weak AppController *weakSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        AppController *controller = weakSelf;
+        if (!controller || controller.isTerminating || !controller.isUserSessionActive || controller.sleepStatus.isSleeping) return;
+        [controller.accountControllers setCredentialAccessSuspended:NO];
+        [controller.accountControllers registerReachableAccounts];
+    });
 }
 
 - (void)workspaceSessionDidResignActive:(NSNotification *)notification {
     self.userSessionActive = NO;
+    [self.accountControllers setCredentialAccessSuspended:YES];
+    [AKCredentialBroker.sharedBroker invalidateAll];
     [self.accountControllers unregisterAllAccounts];
 }
 
 - (void)workspaceSessionDidBecomeActive:(NSNotification *)notification {
     self.userSessionActive = YES;
-    [self.accountControllers registerAllAccounts];
+    if (!self.isTerminating && !self.sleepStatus.isSleeping) {
+        [self.accountControllers setCredentialAccessSuspended:NO];
+        [self.accountControllers registerAllAccounts];
+    }
 }
 
 

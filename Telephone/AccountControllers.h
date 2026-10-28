@@ -42,6 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)updateCallsShouldDisplayAccountInfo;
 
+- (void)setCredentialAccessSuspended:(BOOL)suspended;
 - (void)hangUpCallsAndRemoveAccountsFromUserAgent;
 
 - (void)registerAllAccounts;

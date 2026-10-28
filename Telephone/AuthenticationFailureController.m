@@ -31,6 +31,12 @@ NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNo
 
 @interface AuthenticationFailureController ()
 @property(nonatomic) BOOL retryPending;
+@property(nonatomic) NSUInteger retryGeneration;
+@property(nonatomic, copy) NSString *preparedUsername;
+@property(nonatomic, copy) NSString *preparedPassword;
+@property(nonatomic, weak) AKSIPAccount *presentedAccount;
+@property(nonatomic) NSUInteger presentedCredentialGeneration;
+@property(nonatomic) BOOL credentialSessionActive;
 @end
 
 @implementation AuthenticationFailureController
@@ -45,6 +51,9 @@ NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNo
     if (self != nil) {
         _accountController = accountController;
         _userAgent = userAgent;
+        _presentedAccount = accountController.account;
+        _presentedCredentialGeneration = accountController.credentialAccessGeneration;
+        _credentialSessionActive = accountController != nil && accountController.account != nil;
     }
     return self;
 }
@@ -55,12 +64,9 @@ NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNo
       NSLocalizedString(@"Telephone was unable to login to %@. Change user name or password and try again.",
                         @"Registrar authentication failed."), self.accountController.account.registrar]];
     
-    NSString *username = [[[self accountController] account] username];
-    NSString *service = [NSString stringWithFormat:@"SIP: %@", [[[self accountController] account] registrar]];
-    NSString *password = [AKKeychain passwordForService:service account:username];
-    
-    [[self usernameField] setStringValue:username];
-    [[self passwordField] setStringValue:password];
+    self.usernameField.stringValue = self.preparedUsername ?: self.accountController.account.username ?: @"";
+    self.passwordField.stringValue = self.preparedPassword ?: @"";
+    self.preparedPassword = nil;
 }
 
 - (void)windowDidLoad {
@@ -69,7 +75,31 @@ NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNo
     self.passwordField.cell.accessibilityLabel = NSLocalizedString(@"Password", @"Accessible account field purpose.");
 }
 
+- (void)prepareWithUsername:(NSString *)username password:(NSString *)password {
+    self.retryGeneration++;
+    self.retryPending = NO;
+    self.presentedAccount = self.accountController.account;
+    self.presentedCredentialGeneration = self.accountController.credentialAccessGeneration;
+    self.credentialSessionActive = self.presentedAccount != nil;
+    self.preparedUsername = username;
+    self.preparedPassword = password;
+    (void)self.window;
+    self.usernameField.stringValue = username;
+    self.passwordField.stringValue = password ?: @"";
+    self.preparedPassword = nil;
+    self.informativeText.stringValue = [NSString stringWithFormat:NSLocalizedString(@"Telephone was unable to login to %@. Change user name or password and try again.", @"Registrar authentication failed."), self.accountController.account.registrar];
+}
+
+- (void)clearCredentialPresentation {
+    self.credentialSessionActive = NO;
+    self.preparedPassword = nil;
+    self.passwordField.stringValue = @"";
+}
+
 - (IBAction)closeSheet:(id)sender {
+    self.retryGeneration++;
+    self.retryPending = NO;
+    [self clearCredentialPresentation];
     [self.window.sheetParent endSheet:self.window];
 }
 
@@ -82,6 +112,12 @@ NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNo
 
 - (IBAction)changeUsernameAndPassword:(id)sender {
     if (self.retryPending) return;
+    AccountController *owner = self.accountController;
+    if (!self.credentialSessionActive || !owner.isEnabled || owner.credentialAccessSuspended ||
+        owner.account != self.presentedAccount || owner.credentialAccessGeneration != self.presentedCredentialGeneration) {
+        [self presentCredentialError:NSLocalizedString(@"This account changed or is no longer available. Choose Online and try again from the current account.", @"Obsolete authentication form.") field:self.usernameField];
+        return;
+    }
     
     NSCharacterSet *spacesSet = [NSCharacterSet whitespaceAndNewlineCharacterSet];
     NSString *username = [[[self usernameField] stringValue] stringByTrimmingCharactersInSet:spacesSet];
@@ -105,26 +141,43 @@ NSString * const AKAuthenticationFailureControllerDidChangeUsernameAndPasswordNo
     AKSIPAccount *account = controller.account;
     NSString *password = self.passwordField.stringValue;
     self.retryPending = YES;
+    NSUInteger retryGeneration = ++self.retryGeneration;
+    // Removal advances the account credential generation exactly once before its completion.
+    NSUInteger credentialGeneration = controller.credentialAccessGeneration + 1;
     [controller removeAccountFromUserAgentWithCompletion:^(BOOL removed) {
-        if (!controller.isEnabled || controller.account != account || !account.desiredRegistered) {
+        if (self.retryGeneration != retryGeneration) return;
+        if (controller.credentialAccessGeneration != credentialGeneration || controller.credentialAccessSuspended || !controller.isEnabled || controller.account != account || !account.desiredRegistered) {
             self.retryPending = NO;
             return;
         }
         if (!removed) {
             self.retryPending = NO;
+            self.credentialSessionActive = YES;
+            self.presentedCredentialGeneration = credentialGeneration;
+            self.passwordField.stringValue = password;
             [self presentCredentialError:NSLocalizedString(@"Could not reset this account. Try again.", @"Authentication account removal failure.") field:self.usernameField];
             return;
         }
         [account updateUsername:username];
         [controller showConnectingState];
         [self.userAgent addAccount:account withPassword:password completion:^(BOOL added) {
-            self.retryPending = NO;
-            if (!controller.isEnabled || controller.account != account || !account.desiredRegistered) {
-                if (added) [self.userAgent removeAccount:account completion:^(BOOL removedAgain) {}];
+            BOOL obsoletePresentation = self.retryGeneration != retryGeneration;
+            BOOL obsoleteOwner = controller.credentialAccessGeneration != credentialGeneration || controller.credentialAccessSuspended || !controller.isEnabled || controller.account != account || !account.desiredRegistered;
+            if (obsoletePresentation || obsoleteOwner) {
+                // A newer retry of this same account owns its removal/admission.
+                // A delayed BOOL callback cannot identify a newer native account.
+                BOOL newerOwner = controller.account == account && controller.isEnabled && !controller.credentialAccessSuspended &&
+                    account.desiredRegistered && (controller.credentialAccessGeneration != credentialGeneration || self.retryPending);
+                if (added && !newerOwner) [self.userAgent removeAccount:account completion:^(BOOL removedAgain) {}];
+                if (!obsoletePresentation) self.retryPending = NO;
                 return;
             }
+            self.retryPending = NO;
             if (!added) {
                 [controller showUnavailableState];
+                self.credentialSessionActive = YES;
+                self.presentedCredentialGeneration = credentialGeneration;
+                self.passwordField.stringValue = password;
                 [self presentCredentialError:NSLocalizedString(@"Could not reconnect this account. Try again.", @"Authentication account add failure.") field:self.usernameField];
                 return;
             }

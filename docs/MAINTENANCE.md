@@ -34,7 +34,7 @@ documents visible coverage/version information and saved-versus-draft behaviour.
 
 ## Source work delivered in 3.7 — 27 October 2026
 
-Issues #61 and #63–69 are now included in the published 3.7 release. The dated source-validation counts below retain their original scope; fresh release validation is recorded above. #62 remains pending by owner choice. **Next: #70**, then #71, #73 and #74.
+Issues #61 and #63–69 are now included in the published 3.7 release. The dated source-validation counts below retain their original scope; fresh release validation is recorded above. #62 remains pending by owner choice. **Owner priority update — 28 October:** the owner-prioritised #73 credential source repair is implemented and verified. It is not part of the immutable 3.7 release. **Next: #70**, then #71 and #74. The original roadmap remains 16/19 complete; #73 is an additional reported issue.
 
 The owner resumed open-issue repairs. Expanded history search/filter issue #61
 now has fresh native validation: 289 XCTest plus 48 Swift Testing cases, and
@@ -68,7 +68,7 @@ Activity-policy investigation #66 retains the current SIP-session activity after
 an isolated 16-sample comparison and a fresh token-balance fixture. It permits
 idle system sleep; no app energy/battery improvement or real readiness is claimed.
 Read [the measurement and retention decision](maintenance/2026-10-26-activity-policy.md).
-The next ranked source item is #70.
+The owner-prioritised #73 source repair is verified; the next ranked source item is #70.
 
 Call controls #67 now use current state events and diffed snapshots, with a
 one-second tolerant duration-only timer. Fresh isolated Telephone validation
@@ -76,7 +76,7 @@ passed 377 XCTest + 48 Swift Testing cases; final 18 focused cases and bounded
 baseline/candidate counters plus Time Profiler captures passed. Read
 [the call-control record](maintenance/2026-10-26-call-controls.md) for event
 coverage, lifecycle checks and measurement limits. No battery or live-call gain
-is claimed. The next ranked source item is #70.
+is claimed. The owner-prioritised #73 source repair is verified; the next ranked source item is #70.
 
 Recording recovery #68 now has a selectable native manager and a generation-checked
 asynchronous index; menu validation reads cached state. Owned retry/report/discard
@@ -85,7 +85,7 @@ confirmation before discard. Fresh isolated Telephone validation passed 428 XCTe
 + 48 Swift Testing cases, plus separate 105 recording ownership assertions, 32 native
 lifecycle checks, 11 audio wiring and 6 model/wiring checks. Light/Dark captures
 were inspected. Read [the recovery manager record](maintenance/2026-10-26-recording-recovery-browser.md).
-The next ranked source item is #70. These changes are now included in 3.7; no local installation was performed.
+The owner-prioritised #73 source repair is verified; the next ranked source item is #70. These changes are now included in 3.7; no local installation was performed.
 
 History recording attachments #69 are implemented, locally source-verified and
 published in main at bdb60c2be44c3bad301422e42e21f0623e639fad. New calls/segments have exact optional identities,
@@ -96,7 +96,13 @@ Final validation passed 486 XCTest + 48 Swift Testing in the isolated app and
 cooperating-process catalogue tests. Read [the verification record](maintenance/2026-10-27-history-recordings.md)
 for source hashes, corrected fixtures and the conservative parent-directory-sync
 grant boundary. Actual grants/player/provider/VoiceOver remains pending in #62.
-These changes are included in published 3.7/build 166. No local installation was performed. The next ranked source item is #70.
+These changes are included in published 3.7/build 166. No local installation was performed. The owner-prioritised #73 source repair is verified; the next ranked source item is #70.
+
+## Keychain read repair — issue #73, 28 October 2026
+
+Registration and Accounts now share typed, asynchronous, coalesced credential reads. Authentication presentation no longer rereads Keychain; cancellation/denial does not become an empty password or an automatic retry. Account, UI and lifecycle generations fence stale work. Hidden Accounts construction performs no lookup, unchanged saves perform no reread, and closing the window clears its credential fields. The storage namespace, Keychain permissions and signing policy are unchanged.
+
+Current validation passed **964 suite cases**, including the final isolated app run of 530 XCTest + 48 Swift Testing. Separate recording/SIP/source gates and unsigned Release compilation passed. Read [the source verification and limits](maintenance/2026-10-28-keychain-reads.md) and [hash record](maintenance/2026-10-28-keychain-reads.json). No real credential/profile/grant test or new release/installation is claimed. Distinct items and ad-hoc signing changes can still require legitimate separate OS prompts; #62 practical acceptance remains pending.
 
 On 26 October the owner authorised **all remaining issues, one at a time**, with
 findings and outcomes logged in GitHub for other contributors. This resumes the
