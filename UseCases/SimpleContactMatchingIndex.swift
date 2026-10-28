@@ -20,18 +20,23 @@
 public struct SimpleContactMatchingIndex {
     private let index: [String: MatchedContact]
     public let loadResult: Result<Void, ContactsLoadFailure>
+    public let completionSnapshot: ContactCompletionSnapshot?
 
     public init(contacts: Contacts, maxPhoneNumberLength: Int) {
         var map: [String: MatchedContact] = [:]
+        var orderedContacts: [Contact] = []
         loadResult = contacts.enumerate { contact in
+            orderedContacts.append(contact)
             update(&map, withPhonesOf: contact, maxPhoneNumberLength: maxPhoneNumberLength)
             update(&map, withEmailsOf: contact)
         }
         switch loadResult {
         case .success:
             index = map
+            completionSnapshot = ContactCompletionSnapshot(contacts: orderedContacts)
         case .failure:
             index = [:]
+            completionSnapshot = nil
         }
     }
 }

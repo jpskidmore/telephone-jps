@@ -82,6 +82,12 @@ final class CNContactStoreToContactsAdapter: UseCases.Contacts {
 
 private let keys = [
     CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+    CNContactFormatter.descriptorForRequiredKeysForNameOrder,
+    CNContactIdentifierKey as CNKeyDescriptor,
+    CNContactTypeKey as CNKeyDescriptor,
+    CNContactGivenNameKey as CNKeyDescriptor,
+    CNContactFamilyNameKey as CNKeyDescriptor,
+    CNContactOrganizationNameKey as CNKeyDescriptor,
     CNContactEmailAddressesKey as CNKeyDescriptor,
     CNContactPhoneNumbersKey as CNKeyDescriptor
 ]

@@ -1,6 +1,6 @@
 import Cocoa
 @preconcurrency import Contacts
-import UseCases
+@testable import UseCases
 import XCTest
 @testable import Telephone
 
@@ -372,4 +372,194 @@ private actor RecoveryRequestGate {
         return await withCheckedContinuation { continuation = $0 }
     }
     func finish(_ result: Bool) { continuation?.resume(returning: result); continuation = nil }
+}
+
+// Typed bridge used by the Objective-C native token-field tests. Constructing
+// these values neither constructs nor reads a CNContactStore/ABAddressBook, and
+// authorization is an injected Boolean rather than an OS permission operation.
+@MainActor
+@objc(JPSDiallerCompletionFixture)
+final class DiallerCompletionFixture: NSObject {
+    @objc(providerWithScenario:)
+    static func provider(scenario: Int) -> JPSDiallerContacts {
+        let contacts: [Contact]
+        switch scenario {
+        case 1:
+            contacts = [
+                contact("multi", given: "Mary Jane", family: "Van Dyke", phones: [("300", "home")]),
+                contact("company", given: "Company Given", family: "Company Family", organisation: "First Responders",
+                        isCompany: true, phones: [("400", "work")]),
+                contact("person-org", given: "Person", family: "Employee", organisation: "Person Organisation",
+                        phones: [("450", "work")]),
+                contact("given", given: "Prince", phones: [("500", "home")]),
+                contact("family", family: "Solo", phones: [("600", "mobile")]),
+                contact("unicode", given: "Zoë", family: "O'Neill", phones: [("700", "home")]),
+                contact("unnamed", phones: [("800", "home")]),
+                contact("empty-company", given: "Ignored", family: "Name", isCompany: true, phones: [("850", "work")]),
+                contact("empty", given: "No destinations")
+            ]
+        case 2:
+            contacts = [
+                contact("first", given: "Ada", family: "Lovelace", phones: [("100", "home"), ("100", "mobile"), ("200", "work")]),
+                contact("second", given: "Ada", family: "Lovelace", phones: [("100", "home"), ("900", "work")])
+            ]
+        case 4:
+            contacts = [contact("formatted", given: "Ada", family: "Lovelace",
+                                phones: [("123 456 7890", "home"), ("123-456-7890", "mobile")])]
+        case 5:
+            contacts = [contact("family-order", given: "Ada", family: "Lovelace", displayName: "Lovelace Ada",
+                                phones: [("100", "home"), ("200", "mobile")])]
+        case 6:
+            contacts = [contact("sip-duplicates", given: "Ada", family: "Lovelace", phones: [("100", "home")],
+                                emails: [("Ada@pbx.invalid", "sip"), ("ADA@PBX.INVALID", "SIP")])]
+        default:
+            contacts = [contact("ada", given: "Ada", family: "Lovelace", phones: [("100", "home"), ("200", "mobile")],
+                                emails: [("private@pbx.invalid", "home"), ("Ada@pbx.invalid", "sip"),
+                                         ("team@pbx.invalid", "SIP"), ("near@pbx.invalid", " sip ")])]
+        }
+        return JPSDiallerContacts(snapshot: ContactCompletionSnapshot(contacts: contacts), authorization: { scenario != 3 })
+    }
+
+    private static func contact(_ identifier: String, given: String = "", family: String = "", organisation: String = "",
+                                isCompany: Bool = false, displayName: String? = nil,
+                                phones: [(String, String)] = [], emails: [(String, String)] = []) -> Contact {
+        let fullName = displayName ?? (isCompany ? organisation : [given, family].filter { !$0.isEmpty }.joined(separator: " "))
+        return Contact(name: fullName,
+                       phones: phones.map { number, label in
+                           let rawLabel: String
+                           switch label {
+                           case "home": rawLabel = CNLabelHome
+                           case "mobile": rawLabel = CNLabelPhoneNumberMobile
+                           case "work": rawLabel = CNLabelWork
+                           default: rawLabel = label
+                           }
+                           // Use the existing English label table for built-ins;
+                           // genuine custom labels retain their adapter value.
+                           return .init(number: number, label: "synthetic adapter \(label)", rawLabel: rawLabel)
+                       },
+                       emails: emails.map { .init(address: $0.0, label: "synthetic adapter \($0.1)", rawLabel: $0.1) },
+                       completionMetadata: .init(identifier: identifier, givenName: given, familyName: family,
+                                                 organisation: organisation, isCompany: isCompany, displayName: fullName))
+    }
+}
+
+// These are detached values only. No CNContactStore or AddressBook object is
+// constructed, and every adapter operation below is supplied by a test closure.
+@MainActor
+final class CNContactCompletionMappingTests: XCTestCase {
+    func testPersonCompletionMetadataKeepsOnlyGivenAndFamilyNamesWhileHistoryRetainsItsFormatter() throws {
+        let source = CNMutableContact()
+        source.contactType = .person
+        source.namePrefix = "Dr"
+        source.givenName = "Ada"
+        source.middleName = "Augusta"
+        source.familyName = "Lovelace"
+        source.nameSuffix = "Jr"
+        source.organizationName = "Synthetic Employer"
+
+        let mapped = Contact(source)
+        let metadata = try XCTUnwrap(mapped.completionMetadata)
+        XCTAssertEqual(mapped.name, CNContactFormatter.string(from: source, style: .fullName) ?? "")
+        XCTAssertEqual(metadata.identifier, source.identifier)
+        XCTAssertEqual(metadata.givenName, "Ada")
+        XCTAssertEqual(metadata.familyName, "Lovelace")
+        XCTAssertEqual(metadata.organisation, "Synthetic Employer")
+        XCTAssertFalse(metadata.isCompany)
+        let expected = CNContactFormatter.nameOrder(for: source) == .familyNameFirst
+            ? "Lovelace Ada" : "Ada Lovelace"
+        XCTAssertEqual(metadata.displayName, expected)
+        XCTAssertFalse(metadata.displayName.contains("Augusta"))
+        XCTAssertFalse(metadata.displayName.contains("Dr"))
+        XCTAssertFalse(metadata.displayName.contains("Jr"))
+    }
+
+    func testRawLabelsAndOrderedRepeatedSIPLabelsSurviveMappingWithoutPromotingOrdinaryEmail() throws {
+        let source = CNMutableContact()
+        source.givenName = "Synthetic"
+        source.familyName = "Labels"
+        source.phoneNumbers = [
+            CNLabeledValue(label: CNLabelHome, value: CNPhoneNumber(stringValue: "100")),
+            CNLabeledValue(label: "Custom desk", value: CNPhoneNumber(stringValue: "200"))
+        ]
+        source.emailAddresses = [
+            CNLabeledValue(label: "sip", value: "first@pbx.invalid" as NSString),
+            CNLabeledValue(label: "SIP", value: "second@pbx.invalid" as NSString),
+            CNLabeledValue(label: CNLabelWork, value: "ordinary@example.invalid" as NSString),
+            CNLabeledValue(label: nil, value: "unlabelled@example.invalid" as NSString)
+        ]
+
+        let mapped = Contact(source)
+        XCTAssertEqual(mapped.phones.map(\.number), ["100", "200"])
+        XCTAssertEqual(mapped.phones.map(\.rawLabel), [CNLabelHome, "Custom desk"])
+        XCTAssertEqual(mapped.phones[0].label, CNLabeledValue<CNPhoneNumber>.localizedString(forLabel: CNLabelHome))
+        XCTAssertEqual(mapped.phones[1].label, "Custom desk")
+        XCTAssertEqual(mapped.emails.map(\.rawLabel), ["sip", "SIP", CNLabelWork, nil])
+        XCTAssertEqual(mapped.emails.map(\.address), ["first@pbx.invalid", "second@pbx.invalid", "ordinary@example.invalid", "unlabelled@example.invalid"])
+        let snapshot = ContactCompletionSnapshot(contacts: [mapped])
+        XCTAssertEqual(snapshot.completionStrings(for: "Synthetic"), [
+            "Synthetic Labels <100>", "Synthetic Labels <200>",
+            "Synthetic Labels <first@pbx.invalid>", "Synthetic Labels <second@pbx.invalid>"
+        ])
+        XCTAssertTrue(snapshot.completionStrings(for: "ordinary").isEmpty)
+        XCTAssertTrue(snapshot.completionStrings(for: "unlabelled").isEmpty)
+    }
+
+    func testCompanyCompletionUsesOrganisationAndIgnoresPersonFields() throws {
+        let source = CNMutableContact()
+        source.contactType = .organization
+        source.givenName = "Ignored Given"
+        source.familyName = "Ignored Family"
+        source.organizationName = "Synthetic Organisation"
+        source.phoneNumbers = [CNLabeledValue(label: CNLabelWork, value: CNPhoneNumber(stringValue: "300"))]
+
+        let mapped = Contact(source)
+        let metadata = try XCTUnwrap(mapped.completionMetadata)
+        XCTAssertTrue(metadata.isCompany)
+        XCTAssertEqual(metadata.displayName, "Synthetic Organisation")
+        XCTAssertEqual(mapped.name, CNContactFormatter.string(from: source, style: .fullName) ?? "")
+        let snapshot = ContactCompletionSnapshot(contacts: [mapped])
+        XCTAssertEqual(snapshot.completionStrings(for: "Synthetic"), ["Synthetic Organisation <300>"])
+        XCTAssertTrue(snapshot.completionStrings(for: "Ignored").isEmpty)
+    }
+
+    func testSparsePersonNamesDoNotInventOrganisationOrExtraWhitespace() throws {
+        for (given, family, expected) in [("Onlygiven", "", "Onlygiven"), ("", "Onlyfamily", "Onlyfamily"), ("", "", "")] {
+            let source = CNMutableContact()
+            source.contactType = .person
+            source.givenName = given
+            source.familyName = family
+            source.organizationName = "Not a Company Record"
+            let metadata = try XCTUnwrap(Contact(source).completionMetadata)
+            XCTAssertEqual(metadata.displayName, expected)
+            XCTAssertFalse(metadata.isCompany)
+        }
+    }
+
+    func testOneInjectedEnumerationPublishesMappedHistoryAndCompletionWithoutRequestingAccess() async {
+        await verifyMappedSingleEnumeration()
+    }
+}
+
+@ContactsActor
+private func verifyMappedSingleEnumeration() {
+    let source = CNMutableContact()
+    source.givenName = "Synthetic"
+    source.middleName = "History Middle"
+    source.familyName = "Person"
+    source.phoneNumbers = [CNLabeledValue(label: CNLabelHome, value: CNPhoneNumber(stringValue: "1234"))]
+    var fetches = 0
+    var requests = 0
+    let adapter = CNContactStoreToContactsAdapter(authorization: { .authorized }, fetch: { body in
+        fetches += 1
+        body(Contact(source))
+    }, request: { requests += 1; return false })
+
+    let index = SimpleContactMatchingIndex(contacts: adapter, maxPhoneNumberLength: 4)
+    XCTAssertEqual(fetches, 1)
+    XCTAssertEqual(requests, 0)
+    XCTAssertEqual(index.contact(forPhone: ExtractedPhoneNumber("1234", maxLength: 4))?.name,
+                   CNContactFormatter.string(from: source, style: .fullName) ?? "")
+    XCTAssertEqual(index.completionSnapshot?.completionStrings(for: "Synthetic"), ["Synthetic Person <1234>"])
+    XCTAssertEqual(fetches, 1, "Synchronous snapshot queries must not enumerate again")
+    XCTAssertEqual(requests, 0)
 }

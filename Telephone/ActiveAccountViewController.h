@@ -23,7 +23,7 @@
 extern NSString * const kURI;
 extern NSString * const kPhoneLabel;
 
-@class AccountController, AKSIPURI;
+@class AccountController, AKSIPURI, JPSDiallerContacts;
 
 // An active account view controller.
 @interface ActiveAccountViewController : NSViewController {
@@ -34,6 +34,8 @@ extern NSString * const kPhoneLabel;
 
 // Call destination token field outlet.
 @property(nonatomic, weak) IBOutlet NSTokenField *callDestinationField;
+// Immutable current Contacts snapshot; nil means no contact completion.
+@property(nonatomic, strong, nullable) JPSDiallerContacts *contactCompletions;
 
 // Index of a URI in a call destination token.
 @property(nonatomic, assign) NSUInteger callDestinationURIIndex;

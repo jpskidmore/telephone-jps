@@ -27,6 +27,7 @@
     NSParameterAssert(accountController);
     if ((self = [super initWithNibName:@"ActiveAccountTransferView" bundle:nil])) {
         _accountController = accountController;
+        self.contactCompletions = accountController.contactCompletions;
     }
     return self;
 }

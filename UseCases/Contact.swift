@@ -16,34 +16,60 @@
 //  GNU General Public License for more details.
 //
 
-public struct Contact {
+public struct Contact: Sendable {
     public let name: String
     public let phones: [Phone]
     public let emails: [Email]
+    public let completionMetadata: CompletionMetadata?
 
-    public init(name: String, phones: [Phone], emails: [Email]) {
+    public init(name: String, phones: [Phone], emails: [Email], completionMetadata: CompletionMetadata? = nil) {
         self.name = name
         self.phones = phones
         self.emails = emails
+        self.completionMetadata = completionMetadata
     }
 
-    public struct Phone {
-        public let number: String
-        public let label: String
+    public struct CompletionMetadata: Sendable {
+        public let identifier: String
+        public let givenName: String
+        public let familyName: String
+        public let organisation: String
+        public let isCompany: Bool
+        /// Given/family-only display name, independent of the history formatter.
+        public let displayName: String
 
-        public init(number: String, label: String) {
-            self.number = number
-            self.label = label
+        public init(identifier: String, givenName: String, familyName: String, organisation: String,
+                    isCompany: Bool, displayName: String) {
+            self.identifier = identifier
+            self.givenName = givenName
+            self.familyName = familyName
+            self.organisation = organisation
+            self.isCompany = isCompany
+            self.displayName = displayName
         }
     }
 
-    public struct Email {
+    public struct Phone: Sendable {
+        public let number: String
+        public let label: String
+        public let rawLabel: String?
+
+        public init(number: String, label: String, rawLabel: String? = nil) {
+            self.number = number
+            self.label = label
+            self.rawLabel = rawLabel
+        }
+    }
+
+    public struct Email: Sendable {
         public let address: String
         public let label: String
+        public let rawLabel: String?
 
-        public init(address: String, label: String) {
+        public init(address: String, label: String, rawLabel: String? = nil) {
             self.address = address
             self.label = label
+            self.rawLabel = rawLabel
         }
     }
 }

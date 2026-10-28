@@ -32,6 +32,10 @@ NSSize JPSCompactDiallerContentSize(void) { return NSMakeSize(368, 104); }
 @end
 
 @implementation SharedDialerController
+- (void)setContactCompletions:(JPSDiallerContacts *)contactCompletions {
+    _contactCompletions = contactCompletions;
+    self.dialler.contactCompletions = contactCompletions;
+}
 - (instancetype)initWithAccounts:(AccountControllers *)accounts historyFactory:(AsyncCallHistoryViewEventTargetFactory *)factory {
     SharedDialerRouteResolver resolver = nil;
     if (factory != nil) resolver = ^DialPlanRoute *(NSString *input, NSArray<DialPlanAccount *> *accounts) {

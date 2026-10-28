@@ -1,0 +1,139 @@
+#import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
+#import <AddressBook/AddressBook.h>
+#import <AddressBook/ABAddressBookC.h>
+#import <Contacts/Contacts.h>
+#import <objc/runtime.h>
+#import <mach/mach.h>
+#import <time.h>
+#import "AKSIPURI.h"
+#import "AKSIPURIFormatter.h"
+#import "AKTelephoneNumberFormatter.h"
+#import "AKABRecord+Querying.h"
+#import "AKABAddressBook+Localizing.h"
+#include <unistd.h>
+static unsigned guardAttempts, syntheticSharedRequests, syntheticLocks, syntheticUnlocks;
+static id syntheticDirectory, syntheticDefaults;
+static double lastSearchMS;
+static NSString * const kEmailSIPLabel=@"sip";
+static NSString * const kURI=@"URI";
+static NSString * const kPhoneLabel=@"PhoneLabel";
+static const void *SelectedTokenDestination=&SelectedTokenDestination;
+static double Now(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC_RAW,&t);return t.tv_sec*1000.0+t.tv_nsec/1e6;}
+static double CPU(void){struct timespec t;clock_gettime(CLOCK_THREAD_CPUTIME_ID,&t);return t.tv_sec*1000.0+t.tv_nsec/1e6;}
+static NSDictionary *Memory(void){struct mach_task_basic_info b;mach_msg_type_number_t n=MACH_TASK_BASIC_INFO_COUNT;task_info(mach_task_self(),MACH_TASK_BASIC_INFO,(task_info_t)&b,&n);task_vm_info_data_t v; n=TASK_VM_INFO_COUNT;task_info(mach_task_self(),TASK_VM_INFO,(task_info_t)&v,&n);return @{ @"residentBytes":@(b.resident_size),@"physicalFootprintBytes":@(v.phys_footprint)};}
+static id Reject(id object,SEL selector,...){++guardAttempts;fprintf(stderr,"UNEXPECTED_STORE_ENTRY %s %s\n",class_getName(object_getClass(object)),sel_getName(selector));_exit(70);}
+static id Shared(id object,SEL selector){++syntheticSharedRequests;return syntheticDirectory;}
+static id Defaults(id object,SEL selector){return syntheticDefaults;}
+static void FenceAllocation(const char *name){Class cls=objc_getClass(name);if(!cls)_exit(71);class_replaceMethod(object_getClass(cls),@selector(allocWithZone:),(IMP)Reject,"@@:^v");}
+@interface UserDefaultsKeys:NSObject
++(NSString*)formatTelephoneNumbers;
++(NSString*)telephoneNumberFormatterSplitsLastFourDigits;
+@end
+@implementation UserDefaultsKeys
++(NSString*)formatTelephoneNumbers{return @"FormatTelephoneNumbers";}
++(NSString*)telephoneNumberFormatterSplitsLastFourDigits{return @"TelephoneNumberFormatterSplitsLastFourDigits";}
+@end
+@interface SyntheticDefaults:NSObject
+@property BOOL formatted;
+-(BOOL)boolForKey:(NSString*)key;
+@end
+@implementation SyntheticDefaults
+-(BOOL)boolForKey:(NSString*)key{return [key isEqual:@"FormatTelephoneNumbers"]?self.formatted:NO;}
+@end
+@interface SyntheticDirectory:NSObject
+@property(copy) NSArray *records;
+-(ABPropertyType)typeOfProperty:(NSString*)property forTable:(id)table;
+-(NSArray*)recordsMatchingSearchElement:(ABSearchElement*)element;
+-(NSInteger)defaultNameOrdering;
+-(NSString*)ak_localizedLabel:(NSString*)label;
+@end
+@interface SyntheticPerson:NSObject
+@property(copy) NSDictionary *values;
+-(id)valueForProperty:(NSString*)property;
+-(NSString*)ak_fullName;
+-(NSString*)ak_fullNameWithNameOrdering:(NSInteger)nameOrdering;
+@end
+@implementation SyntheticDirectory
+-(NSInteger)defaultNameOrdering{return kABFirstNameFirst;}
+-(void)abGlobalAPILockInFile:(const char*)file line:(NSInteger)line{++syntheticLocks;}
+-(void)abGlobalAPIUnlockInFile:(const char*)file line:(NSInteger)line{++syntheticUnlocks;}
+-(ABPropertyType)typeOfProperty:(NSString*)property forTable:(id)table{
+ if([@[kABFirstNameProperty,kABLastNameProperty,kABOrganizationProperty] containsObject:property])return kABStringProperty;
+ if([property isEqual:kABPersonFlags])return kABIntegerProperty;
+ if([@[kABPhoneProperty,kABEmailProperty] containsObject:property])return kABMultiStringProperty;
+ fprintf(stderr,"UNEXPECTED_PROPERTY_TYPE %s\n",property.UTF8String);_exit(75);
+}
+-(NSArray*)recordsMatchingSearchElement:(ABSearchElement*)element{
+ NSCAssert(NSThread.isMainThread,@"Synthetic benchmark must measure callback work on main");
+ double start=Now();NSMutableArray *matches=[NSMutableArray array];
+ for(SyntheticPerson *record in self.records)if([element matchesRecord:(ABRecord*)record])[matches addObject:record];
+ lastSearchMS=Now()-start;return matches;
+}
+-(void)doesNotRecognizeSelector:(SEL)selector{fprintf(stderr,"UNEXPECTED_SYNTHETIC_DIRECTORY_SELECTOR %s\n",sel_getName(selector));_exit(74);}
+/*LABEL_METHOD*/
+@end
+@implementation SyntheticPerson
++(ABPropertyType)nts_TypeOfProperty:(NSString*)property withAddressBook:(id)book{return [book typeOfProperty:property forTable:nil];}
+-(id)valueForProperty:(NSString*)property{return self.values[property];}
+-(id)nts_ValueForProperty:(NSString*)property{return self.values[property];}
+-(id)addressBook{return syntheticDirectory;}
+-(id)nts_AddressBook{return syntheticDirectory;}
+-(BOOL)isKindOfClass:(Class)cls{return cls==objc_getClass("ABPerson")||[super isKindOfClass:cls];}
+/*NAME_METHODS*/
+@end
+@interface SyntheticTokenField:NSObject
+@property NSTokenStyle tokenStyle;
+@end
+@implementation SyntheticTokenField
+@end
+@interface BaselineDelegate:NSObject
+-(NSArray*)tokenField:(NSTokenField*)field completionsForSubstring:(NSString*)string indexOfToken:(NSInteger)index indexOfSelectedItem:(NSInteger*)selected;
+-(id)tokenField:(NSTokenField*)field representedObjectForEditingString:(NSString*)string;
+@end
+@implementation BaselineDelegate
+/*COMPLETION_METHOD*/
+/*TOKEN_METHOD*/
+@end
+static ABMultiValue *Multi(NSArray *values,NSArray *labels){ABMutableMultiValue *multi=[ABMutableMultiValue new];for(NSUInteger i=0;i<values.count;i++)[multi addValue:values[i] withLabel:labels[i]];return [multi copy];}
+static SyntheticPerson *Person(NSString *first,NSString *last,NSString *org,BOOL company,NSArray *phones,NSArray *phoneLabels,NSArray *emails,NSArray *emailLabels){SyntheticPerson *p=[SyntheticPerson new];p.values=@{kABFirstNameProperty:first?:@"",kABLastNameProperty:last?:@"",kABOrganizationProperty:org?:@"",kABPersonFlags:@(company?kABShowAsCompany:kABShowAsPerson),kABPhoneProperty:Multi(phones,phoneLabels),kABEmailProperty:Multi(emails,emailLabels)};return p;}
+static NSArray *Records(NSUInteger count){NSMutableArray *r=[NSMutableArray array];for(NSUInteger i=0;i<count;i++){
+ NSString *identifier=[NSString stringWithFormat:@"%05lu",(unsigned long)i];NSString *first=[@"Person" stringByAppendingString:identifier],*last=[@"Family" stringByAppendingString:identifier];
+ if(i==1){first=@"Élodie";last=@"O’Connor";} if(i==2){first=@"Mary Jane";last=@"van Dyke";} if(i==3){first=@"Zoë";last=@"";}if(i==4){first=@"";last=@"Onlylast";}if(i==5){first=@"";last=@"";}
+ NSString *phone=[NSString stringWithFormat:@"020%08lu",(unsigned long)i];NSString *mobile=[NSString stringWithFormat:@"077%08lu",(unsigned long)i];
+ NSString *sip=[NSString stringWithFormat:@"person%@@sip.invalid",identifier];NSString *sip2=[NSString stringWithFormat:@"desk%@@sip.invalid",identifier];NSString *ordinary=[NSString stringWithFormat:@"ordinary%@@example.invalid",identifier];
+ [r addObject:Person(first,last,[@"Company" stringByAppendingString:identifier],i%10==0,@[phone,mobile],@[kABPhoneHomeLabel,kABPhoneMobileLabel],@[sip,sip2,ordinary],@[@"sip",@"SIP",kABEmailWorkLabel])];
+ }return r;}
+static NSDictionary *Percentiles(NSArray<NSNumber*> *values){NSArray *s=[values sortedArrayUsingSelector:@selector(compare:)];return @{@"p50":s[(s.count-1)/2],@"p95":s[(NSUInteger)ceil(s.count*.95)-1],@"max":s.lastObject,@"samples":@(s.count)};}
+static NSArray *TokenSummary(NSArray *token){NSMutableArray *result=[NSMutableArray array];for(NSDictionary *d in token){AKSIPURI *uri=d[kURI];[result addObject:@{@"user":uri.user?:@"",@"host":uri.host?:@"",@"name":uri.displayName?:@"",@"label":d[kPhoneLabel]?:@""}];}return result;}
+static void WriteJSON(id object,NSString *path){NSData *data=[NSJSONSerialization dataWithJSONObject:object options:NSJSONWritingPrettyPrinted|NSJSONWritingSortedKeys error:nil];if(!data||![data writeToFile:path atomically:YES])_exit(77);}
+int main(int argc,const char **argv){@autoreleasepool{
+ Class book=objc_getClass("ABAddressBook");class_replaceMethod(object_getClass(book),@selector(addressBook),(IMP)Reject,"@@:");class_replaceMethod(object_getClass(book),@selector(sharedAddressBook),(IMP)Shared,"@@:");
+ FenceAllocation("ABAddressBook");FenceAllocation("ABRecord");FenceAllocation("ABPerson");FenceAllocation("CNContactStore");
+ class_replaceMethod(object_getClass(objc_getClass("NSUserDefaults")),@selector(standardUserDefaults),(IMP)Defaults,"@@:");
+ syntheticDirectory=[SyntheticDirectory new];syntheticDefaults=[SyntheticDefaults new];
+ if(argc>1 && strcmp(argv[1],"--probe-addressbook")==0){[ABAddressBook addressBook];_exit(90);}
+ if(argc>1 && strcmp(argv[1],"--probe-aballoc")==0){[ABPerson alloc];_exit(90);}
+ if(argc>1 && strcmp(argv[1],"--probe-bookalloc")==0){[ABAddressBook alloc];_exit(90);}
+ if(argc>1 && strcmp(argv[1],"--probe-recordalloc")==0){[ABRecord alloc];_exit(90);}
+ if(argc>1 && strcmp(argv[1],"--probe-cnalloc")==0){[CNContactStore alloc];_exit(90);}
+ NSUInteger count=argc>1?strtoul(argv[1],NULL,10):100;NSString *output=argc>2?[NSString stringWithUTF8String:argv[2]]:@"work/contacts70-baseline-results.json";
+ BaselineDelegate *delegate=[BaselineDelegate new];SyntheticTokenField *field=[SyntheticTokenField new];NSMutableDictionary *result=[NSMutableDictionary dictionary];
+ result[@"scope"]=@"Extracted production legacy completion/token delegate bodies and genuine ABSearchElement.matchesRecord over a detached synthetic NSObject directory. Not real AddressBook store/index/disk latency.";result[@"contacts"]=@(count);result[@"mainThread"]=@(NSThread.isMainThread);result[@"memoryBeforeConstruction"]=Memory();
+ double cold=Now(),coldCPU=CPU();((SyntheticDirectory*)syntheticDirectory).records=Records(count);result[@"coldSyntheticConstructionMS"]=@(Now()-cold);result[@"coldSyntheticConstructionCPUMS"]=@(CPU()-coldCPU);result[@"memoryAfterConstruction"]=Memory();
+ NSArray *queries=@[@"",@"NoSuchPerson",@"Pe",@"Person00021",@"Family00021",@"Person00021 F",@"Family00021 P",@"Company",@"020",@"02000000021",@"pErSoN00021@",@"desk00021@",@"ordinary00021@",@"Él",@"O’",@"Mary Jane",@"van Dyke",@"Onlylast",@"Zoë"];
+ NSMutableArray *queryStats=[NSMutableArray array],*allWall=[NSMutableArray array],*allCPU=[NSMutableArray array];NSMutableDictionary *outputs=[NSMutableDictionary dictionary];NSUInteger maxOutput=0;
+ for(NSString *q in queries){NSMutableArray *wall=[NSMutableArray array],*cpu=[NSMutableArray array],*search=[NSMutableArray array];NSUInteger outputCount=0;double coldQuery=0,coldQueryCPU=0;for(NSUInteger trial=0;trial<7;trial++){@autoreleasepool{NSInteger selected=0;double start=Now(),startCPU=CPU();NSArray *matches=[delegate tokenField:(NSTokenField*)field completionsForSubstring:q indexOfToken:0 indexOfSelectedItem:&selected];double elapsed=Now()-start,elapsedCPU=CPU()-startCPU;outputCount=matches.count;maxOutput=MAX(maxOutput,outputCount);if(trial==0){outputs[q]=matches;coldQuery=elapsed;coldQueryCPU=elapsedCPU;}if(trial>=2){[wall addObject:@(elapsed)];[cpu addObject:@(elapsedCPU)];[search addObject:@(lastSearchMS)];[allWall addObject:@(elapsed)];[allCPU addObject:@(elapsedCPU)];}}}
+ [queryStats addObject:@{@"query":q,@"outputCount":@(outputCount),@"firstCallbackWallMS":@(coldQuery),@"firstCallbackMainThreadCPUMS":@(coldQueryCPU),@"wallMS":Percentiles(wall),@"mainThreadCPUMS":Percentiles(cpu),@"syntheticNativePredicateScanMS":Percentiles(search)}];}
+ result[@"queryCorpus"]=queryStats;result[@"aggregateQueryWallMS"]=Percentiles(allWall);result[@"aggregateMainThreadQueryCPUMS"]=Percentiles(allCPU);result[@"maxCompletionOutputCount"]=@(maxOutput);result[@"retainedQuerySnapshots"]=@(outputs.count);
+ NSArray *tokens=@[@"Person00021 <02000000021>",@"02000000021 (Person00021 Family00021)",@"Person00021 Family00021 <person00021@sip.invalid>",@"Company00020 <02000000020>",@"person00021@sip.invalid",@"unknown@example.invalid",@"Zoë <02000000003>"];
+ NSMutableArray *tokenStats=[NSMutableArray array],*tokenOutputs=[NSMutableArray array],*tokenWall=[NSMutableArray array];
+ for(NSString *q in tokens){NSMutableArray *wall=[NSMutableArray array],*cpu=[NSMutableArray array],*search=[NSMutableArray array];NSArray *summary=nil;NSNumber *selected=nil;double coldToken=0,coldTokenCPU=0;for(NSUInteger trial=0;trial<7;trial++){@autoreleasepool{double start=Now(),startCPU=CPU();NSArray *token=[delegate tokenField:(NSTokenField*)field representedObjectForEditingString:q];double elapsed=Now()-start,elapsedCPU=CPU()-startCPU;if(trial==0){summary=TokenSummary(token);selected=objc_getAssociatedObject(token,SelectedTokenDestination);coldToken=elapsed;coldTokenCPU=elapsedCPU;}[wall addObject:@(elapsed)];if(trial>=2){[tokenWall addObject:@(elapsed)];[cpu addObject:@(elapsedCPU)];[search addObject:@(lastSearchMS)];}}}
+ [tokenStats addObject:@{@"editingString":q,@"destinations":@(summary.count),@"firstCallbackWallMS":@(coldToken),@"firstCallbackMainThreadCPUMS":@(coldTokenCPU),@"wallMSIncludingCold":Percentiles(wall),@"mainThreadCPUMS":Percentiles(cpu),@"syntheticNativePredicateScanMS":Percentiles(search)}];[tokenOutputs addObject:@{@"editingString":q,@"destinations":summary?:@[],@"selectedIndex":selected?:@0}];}
+ result[@"tokenCorpus"]=tokenStats;result[@"aggregateTokenWarmWallMS"]=Percentiles(tokenWall);result[@"memoryAfterQueries"]=Memory();result[@"forbiddenStoreEntryAttempts"]=@(guardAttempts);result[@"syntheticSharedRequests"]=@(syntheticSharedRequests);result[@"syntheticLockCalls"]=@(syntheticLocks);result[@"syntheticUnlockCalls"]=@(syntheticUnlocks);result[@"warmupTrialsPerInput"]=@2;result[@"measuredTrialsPerInput"]=@5;
+ NSCAssert(guardAttempts==0 && syntheticLocks==syntheticUnlocks,@"Fenced baseline invariants failed");
+ NSMutableArray *fixtures=[NSMutableArray array];for(SyntheticPerson *person in ((SyntheticDirectory*)syntheticDirectory).records){NSMutableDictionary *item=[NSMutableDictionary dictionary];for(NSString *key in @[kABFirstNameProperty,kABLastNameProperty,kABOrganizationProperty,kABPersonFlags])item[key]=person.values[key];for(NSString *key in @[kABPhoneProperty,kABEmailProperty]){ABMultiValue *multi=person.values[key];NSMutableArray *entries=[NSMutableArray array];for(NSUInteger i=0;i<multi.count;i++)[entries addObject:@{@"value":[multi valueAtIndex:i],@"label":[multi labelAtIndex:i]}];item[key]=entries;}[fixtures addObject:item];}
+ WriteJSON(fixtures,[output stringByReplacingOccurrencesOfString:@".json" withString:@"-fixtures.json"]);
+ WriteJSON(result,output);WriteJSON(@{@"completions":outputs,@"tokens":tokenOutputs},[output stringByReplacingOccurrencesOfString:@".json" withString:@"-outputs.json"]);
+ fprintf(stderr,"PASS contacts=%lu callbacks=%lu forbidden=%u locks=%u/%u\n",(unsigned long)count,(unsigned long)((queries.count+tokens.count)*7),guardAttempts,syntheticLocks,syntheticUnlocks);
+ }return 0;}

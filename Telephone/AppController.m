@@ -291,7 +291,10 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)ensureSharedDialler {
-    if (self.sharedDialler == nil) self.sharedDialler = [[SharedDialerController alloc] initWithAccounts:self.accountControllers historyFactory:self.callHistoryViewEventTargetFactory];
+    if (self.sharedDialler == nil) {
+        self.sharedDialler = [[SharedDialerController alloc] initWithAccounts:self.accountControllers historyFactory:self.callHistoryViewEventTargetFactory];
+        self.sharedDialler.contactCompletions = self.compositionRoot.diallerContacts;
+    }
 }
 
 - (void)showSharedDialler {
@@ -341,7 +344,10 @@ NS_ASSUME_NONNULL_END
 }
 
 - (void)setTerminating:(BOOL)terminating {
-    if (_terminating != terminating) self.terminationGeneration++;
+    if (_terminating != terminating) {
+        self.terminationGeneration++;
+        [self.compositionRoot setContactCompletionSuspended:terminating];
+    }
     _terminating = terminating;
     if ([self.accountControllers respondsToSelector:@selector(setCredentialAccessSuspended:)]) {
         [self.accountControllers setCredentialAccessSuspended:terminating || self.sleepStatus.isSleeping || !self.isUserSessionActive];
@@ -619,6 +625,7 @@ NS_ASSUME_NONNULL_END
                                                       purchaseCheckUseCaseFactory:self.purchaseCheckUseCaseFactory
                                                              storeWindowPresenter:self.storeWindowPresenter];
 
+    controller.contactCompletions = self.compositionRoot.diallerContacts;
     [controller setEnabled:[dict[UserDefaultsKeys.accountEnabled] boolValue]];
     [controller setSubstitutesPlusCharacter:[dict[UserDefaultsKeys.substitutePlusCharacter] boolValue]];
     [controller setPlusCharacterSubstitution:dict[UserDefaultsKeys.plusCharacterSubstitutionString]];

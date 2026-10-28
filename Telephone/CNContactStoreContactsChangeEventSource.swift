@@ -25,11 +25,13 @@ final class CNContactStoreContactsChangeEventSource {
     private let center: NotificationCenter
     private let target: ContactsChangeEventTarget
     private let didChange: @Sendable () -> Void
+    private let willChange: @Sendable () -> Void
 
-    init(center: NotificationCenter, target: ContactsChangeEventTarget, didChange: @escaping @Sendable () -> Void = {}) {
+    init(center: NotificationCenter, target: ContactsChangeEventTarget, willChange: @escaping @Sendable () -> Void = {}, didChange: @escaping @Sendable () -> Void = {}) {
         self.center = center
         self.target = target
         self.didChange = didChange
+        self.willChange = willChange
         center.addObserver(self, selector: #selector(contactsDidChange), name: .CNContactStoreDidChange, object: nil)
     }
 
@@ -38,6 +40,7 @@ final class CNContactStoreContactsChangeEventSource {
     }
 
     @objc private func contactsDidChange(_ notification: Notification) {
+        willChange()
         Task { [target, didChange] in
             await target.contactsDidChange()
             didChange()
@@ -78,6 +81,7 @@ final class ContactsStatusRelay {
     private let requestAccess: @Sendable () async -> Bool
     private let openSettings: () -> Void
     private let reloadHistory: () -> Void
+    nonisolated private let completionInvalidated: @Sendable () -> Void
     private let center: NotificationCenter
     private var state: ContactsLoadState = .notLoaded
     private var operation: Task<Void, Never>?
@@ -92,12 +96,14 @@ final class ContactsStatusRelay {
              if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Contacts") {
                  NSWorkspace.shared.open(url)
              }
-         }, reloadHistory: @escaping () -> Void = {}) {
+         }, reloadHistory: @escaping () -> Void = {},
+         completionInvalidated: @escaping @Sendable () -> Void = {}) {
         self.index = index
         self.requestAccess = requestAccess
         self.center = center
         self.openSettings = openSettings
         self.reloadHistory = reloadHistory
+        self.completionInvalidated = completionInvalidated
         super.init()
         center.addObserver(self, selector: #selector(applicationBecameActive), name: NSApplication.didBecomeActiveNotification, object: nil)
     }
@@ -105,6 +111,7 @@ final class ContactsStatusRelay {
     deinit { center.removeObserver(self) }
 
     @objc nonisolated private func applicationBecameActive(_ notification: Notification) {
+        completionInvalidated()
         Task { @MainActor [weak self] in self?.refresh() }
     }
 
@@ -116,6 +123,7 @@ final class ContactsStatusRelay {
     }
 
     @objc func refresh() {
+        completionInvalidated()
         refreshPending = true
         guard operation == nil else { return }
         start(requestPermission: false)
@@ -132,6 +140,7 @@ final class ContactsStatusRelay {
     }
 
     private func start(requestPermission: Bool) {
+        completionInvalidated()
         isBusy = true
         if requestPermission { requestFailed = false }
         updatePresentation()

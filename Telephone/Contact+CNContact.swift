@@ -21,10 +21,18 @@ import UseCases
 
 extension Contact {
     init(_ contact: CNContact) {
+        let isCompany = contact.contactType == .organization
+        let components = CNContactFormatter.nameOrder(for: contact) == .familyNameFirst
+            ? [contact.familyName, contact.givenName] : [contact.givenName, contact.familyName]
+        let completionDisplayName = isCompany ? contact.organizationName
+            : components.filter { !$0.isEmpty }.joined(separator: " ")
         self.init(
             name: CNContactFormatter.string(from: contact, style: .fullName) ?? "",
             phones: contact.phoneNumbers.map(Contact.Phone.init),
-            emails: contact.emailAddresses.map(Contact.Email.init)
+            emails: contact.emailAddresses.map(Contact.Email.init),
+            completionMetadata: .init(identifier: contact.identifier, givenName: contact.givenName,
+                                      familyName: contact.familyName, organisation: contact.organizationName,
+                                      isCompany: isCompany, displayName: completionDisplayName)
         )
     }
 }
@@ -33,7 +41,8 @@ extension Contact.Phone {
     init(_ phone: CNLabeledValue<CNPhoneNumber>) {
         self.init(
             number: phone.value.stringValue,
-            label: CNLabeledValue<CNPhoneNumber>.localizedString(forLabel: phone.label ?? "")
+            label: CNLabeledValue<CNPhoneNumber>.localizedString(forLabel: phone.label ?? ""),
+            rawLabel: phone.label
         )
     }
 }
@@ -41,7 +50,8 @@ extension Contact.Phone {
 extension Contact.Email {
     init(_ email: CNLabeledValue<NSString>) {
         self.init(
-            address: email.value as String, label: CNLabeledValue<NSString>.localizedString(forLabel: email.label ?? "")
+            address: email.value as String, label: CNLabeledValue<NSString>.localizedString(forLabel: email.label ?? ""),
+            rawLabel: email.label
         )
     }
 }

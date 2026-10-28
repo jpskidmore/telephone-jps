@@ -38,6 +38,7 @@ final class CompositionRoot: NSObject {
     @objc let logFileURL: LogFileURL
     @objc let defaultAppSettings: DefaultAppSettings
     @objc let helpMenuActionTarget: HelpMenuActionTarget
+    @objc let diallerContacts: JPSDiallerContacts
     @objc let accountControllers: AccountControllers
     @objc let nameServers: NameServers?
     private let defaults: UserDefaults
@@ -51,6 +52,11 @@ final class CompositionRoot: NSObject {
     private let contactsRecoveryController: ContactsRecoveryController
     private let contactsChangeEventSource: Any
     private let dayChangeEventSource: NSCalendarDayChangeEventSource
+
+    @objc func setContactCompletionSuspended(_ suspended: Bool) {
+        diallerContacts.setSuspended(suspended)
+        if !suspended { contactsRecoveryController.refresh() }
+    }
 
     @objc init(preferencesControllerDelegate: PreferencesControllerDelegate, nameServersChangeEventTarget: NameServersChangeEventTarget, storeEventTarget: ObjCStoreEventTarget) {
         userAgent = AKSIPUserAgent.shared()
@@ -249,6 +255,8 @@ final class CompositionRoot: NSObject {
         )
 
         let contactsAdapter = CNContactStoreToContactsAdapter(store: CNContactStore())
+        let completion = JPSDiallerContacts(authorization: { CNContactStore.authorizationStatus(for: .contacts) == .authorized })
+        diallerContacts = completion
         let contactsRelay = ContactsStatusRelay()
         let contactMatchingSettings = SimpleContactMatchingSettings(settings: defaults)
         let contactMatchingIndex = LazyDiscardingContactMatchingIndex(
@@ -256,21 +264,24 @@ final class CompositionRoot: NSObject {
                 contacts: contactsAdapter, settings: contactMatchingSettings
             ), stateDidChange: { state in
                 contactsRelay.enqueue(state)
-            }
+            }, completionTicket: { completion.currentTicket() },
+            completionInvalidated: { completion.invalidate() },
+            completionDidLoad: { ticket, snapshot in _ = completion.enqueue(ticket, snapshot: snapshot) }
         )
 
         let dayChangeEventTargets = DayChangeEventTargets()
         let contactsRecovery = ContactsRecoveryController(
             index: contactMatchingIndex,
             requestAccess: { await contactsAdapter.requestAccessIfNeeded() },
-            reloadHistory: { dayChangeEventTargets.dayDidChange() }
+            reloadHistory: { dayChangeEventTargets.dayDidChange() },
+            completionInvalidated: { completion.invalidate() }
         )
         contactsRecoveryController = contactsRecovery
         contactsRelay.controller = contactsRecovery
         preferencesController.generalPreferencesViewController.contactsRecoveryController = contactsRecovery
         contactsChangeEventSource = CNContactStoreContactsChangeEventSource(
             center: NotificationCenter.default, target: contactMatchingIndex,
-            didChange: { Task { @MainActor in contactsRelay.controller?.refresh() } }
+            willChange: { completion.invalidate() }, didChange: { Task { @MainActor in contactsRelay.controller?.refresh() } }
         )
         dayChangeEventSource = NSCalendarDayChangeEventSource(center: NotificationCenter.default, target: dayChangeEventTargets)
 

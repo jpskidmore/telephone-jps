@@ -181,7 +181,7 @@ struct LazyDiscardingContactMatchingIndexTests {
         let factory = ContactMatchingIndexFactoryStub(results: [
             .failure(.notDetermined), .success(ContactMatchingIndexDummy())
         ])
-        let sut = LazyDiscardingContactMatchingIndex(factory: factory) { recorder.append($0) }
+        let sut = LazyDiscardingContactMatchingIndex(factory: factory, stateDidChange: { recorder.append($0) })
 
         _ = await sut.contact(forEmail: NormalizedLowercasedString("any"))
         await sut.refresh()
@@ -330,6 +330,90 @@ struct LazyDiscardingContactMatchingIndexTests {
 
         #expect(await lookup.value == nil)
         #expect(sut.loadState == .unavailable(.denied))
+    }
+
+    @Test func invalidatesCompletionOnEveryStoreEventBeforeStartingAnotherFetch() {
+        let recorder = CompletionPublicationRecorder()
+        let factory = ContactMatchingIndexFactorySpy()
+        let sut = LazyDiscardingContactMatchingIndex(factory: factory,
+            completionTicket: { recorder.ticket }, completionInvalidated: { recorder.invalidate() },
+            completionDidLoad: { recorder.publish($0, $1) })
+
+        sut.contactsDidChange()
+        sut.contactsDidChange()
+
+        #expect(recorder.invalidations == 2)
+        #expect(recorder.publications.isEmpty)
+        #expect(!factory.didCallMake)
+        #expect(sut.completionSnapshot == nil)
+    }
+
+    @Test func transientFailureClearsCompletionWhileKeepingHistoryMatches() async {
+        let contact = completionPublicationContact("current")
+        let index = SimpleContactMatchingIndex(contacts: SimpleContacts([contact]), maxPhoneNumberLength: 4)
+        let factory = ContactMatchingIndexFactoryStub(results: [.success(index), .failure(.transient)])
+        let recorder = CompletionPublicationRecorder()
+        let sut = LazyDiscardingContactMatchingIndex(factory: factory,
+            completionTicket: { recorder.ticket }, completionInvalidated: { recorder.invalidate() },
+            completionDidLoad: { recorder.publish($0, $1) })
+        _ = await sut.contact(forPhone: ExtractedPhoneNumber("1234", maxLength: 4))
+        #expect(sut.completionSnapshot?.contacts.first?.completionMetadata?.identifier == "current")
+
+        await sut.refresh()
+
+        #expect(sut.completionSnapshot == nil)
+        #expect(await sut.contact(forPhone: ExtractedPhoneNumber("1234", maxLength: 4))?.name == "History current")
+        #expect(recorder.publications.map(\.identifier) == ["current", nil])
+        #expect(recorder.publications.map(\.ticket) == [7, 8])
+    }
+
+    @Test func supersededLoadCannotPublishCompletionOrReplaceItsAdmissionTicket() async {
+        let factory = SuspendedContactsIndexFactory()
+        let recorder = CompletionPublicationRecorder()
+        let sut = LazyDiscardingContactMatchingIndex(factory: factory,
+            completionTicket: { recorder.ticket }, completionInvalidated: { recorder.invalidate() },
+            completionDidLoad: { recorder.publish($0, $1) })
+        let initial = Task { await sut.contact(forPhone: ExtractedPhoneNumber("1234", maxLength: 4)) }
+        await factory.waitForCall(1)
+        let refresh = Task { await sut.refresh() }
+        await factory.waitForCall(2)
+        factory.complete(2, with: .success(SimpleContactMatchingIndex(
+            contacts: SimpleContacts([completionPublicationContact("new")]), maxPhoneNumberLength: 4)))
+        await refresh.value
+        factory.complete(1, with: .success(SimpleContactMatchingIndex(
+            contacts: SimpleContacts([completionPublicationContact("old")]), maxPhoneNumberLength: 4)))
+        _ = await initial.value
+
+        #expect(recorder.publications.count == 1)
+        #expect(recorder.publications.first?.ticket == 8)
+        #expect(recorder.publications.first?.identifier == "new")
+        #expect(sut.completionSnapshot?.contacts.first?.completionMetadata?.identifier == "new")
+    }
+}
+
+private func completionPublicationContact(_ identifier: String) -> Contact {
+    Contact(name: "History \(identifier)", phones: [.init(number: "1234", label: "Test")], emails: [],
+            completionMetadata: .init(identifier: identifier, givenName: "Synthetic", familyName: identifier,
+                                      organisation: "", isCompany: false, displayName: "Synthetic \(identifier)"))
+}
+
+private final class CompletionPublicationRecorder: @unchecked Sendable {
+    struct Publication {
+        let ticket: UInt64
+        let identifier: String?
+    }
+    private let lock = NSLock()
+    private var currentTicket: UInt64 = 7
+    private var invalidationCount = 0
+    private var values: [Publication] = []
+    var ticket: UInt64 { lock.withLock { currentTicket } }
+    var invalidations: Int { lock.withLock { invalidationCount } }
+    var publications: [Publication] { lock.withLock { values } }
+    func invalidate() {
+        lock.withLock { currentTicket &+= 1; invalidationCount += 1 }
+    }
+    func publish(_ ticket: UInt64, _ snapshot: ContactCompletionSnapshot?) {
+        lock.withLock { values.append(.init(ticket: ticket, identifier: snapshot?.contacts.first?.completionMetadata?.identifier)) }
     }
 }
 

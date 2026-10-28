@@ -28,7 +28,7 @@ extern NSString * const kEmailSIPLabel;
 // Queue changes are delivered on the main thread without controller or URI payloads.
 FOUNDATION_EXPORT NSNotificationName const JPSPendingRoutedCallsDidChangeNotification;
 
-@class AKSIPURI, AKNetworkReachability, AKCredentialBroker;
+@class AKSIPURI, AKNetworkReachability, AKCredentialBroker, JPSDiallerContacts;
 @class AsyncCallHistoryPurchaseCheckUseCaseFactory, AsyncCallHistoryViewEventTargetFactory;
 @class CallTransferController, SanitizedCallDestination, StoreWindowPresenter, WorkspaceSleepStatus;
 @protocol RingtonePlaybackUseCase;
@@ -36,6 +36,7 @@ FOUNDATION_EXPORT NSNotificationName const JPSPendingRoutedCallsDidChangeNotific
 @interface AccountController : NSObject <AKSIPAccountDelegate, CallControllerDelegate>
 
 @property(nonatomic, readonly) AKSIPAccount *account;
+@property(nonatomic, strong, nullable) JPSDiallerContacts *contactCompletions;
 @property(nonatomic, readonly) id<RingtonePlaybackUseCase> ringtonePlayback;
 
 @property(nonatomic, getter=isEnabled) BOOL enabled;

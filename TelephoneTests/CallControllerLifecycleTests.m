@@ -519,6 +519,8 @@
 #import "AccountControllers.h"
 
 @interface AKCompactAccountFixture : NSObject
+// The optional injected snapshot is nil in this SIP/transfer-only fixture.
+@property(nonatomic, strong) JPSDiallerContacts *contactCompletions;
 @property(nonatomic, copy) NSString *accountDescription;
 @property(nonatomic) BOOL callsShouldDisplayAccountInfo;
 @end

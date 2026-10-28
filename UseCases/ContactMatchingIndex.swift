@@ -18,6 +18,11 @@
 
 @ContactsActor
 public protocol ContactMatchingIndex: Sendable {
+    var completionSnapshot: ContactCompletionSnapshot? { get }
     func contact(forPhone phone: ExtractedPhoneNumber) async -> MatchedContact?
     func contact(forEmail email: NormalizedLowercasedString) async -> MatchedContact?
+}
+
+extension ContactMatchingIndex {
+    public var completionSnapshot: ContactCompletionSnapshot? { nil }
 }

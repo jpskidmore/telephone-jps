@@ -1,0 +1,435 @@
+{
+  "issue": 70,
+  "recordDate": "2026-10-28",
+  "preparedAtUTC": "2026-10-28T23:35:27.387558+00:00",
+  "status": "Source verified; all current local required gates passed; publication checked separately",
+  "baseCommit": "83d691eaa9d7f348b895720c79c2637ae080d2e6",
+  "scope": "Dialler completion and token enrichment use an immutable snapshot built by the existing Contacts matching pipeline. No release or installation.",
+  "releasedBaseline": {
+    "version": "3.7",
+    "build": 166,
+    "immutableSource": "58956a9906cbe1221640a926446341e6a71fdcb9"
+  },
+  "implementation": {
+    "snapshot": "ContactCompletionSnapshot; immutable Sendable value, O(n) filtering, no result cap or deduplication.",
+    "enumeration": "One existing CNContactStoreToContactsAdapter/ContactsActor matching-index enumeration also builds completion data; no separate store fetch from typing/token commit.",
+    "publication": "Main-actor value boundary with synchronous admission tickets; store/activation/access/lifecycle invalidation rejects late publication and stale enrichment.",
+    "authorization": "Non-prompting authorization checks; explicit existing Contacts recovery/settings action owns access requests.",
+    "loadFailure": "Incomplete/failed completion loads publish no snapshot. Existing history lookup failure policy remains separate.",
+    "tokenOwnership": "Existing URI formatter and per-token associated selected index retained; stale enrichment falls back to the entered literal URI.",
+    "metadata": "Raw given/family/organisation/type/identifier and raw labels are additional completion metadata; existing history formatted name and address matching keys remain separate.",
+    "incomingCallLookup": "AccountController incoming caller lookup still uses AddressBook; outside issue70."
+  },
+  "syntheticParity": {
+    "status": "passed for the recorded normalized corpus",
+    "mainCompletionInputs": 57,
+    "additionalWhitespaceAndNormalizedEmptyNameInputs": 31,
+    "totalNormalizedCompletionInputs": 88,
+    "tokenContactAndOrderedDestinationInputs": 21,
+    "failures": 0,
+    "candidateCoreInputSHA256": {
+      "UseCases/Contact.swift": "53ed039b0ea38d78ad8c26540b24598cac1ff75caf25bb781b801d456d39a450",
+      "UseCases/ContactCompletionSnapshot.swift": "9e114d104981b3b640e0743a6e633b0dcc6dc4132a12d2316fb7bc01b6f70e04",
+      "Scripts/ContactsCompletionBenchmark/Candidate.swift": "26e9139446f9679c0af2f55589d105b55b36eb0b0ac103c69a7a4c90e41abcdb"
+    },
+    "currentCoreInputsStillMatchBenchmark": {
+      "UseCases/Contact.swift": true,
+      "UseCases/ContactCompletionSnapshot.swift": true,
+      "Scripts/ContactsCompletionBenchmark/Candidate.swift": true
+    },
+    "scope": "Full ordered completion arrays without truncation/deduplication; contact and ordered destination/name/fixture-label comparisons. Production label bridge, keyboard/Return and selected-token ownership need separate native tests.",
+    "maxCompletionOutputCount": 45980
+  },
+  "benchmark": {
+    "baselineCommit": "83d691eaa9d7f348b895720c79c2637ae080d2e6",
+    "provenance": "Exact pinned legacy completion/token/name/label methods; genuine ABSearchElement.matchesRecord over detached NSObject records. Production URI/number formatters use a local pure UseCases framework; unused PJSIP imports are omitted in a standalone work copy.",
+    "nativePredicateTruthCases": 9,
+    "nativePredicateTruthFailures": 0,
+    "guardProbes": [
+      "ABAddressBook.addressBook",
+      "ABAddressBook allocation",
+      "ABRecord allocation",
+      "ABPerson allocation",
+      "CNContactStore allocation"
+    ],
+    "guardProbeExpectedExitCode": 70,
+    "forbiddenStoreEntriesDuringMeasuredRuns": 0,
+    "sharedAddressBookAndDefaults": "Only synthetic in-memory directory/formatting flags; no ABRecord/ABPerson creation.",
+    "mainCompletionWarmSamplesPerSize": 95,
+    "tokenWarmSamplesPerSize": 35,
+    "warmupsPerInput": 2,
+    "measuredTrialsPerInput": 5,
+    "coldSamplesPerSize": 1,
+    "results": [
+      {
+        "contacts": 100,
+        "legacyCompletionWallMS": {
+          "max": 0.9873329997062683,
+          "p50": 0.2612909972667694,
+          "p95": 0.9435420036315918,
+          "samples": 95
+        },
+        "candidateCompletionWallMS": {
+          "max": 0.30604200065135956,
+          "p50": 0.14058400690555573,
+          "p95": 0.2911660075187683,
+          "samples": 95
+        },
+        "candidateCompletionMainThreadCPUMS": {
+          "max": 0.30216700000000074,
+          "p50": 0.140625,
+          "p95": 0.25995900000000205,
+          "samples": 95
+        },
+        "coldSyntheticLegacyRecordConstructionMS": 1.2374589890241623,
+        "candidateFixtureConversionMS": 0.3080829977989197,
+        "coldCandidateSnapshotConstructionMS": 0.3648329973220825,
+        "coldCandidateSnapshotConstructionMainThreadCPUMS": 0.3650000000000002,
+        "legacyFullTokenCallbackWallMS": {
+          "max": 0.7034170031547546,
+          "p50": 0.3840840011835098,
+          "p95": 0.6252080053091049,
+          "samples": 35
+        },
+        "candidateTokenLookupOnlyWallMS": {
+          "max": 0.03116700053215027,
+          "p50": 0.016958996653556824,
+          "p95": 0.031084001064300537,
+          "samples": 35
+        },
+        "candidateMemoryBeforeContactConversion": {
+          "physicalFootprintBytes": 2425312,
+          "residentBytes": 7634944
+        },
+        "candidateMemoryAfterSnapshotConstruction": {
+          "physicalFootprintBytes": 2671072,
+          "residentBytes": 7880704
+        },
+        "candidateMemoryAfterQueries": {
+          "physicalFootprintBytes": 3326456,
+          "residentBytes": 9469952
+        },
+        "candidateContactAndSnapshotPhysicalFootprintDeltaBytes": 245760
+      },
+      {
+        "contacts": 1000,
+        "legacyCompletionWallMS": {
+          "max": 9.834375008940697,
+          "p50": 2.4530839920043945,
+          "p95": 9.356583997607231,
+          "samples": 95
+        },
+        "candidateCompletionWallMS": {
+          "max": 1.5325839966535568,
+          "p50": 0.7401250004768372,
+          "p95": 1.4386669993400574,
+          "samples": 95
+        },
+        "candidateCompletionMainThreadCPUMS": {
+          "max": 1.5299580000000006,
+          "p50": 0.7402080000000026,
+          "p95": 1.4387499999999989,
+          "samples": 95
+        },
+        "coldSyntheticLegacyRecordConstructionMS": 9.045166999101639,
+        "candidateFixtureConversionMS": 0.7657079994678497,
+        "coldCandidateSnapshotConstructionMS": 1.6369590014219284,
+        "coldCandidateSnapshotConstructionMainThreadCPUMS": 1.636958,
+        "legacyFullTokenCallbackWallMS": {
+          "max": 4.530375003814697,
+          "p50": 2.630959004163742,
+          "p95": 4.527666002511978,
+          "samples": 35
+        },
+        "candidateTokenLookupOnlyWallMS": {
+          "max": 0.24366600811481476,
+          "p50": 0.012125000357627869,
+          "p95": 0.21379201114177704,
+          "samples": 35
+        },
+        "candidateMemoryBeforeContactConversion": {
+          "physicalFootprintBytes": 4800992,
+          "residentBytes": 9977856
+        },
+        "candidateMemoryAfterSnapshotConstruction": {
+          "physicalFootprintBytes": 6275552,
+          "residentBytes": 11452416
+        },
+        "candidateMemoryAfterQueries": {
+          "physicalFootprintBytes": 7258616,
+          "residentBytes": 13369344
+        },
+        "candidateContactAndSnapshotPhysicalFootprintDeltaBytes": 1474560
+      },
+      {
+        "contacts": 10000,
+        "legacyCompletionWallMS": {
+          "max": 117.39450000226498,
+          "p50": 25.054624989628792,
+          "p95": 110.40062499046326,
+          "samples": 95
+        },
+        "candidateCompletionWallMS": {
+          "max": 13.986625000834465,
+          "p50": 7.223458990454674,
+          "p95": 13.908250004053116,
+          "samples": 95
+        },
+        "candidateCompletionMainThreadCPUMS": {
+          "max": 13.961624999999998,
+          "p50": 7.2241670000000795,
+          "p95": 13.907958000000008,
+          "samples": 95
+        },
+        "coldSyntheticLegacyRecordConstructionMS": 95.3972500115633,
+        "candidateFixtureConversionMS": 6.5541249960660934,
+        "coldCandidateSnapshotConstructionMS": 13.947042003273964,
+        "coldCandidateSnapshotConstructionMainThreadCPUMS": 13.945042,
+        "legacyFullTokenCallbackWallMS": {
+          "max": 42.27049998939037,
+          "p50": 25.050041005015373,
+          "p95": 42.24795800447464,
+          "samples": 35
+        },
+        "candidateTokenLookupOnlyWallMS": {
+          "max": 2.1850840002298355,
+          "p50": 0.011583998799324036,
+          "p95": 2.1346249878406525,
+          "samples": 35
+        },
+        "candidateMemoryBeforeContactConversion": {
+          "physicalFootprintBytes": 28885472,
+          "residentBytes": 34078720
+        },
+        "candidateMemoryAfterSnapshotConstruction": {
+          "physicalFootprintBytes": 46481912,
+          "residentBytes": 51658752
+        },
+        "candidateMemoryAfterQueries": {
+          "physicalFootprintBytes": 50872872,
+          "residentBytes": 56967168
+        },
+        "candidateContactAndSnapshotPhysicalFootprintDeltaBytes": 17596440
+      }
+    ],
+    "cpuLimit": "Synthetic in-memory O(n) predicate/string work, not actual AddressBook index/store/disk latency or a real-world speedup.",
+    "tokenTimingLimit": "Candidate firstContact lookup excludes formatter/URI/menu construction; cannot be presented as full token-callback speedup.",
+    "coldLimit": "Synthetic fixture conversion/snapshot construction only; actual Contacts enumeration and actor-publication latency were not measured.",
+    "memoryLimit": "Before/after includes retained raw fixtures and full expected-output JSON. The 10k contact+snapshot physical-footprint delta is 17,596,440 bytes; absolute process memory is not app live-cache or steady-state memory."
+  },
+  "behaviourBoundaries": {
+    "normalizedMissingNames": "Modern Contacts supplies nonoptional normalized strings. Accidental legacy AB nil-name NSRange.location0 extra name forms are intentionally not preserved; actual destinations remain available. Explicit raw nil/empty probe cases are retained, and universal raw-AB-record parity is not claimed.",
+    "nameOrdering": "Completion display names use given/family or organisation plus CNContactFormatter.nameOrder(for:), while history keeps the existing full-name formatter. Modern per-contact name order may differ from legacy AB global defaultNameOrdering. Real locale/profile acceptance remains pending.",
+    "labels": "Built-in phone/SIP labels retain the existing AddressBookLabels table; custom values use the adapter localized fallback. Only raw case-insensitive sip-labelled emails become destinations. Ordinary emails may participate in a named-record search without becoming dial targets.",
+    "enumerationOrder": "Snapshot preserves source enumeration and per-record destination order. The synthetic corpus supplies the same order to both implementations; CNContactStore enumeration order is not claimed equal to old AB search order. First matching record therefore follows the current supplied snapshot.",
+    "remainingAddressBook": "The incoming AccountController caller-lookup path remains outside this dialler change."
+  },
+  "validation": {
+    "status": "passed",
+    "suiteCases": {
+      "total": 1014,
+      "failures": 0,
+      "Domain": {
+        "XCTest": 28
+      },
+      "UseCases": {
+        "XCTest": 206,
+        "SwiftTesting": 157
+      },
+      "ReceiptValidation": {
+        "XCTest": 5
+      },
+      "Telephone": {
+        "XCTest": 570,
+        "SwiftTesting": 48
+      }
+    },
+    "focusedCases": {
+      "total": 60,
+      "failures": 0,
+      "nativeDialler": 19,
+      "transfer": 6,
+      "bridgeAccessRaces": 12,
+      "contactsRecovery": 18,
+      "detachedCNMapping": 5,
+      "log": "work/contacts70-focused-v2.log",
+      "result": "/private/tmp/jps-contacts70-focused-v2-20261028.xcresult"
+    },
+    "separateChecks": {
+      "recordingOwnershipAssertions": 105,
+      "repairGateFindings": 50,
+      "vendorDependencyProvenance": "passed"
+    },
+    "unsignedReleaseBuild": "passed; no signing/installation/publication implied",
+    "finalSourceSHA256": {
+      "Telephone.xcodeproj/project.pbxproj": "7b7a058ddfce0633db0683828c2c8cdfc500abd0b68ea60aa20ce43bbbfb36f1",
+      "Telephone/AccountController.h": "1af18c077eba897222f142dac4892a4b1eaec371ece5f4c5257e13796ef36096",
+      "Telephone/ActiveAccountTransferViewController.m": "62fdf8f1414f36883bde6ee85ecb2b00747296a03d6bad6badd6f7ee3fb09ce6",
+      "Telephone/ActiveAccountViewController.h": "9aa017b38ddd0a04ea469b33facb0d6df412a3b0bea7adced112f0977fef71ab",
+      "Telephone/ActiveAccountViewController.m": "a8328c7dc75bca9a09d3203a6b38eeee324c2ef74d3ff25b3d7d86c76562defd",
+      "Telephone/AppController.m": "51d0ba4f3bd3f544fd59ce6b095e5b7e41edb223972d925308540d91d4e0ffbe",
+      "Telephone/CNContactStoreContactsChangeEventSource.swift": "a2fd08ee48b0e5fb69b31946af1e8c3eeca1309105a03eae7ab11febd548a189",
+      "Telephone/CNContactStoreToContactsAdapter.swift": "168bae551afd19ebc7c756d27dcb6e3210d321872caff5f41c79005319e83b66",
+      "Telephone/CompositionRoot.swift": "10cfce755b34e7ad4a08d686d9e1a1ba94408099abac98f4168648b1214d7a87",
+      "Telephone/Contact+CNContact.swift": "fe2899a8f7782d05fe67575394feccc7fb8e8096c16435ce5ea68cdf22ee3f8e",
+      "Telephone/SharedDialerController.h": "83c38cf7b6ba8d766e013bab3804f4bc2bb032102170ba59cfc227b7c7f96cf4",
+      "Telephone/SharedDialerController.m": "56f57dc82aaad63b74ee5c9628d2fd7e2a4539bbee43f1ba6bdcd3b64f24b54f",
+      "TelephoneTests/CallControllerLifecycleTests.m": "a521f6d7392cfeb760db661ba18bd755a0b0bd9fbd0f8cab42a8327cd7035888",
+      "TelephoneTests/ContactsRecoveryTests.swift": "e3c0a66e9cd49ed168e9123b09d85f57ac0c1d029ddb9fec31c491c791ae24be",
+      "UseCases/Contact.swift": "53ed039b0ea38d78ad8c26540b24598cac1ff75caf25bb781b801d456d39a450",
+      "UseCases/ContactMatchingIndex.swift": "c25d16878c732ebf95656037dc529419f8f007f15f59b7efc96da00e00f343d3",
+      "UseCases/LazyDiscardingContactMatchingIndex.swift": "6caf09df1f21b8675657fe6246b3e71701f73941ba8da1bf2ecc259d375e9f84",
+      "UseCases/SimpleContactMatchingIndex.swift": "af102b6ae62b46ea2439f2a7f8ad57dda5631fa729cf0a5b426a8016bea1fa79",
+      "UseCasesTests/LazyDiscardingContactMatchingIndexTests.swift": "24bea35e9a16524a56fa95115f9a068710240d6afd7b17664f38cfdf9cb4c9a2",
+      "UseCasesTests/SimpleContactMatchingIndexTests.swift": "d4fb0cb50e709b29219978a3119d87e6f7ffca5a8951843f07514690ede585bb",
+      "Scripts/ContactsCompletionBenchmark/Baseline.m.in": "7379aef00a2045fb625b08eae27c467e84c6b7222b6be66407198c309879a3b3",
+      "Scripts/ContactsCompletionBenchmark/Candidate.swift": "26e9139446f9679c0af2f55589d105b55b36eb0b0ac103c69a7a4c90e41abcdb",
+      "Scripts/ContactsCompletionBenchmark/DetachedProof.m": "7af64de289444cde635768fe4488425920a0e018101ee75362b0f744551f8f42",
+      "Scripts/ContactsCompletionBenchmark/README.md": "a369f1d649bfaa94be7d32cb78ba838b2113904f8d3e27b9990556a3fab65aa7",
+      "Scripts/ContactsCompletionBenchmark/compare.py": "f2a6bad80166d8c727da054cf019c4eaf1290bf23f6bd720177fbf581a9025d3",
+      "Scripts/ContactsCompletionBenchmark/run.py": "0269f525403fc2216811af9dd9edf33572a38519ab49f887d64c45ba9f79c726",
+      "Telephone/DiallerContacts.swift": "abf67cc423d167da870c9936ec1bec6253450411f080614cc4e6593bd3f63c65",
+      "TelephoneTests/DiallerCompletionTests.m": "a70189196b6355789fc5928deddaa4597ee34c1ecb6fe6dfeb8248593913ca73",
+      "TelephoneTests/DiallerContactsTests.swift": "7ff6ce4a4746603e13a30f089b2cd0ad9f5063566c7d4af4bd49e8f059943cbe",
+      "UseCases/ContactCompletionSnapshot.swift": "9e114d104981b3b640e0743a6e633b0dcc6dc4132a12d2316fb7bc01b6f70e04"
+    },
+    "finalLogSHA256": {
+      "work/contacts70-full-final.log": "d92cfac2f820dea2a039a7e1520f993ffa7525fd4eb28914d881ad435cb38cf9",
+      "work/contacts70-focused-v2.log": "1ca7aa4dff8195c7708a2cc74fef56c977f684bb91a806e9abca79814525eba8",
+      "work/contacts70-build-v9.log": "742967e94ceba4e46e2261e2625455982d66af235f793ccec0373d51fb38357d"
+    },
+    "note": "60focusedcases overlap fullsuite; syntheticcomponentassertions countedseparately; actual#62acceptancepending",
+    "artifacts": "/private/tmp/jps-telephone-validation.4TUKp9"
+  },
+  "evidenceSHA256": {
+    "work/contacts70-comparison-report.json": "0335b730f3193f8d13b8837650d746fbb3e94748a3953cbc9494cb5f60ebfb49",
+    "work/contacts70-comparison-report.md": "4fade3f50440d9da9e2bcc09c251f0654bc351876bc573ccdf5cd3749fdc750d",
+    "work/contacts70-baseline-report.json": "63ae5cefcc9041dcf53d3d8391b111e251fe60f90dbc4fe2cd1e600e66fb0ae9",
+    "work/contacts70-benchmark/manifest.json": "8b14d5a708f6a9a7e1a667dc110fa61bbba59f9dcc1f23323bd2ceff4947a97b",
+    "work/contacts70-candidate-v2/manifest.json": "ad1d17387b82995522a0ab6029af132b73705a561ee33cda9878a9bb721ae394",
+    "work/contacts70-rare-candidate/manifest.json": "fbe8c876a5c418231b292fb8b8ca52fcbf90832a1f8f93d1f068e1a907632bd8",
+    "work/contacts70-benchmark/detached-proof.json": "dad1edce15843c93ec490dcb635f282b9f5cab7ebe253d4410f0d331f52a6780",
+    "work/contacts70-rare-name-probe.m": "d3f9aedad013416f66328780ce69b179c769762415c632832bc5113d80612844",
+    "work/contacts70-rare-name-probe.log": "89f12f90560ffca88a0d60d1d1b21efeb0f0a1909448211b68f84ab75628e942",
+    "work/contacts70-candidate-dependencies.log": "caee2a84b51afdeee3ca4d4d91bc793722d777642f716ea454ebda9167070922"
+  },
+  "benchmarkBaselineSourceSHA256": {
+    "Telephone/ActiveAccountViewController.m": "5340a89b47c96a1282ce1baae1bfdaf646ff296b7c57051830c5e7f1c5a5012e",
+    "Telephone/AKABRecord+Querying.m": "375f1e60b4e5efafbe40fea919a4ddd03cd8f5bdba4c26e7a7ca7667a6b12fb7",
+    "Telephone/AKABAddressBook+Localizing.m": "73817787ef963a841e70d272b6c8c86411b506339e720e392fd8e319f23f4424",
+    "Telephone/AKSIPURI.m": "963d5fa3d33a6929078f9ca20f1d13d6947258215c6ec554f8821bb27492954a",
+    "Telephone/AKSIPURI.h": "132bf7ee3f980e5b17dd2254126ef1a6b019e4b635093e83fe48c0644c73a8f9",
+    "Telephone/AKSIPURIFormatter.m": "7176368d917461c1a3ba69088089261ec1e5caf8c7cf060766c783e6be7fd2f1",
+    "Telephone/AKSIPURIFormatter.h": "591f4dcb5484e56affc06438a91de0536b0006d63bc5f962c262550f84026274",
+    "Telephone/AKTelephoneNumberFormatter.m": "c636c5d62e73b6ef3320ddb827eaba50f665659c3b205149358b323458307f39",
+    "Telephone/AKTelephoneNumberFormatter.h": "ef5bfe795fb369af9a029297279e33dde3548025346ad340db8684ba2960939c",
+    "Telephone/AKABRecord+Querying.h": "8c01bac169eafa4c4e66e8194eb6f304b891e2a288b7b110341fc50971d3aef3",
+    "Telephone/AKABAddressBook+Localizing.h": "6b9e2100dbc9df8dc3e0b7a4d38b092ef91139af6c423be6fba28cda49725815",
+    "Telephone/UserDefaultsKeys.swift": "c2d5c0da6b327e40f433ca16fc6d0aab200172eeb2647268e9de28c100a60b64"
+  },
+  "benchmarkArtifactSHA256": {
+    "work/contacts70-benchmark/AKABAddressBook+Localizing.h": "6b9e2100dbc9df8dc3e0b7a4d38b092ef91139af6c423be6fba28cda49725815",
+    "work/contacts70-benchmark/AKABRecord+Querying.h": "8c01bac169eafa4c4e66e8194eb6f304b891e2a288b7b110341fc50971d3aef3",
+    "work/contacts70-benchmark/AKSIPURI.h": "132bf7ee3f980e5b17dd2254126ef1a6b019e4b635093e83fe48c0644c73a8f9",
+    "work/contacts70-benchmark/AKSIPURI.m": "39487ef40c3fc5d68b52393eec14717c8230c3feb6e4ef3c32709faf79486cca",
+    "work/contacts70-benchmark/AKSIPURIFormatter.h": "591f4dcb5484e56affc06438a91de0536b0006d63bc5f962c262550f84026274",
+    "work/contacts70-benchmark/AKSIPURIFormatter.m": "7176368d917461c1a3ba69088089261ec1e5caf8c7cf060766c783e6be7fd2f1",
+    "work/contacts70-benchmark/AKTelephoneNumberFormatter.h": "ef5bfe795fb369af9a029297279e33dde3548025346ad340db8684ba2960939c",
+    "work/contacts70-benchmark/AKTelephoneNumberFormatter.m": "c636c5d62e73b6ef3320ddb827eaba50f665659c3b205149358b323458307f39",
+    "work/contacts70-benchmark/Baseline.m": "dafe4ee8ca8806e0551f881aad388d499207d6abeb45b9ba275ee2a4d1be4396",
+    "work/contacts70-benchmark/baseline-100-fixtures.json": "4e978fab8b065139be314091f123252033b94645f137704a4936dd11524d849c",
+    "work/contacts70-benchmark/baseline-100-outputs.json": "c7cf1a908bf68233b8e144cbb1d70de6c5e2643ed46720b24d80742bba4dd696",
+    "work/contacts70-benchmark/baseline-100.json": "5e10a3061b0a333eecc46771e46861e97a086b7ab5ab60b4e50c7df46f6e4879",
+    "work/contacts70-benchmark/baseline-100.log": "f99155eefea4a59dc90ee5c74cfedb7a51256dea885a90bcf576ff55096b9cf3",
+    "work/contacts70-benchmark/baseline-1000-fixtures.json": "ce0671837cee39ae7050fe5d41608a163fb506f355cbd9cbb8f68ef3f96fc697",
+    "work/contacts70-benchmark/baseline-1000-outputs.json": "bddebac2d63992c323e7c8ea9eae659214ed77d4af3a24a34a7a6efeea730b9f",
+    "work/contacts70-benchmark/baseline-1000.json": "1bda69ae91ce4eb2513dfd31037ad25c06325fed55dd7312b627a1d5f1e6338f",
+    "work/contacts70-benchmark/baseline-1000.log": "9790fe09fb6811784530b1dbad8563ace5b40d1309177179f137fd604cfb65d5",
+    "work/contacts70-benchmark/baseline-10000-fixtures.json": "75049eb324dfe46bea4a39dc9a99fd0f766b583d3909a04780971bac4ab1b10a",
+    "work/contacts70-benchmark/baseline-10000-outputs.json": "a8b213cd4ae75d392284de9904db52237f7a35d9e82da0249aaf25e273efafce",
+    "work/contacts70-benchmark/baseline-10000.json": "cd2544bcfeaadc2acdf492861c5e3555f83e54341d77aaf6f21723d444eb5322",
+    "work/contacts70-benchmark/baseline-10000.log": "30bcfc7aab5ecdce2709aaa22d79a5435a1200b5e2b4659312404786643f4a8d",
+    "work/contacts70-benchmark/baseline-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "work/contacts70-benchmark/candidate": "77b42ee8a13ad06efd49a9eb12df096a6d1af8c6eb5a496561283cfbd80e5add",
+    "work/contacts70-benchmark/completion_method.m.inc": "ee2fbba6b5857b26921998b2ad4fa96f96eb34c5aadb11ac2a59e9812710db44",
+    "work/contacts70-benchmark/detached-proof": "31f0fa9c61987e267ca41e171cf67494fe7e307301755418d57a65296e386df8",
+    "work/contacts70-benchmark/detached-proof.json": "dad1edce15843c93ec490dcb635f282b9f5cab7ebe253d4410f0d331f52a6780",
+    "work/contacts70-benchmark/guard-aballoc.log": "1da87321f247ef893409a25f1956c67c5ac950912f49428720e6b315df57092f",
+    "work/contacts70-benchmark/guard-addressbook.log": "64c5e48583468c11cbc8d921ede8f7c100ebb8dc5441aecf668ccedd979a5317",
+    "work/contacts70-benchmark/guard-bookalloc.log": "fce93176aabbb5107f19e460c3776ab7eabeffda714d5a3dd79b731561173b45",
+    "work/contacts70-benchmark/guard-cnalloc.log": "1596f528bea000a0e69e6c818deda1c898a96e7ffe920db2d9c0e26ef5e510c6",
+    "work/contacts70-benchmark/guard-recordalloc.log": "6c60929875760a0b45c38debf77af6144e1853a9eb97c5e6cacb91b1828b2040",
+    "work/contacts70-benchmark/label_method.m.inc": "c799eb8edefe60fef6160bc2f1397b82172e6d18ff77c2109efd9c01d0a38c8a",
+    "work/contacts70-benchmark/legacy-baseline": "7b3358782d85bb6b4b7580394e5ad6178ea2599eb2079022f83f7584af369aa2",
+    "work/contacts70-benchmark/manifest.json": "8b14d5a708f6a9a7e1a667dc110fa61bbba59f9dcc1f23323bd2ceff4947a97b",
+    "work/contacts70-benchmark/name_methods.m.inc": "b9ec24af60338b7c33916dc1ee30c2002b5995c34b00e448c56a016fed53fc21",
+    "work/contacts70-benchmark/proof-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "work/contacts70-benchmark/token_method.m.inc": "9837e1189a7d7ca01cce56f1c63dbc5954d0d6a7218e6f240fc96e77b0c8faed",
+    "work/contacts70-candidate-v2/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "work/contacts70-candidate-v2/candidate": "7fbbaa86a4a386ebefc5a8c890f537a4b9dd4bd3d496e344144753058238efd8",
+    "work/contacts70-candidate-v2/candidate-100.json": "9435d2191f62ad1d4ea55a1d020545a7b7a8d18336d8c6ef297b29fb004d4156",
+    "work/contacts70-candidate-v2/candidate-100.log": "0389a6b4bb92dbd73efb67d8d3f5e3ae950c00722cc364c68c70b5110b965049",
+    "work/contacts70-candidate-v2/candidate-1000.json": "f83d06a918a96423b70185dccdeeca8ec5a6cb1055a9d1d0124f1ac635a1e1f5",
+    "work/contacts70-candidate-v2/candidate-1000.log": "66a3402500fee635fb425facfa9a0bdc1c3ebb7424e4ca9788ce8ada126e68da",
+    "work/contacts70-candidate-v2/candidate-10000.json": "ee4d67a7c1881fac3e512fff1dfc9701d2753af27dec22a264c81f277aa160da",
+    "work/contacts70-candidate-v2/candidate-10000.log": "afd21af2a514f9ece229e0d5d90d2eaba836171926e0fe0b716fd915964e88ad",
+    "work/contacts70-candidate-v2/manifest.json": "ad1d17387b82995522a0ab6029af132b73705a561ee33cda9878a9bb721ae394",
+    "work/contacts70-rare-baseline/baseline-1-fixtures.json": "0a45496290d7ab92f723425f7508dfc1dd9fdf1b55bce10894d7b4147de01567",
+    "work/contacts70-rare-baseline/baseline-1-outputs.json": "2a40b2c228ec2ddf5bf5fc8ddc89b388997b9478ca51b6c88d090f3cb858b57f",
+    "work/contacts70-rare-baseline/baseline-1.json": "a98eef00c6d54a7c7baa9c6d870b07965d044ae035a518fe623add29485a1263",
+    "work/contacts70-rare-baseline/baseline-2-fixtures.json": "6ccb5276871cae66104a907a18374198a2345214efadd7aa21ac186e5f7ae747",
+    "work/contacts70-rare-baseline/baseline-2-outputs.json": "44f046e0d95b386af3c6550ce8b343db0cc58857a88524929a2f9ade50221196",
+    "work/contacts70-rare-baseline/baseline-2.json": "1e05d8bb0aad221580993a2e46dac5a5fcb61a0445520cf326484c84e0d64b8b",
+    "work/contacts70-rare-baseline/baseline-3-fixtures.json": "903a2acde83f677cba0e34c26b9069507ec0054dd5430820ad8336dd38cc4e53",
+    "work/contacts70-rare-baseline/baseline-3-outputs.json": "df3b53ffbb3b910a520927f2e9152f75eb2efbb07fdec84ece1b5ad1ddb695d0",
+    "work/contacts70-rare-baseline/baseline-3.json": "4ee793015e2ec43438c8dd0efa9f5ad55a9d1e062f0207ae61d506073ea0d55c",
+    "work/contacts70-rare-baseline/baseline-4-fixtures.json": "ceeea071664327efec54b652ceff984ada459c5b202132c9c2449a6dac4686bf",
+    "work/contacts70-rare-baseline/baseline-4-outputs.json": "a8d8d2a489114fd76bb2dccdcd0075104d0f4ee2fec7242a276b561090828045",
+    "work/contacts70-rare-baseline/baseline-4.json": "94b2a8fef28c8ddcb3236ce50064438cffc948a64fa27158523257e61ef08c84",
+    "work/contacts70-rare-baseline/baseline-5-fixtures.json": "34ab8a1358435ae1e8075b4717cf4c3b76de4eedaf4c76de0bec1a7498423f56",
+    "work/contacts70-rare-baseline/baseline-5-outputs.json": "b02198803096944965427f9cebf32927d97df35a6839e739272fa82746be9aa0",
+    "work/contacts70-rare-baseline/baseline-5.json": "33de0b420a20e9dcf9e427fedace55b0c7879589dc5c3945e2a09af0e6a78f2d",
+    "work/contacts70-rare-baseline/baseline-6-fixtures.json": "1271966fad8e64f644e330278ff1bfd08ec7121b45543e97aa35f1acc7c9de4d",
+    "work/contacts70-rare-baseline/baseline-6-outputs.json": "fd8b5af80dad3dc76b6e308895a67ea772cffcf329a7e6ac25e8e9a3381da0b4",
+    "work/contacts70-rare-baseline/baseline-6.json": "59d97b6e72f39a09983ea2a758e8a0604780cc36db46d80bb8fb5ee91a321e8b",
+    "work/contacts70-rare-baseline/baseline-7-fixtures.json": "4080eb3ee4a9894eb7989f0fe2178b26e1432c1246c51d6ab5d9b5f857a0ad50",
+    "work/contacts70-rare-baseline/baseline-7-outputs.json": "407cd2de80eae0a7e6c86902646c72524595156c470943dc1c5b95db4dd2fb78",
+    "work/contacts70-rare-baseline/baseline-7.json": "b2477e186d663b8ca77a94a77fe3cb0026e621d5d4be8b2096f70a35c30cc8d9",
+    "work/contacts70-rare-baseline/baseline-8-fixtures.json": "e06f0bbffbcfbf7a8818a0ac24b753e2af16a9e94aeec01c4746c866418a3893",
+    "work/contacts70-rare-baseline/baseline-8-outputs.json": "679c15174d2f93a7cec66e9670414c84611cbe1b0c1a1fd5966056ffed16e4a9",
+    "work/contacts70-rare-baseline/baseline-8.json": "0d9f53ca8f65d7a9ad648b06a2d5669efa9e57ddbe10373c332be7c8193239dd",
+    "work/contacts70-rare-baseline/manifest.json": "1c01327fdc6eff30302f35832c96305b5dcbb65e99f7eefa635fbea650f1b8e5",
+    "work/contacts70-rare-candidate/build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "work/contacts70-rare-candidate/candidate": "7fbbaa86a4a386ebefc5a8c890f537a4b9dd4bd3d496e344144753058238efd8",
+    "work/contacts70-rare-candidate/candidate-1.json": "11ed3640eeceb5a33fb096d106a76aee8e861995c7de75afcb514861134421b4",
+    "work/contacts70-rare-candidate/candidate-1.log": "340057b6bd6c7486911dac18ccd3612e002a2dbe242a04d283a98d952267a64a",
+    "work/contacts70-rare-candidate/candidate-2.json": "3aebbfeccfe0eb085e7c42ba2ea04604e87424cf8d6f03b571938602e3eddc85",
+    "work/contacts70-rare-candidate/candidate-2.log": "72cad09e3d1453161ee3fc6c476057d4738a49c362f643131c79d9081eea6e35",
+    "work/contacts70-rare-candidate/candidate-3.json": "713b6a995d4ae7fa6ef968db13696361bd90466642df713a613597edfbee72c9",
+    "work/contacts70-rare-candidate/candidate-3.log": "72cad09e3d1453161ee3fc6c476057d4738a49c362f643131c79d9081eea6e35",
+    "work/contacts70-rare-candidate/candidate-4.json": "5a350e43fceea3209a2761067a74e9b64df3d2ab25bd1e7702be2fe3803cc549",
+    "work/contacts70-rare-candidate/candidate-4.log": "3373193cf26e70cf161335a1b714178beaeec4977d02310f639cae12e306866f",
+    "work/contacts70-rare-candidate/candidate-5.json": "b50188e17c354574ba0fcee924622205bf458ddcf16c9d28c156f2f54628a14d",
+    "work/contacts70-rare-candidate/candidate-5.log": "3373193cf26e70cf161335a1b714178beaeec4977d02310f639cae12e306866f",
+    "work/contacts70-rare-candidate/candidate-6.json": "77775c907244159aa825176dbfb0f37f1c7451816b693f9df23e2b86869cea7b",
+    "work/contacts70-rare-candidate/candidate-6.log": "9c16d495d314f84a287ca15d17215502659cfddc289263448ecc253f4ad3dea6",
+    "work/contacts70-rare-candidate/manifest.json": "fbe8c876a5c418231b292fb8b8ca52fcbf90832a1f8f93d1f068e1a907632bd8"
+  },
+  "benchmarkHarnessSHA256": {
+    "Scripts/ContactsCompletionBenchmark/Baseline.m.in": "7379aef00a2045fb625b08eae27c467e84c6b7222b6be66407198c309879a3b3",
+    "Scripts/ContactsCompletionBenchmark/Candidate.swift": "26e9139446f9679c0af2f55589d105b55b36eb0b0ac103c69a7a4c90e41abcdb",
+    "Scripts/ContactsCompletionBenchmark/DetachedProof.m": "7af64de289444cde635768fe4488425920a0e018101ee75362b0f744551f8f42",
+    "Scripts/ContactsCompletionBenchmark/README.md": "a369f1d649bfaa94be7d32cb78ba838b2113904f8d3e27b9990556a3fab65aa7",
+    "Scripts/ContactsCompletionBenchmark/compare.py": "f2a6bad80166d8c727da054cf019c4eaf1290bf23f6bd720177fbf581a9025d3",
+    "Scripts/ContactsCompletionBenchmark/run.py": "0269f525403fc2216811af9dd9edf33572a38519ab49f887d64c45ba9f79c726"
+  },
+  "acceptance": {
+    "actualContactsStoreProfileOrGrantAccessed": false,
+    "actualProviderCallsMade": false,
+    "issue62": "Pending actual provider/hardware/grants/playback/sleep-wake/VoiceOver acceptance; synthetic passes do not complete that matrix.",
+    "installation": "Not performed",
+    "newRelease": "Not published",
+    "visibilityAndImmutableReleaseAssets": "Unchanged by this source work"
+  },
+  "verifiedAtUTC": "2026-10-28T23:45:51.084835+00:00"
+}
