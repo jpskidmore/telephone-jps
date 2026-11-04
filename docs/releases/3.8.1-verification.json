@@ -1,0 +1,96 @@
+{
+  "version": "3.8.1",
+  "build": 168,
+  "sourceCommit": "ae19260441156318211a984f61dd33de9f1679c8",
+  "sourceTree": "fae2145f9f6dc544fa37306d3bcda6191d1cb7ea",
+  "tests": 1015,
+  "failures": 0,
+  "suites": {
+    "Domain": {
+      "totalTestCount": 28,
+      "passedTests": 28,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "UseCasesTests": {
+      "totalTestCount": 363,
+      "passedTests": 363,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "ReceiptValidationTests": {
+      "totalTestCount": 5,
+      "passedTests": 5,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "TelephoneTests": {
+      "totalTestCount": 619,
+      "passedTests": 619,
+      "failedTests": 0,
+      "skippedTests": 0
+    }
+  },
+  "appFiles": 57,
+  "appSymlinks": 6,
+  "sourceBlobs": 1544,
+  "localInstallation": false,
+  "assets": [
+    {
+      "name": "BUILD-VERIFICATION.md",
+      "size": 879,
+      "sha256": "6b4aa01cdf4cbf3f35919b3277a7e411eb002b0ad7fa56d42320dd0b12786a22",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.1/BUILD-VERIFICATION.md",
+      "downloadVerified": true
+    },
+    {
+      "name": "DIAL-PLAN-NUMBERING.md",
+      "size": 8002,
+      "sha256": "f4beb21fb0668366ab23af977f02166c0594ac08973c05c6b757507a73591c2a",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.1/DIAL-PLAN-NUMBERING.md",
+      "downloadVerified": true
+    },
+    {
+      "name": "DIAL-PLANS.md",
+      "size": 8475,
+      "sha256": "43a6b379110d45b0b94c2d8a5682dba5d62dfc3556bd09c12b3e34f75dc16bcc",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.1/DIAL-PLANS.md",
+      "downloadVerified": true
+    },
+    {
+      "name": "RELEASE-NOTES.md",
+      "size": 958,
+      "sha256": "ca332008d85d3f795f8501077aad3c8c7ed6a4474364d2963990cf04fef8abdf",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.1/RELEASE-NOTES.md",
+      "downloadVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 533,
+      "sha256": "39298090ff3867a3cbf332b189715b1b87838cc5e483fadf79838166fc612bb0",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.1/SHA256SUMS.txt",
+      "downloadVerified": true
+    },
+    {
+      "name": "jps-Telephone-3.8.1-arm64.zip",
+      "size": 3580055,
+      "sha256": "e8d9c8f7b4174554186772314d2fda8cb2cb7f1dd3b8c0aad2029059aaf5e0e3",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.1/jps-Telephone-3.8.1-arm64.zip",
+      "downloadVerified": true
+    },
+    {
+      "name": "jps-Telephone-3.8.1-source.zip",
+      "size": 41228610,
+      "sha256": "12171c804b82e25da6ccb66b9da35e7f5ec2a1b3bdf7a034a52f935ffaf37869",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.1/jps-Telephone-3.8.1-source.zip",
+      "downloadVerified": true
+    }
+  ],
+  "status": "published_verified",
+  "releaseURL": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.1",
+  "releaseID": 433951670,
+  "latest": true,
+  "previousReleasesPreserved": 9,
+  "previousAssetsPreserved": 58,
+  "previousTagRefsPreserved": 14
+}

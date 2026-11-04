@@ -1,4 +1,4 @@
-Version **3.8/build 167** is published as [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8). It includes the fixes from 3.7 plus the Keychain, compact call-window and Contacts completion improvements in #73, #74 and #70. **1,014 fresh local suite cases passed**, and all seven release downloads match their recorded hashes. No local installation was performed. Read [3.8 publication proof](docs/releases/3.8-verification.json).
+Version **3.8.1/build 168** is published as [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.1). It fixes Mute/Hold icon presentation (#76) on the 3.8 baseline. **1,015 fresh local tests passed**, and all seven release downloads match their recorded hashes. No local installation was performed. Read [3.8.1 publication proof](docs/releases/3.8.1-verification.json).
 
 For current status, the ordered roadmap and maintenance instructions, start with
 [Current maintenance](docs/MAINTENANCE.md). Older release and audit records are
@@ -18,7 +18,7 @@ Historical version **3.5/build 162** added one compact dialler, configurable Gui
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8">Latest release: 3.8 (167)</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.1">Latest release: 3.8.1 (168)</a>
   <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained baseline: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
@@ -26,7 +26,7 @@ Historical version **3.5/build 162** added one compact dialler, configurable Gui
 </p>
 
 > [!IMPORTANT]
-> **3.8 is published on GitHub; it has not been installed locally.** Fresh validation passed 1,014 suite cases, and all seven uploaded/downloaded asset sizes and SHA-256 hashes match. The immutable release source is [`6d78e04`](https://github.com/jpskidmore/telephone-jps/commit/6d78e04d4d086b3b42bd25499b667645b82846d1). Read [delivery proof](docs/releases/3.8-verification.json). Real provider/hardware/grant/playback and proficient VoiceOver acceptance remain pending in #62.
+> **3.8.1 is published on GitHub; it has not been installed locally.** Fresh validation passed 1,015 tests, and all seven uploaded/downloaded asset sizes and SHA-256 hashes match. The immutable release source is [`ae19260`](https://github.com/jpskidmore/telephone-jps/commit/ae19260441156318211a984f61dd33de9f1679c8). Read [delivery proof](docs/releases/3.8.1-verification.json). Issue #76 remains open for installed icon acceptance; #62 retains actual provider/hardware/grant/playback and proficient VoiceOver checks.
 >
 > Read [the verified repair map](docs/REPAIR_VERIFICATION.md), [tracked evidence](docs/audit-2.1.8/repair-progress.json), [3.0 notes](docs/releases/3.0.md) and [maintenance handover](docs/BUG_FIX_HANDOVER.md). The owner chose public repository visibility on 21 October 2026. Work stays on main, and all builds remain local with `[skip ci]` commits and no cloud dispatch.
 >

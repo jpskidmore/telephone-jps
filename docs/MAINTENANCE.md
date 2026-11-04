@@ -4,18 +4,26 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
+## Current published release — 3.8.1/build 168, 4 November 2026
+
+**3.8.1/build 168** is [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.1), from immutable source/tag `ae19260441156318211a984f61dd33de9f1679c8` (tree `fae2145f9f6dc544fa37306d3bcda6191d1cb7ea`). It includes the issue #76 icon repair on the 3.8 baseline.
+
+Fresh local release validation passed **1,015 tests**, zero failures or skips: Domain 28 XCTest; UseCases 206 XCTest + 157 Swift Testing; ReceiptValidation 5 XCTest; isolated Telephone 571 XCTest + 48 Swift Testing. Separate dependency, audio, recording and Foundation checks passed. Release compilation, ad-hoc signing, arm64/entitlements and ZIP extraction passed. All 57 regular app payloads, six symlinks and 1,544 source Git blobs match their packaged counterparts. All seven published downloads match local sizes/SHA-256. Nine previous releases, 58 assets and all 14 previous tag references were preserved. See [publication proof](releases/3.8.1-verification.json).
+
+No local installation or production-profile launch was performed. Apple silicon, macOS 15.6+, ad-hoc signed and unnotarised. Issue #76 remains open for installed Light/Dark call-control acceptance; #62 retains actual provider/audio/hardware/grant/VoiceOver checks. No cloud workflow was dispatched.
+
 ## Source repair — call-control icons, 4 November 2026
 
 Issue #76 now has a verified source repair: Mute/Unmute and Hold/Resume restore
 icon-only layout after AppKit title updates. Fresh isolated Telephone validation
 passed 571 XCTest + 48 Swift Testing (619 tests), unsigned Release compilation
 passed, and six native Light/Dark renders were inspected. Read [the evidence and
-remaining acceptance](maintenance/2026-11-04-call-control-icons.md). No installation
-or new release; #76 remains open for installed live-call acceptance under #62.
+remaining acceptance](maintenance/2026-11-04-call-control-icons.md). The repair is now
+in published 3.8.1 above; #76 remains open for installed acceptance under #62.
 
-## Current published release — 4 November 2026
+## Previous published release — 3.8, 4 November 2026
 
-**3.8/build 167** is [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8), from immutable source/tag `6d78e04d4d086b3b42bd25499b667645b82846d1` (tree `e8ddbf6d738cec581ff0691638227e3d91989289`). It includes all pushed source changes through `04c75fe`, plus release metadata: #73 Keychain reads, #74 compact call windows and #70 Contacts snapshots.
+**3.8/build 167** was published as [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8), from immutable source/tag `6d78e04d4d086b3b42bd25499b667645b82846d1` (tree `e8ddbf6d738cec581ff0691638227e3d91989289`). It includes all pushed source changes through `04c75fe`, plus release metadata: #73 Keychain reads, #74 compact call windows and #70 Contacts snapshots.
 
 Fresh local validation passed **1,014 suite cases, zero failures**: Domain 28 XCTest; UseCases 206 XCTest + 157 Swift Testing; ReceiptValidation 5 XCTest; isolated Telephone 570 XCTest + 48 Swift Testing. Separate dependency, audio, recording, Foundation, dial-plan, history-filter and SIP component checks passed. Release compilation, ad-hoc signatures, arm64/entitlements, ZIP extraction and parity checks passed: 57 regular app payloads, six symlinks and 1,534 source Git blobs. All seven published assets were downloaded and matched local sizes/SHA-256. Eight prior releases, their assets and all previous tag references remain unchanged; public visibility was preserved. See [publication proof](releases/3.8-verification.json).
 
