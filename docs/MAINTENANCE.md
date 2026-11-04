@@ -4,6 +4,14 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
+## Current published release — 4 November 2026
+
+**3.8/build 167** is [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8), from immutable source/tag `6d78e04d4d086b3b42bd25499b667645b82846d1` (tree `e8ddbf6d738cec581ff0691638227e3d91989289`). It includes all pushed source changes through `04c75fe`, plus release metadata: #73 Keychain reads, #74 compact call windows and #70 Contacts snapshots.
+
+Fresh local validation passed **1,014 suite cases, zero failures**: Domain 28 XCTest; UseCases 206 XCTest + 157 Swift Testing; ReceiptValidation 5 XCTest; isolated Telephone 570 XCTest + 48 Swift Testing. Separate dependency, audio, recording, Foundation, dial-plan, history-filter and SIP component checks passed. Release compilation, ad-hoc signatures, arm64/entitlements, ZIP extraction and parity checks passed: 57 regular app payloads, six symlinks and 1,534 source Git blobs. All seven published assets were downloaded and matched local sizes/SHA-256. Eight prior releases, their assets and all previous tag references remain unchanged; public visibility was preserved. See [publication proof](releases/3.8-verification.json).
+
+No local installation or production profile launch was performed. This ad-hoc signed, unnotarised release supports Apple silicon and macOS 15.6+. Actual provider, hardware, OS grants, playback and proficient VoiceOver acceptance remain pending in #62. No cloud workflow was dispatched. Historical release and source-only delivery statements below retain their original dates.
+
 ## Current published release — 27 October 2026
 
 - **3.7/build 166** is public [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.7), release ID 425883772, from immutable source/tag `58956a9906cbe1221640a926446341e6a71fdcb9`.
