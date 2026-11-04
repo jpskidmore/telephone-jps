@@ -2,10 +2,10 @@
   "issue": 77,
   "option": "B",
   "ownerSelected": "2026-11-04",
-  "baseline": "0d8b19673e00a35f7b5abe6c8bb270036af6303f",
+  "baseline": "8458a67d36fdb4add1de27d9815210e9cbd1218e",
   "namespace": "uk.jpsit.telephone.sip:<exact registrar>",
   "legacyRetained": true,
-  "legacyAuthoritative": true,
+  "legacyAuthoritative": false,
   "sourceValidation": {
     "XCTest": 598,
     "SwiftTesting": 48,
@@ -21,24 +21,27 @@
   "release": false,
   "installation": false,
   "sourceSHA256": {
-    "Telephone/AKKeychain.h": "4115821f7fb45872c8f501ec36a2cff5ea927a46676ca332ad208a6be9596b69",
-    "Telephone/AKKeychain.m": "45c6eb2c94119feb51f48d03d49b804275ae97ec8b3eee8b0bd56dc5295cbf97",
-    "Telephone/AccountPreferencesViewController.m": "e6df82c0e0186e308dd8cc52d65720aa70f22d0f406c4a0c10a79529b20e9645",
-    "TelephoneTests/CredentialBrokerTests.m": "b8ffa089afd0575b250fdcde8e6a45a1ad3d99b2f527840380cf4dfac5dc3e34",
+    "Telephone/AKKeychain.h": "63fbe93eabb43e6abee94210ec03a065ec96523c827ffb13b0f2ed4314ae5dde",
+    "Telephone/AKKeychain.m": "31ca7bfe3e6288cb99060de31b8f159511a931aafc4f3b2bc6f3aba2fec1d457",
+    "Telephone/AccountPreferencesViewController.m": "59286796bb527ecebd29668afa7520510e4e59104beed508e61663d33fd34eed",
+    "TelephoneTests/CredentialBrokerTests.m": "f72cf6b5746b279f8e0ac56b8ba38ac3900d5ffe30f40a457b375b4c4f055946",
     "TelephoneTests/CredentialPreferencesTests.m": "d56d4003231314a72dd11f65a63b759f6121d58470205d878efd7eda4af76eb2"
   },
   "logSHA256": {
-    "final-build.log": "dc7c7f466fc3aab2036d77f0db322d815c1cc37cae76baa41630a4d93cf627db",
-    "final-host.log": "7ae8a9ff208c0056784bd98637574277306415d07e52cec6932703df08282018",
-    "final-test.log": "430bea914430d8b0f2e8955979611cc8843dce5952b7a0452817bc05a51c7214",
-    "release-build.log": "a0953403fb41ce3e4419983c8dacde7c7b09d6cafabbc16fd4cfa28e2248c482"
+    "canonical-final-build.log": "dd596af515760afb4311900390561abef7809e4e037d9dbef13252e0725b4ae2",
+    "canonical-final-host.log": "7ae8a9ff208c0056784bd98637574277306415d07e52cec6932703df08282018",
+    "canonical-final-test.log": "93cfc9bbde3412ed32ffe8fa681ddd4255c44673a34d987137db826b459df77f",
+    "canonical-release-build.log": "af2aa1adef4fc52ee1b34aedf38c282a87883e2b1e91a5aae7a25ae2fd80f147"
   },
-  "results": "/private/tmp/jps-telephone-issue77/final.xcresult",
+  "results": "/private/tmp/jps-telephone-issue77/canonical-final.xcresult",
   "knownBoundaries": [
     "Actual login/file Keychain and copied ACL behaviour not exercised",
     "Actual permission-prompt wording/count and registration pending",
     "Legacy service fields remain as rollback copies",
     "Two-item saves are not atomic; partial writes are reported",
-    "Deprecated file-Keychain reference/ACL APIs retained to preserve current store"
-  ]
+    "Deprecated file-Keychain reference/ACL APIs retained to preserve current store",
+    "Older-build edits to the backup do not silently override canonical credentials on upgrade"
+  ],
+  "canonicalFirst": true,
+  "legacyFallbackOnlyOnCanonicalAbsence": true
 }

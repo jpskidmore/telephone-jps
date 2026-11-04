@@ -7,7 +7,8 @@ replace those archives or certify a changed app.
 ## Source implementation — issue #77 Option B, 4 November 2026
 
 The owner-selected clean Keychain namespace is implemented and source-verified.
-Authorised legacy reads can copy into `uk.jpsit.telephone.sip:<exact registrar>`
+Lookups use `uk.jpsit.telephone.sip:<exact registrar>` first; only absence permits
+fallback. Authorised legacy reads can copy into that namespace
 with a friendly label, the source ACL and the same file Keychain, followed by
 readback verification. Legacy items remain for rollback; explicit saves keep
 both copies current and report partial failures. Fresh isolated Telephone

@@ -54,6 +54,8 @@ typedef NS_ENUM(NSInteger, AKCredentialMigrationStatus) {
 + (instancetype)successWithPassword:(NSString *)password migrationStatus:(AKCredentialMigrationStatus)migrationStatus
                     securityStatus:(OSStatus)securityStatus;
 + (instancetype)failureWithStatus:(AKCredentialReadStatus)status securityStatus:(OSStatus)securityStatus;
++ (instancetype)failureWithStatus:(AKCredentialReadStatus)status securityStatus:(OSStatus)securityStatus
+                 migrationStatus:(AKCredentialMigrationStatus)migrationStatus;
 - (instancetype)init NS_UNAVAILABLE;
 @end
 

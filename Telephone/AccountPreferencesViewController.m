@@ -154,7 +154,7 @@ static const NSUInteger kAccountsMax = 32;
             controller.accountEnabledCheckBox.accessibilityHelp = readyHelp;
             controller.accountEnabledCheckBox.toolTip = readyHelp;
         } else {
-            NSString *help = [controller credentialReadHelpForStatus:result.status];
+            NSString *help = result.migrationHelp ?: [controller credentialReadHelpForStatus:result.status];
             controller.passwordField.placeholderString = NSLocalizedString(@"Password unavailable", @"Failed account credential lookup.");
             controller.passwordField.accessibilityHelp = help;
             controller.passwordField.toolTip = help;

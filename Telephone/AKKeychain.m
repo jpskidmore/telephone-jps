@@ -130,9 +130,15 @@
 }
 + (AKCredentialReadResult *)deferMigration:(AKCredentialMigrationStatus)kind status:(OSStatus)status
                                   password:(NSString *)password key:(NSArray *)key {
+    return [self deferMigration:kind status:status password:password key:key credentialAvailable:YES];
+}
++ (AKCredentialReadResult *)deferMigration:(AKCredentialMigrationStatus)kind status:(OSStatus)status
+                                  password:(NSString *)password key:(NSArray *)key credentialAvailable:(BOOL)available {
     if ([self migrationDeferrals].count < 64 || [self migrationDeferrals][key]) {
-        [self migrationDeferrals][key] = @[@(kind), @(status)];
+        [self migrationDeferrals][key] = @[@(kind), @(status), @(available)];
     }
+    if (!available) return [AKCredentialReadResult failureWithStatus:[self resultForSecurityStatus:status data:nil].status
+        securityStatus:status migrationStatus:kind];
     return [AKCredentialReadResult successWithPassword:password migrationStatus:kind securityStatus:status];
 }
 
@@ -153,22 +159,36 @@
         NSDictionary *legacy = [self queryForService:service account:account];
         NSDictionary *clean = [self cleanQueryForService:service account:account];
         OSStatus status;
-        id payload = [self copyPayloadForQuery:legacy includeItem:clean != nil status:&status];
-        if (status == errSecItemNotFound && clean) {
+        NSArray *key = @[NSStringFromClass(self), service, account];
+        if (clean) {
+            id canonical = [self copyPayloadForQuery:clean includeItem:NO status:&status];
+            if (status != errSecItemNotFound) {
+                // The clean namespace is canonical. A denied/cancelled or
+                // malformed canonical read must never be bypassed via backup.
+                AKCredentialReadResult *result = [self resultForSecurityStatus:status data:[self dataInPayload:canonical]];
+                if (result.status != AKCredentialReadStatusSuccess) return result;
+                NSArray *state = [self migrationDeferrals][key];
+                BOOL conflict = state && [state[0] integerValue] == AKCredentialMigrationStatusConflict;
+                if (!conflict) [[self migrationDeferrals] removeObjectForKey:key];
+                return [AKCredentialReadResult successWithPassword:result.password
+                    migrationStatus:conflict ? AKCredentialMigrationStatusConflict : AKCredentialMigrationStatusVerified
+                    securityStatus:conflict ? [state[1] intValue] : errSecSuccess];
+            }
             if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
-            // Only absence permits fallback. Never bypass a denial/cancel on the
-            // compatibility entry by asking for another copy of its password.
-            id data = [self copyPayloadForQuery:clean includeItem:NO status:&status];
-            return [self resultForSecurityStatus:status data:[self dataInPayload:data]];
         }
+        id payload = [self copyPayloadForQuery:legacy includeItem:clean != nil status:&status];
         NSData *data = [self dataInPayload:payload];
         AKCredentialReadResult *original = [self resultForSecurityStatus:status data:data];
         if (!clean || original.status != AKCredentialReadStatusSuccess) return original;
         if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
-        NSArray *key = @[NSStringFromClass(self), service, account];
         NSArray *deferred = [self migrationDeferrals][key];
-        if (deferred) return [AKCredentialReadResult successWithPassword:original.password
-            migrationStatus:[deferred[0] integerValue] securityStatus:[deferred[1] intValue]];
+        if (deferred) {
+            if (deferred.count > 2 && ![deferred[2] boolValue]) return [AKCredentialReadResult
+                failureWithStatus:[self resultForSecurityStatus:[deferred[1] intValue] data:nil].status
+                securityStatus:[deferred[1] intValue] migrationStatus:[deferred[0] integerValue]];
+            return [AKCredentialReadResult successWithPassword:original.password
+                migrationStatus:[deferred[0] integerValue] securityStatus:[deferred[1] intValue]];
+        }
         if ([self migrationDeferrals].count >= 64) return [AKCredentialReadResult successWithPassword:original.password
             migrationStatus:AKCredentialMigrationStatusDeferred securityStatus:errSecAllocate];
         id item = [payload isKindOfClass:NSDictionary.class] ? payload[(__bridge id)kSecValueRef] : nil;
@@ -176,7 +196,7 @@
         if (!context) return [self deferMigration:AKCredentialMigrationStatusDeferred status:status password:original.password key:key];
         if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
         NSDictionary *query = [self scopedCleanQuery:clean context:context];
-        id copied = [self copyPayloadForQuery:query includeItem:NO status:&status];
+        id copied = [self copyPayloadForQuery:clean includeItem:NO status:&status];
         if (status == errSecItemNotFound) {
             if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
             // Copy, never rename/delete the rollback item. A duplicate from a
@@ -190,10 +210,13 @@
         NSData *copiedData = [self dataInPayload:copied];
         AKCredentialReadResult *verification = [self resultForSecurityStatus:status data:copiedData];
         if (verification.status != AKCredentialReadStatusSuccess) {
-            return [self deferMigration:AKCredentialMigrationStatusDeferred status:verification.securityStatus password:original.password key:key];
+            return [self deferMigration:AKCredentialMigrationStatusDeferred status:verification.securityStatus
+                password:original.password key:key credentialAvailable:NO];
         }
-        if (![copiedData isEqualToData:data]) return [self deferMigration:AKCredentialMigrationStatusConflict
-            status:errSecDuplicateItem password:original.password key:key];
+        if (![copiedData isEqualToData:data]) {
+            return [self deferMigration:AKCredentialMigrationStatusConflict status:errSecDuplicateItem
+                password:original.password key:key credentialAvailable:NO];
+        }
         return [AKCredentialReadResult successWithPassword:verification.password
             migrationStatus:AKCredentialMigrationStatusVerified securityStatus:errSecSuccess];
     } @finally { [lock unlock]; }
@@ -283,6 +306,10 @@
                     }
                 }
             }
+            if (compatibilitySaved && status != errSecSuccess) {
+                [self deferMigration:AKCredentialMigrationStatusConflict status:status password:password
+                    key:@[NSStringFromClass(self), service, account]];
+            }
         } @finally { [lock unlock]; }
     }
     [broker invalidateService:service account:account];
@@ -301,6 +328,7 @@
 
 @interface AKCredentialReadResult ()
 - (instancetype)initWithStatus:(AKCredentialReadStatus)status password:(nullable NSString *)password securityStatus:(OSStatus)securityStatus;
+- (void)applyMigrationStatus:(AKCredentialMigrationStatus)status securityStatus:(OSStatus)securityStatus;
 @end
 
 @implementation AKCredentialReadResult
@@ -337,16 +365,25 @@
     return [[self alloc] initWithStatus:AKCredentialReadStatusSuccess password:password securityStatus:errSecSuccess];
 }
 
+- (void)applyMigrationStatus:(AKCredentialMigrationStatus)status securityStatus:(OSStatus)securityStatus {
+    _migrationStatus = status;
+    _migrationSecurityStatus = securityStatus;
+    if (status == AKCredentialMigrationStatusConflict) {
+        _migrationHelp = NSLocalizedString(@"The Keychain entries need reconciliation. Re-enter the intended password in Accounts to reconcile them.", @"Conflicting Keychain namespace copies.");
+    } else if (status == AKCredentialMigrationStatusDeferred) {
+        _migrationHelp = NSLocalizedString(@"Keychain migration could not be verified. The compatibility entry is retained. Re-enter the password in Accounts to retry migration.", @"Deferred Keychain namespace migration.");
+    }
+}
 + (instancetype)successWithPassword:(NSString *)password migrationStatus:(AKCredentialMigrationStatus)migrationStatus
                     securityStatus:(OSStatus)securityStatus {
     AKCredentialReadResult *result = [self successWithPassword:password];
-    result->_migrationStatus = migrationStatus;
-    result->_migrationSecurityStatus = securityStatus;
-    if (migrationStatus == AKCredentialMigrationStatusConflict) {
-        result->_migrationHelp = NSLocalizedString(@"The Keychain entries differ. The compatibility password was loaded. Re-enter the intended password in Accounts to reconcile the entries.", @"Conflicting Keychain namespace copies.");
-    } else if (migrationStatus == AKCredentialMigrationStatusDeferred) {
-        result->_migrationHelp = NSLocalizedString(@"The compatibility password was loaded, but its new Keychain entry could not be verified. Re-enter the password in Accounts to retry migration.", @"Deferred Keychain namespace migration.");
-    }
+    [result applyMigrationStatus:migrationStatus securityStatus:securityStatus];
+    return result;
+}
++ (instancetype)failureWithStatus:(AKCredentialReadStatus)status securityStatus:(OSStatus)securityStatus
+                 migrationStatus:(AKCredentialMigrationStatus)migrationStatus {
+    AKCredentialReadResult *result = [self failureWithStatus:status securityStatus:securityStatus];
+    [result applyMigrationStatus:migrationStatus securityStatus:securityStatus];
     return result;
 }
 
