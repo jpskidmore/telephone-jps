@@ -20,23 +20,68 @@
 
 @implementation AKKeychain
 
-+ (nonnull NSDictionary *)queryForService:(nonnull NSString *)service account:(nonnull NSString *)account {
-    // Keep this ad-hoc-signed local build independent from the App Store app,
-    // earlier development builds, and their keychain access-control entries.
-    // SecItem uses the user's login keychain here because the Data Protection
-    // keychain requires an Apple-issued application-identifier entitlement.
-    NSString *localService = [@"jps Telephone 1.7.2 blue icon v4: " stringByAppendingString:service];
-    return @{
-        (__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
-        (__bridge id)kSecAttrService: localService,
-        (__bridge id)kSecAttrAccount: account
-    };
++ (NSDictionary *)queryForService:(NSString *)service account:(NSString *)account {
+    // This exact identity remains the rollback source for older local builds.
+    // Neither this namespace nor the new one touches the App Store namespace.
+    return @{(__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
+             (__bridge id)kSecAttrService: [@"jps Telephone 1.7.2 blue icon v4: " stringByAppendingString:service],
+             (__bridge id)kSecAttrAccount: account};
 }
 
-// An overridable, synchronous Security boundary. Tests override this method;
-// normal UI code never calls it or the read-result method directly.
++ (NSDictionary *)cleanQueryForService:(NSString *)service account:(NSString *)account {
+    // Preserve the registrar byte-for-byte: case, ports and whitespace must not
+    // merge identities which older builds treated as distinct.
+    if (![service hasPrefix:@"SIP: "] || service.length <= 5) return nil;
+    return @{(__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
+             (__bridge id)kSecAttrService: [@"uk.jpsit.telephone.sip:" stringByAppendingString:[service substringFromIndex:5]],
+             (__bridge id)kSecAttrAccount: account};
+}
+
++ (NSRecursiveLock *)credentialOperationLock {
+    static NSRecursiveLock *lock;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ lock = [NSRecursiveLock new]; lock.name = @"Telephone Keychain operations"; });
+    return lock;
+}
+
++ (NSMutableDictionary *)migrationDeferrals {
+    // Only non-secret identities/outcomes, at most 64. A failed copy is retried
+    // by an explicit password save, never by automatic reconnect/cache expiry.
+    static NSMutableDictionary *states;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ states = [NSMutableDictionary new]; });
+    return states;
+}
+
 + (OSStatus)copySecurityItemMatchingQuery:(NSDictionary *)query result:(CFTypeRef *)result {
     return SecItemCopyMatching((__bridge CFDictionaryRef)query, result);
+}
++ (OSStatus)addSecurityItem:(NSDictionary *)item {
+    return SecItemAdd((__bridge CFDictionaryRef)item, NULL);
+}
++ (OSStatus)updateSecurityItem:(NSDictionary *)query attributes:(NSDictionary *)attributes {
+    return SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)attributes);
+}
+
++ (NSDictionary *)migrationContextForItem:(id)item status:(OSStatus *)status {
+    // The authorised legacy read returns its actual item reference. Copy its
+    // access list and stay in that same login/file Keychain; never substitute a
+    // default or wider ACL, entitlement, access group or synchronisation mode.
+    if (!item || CFGetTypeID((__bridge CFTypeRef)item) != SecKeychainItemGetTypeID()) {
+        *status = errSecParam; return nil;
+    }
+    SecAccessRef access = NULL;
+    SecKeychainRef keychain = NULL;
+    *status = SecKeychainItemCopyAccess((__bridge SecKeychainItemRef)item, &access);
+    if (*status == errSecSuccess) *status = SecKeychainItemCopyKeychain((__bridge SecKeychainItemRef)item, &keychain);
+    NSDictionary *context = nil;
+    if (*status == errSecSuccess && access && keychain) {
+        context = @{(__bridge id)kSecAttrAccess: (__bridge id)access,
+                    (__bridge id)kSecUseKeychain: (__bridge id)keychain};
+    } else if (*status == errSecSuccess) *status = errSecParam;
+    if (access) CFRelease(access);
+    if (keychain) CFRelease(keychain);
+    return context;
 }
 
 + (AKCredentialReadResult *)resultForSecurityStatus:(OSStatus)status data:(id)data {
@@ -56,74 +101,199 @@
         : [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusInvalidData securityStatus:errSecDecode];
 }
 
-+ (AKCredentialReadResult *)readResultForService:(NSString *)service account:(NSString *)account {
-    NSParameterAssert(service);
-    NSParameterAssert(account);
-    NSMutableDictionary *query = [[self queryForService:service account:account] mutableCopy];
++ (id)copyPayloadForQuery:(NSDictionary *)identity includeItem:(BOOL)includeItem status:(OSStatus *)status {
+    NSMutableDictionary *query = [identity mutableCopy];
     query[(__bridge id)kSecReturnData] = @YES;
     query[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitOne;
-    CFTypeRef result = NULL;
-    OSStatus status = [self copySecurityItemMatchingQuery:query result:&result];
-    id data = CFBridgingRelease(result);
-    return [self resultForSecurityStatus:status data:data];
+    if (includeItem) {
+        query[(__bridge id)kSecReturnAttributes] = @YES;
+        query[(__bridge id)kSecReturnRef] = @YES;
+    }
+    CFTypeRef payload = NULL;
+    *status = [self copySecurityItemMatchingQuery:query result:&payload];
+    return CFBridgingRelease(payload);
+}
++ (id)dataInPayload:(id)payload {
+    return [payload isKindOfClass:NSDictionary.class] ? payload[(__bridge id)kSecValueData] : payload;
+}
++ (NSDictionary *)scopedCleanQuery:(NSDictionary *)clean context:(NSDictionary *)context {
+    NSMutableDictionary *query = [clean mutableCopy];
+    query[(__bridge id)kSecMatchSearchList] = @[context[(__bridge id)kSecUseKeychain]];
+    return query;
+}
++ (NSDictionary *)cleanItem:(NSDictionary *)clean context:(NSDictionary *)context data:(NSData *)data {
+    NSMutableDictionary *item = [clean mutableCopy];
+    item[(__bridge id)kSecValueData] = data;
+    item[(__bridge id)kSecAttrLabel] = @"jps Telephone — SIP account";
+    [item addEntriesFromDictionary:context];
+    return item;
+}
++ (AKCredentialReadResult *)deferMigration:(AKCredentialMigrationStatus)kind status:(OSStatus)status
+                                  password:(NSString *)password key:(NSArray *)key {
+    if ([self migrationDeferrals].count < 64 || [self migrationDeferrals][key]) {
+        [self migrationDeferrals][key] = @[@(kind), @(status)];
+    }
+    return [AKCredentialReadResult successWithPassword:password migrationStatus:kind securityStatus:status];
+}
+
++ (AKCredentialReadResult *)readResultForService:(NSString *)service account:(NSString *)account {
+    return [self readResultForService:service account:account migrationAllowed:^BOOL { return YES; }];
+}
++ (AKCredentialReadResult *)readResultForService:(NSString *)service account:(NSString *)account
+                             migrationAllowed:(BOOL (^)(void))migrationAllowed {
+    NSParameterAssert(service); NSParameterAssert(account);
+    NSRecursiveLock *lock = [self credentialOperationLock];
+    // A save on main must not wait behind a modal Keychain read. Likewise a
+    // concurrent reader may retry later; no operation interleaves with a copy.
+    if (NSThread.isMainThread) {
+        if (![lock tryLock]) return [self resultForSecurityStatus:errSecNotAvailable data:nil];
+    } else [lock lock]; // Waiting on the utility worker never stalls AppKit.
+    @try {
+        if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
+        NSDictionary *legacy = [self queryForService:service account:account];
+        NSDictionary *clean = [self cleanQueryForService:service account:account];
+        OSStatus status;
+        id payload = [self copyPayloadForQuery:legacy includeItem:clean != nil status:&status];
+        if (status == errSecItemNotFound && clean) {
+            if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
+            // Only absence permits fallback. Never bypass a denial/cancel on the
+            // compatibility entry by asking for another copy of its password.
+            id data = [self copyPayloadForQuery:clean includeItem:NO status:&status];
+            return [self resultForSecurityStatus:status data:[self dataInPayload:data]];
+        }
+        NSData *data = [self dataInPayload:payload];
+        AKCredentialReadResult *original = [self resultForSecurityStatus:status data:data];
+        if (!clean || original.status != AKCredentialReadStatusSuccess) return original;
+        if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
+        NSArray *key = @[NSStringFromClass(self), service, account];
+        NSArray *deferred = [self migrationDeferrals][key];
+        if (deferred) return [AKCredentialReadResult successWithPassword:original.password
+            migrationStatus:[deferred[0] integerValue] securityStatus:[deferred[1] intValue]];
+        if ([self migrationDeferrals].count >= 64) return [AKCredentialReadResult successWithPassword:original.password
+            migrationStatus:AKCredentialMigrationStatusDeferred securityStatus:errSecAllocate];
+        id item = [payload isKindOfClass:NSDictionary.class] ? payload[(__bridge id)kSecValueRef] : nil;
+        NSDictionary *context = [self migrationContextForItem:item status:&status];
+        if (!context) return [self deferMigration:AKCredentialMigrationStatusDeferred status:status password:original.password key:key];
+        if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
+        NSDictionary *query = [self scopedCleanQuery:clean context:context];
+        id copied = [self copyPayloadForQuery:query includeItem:NO status:&status];
+        if (status == errSecItemNotFound) {
+            if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
+            // Copy, never rename/delete the rollback item. A duplicate from a
+            // concurrent process is verified, never blindly overwritten.
+            status = [self addSecurityItem:[self cleanItem:clean context:context data:data]];
+            if (status == errSecSuccess || status == errSecDuplicateItem) {
+                if (!migrationAllowed()) return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusSuperseded securityStatus:errSecUserCanceled];
+                copied = [self copyPayloadForQuery:query includeItem:NO status:&status];
+            }
+        }
+        NSData *copiedData = [self dataInPayload:copied];
+        AKCredentialReadResult *verification = [self resultForSecurityStatus:status data:copiedData];
+        if (verification.status != AKCredentialReadStatusSuccess) {
+            return [self deferMigration:AKCredentialMigrationStatusDeferred status:verification.securityStatus password:original.password key:key];
+        }
+        if (![copiedData isEqualToData:data]) return [self deferMigration:AKCredentialMigrationStatusConflict
+            status:errSecDuplicateItem password:original.password key:key];
+        return [AKCredentialReadResult successWithPassword:verification.password
+            migrationStatus:AKCredentialMigrationStatusVerified securityStatus:errSecSuccess];
+    } @finally { [lock unlock]; }
 }
 
 + (NSString *)passwordForService:(NSString *)service account:(NSString *)account {
-    // Compatibility only. Production UI consumers use AKCredentialBroker so a
-    // Security query can neither block main nor erase its typed failure state.
     return [self readResultForService:service account:account].password ?: @"";
 }
-
-+ (BOOL)addItemWithService:(nonnull NSString *)service account:(nonnull NSString *)account password:(nonnull NSString *)password {
++ (BOOL)addItemWithService:(NSString *)service account:(NSString *)account password:(NSString *)password {
     return [self addItemWithService:service account:account password:password error:NULL];
 }
-
-+ (OSStatus)addSecurityItem:(NSDictionary *)item {
-    return SecItemAdd((__bridge CFDictionaryRef)item, NULL);
++ (OSStatus)saveCompatibilityData:(NSData *)data identity:(NSDictionary *)identity {
+    NSMutableDictionary *query = [identity mutableCopy];
+    // Bind an update to the exact item found in the search list, without reading
+    // the old password just to write an explicitly entered replacement.
+    query[(__bridge id)kSecReturnAttributes] = @YES;
+    query[(__bridge id)kSecReturnRef] = @YES;
+    query[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitOne;
+    CFTypeRef result = NULL;
+    OSStatus status = [self copySecurityItemMatchingQuery:query result:&result];
+    id payload = CFBridgingRelease(result);
+    if (status == errSecItemNotFound) {
+        NSMutableDictionary *item = [identity mutableCopy];
+        item[(__bridge id)kSecValueData] = data;
+        item[(__bridge id)kSecAttrLabel] = @"jps Telephone — SIP account (compatibility copy)";
+        status = [self addSecurityItem:item];
+        if (status != errSecDuplicateItem) return status;
+        result = NULL;
+        status = [self copySecurityItemMatchingQuery:query result:&result];
+        payload = CFBridgingRelease(result);
+    }
+    if (status != errSecSuccess) return status;
+    id item = [payload isKindOfClass:NSDictionary.class] ? payload[(__bridge id)kSecValueRef] : nil;
+    if (!item) return errSecParam;
+    NSMutableDictionary *match = [identity mutableCopy];
+    match[(__bridge id)kSecMatchItemList] = @[item];
+    return [self updateSecurityItem:match attributes:@{(__bridge id)kSecValueData:data,
+        (__bridge id)kSecAttrLabel:@"jps Telephone — SIP account (compatibility copy)"}];
 }
-
-+ (OSStatus)updateSecurityItem:(NSDictionary *)query attributes:(NSDictionary *)attributes {
-    return SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)attributes);
-}
-
-+ (BOOL)addItemWithService:(NSString *)service account:(NSString *)account password:(NSString *)password
-                    error:(NSError **)error {
-    NSParameterAssert(service);
-    NSParameterAssert(account);
-    NSParameterAssert(password);
-    if (error) { *error = nil; }
-    // Fence both a read already in flight and one admitted while Security is
-    // updating the item. A failed write does not resurrect an older result.
-    [[AKCredentialBroker sharedBroker] invalidateService:service account:account];
-    
-    NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
-    NSMutableDictionary *item = [[self queryForService:service account:account] mutableCopy];
-    item[(__bridge id)kSecValueData] = passwordData;
-
++ (OSStatus)saveData:(NSData *)data identity:(NSDictionary *)identity additions:(NSDictionary *)additions {
+    NSMutableDictionary *item = [identity mutableCopy];
+    item[(__bridge id)kSecValueData] = data;
+    [item addEntriesFromDictionary:additions];
     OSStatus status = [self addSecurityItem:item];
-    if (status == errSecSuccess) {
-        [[AKCredentialBroker sharedBroker] invalidateService:service account:account];
-        return YES;
-    }
-
     if (status == errSecDuplicateItem) {
-        NSDictionary *attributes = @{(__bridge id)kSecValueData: passwordData};
-        status = [self updateSecurityItem:[self queryForService:service account:account] attributes:attributes];
+        NSMutableDictionary *attributes = [@{(__bridge id)kSecValueData:data} mutableCopy];
+        if (additions[(__bridge id)kSecAttrLabel]) attributes[(__bridge id)kSecAttrLabel] = additions[(__bridge id)kSecAttrLabel];
+        // Preserve the existing item's ACL and identity when updating its value.
+        status = [self updateSecurityItem:identity attributes:attributes];
     }
-
-    if (status != errSecSuccess) {
-        NSString *message = CFBridgingRelease(SecCopyErrorMessageString(status, NULL))
-            ?: @"The password could not be saved in the Keychain.";
-        if (error) {
-            *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:status
-                                    userInfo:@{NSLocalizedDescriptionKey: message}];
-        }
-        NSLog(@"Telephone keychain write failed (%d): %@",
-              (int)status,
-              CFBridgingRelease(SecCopyErrorMessageString(status, NULL)));
+    return status;
+}
++ (BOOL)addItemWithService:(NSString *)service account:(NSString *)account password:(NSString *)password error:(NSError **)error {
+    NSParameterAssert(service); NSParameterAssert(account); NSParameterAssert(password);
+    if (error) *error = nil;
+    AKCredentialBroker *broker = AKCredentialBroker.sharedBroker;
+    [broker invalidateService:service account:account];
+    NSRecursiveLock *lock = [self credentialOperationLock];
+    OSStatus status = errSecNotAvailable;
+    BOOL compatibilitySaved = NO;
+    if ([lock tryLock]) {
+        @try {
+            NSData *data = [password dataUsingEncoding:NSUTF8StringEncoding];
+            NSDictionary *legacy = [self queryForService:service account:account];
+            NSDictionary *clean = [self cleanQueryForService:service account:account];
+            [[self migrationDeferrals] removeObjectForKey:@[NSStringFromClass(self), service, account]];
+            status = data ? (clean ? [self saveCompatibilityData:data identity:legacy]
+                : [self saveData:data identity:legacy additions:@{}]) : errSecParam;
+            if (status == errSecSuccess && clean) {
+                compatibilitySaved = YES;
+                id payload = [self copyPayloadForQuery:legacy includeItem:YES status:&status];
+                if (status == errSecSuccess && ![[self dataInPayload:payload] isEqual:data]) status = errSecDecode;
+                if (status == errSecSuccess) {
+                    id item = [payload isKindOfClass:NSDictionary.class] ? payload[(__bridge id)kSecValueRef] : nil;
+                    NSDictionary *context = [self migrationContextForItem:item status:&status];
+                    if (context) {
+                        NSDictionary *query = [self scopedCleanQuery:clean context:context];
+                        // Add in the source Keychain; update with a precise search
+                        // there, without supplying ACL attributes to SecItemUpdate.
+                        status = [self addSecurityItem:[self cleanItem:clean context:context data:data]];
+                        if (status == errSecDuplicateItem) status = [self updateSecurityItem:query attributes:
+                            @{(__bridge id)kSecValueData:data, (__bridge id)kSecAttrLabel:@"jps Telephone — SIP account"}];
+                        if (status == errSecSuccess) {
+                            id verified = [self copyPayloadForQuery:query includeItem:NO status:&status];
+                            if (status == errSecSuccess && ![[self dataInPayload:verified] isEqual:data]) status = errSecDecode;
+                        }
+                    }
+                }
+            }
+        } @finally { [lock unlock]; }
     }
-
-    [[AKCredentialBroker sharedBroker] invalidateService:service account:account];
+    [broker invalidateService:service account:account];
+    if (status != errSecSuccess && error) {
+        NSString *message = compatibilitySaved
+            ? NSLocalizedString(@"The compatibility password was saved, but the new Keychain entry could not be verified. Account changes have not been applied. Try saving again.", @"Partial Keychain migration save.")
+            : (status == errSecNotAvailable
+                ? NSLocalizedString(@"The Keychain is busy or unavailable. Try saving again after any password request finishes.", @"Busy Keychain save.")
+                : (CFBridgingRelease(SecCopyErrorMessageString(status, NULL)) ?: @"The password could not be saved in the Keychain."));
+        *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:status userInfo:@{NSLocalizedDescriptionKey:message}];
+    }
     return status == errSecSuccess;
 }
 
@@ -167,6 +337,19 @@
     return [[self alloc] initWithStatus:AKCredentialReadStatusSuccess password:password securityStatus:errSecSuccess];
 }
 
++ (instancetype)successWithPassword:(NSString *)password migrationStatus:(AKCredentialMigrationStatus)migrationStatus
+                    securityStatus:(OSStatus)securityStatus {
+    AKCredentialReadResult *result = [self successWithPassword:password];
+    result->_migrationStatus = migrationStatus;
+    result->_migrationSecurityStatus = securityStatus;
+    if (migrationStatus == AKCredentialMigrationStatusConflict) {
+        result->_migrationHelp = NSLocalizedString(@"The Keychain entries differ. The compatibility password was loaded. Re-enter the intended password in Accounts to reconcile the entries.", @"Conflicting Keychain namespace copies.");
+    } else if (migrationStatus == AKCredentialMigrationStatusDeferred) {
+        result->_migrationHelp = NSLocalizedString(@"The compatibility password was loaded, but its new Keychain entry could not be verified. Re-enter the password in Accounts to retry migration.", @"Deferred Keychain namespace migration.");
+    }
+    return result;
+}
+
 + (instancetype)failureWithStatus:(AKCredentialReadStatus)status securityStatus:(OSStatus)securityStatus {
     NSParameterAssert(status != AKCredentialReadStatusSuccess);
     return [[self alloc] initWithStatus:status password:nil securityStatus:securityStatus];
@@ -195,6 +378,7 @@
 @property(nonatomic) NSLock *lock;
 @property(nonatomic) NSMutableDictionary<NSArray<NSString *> *, AKCredentialBrokerEntry *> *entries;
 @property(nonatomic, copy) AKCredentialReader reader;
+@property(nonatomic) Class keychainReaderClass;
 @property(nonatomic, copy) AKCredentialClock clock;
 @property(nonatomic) NSTimeInterval cacheLifetime;
 @property(nonatomic) NSUInteger maximumCachedEntries;
@@ -213,6 +397,7 @@
         broker = [[self alloc] initWithReader:^AKCredentialReadResult *(NSString *service, NSString *account) {
             return [AKKeychain readResultForService:service account:account];
         }];
+        broker.keychainReaderClass = AKKeychain.class;
     });
     return broker;
 }
@@ -352,7 +537,15 @@
         BOOL admitted = !self.stopped && !entry.invalidated && self.entries[key] == entry;
         [self.lock unlock];
         if (!admitted) return;
-        AKCredentialReadResult *result = self.reader(key[0], key[1]);
+        AKCredentialReadResult *result;
+        if (self.keychainReaderClass) {
+            result = [self.keychainReaderClass readResultForService:key[0] account:key[1] migrationAllowed:^BOOL {
+                [self.lock lock];
+                BOOL current = !self.stopped && !entry.invalidated && self.entries[key] == entry;
+                [self.lock unlock];
+                return current;
+            }];
+        } else result = self.reader(key[0], key[1]);
         if (!result) result = [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusFailure securityStatus:errSecInternalComponent];
         [self.lock lock];
         if (self.stopped || entry.invalidated || self.entries[key] != entry) {

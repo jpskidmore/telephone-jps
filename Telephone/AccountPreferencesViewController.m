@@ -147,8 +147,8 @@ static const NSUInteger kAccountsMax = 32;
             controller.loadedCredentialPassword = result.password;
             if (!controller.credentialPasswordWasEdited) controller.passwordField.stringValue = result.password;
             controller.passwordField.placeholderString = nil;
-            controller.passwordField.accessibilityHelp = nil;
-            controller.passwordField.toolTip = nil;
+            controller.passwordField.accessibilityHelp = controller.credentialPasswordWasEdited ? nil : result.migrationHelp;
+            controller.passwordField.toolTip = controller.passwordField.accessibilityHelp;
             NSString *readyHelp = controller.credentialRetryAwaitingEnable
                 ? NSLocalizedString(@"Password loaded. Enable this account again to continue.", @"Explicit credential retry completed.") : nil;
             controller.accountEnabledCheckBox.accessibilityHelp = readyHelp;

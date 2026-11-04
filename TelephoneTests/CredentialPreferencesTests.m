@@ -85,6 +85,39 @@
 }
 - (void)enable:(CP73Editor *)editor { editor.accountEnabledCheckBox.state = NSControlStateValueOn; [editor changeAccountEnabled:nil]; }
 
+- (void)testMigrationWarningPreservesUsablePasswordAndDoesNotForceAnotherWrite {
+    for (NSNumber *kind in @[@(AKCredentialMigrationStatusDeferred), @(AKCredentialMigrationStatusConflict)]) {
+        CP73Editor *editor = [self editor];
+        AKCredentialReadResult *result = [AKCredentialReadResult successWithPassword:@"synthetic-secret"
+            migrationStatus:kind.integerValue securityStatus:errSecAuthFailed];
+        [editor.broker finish:0 result:result];
+        XCTAssertEqualObjects(editor.passwordField.stringValue, @"synthetic-secret");
+        XCTAssertEqualObjects(editor.passwordField.toolTip, result.migrationHelp);
+        XCTAssertEqualObjects(editor.passwordField.accessibilityHelp, result.migrationHelp);
+        XCTAssertFalse([result.migrationHelp containsString:@"synthetic-secret"]);
+        [self enable:editor];
+        XCTAssertEqual(editor.saves, 0); XCTAssertEqual(editor.memory.writes, 1);
+    }
+}
+- (void)testReenteringSamePasswordCanExplicitlyRetryMigrationAndFailureCannotCommitAccount {
+    CP73Editor *editor = [self editor];
+    [editor.broker finish:0 result:[AKCredentialReadResult successWithPassword:@"synthetic-secret"
+        migrationStatus:AKCredentialMigrationStatusDeferred securityStatus:errSecUserCanceled]];
+    [self editPassword:@"synthetic-secret" editor:editor];
+    editor.allowsSave = NO;
+    [self enable:editor];
+    XCTAssertEqual(editor.saves, 1); XCTAssertEqual(editor.errors, 1); XCTAssertEqual(editor.memory.writes, 0);
+    XCTAssertEqualObjects(editor.savedPassword, @"synthetic-secret");
+}
+- (void)testMigrationHelpDoesNotReplaceOwnerInputWhileReadWasPending {
+    CP73Editor *editor = [self editor];
+    [self editPassword:@"intended replacement" editor:editor];
+    [editor.broker finish:0 result:[AKCredentialReadResult successWithPassword:@"synthetic-secret"
+        migrationStatus:AKCredentialMigrationStatusConflict securityStatus:errSecDuplicateItem]];
+    XCTAssertEqualObjects(editor.passwordField.stringValue, @"intended replacement");
+    XCTAssertNil(editor.passwordField.toolTip); XCTAssertNil(editor.passwordField.accessibilityHelp);
+}
+
 - (void)testHiddenAccountsPaneDoesNotRequestPasswordUntilPresented {
     CP73Editor *editor = [CP73Editor new];
     editor.memory = [CP73Memory new]; editor.memory.accounts = @[[self account:@"one"]];

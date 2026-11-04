@@ -31,14 +31,28 @@ typedef NS_ENUM(NSInteger, AKCredentialReadStatus) {
     AKCredentialReadStatusSuperseded
 };
 
+// Namespace migration is separate from credential availability. A successfully
+// authorised compatibility password remains usable when copying is deferred.
+typedef NS_ENUM(NSInteger, AKCredentialMigrationStatus) {
+    AKCredentialMigrationStatusNotRequired,
+    AKCredentialMigrationStatusVerified,
+    AKCredentialMigrationStatusDeferred,
+    AKCredentialMigrationStatusConflict
+};
+
 // A failed read never supplies a password. In particular, cancellation is not
 // interchangeable with a successfully read, legitimately empty password.
 @interface AKCredentialReadResult : NSObject
 @property(nonatomic, readonly) AKCredentialReadStatus status;
 @property(nonatomic, readonly, copy, nullable) NSString *password;
 @property(nonatomic, readonly) OSStatus securityStatus;
+@property(nonatomic, readonly) AKCredentialMigrationStatus migrationStatus;
+@property(nonatomic, readonly) OSStatus migrationSecurityStatus;
+@property(nonatomic, readonly, copy, nullable) NSString *migrationHelp;
 @property(nonatomic, readonly, nullable) NSError *error;
 + (instancetype)successWithPassword:(NSString *)password;
++ (instancetype)successWithPassword:(NSString *)password migrationStatus:(AKCredentialMigrationStatus)migrationStatus
+                    securityStatus:(OSStatus)securityStatus;
 + (instancetype)failureWithStatus:(AKCredentialReadStatus)status securityStatus:(OSStatus)securityStatus;
 - (instancetype)init NS_UNAVAILABLE;
 @end

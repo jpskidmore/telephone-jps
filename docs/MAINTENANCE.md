@@ -4,6 +4,19 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
+## Source implementation — issue #77 Option B, 4 November 2026
+
+The owner-selected clean Keychain namespace is implemented and source-verified.
+Authorised legacy reads can copy into `uk.jpsit.telephone.sip:<exact registrar>`
+with a friendly label, the source ACL and the same file Keychain, followed by
+readback verification. Legacy items remain for rollback; explicit saves keep
+both copies current and report partial failures. Fresh isolated Telephone
+validation passed **646 tests** and unsigned Release compilation passed. Read
+[the implementation, evidence and acceptance limits](maintenance/2026-11-04-keychain-namespace.md).
+No actual owner Keychain item was modified and no new release or installation
+was performed. #77 remains open for installed acceptance; 3.8.1 below remains
+GitHub Latest and does not contain this migration.
+
 ## Current published release — 3.8.1/build 168, 4 November 2026
 
 **3.8.1/build 168** is [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.1), from immutable source/tag `ae19260441156318211a984f61dd33de9f1679c8` (tree `fae2145f9f6dc544fa37306d3bcda6191d1cb7ea`). It includes the issue #76 icon repair on the 3.8 baseline.

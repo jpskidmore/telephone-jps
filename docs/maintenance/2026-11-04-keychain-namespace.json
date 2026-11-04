@@ -1,0 +1,44 @@
+{
+  "issue": 77,
+  "option": "B",
+  "ownerSelected": "2026-11-04",
+  "baseline": "0d8b19673e00a35f7b5abe6c8bb270036af6303f",
+  "namespace": "uk.jpsit.telephone.sip:<exact registrar>",
+  "legacyRetained": true,
+  "legacyAuthoritative": true,
+  "sourceValidation": {
+    "XCTest": 598,
+    "SwiftTesting": 48,
+    "total": 646,
+    "failures": 0,
+    "skips": 0,
+    "newNamespaceCases": 24,
+    "newAccountsCases": 3,
+    "unsignedArm64Release": "passed"
+  },
+  "realKeychainTouched": false,
+  "installedAcceptance": "pending",
+  "release": false,
+  "installation": false,
+  "sourceSHA256": {
+    "Telephone/AKKeychain.h": "4115821f7fb45872c8f501ec36a2cff5ea927a46676ca332ad208a6be9596b69",
+    "Telephone/AKKeychain.m": "45c6eb2c94119feb51f48d03d49b804275ae97ec8b3eee8b0bd56dc5295cbf97",
+    "Telephone/AccountPreferencesViewController.m": "e6df82c0e0186e308dd8cc52d65720aa70f22d0f406c4a0c10a79529b20e9645",
+    "TelephoneTests/CredentialBrokerTests.m": "b8ffa089afd0575b250fdcde8e6a45a1ad3d99b2f527840380cf4dfac5dc3e34",
+    "TelephoneTests/CredentialPreferencesTests.m": "d56d4003231314a72dd11f65a63b759f6121d58470205d878efd7eda4af76eb2"
+  },
+  "logSHA256": {
+    "final-build.log": "dc7c7f466fc3aab2036d77f0db322d815c1cc37cae76baa41630a4d93cf627db",
+    "final-host.log": "7ae8a9ff208c0056784bd98637574277306415d07e52cec6932703df08282018",
+    "final-test.log": "430bea914430d8b0f2e8955979611cc8843dce5952b7a0452817bc05a51c7214",
+    "release-build.log": "a0953403fb41ce3e4419983c8dacde7c7b09d6cafabbc16fd4cfa28e2248c482"
+  },
+  "results": "/private/tmp/jps-telephone-issue77/final.xcresult",
+  "knownBoundaries": [
+    "Actual login/file Keychain and copied ACL behaviour not exercised",
+    "Actual permission-prompt wording/count and registration pending",
+    "Legacy service fields remain as rollback copies",
+    "Two-item saves are not atomic; partial writes are reported",
+    "Deprecated file-Keychain reference/ACL APIs retained to preserve current store"
+  ]
+}

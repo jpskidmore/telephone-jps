@@ -167,3 +167,337 @@ static id Credential73Data;
     XCTAssertFalse([result.description containsString:@"synthetic-private-payload"]);
 }
 @end
+
+// Issue #77: every Security call is intercepted. These items are in-memory
+// synthetic fixtures; no login Keychain, real credentials or OS prompts.
+@interface AKKeychain (Namespace77Seams)
++ (OSStatus)addSecurityItem:(NSDictionary *)item;
++ (OSStatus)updateSecurityItem:(NSDictionary *)query attributes:(NSDictionary *)attributes;
++ (NSDictionary *)migrationContextForItem:(id)item status:(OSStatus *)status;
++ (NSMutableDictionary *)migrationDeferrals;
++ (AKCredentialReadResult *)readResultForService:(NSString *)service account:(NSString *)account migrationAllowed:(BOOL (^)(void))allowed;
+@end
+static NSMutableDictionary *K77Items, *K77ReadFaults, *K77AddFaults, *K77UpdateFaults, *K77Deferrals;
+static NSMutableArray *K77Operations;
+static OSStatus K77ContextStatus;
+static NSData *K77RaceData, *K77CorruptCopy;
+static void (^K77BeforeRead)(NSDictionary *);
+static void (^K77ReadDidFinish)(void);
+static NSString *const K77Service = @"SIP: sip.synthetic.invalid:5061";
+static NSString *const K77Account = @"synthetic user";
+static NSString *const K77Keychain = @"isolated synthetic file Keychain";
+static NSString *K77Legacy(NSString *service) { return [@"jps Telephone 1.7.2 blue icon v4: " stringByAppendingString:service]; }
+static NSString *K77Clean(NSString *service) { return [@"uk.jpsit.telephone.sip:" stringByAppendingString:[service substringFromIndex:5]]; }
+static NSArray *K77Key(NSDictionary *query) { return @[query[(__bridge id)kSecAttrService], query[(__bridge id)kSecAttrAccount]]; }
+static OSStatus K77Fault(NSMutableDictionary *faults, NSDictionary *query, OSStatus fallback) {
+    NSMutableArray *values = faults[K77Key(query)];
+    if (!values.count) return fallback;
+    OSStatus status = [values.firstObject intValue]; [values removeObjectAtIndex:0]; return status;
+}
+@interface Namespace77Keychain : AKKeychain @end
+@implementation Namespace77Keychain
++ (AKCredentialReadResult *)readResultForService:(NSString *)service account:(NSString *)account migrationAllowed:(BOOL (^)(void))allowed {
+    AKCredentialReadResult *result = [super readResultForService:service account:account migrationAllowed:allowed];
+    if (K77ReadDidFinish) K77ReadDidFinish();
+    return result;
+}
++ (NSMutableDictionary *)migrationDeferrals { return K77Deferrals; }
++ (OSStatus)copySecurityItemMatchingQuery:(NSDictionary *)query result:(CFTypeRef *)result {
+    [K77Operations addObject:@{@"operation":@"read", @"query":query}];
+    if (K77BeforeRead) K77BeforeRead(query);
+    NSDictionary *item = K77Items[K77Key(query)];
+    NSArray *search = query[(__bridge id)kSecMatchSearchList];
+    if (search && ![search containsObject:K77Keychain]) item = nil;
+    OSStatus status = K77Fault(K77ReadFaults, query, item ? errSecSuccess : errSecItemNotFound);
+    if (status != errSecSuccess) { *result = NULL; return status; }
+    id value = query[(__bridge id)kSecReturnAttributes]
+        ? @{(__bridge id)kSecValueData:item[(__bridge id)kSecValueData], (__bridge id)kSecValueRef:item}
+        : item[(__bridge id)kSecValueData];
+    *result = value ? CFBridgingRetain(value) : NULL; return status;
+}
++ (NSDictionary *)migrationContextForItem:(id)item status:(OSStatus *)status {
+    [K77Operations addObject:@{@"operation":@"context"}];
+    *status = K77ContextStatus;
+    if (*status != errSecSuccess) return nil;
+    return @{(__bridge id)kSecAttrAccess:item[(__bridge id)kSecAttrAccess], (__bridge id)kSecUseKeychain:K77Keychain};
+}
++ (OSStatus)addSecurityItem:(NSDictionary *)item {
+    [K77Operations addObject:@{@"operation":@"add", @"query":item}];
+    OSStatus status = K77Fault(K77AddFaults, item, K77Items[K77Key(item)] ? errSecDuplicateItem : errSecSuccess);
+    if (status == errSecSuccess || (status == errSecDuplicateItem && K77RaceData)) {
+        NSMutableDictionary *stored = [item mutableCopy];
+        if (K77RaceData) { stored[(__bridge id)kSecValueData] = K77RaceData; K77RaceData = nil; }
+        else if (K77CorruptCopy && [item[(__bridge id)kSecAttrService] hasPrefix:@"uk.jpsit."]) stored[(__bridge id)kSecValueData] = K77CorruptCopy;
+        if (!stored[(__bridge id)kSecAttrAccess]) stored[(__bridge id)kSecAttrAccess] = @"synthetic default ACL";
+        K77Items[K77Key(item)] = stored;
+    }
+    return status;
+}
++ (OSStatus)updateSecurityItem:(NSDictionary *)query attributes:(NSDictionary *)attributes {
+    [K77Operations addObject:@{@"operation":@"update", @"query":query, @"attributes":attributes}];
+    NSMutableDictionary *item = K77Items[K77Key(query)];
+    OSStatus status = K77Fault(K77UpdateFaults, query, item ? errSecSuccess : errSecItemNotFound);
+    if (status == errSecSuccess) [item addEntriesFromDictionary:attributes];
+    return status;
+}
+@end
+
+@interface KeychainNamespaceMigrationTests : XCTestCase @end
+@implementation KeychainNamespaceMigrationTests
+- (void)setUp {
+    [super setUp];
+    K77Items = [NSMutableDictionary new]; K77Operations = [NSMutableArray new];
+    K77ReadFaults = [NSMutableDictionary new]; K77AddFaults = [NSMutableDictionary new]; K77UpdateFaults = [NSMutableDictionary new];
+    K77Deferrals = [NSMutableDictionary new]; K77ContextStatus = errSecSuccess;
+    K77RaceData = K77CorruptCopy = nil; K77BeforeRead = nil; K77ReadDidFinish = nil;
+}
+- (void)tearDown {
+    K77BeforeRead = nil; K77ReadDidFinish = nil; K77Items = K77ReadFaults = K77AddFaults = K77UpdateFaults = K77Deferrals = nil;
+    K77Operations = nil; K77RaceData = K77CorruptCopy = nil; [super tearDown];
+}
+- (NSData *)data:(NSString *)value { return [value dataUsingEncoding:NSUTF8StringEncoding]; }
+- (void)seed:(NSString *)namespace service:(NSString *)service account:(NSString *)account password:(NSString *)password {
+    NSString *name = [namespace isEqual:@"legacy"] ? K77Legacy(service) : K77Clean(service);
+    K77Items[@[name,account]] = [@{(__bridge id)kSecClass:(__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrService:name, (__bridge id)kSecAttrAccount:account,
+        (__bridge id)kSecValueData:[self data:password], (__bridge id)kSecAttrAccess:[NSObject new]} mutableCopy];
+}
+- (void)seedLegacy { [self seed:@"legacy" service:K77Service account:K77Account password:@"synthetic password"]; }
+- (AKCredentialReadResult *)read { return [Namespace77Keychain readResultForService:K77Service account:K77Account]; }
+- (NSArray *)operations:(NSString *)kind {
+    return [K77Operations filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSDictionary *op, NSDictionary *bindings) { return [op[@"operation"] isEqual:kind]; }]];
+}
+- (NSDictionary *)legacy { return K77Items[@[K77Legacy(K77Service),K77Account]]; }
+- (NSDictionary *)clean { return K77Items[@[K77Clean(K77Service),K77Account]]; }
+- (void)fault:(NSMutableDictionary *)faults namespace:(NSString *)namespace statuses:(NSArray *)statuses {
+    faults[@[[namespace isEqual:@"legacy"] ? K77Legacy(K77Service) : K77Clean(K77Service),K77Account]] = [statuses mutableCopy];
+}
+- (BOOL)save:(NSString *)password error:(NSError **)error {
+    return [Namespace77Keychain addItemWithService:K77Service account:K77Account password:password error:error];
+}
+- (void)testAuthorisedCopyRetainsExactSourceACLAndKeychainAndVerifiesNewValue {
+    [self seedLegacy]; NSDictionary *before = [self.legacy copy];
+    AKCredentialReadResult *result = [self read];
+    XCTAssertEqual(result.status, AKCredentialReadStatusSuccess);
+    XCTAssertEqual(result.migrationStatus, AKCredentialMigrationStatusVerified);
+    XCTAssertEqualObjects(result.password, @"synthetic password");
+    XCTAssertEqualObjects(self.legacy, before);
+    XCTAssertEqual(self.clean[(__bridge id)kSecAttrAccess], before[(__bridge id)kSecAttrAccess]);
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecUseKeychain], K77Keychain);
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecAttrLabel], @"jps Telephone — SIP account");
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecValueData], before[(__bridge id)kSecValueData]);
+    XCTAssertEqual([self operations:@"add"].count, 1u); XCTAssertEqual([self operations:@"read"].count, 3u);
+    NSDictionary *verify = [self operations:@"read"].lastObject[@"query"];
+    XCTAssertEqualObjects(verify[(__bridge id)kSecAttrService], K77Clean(K77Service));
+    XCTAssertEqualObjects(verify[(__bridge id)kSecMatchSearchList], @[K77Keychain]);
+    XCTAssertNil(self.clean[(__bridge id)kSecAttrSynchronizable]);
+    XCTAssertNil(self.clean[(__bridge id)kSecUseDataProtectionKeychain]);
+    XCTAssertNil(self.clean[(__bridge id)kSecAttrAccessGroup]);
+}
+- (void)testRepeatedReadsAndSimulatedRelaunchDoNotCreateDuplicateCopies {
+    [self seedLegacy]; [self read]; [K77Deferrals removeAllObjects];
+    for (int i=0; i<3; i++) XCTAssertEqual([self read].migrationStatus, AKCredentialMigrationStatusVerified);
+    XCTAssertEqual(K77Items.count, 2u); XCTAssertEqual([self operations:@"add"].count, 1u); XCTAssertEqual([self operations:@"update"].count, 0u);
+}
+- (void)testExactRegistrarAndAccountPairsNeverMergeOrTouchOtherNamespaces {
+    NSArray *pairs = @[@[@"SIP: registrar.invalid",@"a|b"], @[@"SIP: REGISTRAR.invalid:5061",@"a|b"], @[@"SIP: registrar.invalid",@"b"]];
+    for (NSArray *pair in pairs) {
+        [self seed:@"legacy" service:pair[0] account:pair[1] password:[pair componentsJoinedByString:@" / "]];
+        AKCredentialReadResult *r = [Namespace77Keychain readResultForService:pair[0] account:pair[1]];
+        XCTAssertEqualObjects(r.password, [pair componentsJoinedByString:@" / "]);
+        XCTAssertEqual(r.migrationStatus, AKCredentialMigrationStatusVerified);
+    }
+    XCTAssertEqual(K77Items.count, 6u);
+    for (NSDictionary *op in [self operations:@"add"]) XCTAssertTrue([op[@"query"][(__bridge id)kSecAttrService] hasPrefix:@"uk.jpsit.telephone.sip:"]);
+}
+- (void)testLegacyDenialCancellationAndInvalidDataNeverTryTheNewCopy {
+    [self seedLegacy]; [self seed:@"clean" service:K77Service account:K77Account password:@"must not be used"];
+    for (NSNumber *status in @[@(errSecUserCanceled),@(errSecAuthFailed),@(errSecInteractionNotAllowed),@(errSecNotAvailable)]) {
+        [K77Operations removeAllObjects]; [self fault:K77ReadFaults namespace:@"legacy" statuses:@[status]];
+        AKCredentialReadResult *r = [self read]; XCTAssertNil(r.password); XCTAssertNotEqual(r.status, AKCredentialReadStatusSuccess);
+        XCTAssertEqual(K77Operations.count, 1u); XCTAssertEqualObjects(K77Operations.firstObject[@"query"][(__bridge id)kSecAttrService], K77Legacy(K77Service));
+    }
+    const unsigned char bytes[]={0xff,0xfe};
+    K77Items[@[K77Legacy(K77Service),K77Account]][(__bridge id)kSecValueData]=[NSData dataWithBytes:bytes length:2];
+    XCTAssertEqual([self read].status, AKCredentialReadStatusInvalidData);
+    XCTAssertEqual([self operations:@"add"].count, 0u);
+}
+- (void)testBothMissingAndNewOnlyFallbackRemainReadOnly {
+    XCTAssertEqual([self read].status, AKCredentialReadStatusMissing); XCTAssertEqual([self operations:@"read"].count, 2u);
+    [self seed:@"clean" service:K77Service account:K77Account password:@"new only"];
+    XCTAssertEqualObjects([self read].password, @"new only"); XCTAssertEqual(K77Items.count, 1u);
+    XCTAssertEqual([self operations:@"add"].count, 0u); XCTAssertEqual([self operations:@"context"].count, 0u);
+}
+- (void)testExistingMatchingCopyIsVerifiedWithoutMutation {
+    [self seedLegacy]; [self seed:@"clean" service:K77Service account:K77Account password:@"synthetic password"];
+    NSDictionary *before = [self.clean copy]; XCTAssertEqual([self read].migrationStatus, AKCredentialMigrationStatusVerified);
+    XCTAssertEqualObjects(self.clean, before); XCTAssertEqual([self operations:@"add"].count, 0u); XCTAssertEqual([self operations:@"update"].count, 0u);
+}
+- (void)testConflictKeepsLegacyAuthoritativeAndRequiresExplicitSave {
+    [self seedLegacy]; [self seed:@"clean" service:K77Service account:K77Account password:@"different"];
+    AKCredentialReadResult *r = [self read]; XCTAssertEqual(r.migrationStatus, AKCredentialMigrationStatusConflict);
+    XCTAssertEqualObjects(r.password, @"synthetic password"); XCTAssertNotNil(r.migrationHelp);
+    XCTAssertFalse([r.migrationHelp containsString:@"synthetic password"]);
+    NSUInteger reads=[self operations:@"read"].count;
+    [self read]; XCTAssertEqual([self operations:@"read"].count, reads+1);
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecValueData], [self data:@"different"]);
+    XCTAssertEqual([self operations:@"update"].count, 0u);
+    NSError *error; XCTAssertTrue([self save:@"intended replacement" error:&error]); XCTAssertNil(error);
+    XCTAssertEqual([self read].migrationStatus, AKCredentialMigrationStatusVerified);
+    XCTAssertEqualObjects(self.legacy[(__bridge id)kSecValueData], [self data:@"intended replacement"]);
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecValueData], [self data:@"intended replacement"]);
+}
+- (void)testSourceContextFailureNeverSubstitutesDefaultACL {
+    [self seedLegacy]; K77ContextStatus=errSecAuthFailed;
+    AKCredentialReadResult *r=[self read]; XCTAssertEqual(r.migrationStatus, AKCredentialMigrationStatusDeferred);
+    XCTAssertEqualObjects(r.password,@"synthetic password"); XCTAssertNil(self.clean);
+    XCTAssertEqual([self operations:@"add"].count,0u);
+    K77ContextStatus=errSecSuccess; [self read]; XCTAssertNil(self.clean); // Latched until explicit save.
+    NSError *error; XCTAssertTrue([self save:@"synthetic password" error:&error]); XCTAssertNotNil(self.clean);
+}
+- (void)testFailedAddIsLatchedWithoutRepeatedPromptsOrDeletingTheSource {
+    [self seedLegacy]; [self fault:K77AddFaults namespace:@"clean" statuses:@[@(errSecUserCanceled)]];
+    AKCredentialReadResult *r=[self read]; XCTAssertEqual(r.status,AKCredentialReadStatusSuccess);
+    XCTAssertEqual(r.migrationStatus,AKCredentialMigrationStatusDeferred); XCTAssertEqual(r.migrationSecurityStatus,errSecUserCanceled);
+    XCTAssertEqual([self operations:@"add"].count,1u);
+    [self read]; [self read]; XCTAssertEqual([self operations:@"add"].count,1u); XCTAssertEqual(K77Items.count,1u);
+}
+- (void)testNewItemDenialNeverPreventsUseOfAlreadyAuthorisedLegacyPassword {
+    [self seedLegacy]; [self fault:K77ReadFaults namespace:@"clean" statuses:@[@(errSecAuthFailed)]];
+    AKCredentialReadResult *r=[self read]; XCTAssertEqualObjects(r.password,@"synthetic password");
+    XCTAssertEqual(r.migrationStatus,AKCredentialMigrationStatusDeferred); XCTAssertNil(self.clean); XCTAssertEqual([self operations:@"add"].count,0u);
+}
+- (void)testDuplicateCreationRaceRequiresReadbackAndNeverOverwrites {
+    [self seedLegacy]; K77RaceData=[self data:@"synthetic password"];
+    [self fault:K77AddFaults namespace:@"clean" statuses:@[@(errSecDuplicateItem)]];
+    XCTAssertEqual([self read].migrationStatus,AKCredentialMigrationStatusVerified);
+    XCTAssertEqual([self operations:@"read"].count,3u); XCTAssertEqual([self operations:@"update"].count,0u);
+}
+- (void)testConflictingDuplicateRaceRetainsBothValuesForReview {
+    [self seedLegacy]; K77RaceData=[self data:@"concurrent distinct copy"];
+    [self fault:K77AddFaults namespace:@"clean" statuses:@[@(errSecDuplicateItem)]];
+    XCTAssertEqual([self read].migrationStatus,AKCredentialMigrationStatusConflict);
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecValueData],[self data:@"concurrent distinct copy"]);
+    XCTAssertEqual([self operations:@"update"].count,0u); XCTAssertEqual(K77Items.count,2u);
+}
+- (void)testReadbackCancellationRetainsBothCopiesAndExplicitSaveRecovers {
+    [self seedLegacy]; [self fault:K77ReadFaults namespace:@"clean" statuses:@[@(errSecItemNotFound),@(errSecUserCanceled)]];
+    AKCredentialReadResult *r=[self read]; XCTAssertEqual(r.migrationStatus,AKCredentialMigrationStatusDeferred);
+    XCTAssertEqualObjects(r.password,@"synthetic password"); XCTAssertEqual(K77Items.count,2u);
+    NSError *error; XCTAssertTrue([self save:@"synthetic password" error:&error]);
+    XCTAssertEqual([self read].migrationStatus,AKCredentialMigrationStatusVerified); XCTAssertEqual(K77Items.count,2u);
+}
+- (void)testNewPasswordSaveKeepsRollbackCopyAndVerifiesNewNamespace {
+    NSError *error; XCTAssertTrue([self save:@"first password" error:&error]); XCTAssertNil(error);
+    XCTAssertEqual(K77Items.count,2u); XCTAssertEqualObjects(self.legacy[(__bridge id)kSecValueData],[self data:@"first password"]);
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecValueData],[self data:@"first password"]);
+    XCTAssertEqualObjects(self.legacy[(__bridge id)kSecAttrLabel],@"jps Telephone — SIP account (compatibility copy)");
+    XCTAssertEqualObjects(K77Operations.firstObject[@"query"][(__bridge id)kSecAttrService],K77Legacy(K77Service));
+    XCTAssertNil(K77Operations.firstObject[@"query"][(__bridge id)kSecReturnData]);
+    XCTAssertEqualObjects(K77Operations.lastObject[@"query"][(__bridge id)kSecAttrService],K77Clean(K77Service));
+}
+- (void)testUpdatingBothPasswordsPreservesTheirExistingAccessLists {
+    [self seedLegacy]; [self seed:@"clean" service:K77Service account:K77Account password:@"prior"];
+    id oldACL=self.legacy[(__bridge id)kSecAttrAccess],newACL=self.clean[(__bridge id)kSecAttrAccess];
+    NSError *error; XCTAssertTrue([self save:@"edited password" error:&error]);
+    XCTAssertEqual(self.legacy[(__bridge id)kSecAttrAccess],oldACL); XCTAssertEqual(self.clean[(__bridge id)kSecAttrAccess],newACL);
+    for (NSDictionary *op in [self operations:@"update"]) {
+        XCTAssertNil(op[@"attributes"][(__bridge id)kSecAttrAccess]); XCTAssertNil(op[@"attributes"][(__bridge id)kSecAttrService]);
+        XCTAssertNil(op[@"attributes"][(__bridge id)kSecAttrAccount]); XCTAssertNotNil(op[@"query"][(__bridge id)kSecAttrService]);
+        XCTAssertNotNil(op[@"query"][(__bridge id)kSecAttrAccount]);
+        if ([op[@"query"][(__bridge id)kSecAttrService] isEqual:K77Legacy(K77Service)]) {
+            XCTAssertEqual([op[@"query"][(__bridge id)kSecMatchItemList] count],1u);
+        } else XCTAssertEqualObjects(op[@"query"][(__bridge id)kSecMatchSearchList],@[K77Keychain]);
+    }
+}
+- (void)testLegacySaveFailureStopsBeforeAnyNewNamespaceAccess {
+    [self seedLegacy]; [self fault:K77UpdateFaults namespace:@"legacy" statuses:@[@(errSecAuthFailed)]];
+    NSError *error; XCTAssertFalse([self save:@"edited password" error:&error]); XCTAssertEqual(error.code,errSecAuthFailed);
+    XCTAssertEqual(K77Operations.count,2u); XCTAssertNil(self.clean);
+    XCTAssertEqualObjects(self.legacy[(__bridge id)kSecValueData],[self data:@"synthetic password"]);
+}
+- (void)testPartialSaveIsReportedHonestlyAndCanBeRetried {
+    [self seedLegacy]; [self fault:K77AddFaults namespace:@"clean" statuses:@[@(errSecReadOnly)]];
+    NSError *error; XCTAssertFalse([self save:@"edited password" error:&error]); XCTAssertEqual(error.code,errSecReadOnly);
+    XCTAssertTrue([error.localizedDescription containsString:@"compatibility password was saved"]);
+    XCTAssertFalse([error.localizedDescription containsString:@"edited password"]);
+    XCTAssertEqualObjects(self.legacy[(__bridge id)kSecValueData],[self data:@"edited password"]);
+    XCTAssertNil(self.clean); XCTAssertTrue([self save:@"edited password" error:&error]); XCTAssertNil(error);
+}
+- (void)testCorruptCopyCannotBeReportedAsVerifiedOrSuccessfullySaved {
+    [self seedLegacy]; K77CorruptCopy=[self data:@"wrong readback"];
+    XCTAssertEqual([self read].migrationStatus,AKCredentialMigrationStatusConflict);
+    [K77Items removeObjectForKey:@[K77Clean(K77Service),K77Account]];
+    NSError *error; XCTAssertFalse([self save:@"edited password" error:&error]); XCTAssertEqual(error.code,errSecDecode);
+    XCTAssertNotNil(self.legacy); XCTAssertNotNil(self.clean);
+}
+- (void)testEmptyPasswordIsARealCredentialInBothNamespaces {
+    [self seed:@"legacy" service:K77Service account:K77Account password:@""];
+    AKCredentialReadResult *r=[self read]; XCTAssertEqual(r.status,AKCredentialReadStatusSuccess);
+    XCTAssertEqual(r.migrationStatus,AKCredentialMigrationStatusVerified); XCTAssertEqualObjects(r.password,@"");
+    NSError *error; XCTAssertTrue([self save:@"" error:&error]); XCTAssertNil(error);
+}
+- (void)testDeferralAdmissionIsBoundedWithoutDroppingExistingFailures {
+    [self seedLegacy]; for (NSUInteger i=0;i<64;i++) K77Deferrals[@[@"synthetic",@(i)]]=@[@(AKCredentialMigrationStatusDeferred),@(errSecAuthFailed)];
+    AKCredentialReadResult *r=[self read]; XCTAssertEqual(r.migrationStatus,AKCredentialMigrationStatusDeferred);
+    XCTAssertEqual(r.migrationSecurityStatus,errSecAllocate); XCTAssertEqual(K77Deferrals.count,64u);
+    XCTAssertEqual(K77Operations.count,1u); XCTAssertNil(self.clean);
+}
+- (void)testSupersededReadCannotStartAKeychainCopy {
+    [self seedLegacy]; __block BOOL admitted=YES;
+    K77BeforeRead=^(NSDictionary *query) { admitted=NO; };
+    AKCredentialReadResult *r=[Namespace77Keychain readResultForService:K77Service account:K77Account migrationAllowed:^BOOL { return admitted; }];
+    XCTAssertEqual(r.status,AKCredentialReadStatusSuperseded); XCTAssertNil(r.password); XCTAssertNil(self.clean);
+    XCTAssertEqual(K77Operations.count,1u);
+}
+- (void)testSupersededAfterNewLookupCannotAddOrVerifyAnotherItem {
+    [self seedLegacy]; __block BOOL admitted=YES;
+    K77BeforeRead=^(NSDictionary *query) { if ([query[(__bridge id)kSecAttrService] isEqual:K77Clean(K77Service)]) admitted=NO; };
+    AKCredentialReadResult *r=[Namespace77Keychain readResultForService:K77Service account:K77Account migrationAllowed:^BOOL { return admitted; }];
+    XCTAssertEqual(r.status,AKCredentialReadStatusSuperseded); XCTAssertEqual([self operations:@"add"].count,0u); XCTAssertNil(self.clean);
+}
+- (void)testBrokerInvalidationPreventsCopyAfterPendingAuthorisedRead {
+    [self seedLegacy];
+    dispatch_semaphore_t gate=dispatch_semaphore_create(0);
+    XCTestExpectation *started=[self expectationWithDescription:@"broker source read pending"];
+    XCTestExpectation *superseded=[self expectationWithDescription:@"invalidated completion"];
+    XCTestExpectation *finished=[self expectationWithDescription:@"Security reader finished"];
+    K77BeforeRead=^(NSDictionary *query) {
+        [started fulfill]; dispatch_semaphore_wait(gate,dispatch_time(DISPATCH_TIME_NOW,3*NSEC_PER_SEC));
+    };
+    K77ReadDidFinish=^{ [finished fulfill]; };
+    AKCredentialBroker *broker=[[AKCredentialBroker alloc] initWithReader:^AKCredentialReadResult *(NSString *service, NSString *account) {
+        XCTFail(@"The injected Security reader must be used");
+        return [AKCredentialReadResult failureWithStatus:AKCredentialReadStatusFailure securityStatus:errSecParam];
+    }];
+    // Same guarded production path as sharedBroker, with the complete Security
+    // boundary replaced by the synthetic subclass rather than the real Keychain.
+    [broker setValue:Namespace77Keychain.class forKey:@"keychainReaderClass"];
+    [broker readPasswordForService:K77Service account:K77Account completion:^(AKCredentialReadResult *result) {
+        XCTAssertEqual(result.status,AKCredentialReadStatusSuperseded); XCTAssertNil(result.password); [superseded fulfill];
+    }];
+    [self waitForExpectations:@[started] timeout:2];
+    [broker invalidateService:K77Service account:K77Account];
+    [self waitForExpectations:@[superseded] timeout:2];
+    dispatch_semaphore_signal(gate);
+    [self waitForExpectations:@[finished] timeout:3];
+    XCTAssertEqual([self operations:@"add"].count,0u); XCTAssertNil(self.clean); [broker shutdown];
+}
+- (void)testSaveNeverBlocksMainBehindPendingAuthorisationOrInterleavesWithMigration {
+    [self seedLegacy]; dispatch_semaphore_t gate=dispatch_semaphore_create(0);
+    XCTestExpectation *started=[self expectationWithDescription:@"synthetic authorised read pending"],*done=[self expectationWithDescription:@"read finished"];
+    __block BOOL paused=NO;
+    K77BeforeRead=^(NSDictionary *query) {
+        if (!paused) { paused=YES; [started fulfill]; dispatch_semaphore_wait(gate,dispatch_time(DISPATCH_TIME_NOW,3*NSEC_PER_SEC)); }
+    };
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY,0), ^{ [self read]; [done fulfill]; });
+    [self waitForExpectations:@[started] timeout:2];
+    NSTimeInterval begin=NSProcessInfo.processInfo.systemUptime;
+    NSError *error; BOOL saved=[self save:@"must not interleave" error:&error];
+    NSTimeInterval elapsed=NSProcessInfo.processInfo.systemUptime-begin;
+    dispatch_semaphore_signal(gate); [self waitForExpectations:@[done] timeout:3];
+    XCTAssertFalse(saved); XCTAssertEqual(error.code,errSecNotAvailable); XCTAssertLessThan(elapsed,.5);
+    XCTAssertEqualObjects(self.legacy[(__bridge id)kSecValueData],[self data:@"synthetic password"]);
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecValueData],[self data:@"synthetic password"]);
+}
+@end
