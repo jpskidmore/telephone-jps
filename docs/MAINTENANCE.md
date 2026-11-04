@@ -4,6 +4,15 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
+## Source repair — call-control icons, 4 November 2026
+
+Issue #76 now has a verified source repair: Mute/Unmute and Hold/Resume restore
+icon-only layout after AppKit title updates. Fresh isolated Telephone validation
+passed 571 XCTest + 48 Swift Testing (619 tests), unsigned Release compilation
+passed, and six native Light/Dark renders were inspected. Read [the evidence and
+remaining acceptance](maintenance/2026-11-04-call-control-icons.md). No installation
+or new release; #76 remains open for installed live-call acceptance under #62.
+
 ## Current published release — 4 November 2026
 
 **3.8/build 167** is [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8), from immutable source/tag `6d78e04d4d086b3b42bd25499b667645b82846d1` (tree `e8ddbf6d738cec581ff0691638227e3d91989289`). It includes all pushed source changes through `04c75fe`, plus release metadata: #73 Keychain reads, #74 compact call windows and #70 Contacts snapshots.

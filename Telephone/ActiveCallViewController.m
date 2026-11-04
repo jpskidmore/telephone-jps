@@ -194,6 +194,9 @@ typedef NS_OPTIONS(NSUInteger, AKCallControlPresentation) {
         }
         if (button.enabled != enabled) button.enabled = enabled;
         if (![button.title isEqualToString:title]) button.title = title;
+        // AppKit's setTitle: can reset imagePosition to a text-bearing layout.
+        // Keep action names for help/AX while the compact row displays symbols.
+        if (button.imagePosition != NSImageOnly) button.imagePosition = NSImageOnly;
         if (![button.toolTip isEqualToString:title]) button.toolTip = title;
         if (![button.accessibilityLabel isEqualToString:title]) button.accessibilityLabel = title;
         if (selectable) {

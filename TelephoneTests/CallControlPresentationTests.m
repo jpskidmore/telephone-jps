@@ -246,6 +246,74 @@ static NSTimeInterval CC67CPUTime(struct rusage value) {
     return seconds;
 }
 
+// Issue #76: AppKit's setTitle: changes imagePosition even when the button
+// already has a symbol. Exercise the actual nib-backed controller and native
+// cells, rather than only checking the initial styling helper.
+- (void)assertIconButtonsWithMuteTitle:(NSString *)muteTitle holdTitle:(NSString *)holdTitle {
+    NSButton *mute = [self button:@selector(toggleMicrophoneMute:)];
+    NSButton *hold = [self button:@selector(toggleCallHold:)];
+    for (NSButton *button in [self buttons:self.controller]) {
+        XCTAssertNotNil(button.image);
+        XCTAssertEqual(button.imagePosition, NSImageOnly);
+        XCTAssertEqualWithAccuracy(button.frame.size.width, 44, .01);
+        XCTAssertEqualWithAccuracy(button.frame.size.height, 44, .01);
+    }
+    XCTAssertEqualObjects(mute.title, muteTitle);
+    XCTAssertEqualObjects(mute.toolTip, muteTitle);
+    XCTAssertEqualObjects(mute.accessibilityLabel, muteTitle);
+    XCTAssertEqualObjects(hold.title, holdTitle);
+    XCTAssertEqualObjects(hold.toolTip, holdTitle);
+    XCTAssertEqualObjects(hold.accessibilityLabel, holdTitle);
+}
+- (void)attachCallControlPresentation:(NSString *)name {
+    NSView *view = self.view.view;
+    [view layoutSubtreeIfNeeded];
+    NSBitmapImageRep *bitmap = [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:bitmap];
+    NSData *png = [bitmap representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+    XCTAssertNotNil(png);
+    XCTAttachment *attachment = [XCTAttachment attachmentWithData:png uniformTypeIdentifier:@"public.png"];
+    attachment.name = name;
+    attachment.lifetime = XCTAttachmentLifetimeKeepAlways;
+    [self addAttachment:attachment];
+}
+- (void)testMuteAndHoldKeepIconsThroughTitleAndLifecycleChangesInBothAppearances {
+    for (NSAppearanceName appearance in @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]) {
+        self.controller.syntheticWindow.appearance = [NSAppearance appearanceNamed:appearance];
+        [self assertIconButtonsWithMuteTitle:@"Mute" holdTitle:@"Hold"];
+        [self attachCallControlPresentation:[appearance stringByAppendingString:@"-off"]];
+        for (NSUInteger cycle = 0; cycle < 2; cycle++) {
+            self.call.syntheticMuted = YES;
+            self.call.localHold = YES;
+            [self.view refreshControlPresentation];
+            [self assertIconButtonsWithMuteTitle:@"Unmute" holdTitle:@"Resume"];
+            if (cycle == 0) [self attachCallControlPresentation:[appearance stringByAppendingString:@"-selected"]];
+            XCTAssertEqual([self button:@selector(toggleMicrophoneMute:)].state, NSControlStateValueOn);
+            XCTAssertEqual([self button:@selector(toggleCallHold:)].state, NSControlStateValueOn);
+            [self.controller toggleMicrophoneMute]; [self.controller toggleCallHold];
+            XCTAssertFalse([self button:@selector(toggleMicrophoneMute:)].enabled);
+            XCTAssertFalse([self button:@selector(toggleCallHold:)].enabled);
+            [self assertIconButtonsWithMuteTitle:@"Unmute" holdTitle:@"Resume"];
+            if (cycle == 0) [self attachCallControlPresentation:[appearance stringByAppendingString:@"-pending"]];
+            void (^muteFailure)(BOOL) = self.call.muteCompletions.lastObject;
+            void (^holdFailure)(BOOL) = self.call.holdCompletions.lastObject;
+            muteFailure(NO); holdFailure(NO);
+            self.call.remoteHold = YES;
+            [self assertIconButtonsWithMuteTitle:@"Unmute" holdTitle:@"Resume"];
+            self.call.remoteHold = NO;
+            self.call.syntheticMuted = NO; self.call.localHold = NO;
+            [self.view refreshControlPresentation];
+            [self assertIconButtonsWithMuteTitle:@"Mute" holdTitle:@"Hold"];
+        }
+        self.call.state = kAKSIPCallDisconnectedState;
+        [self.view refreshControlPresentation];
+        [self assertIconButtonsWithMuteTitle:@"Mute" holdTitle:@"Hold"];
+        [self.view removeObservations];
+        self.controller.call = [CC67Call new]; self.call = (CC67Call *)self.controller.call;
+        [self assertIconButtonsWithMuteTitle:@"Mute" holdTitle:@"Hold"];
+    }
+}
+
 - (void)testDurationTimerUsesOneSecondAndToleranceAndHasNoDuplicateStart {
     [self.view startCallTimer]; NSTimer *timer = self.view.callTimer;
     XCTAssertNotNil(timer); XCTAssertTrue(timer.isValid);

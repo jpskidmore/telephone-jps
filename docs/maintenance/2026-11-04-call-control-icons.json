@@ -1,0 +1,51 @@
+{
+  "issue": 76,
+  "baseline": "8e2d1ea",
+  "date": "2026-11-04",
+  "environment": {
+    "macOS": "27.2 (26B123)",
+    "Xcode": "27.2 (27B52)",
+    "architecture": "arm64"
+  },
+  "baselineRegression": {
+    "tests": 1,
+    "failedImagePositionAssertions": 42
+  },
+  "finalValidation": {
+    "XCTest": 571,
+    "SwiftTesting": 48,
+    "total": 619,
+    "failures": 0,
+    "isolatedHost": true,
+    "unsignedReleaseBuild": "passed",
+    "visualRendersInspected": 6
+  },
+  "installation": false,
+  "release": false,
+  "installedLiveAcceptance": "pending",
+  "sourceSHA256": {
+    "Telephone/ActiveCallViewController.m": "84653b99fa30a3499d5a7634a7b460bd29ec000d750eba320ec1743e893ca1e7",
+    "TelephoneTests/CallControlPresentationTests.m": "03590f37e03275ca63729e232480b4d4c410277b01735101ae609f95a532112d"
+  },
+  "logSHA256": {
+    "baseline-build.log": "2707ef8b242dbbf31fa73bae7483f0bcafae9c7ec928e46818f0e59703e4896c",
+    "baseline-test.log": "ab8235b41949c6d3e6a9f357ca99997e3cfd683414063d89fb179c39520e2807",
+    "final-build.log": "bae06b7c9a57e754266a6b30c6802dd08d92c03f7df0cf49f268c64cbba3f708",
+    "final-host.log": "98305da3353026e41bd4b8f22cc3cd188e6f632f7b36824413e2f00794d51b72",
+    "final-test.log": "e76cf8fef905ccb8ea7ee6b8075152fa4c277eeea3283ec3c80d649fc70b141e",
+    "release-build.log": "9a512c9f00f27764d76ed2a5843815b90cca8990f3d08066049c1d4d95940bc7"
+  },
+  "renderSHA256": {
+    "docs/maintenance/2026-11-04-call-control-icons/dark-off.png": "016d9534e3fe57e191a4ede95441c3738c27bf2ef89d4f197fda033e74be6b34",
+    "docs/maintenance/2026-11-04-call-control-icons/dark-pending.png": "da00c2ebb35728f529a2480a263a4f792519ed287a88a24c0b83060bdcff9878",
+    "docs/maintenance/2026-11-04-call-control-icons/dark-selected.png": "118deb5b95f0a9ecc0357150c4701c26307bb1af9c30ab4cc908deeefb51ba68",
+    "docs/maintenance/2026-11-04-call-control-icons/light-off.png": "bdf23e904366a6a37b0293ff2a4a9853df546e2fc8ac4ed6648351e247ee3153",
+    "docs/maintenance/2026-11-04-call-control-icons/light-pending.png": "64cd0f2361ed40829deebc1205a197d0d8ff603556a7afc2e6e34b80066155fa",
+    "docs/maintenance/2026-11-04-call-control-icons/light-selected.png": "520c1e07ab6b79be69de59b0a6570d92c0d4da297b087bc6afb7db73b316ff85"
+  },
+  "results": {
+    "baseline": "/private/tmp/jps-telephone-issue76/baseline.xcresult",
+    "final": "/private/tmp/jps-telephone-issue76/final.xcresult"
+  },
+  "excludedEvidence": "Intermediate candidate-build.log failed in screenshot helper; candidate-test.log used older tests and is not final evidence."
+}
