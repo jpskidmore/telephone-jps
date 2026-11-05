@@ -4,14 +4,29 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
-## Release preparation — 3.8.2/build 169, 5 November 2026
+## Current published release — 3.8.2/build 169, 5 November 2026
 
-The owner authorised a new release of the #77 migration and effective-save
-verification repair. The exact candidate is to be built and packaged locally,
-with isolated synthetic tests and ad-hoc signing only. No installation or
-production-profile/Keychain acceptance is included. Read the
-[release notes](releases/3.8.2.md); completed build/package/publication evidence
-will be recorded separately. Prior release archives remain immutable.
+**3.8.2/build 169** is [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.2),
+from immutable source/tag `361f7fe3d639c11cb4fdf40fc5e72c92e77cfb58`
+(tree `00f8214294ff5de22c5ee2c51b46b4b37e20d80e`). It includes #77's
+canonical-first namespace migration and the effective-save verification repair.
+
+Fresh local validation passed **1,046 suite tests**, zero failures/skips: Domain
+28 XCTest; UseCases 206 XCTest + 157 Swift Testing; ReceiptValidation 5 XCTest;
+isolated Telephone 602 XCTest + 48 Swift Testing. Separate component checks,
+Release compilation, ad-hoc signatures, metadata and extracted ZIP checks passed.
+Independent parity covered 57 regular app files, six symlinks and 1,549 source
+blobs. All seven published assets were downloaded and matched local sizes and
+SHA-256. Ten prior releases, 65 assets and 16 existing tag refs were preserved.
+Read [publication and package proof](releases/3.8.2-verification.json).
+
+No local installation or production-profile/live-Keychain test was performed.
+Real labels, ACL enforcement, prompts, multiple-account upgrade/registration and
+rollback remain unverified in open #77. #62 stays closed by owner decision.
+All release builds were local; no cloud build/release workflow was dispatched.
+GitHub's existing automatic CodeQL scan ran despite `[skip ci]` and completed
+before cancellation was available; it was not used as release validation.
+Later documentation commits do not change this release's tag or archives.
 
 ## Acceptance tracking correction — 5 November 2026
 
@@ -44,7 +59,7 @@ No actual owner Keychain item was modified and no new release or installation
 was performed. #77 remains open for installed acceptance; 3.8.1 below remains
 GitHub Latest and does not contain this migration.
 
-## Current published release — 3.8.1/build 168, 4 November 2026
+## Previous published release — 3.8.1/build 168, 4 November 2026
 
 **3.8.1/build 168** is [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.1), from immutable source/tag `ae19260441156318211a984f61dd33de9f1679c8` (tree `fae2145f9f6dc544fa37306d3bcda6191d1cb7ea`). It includes the issue #76 icon repair on the 3.8 baseline.
 

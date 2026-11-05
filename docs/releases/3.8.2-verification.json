@@ -1,0 +1,143 @@
+{
+  "status": "published_verified",
+  "sourceCommit": "361f7fe3d639c11cb4fdf40fc5e72c92e77cfb58",
+  "sourceTree": "00f8214294ff5de22c5ee2c51b46b4b37e20d80e",
+  "version": "3.8.2",
+  "build": 169,
+  "suiteTotals": {
+    "XCTest": 841,
+    "SwiftTesting": 205,
+    "total": 1046,
+    "passed": 1046,
+    "failed": 0,
+    "skipped": 0
+  },
+  "suites": {
+    "Domain": {
+      "XCTest": 28,
+      "SwiftTesting": 0,
+      "total": 28,
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0,
+      "runtimeWarnings": []
+    },
+    "UseCasesTests": {
+      "XCTest": 206,
+      "SwiftTesting": 157,
+      "total": 363,
+      "passed": 363,
+      "failed": 0,
+      "skipped": 0,
+      "runtimeWarnings": []
+    },
+    "ReceiptValidationTests": {
+      "XCTest": 5,
+      "SwiftTesting": 0,
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "runtimeWarnings": []
+    },
+    "TelephoneTests": {
+      "XCTest": 602,
+      "SwiftTesting": 48,
+      "total": 650,
+      "passed": 650,
+      "failed": 0,
+      "skipped": 0,
+      "runtimeWarnings": [
+        {
+          "issueType": "Runtime Warning",
+          "message": "[Internal] Thread running at User-interactive quality-of-service class waiting on a lower QoS thread running at Default quality-of-service class. Investigate ways to avoid priority inversions",
+          "sourceURL": "TelephoneTests/DialPlanPreferencesViewControllerTests.swift"
+        }
+      ]
+    }
+  },
+  "appFiles": 57,
+  "appSymlinks": 6,
+  "sourceBlobs": 1549,
+  "packageParity": "passed",
+  "licenceAndSourceNotices": "passed",
+  "isolatedReleaseVisualReview": "six Accounts captures inspected; fixture-only clipped account alias and absent selected-tab title are not whole-app acceptance",
+  "liveKeychainAcceptance": "unverified",
+  "installation": false,
+  "automaticCodeQL": {
+    "runID": 42070493760,
+    "dispatchedByAgent": false,
+    "completedBeforeCancellation": true,
+    "notUsedAsReleaseValidation": true
+  },
+  "assets": [
+    {
+      "name": "BUILD-VERIFICATION.md",
+      "size": 2844,
+      "sha256": "c77534d2d4fe6a482b11d78423e8fdb7a8dc2d740497787ced32114ee6cdc3b2",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.2/BUILD-VERIFICATION.md",
+      "downloadVerified": true,
+      "assetID": 714157648
+    },
+    {
+      "name": "DIAL-PLAN-NUMBERING.md",
+      "size": 8002,
+      "sha256": "f4beb21fb0668366ab23af977f02166c0594ac08973c05c6b757507a73591c2a",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.2/DIAL-PLAN-NUMBERING.md",
+      "downloadVerified": true,
+      "assetID": 714157548
+    },
+    {
+      "name": "DIAL-PLANS.md",
+      "size": 8475,
+      "sha256": "43a6b379110d45b0b94c2d8a5682dba5d62dfc3556bd09c12b3e34f75dc16bcc",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.2/DIAL-PLANS.md",
+      "downloadVerified": true,
+      "assetID": 714157595
+    },
+    {
+      "name": "RELEASE-NOTES.md",
+      "size": 1651,
+      "sha256": "4adf81300247cbd686ba980b4ce417a23ea3d7bc907318a78ec1d85eefe5a69d",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.2/RELEASE-NOTES.md",
+      "downloadVerified": true,
+      "assetID": 714157635
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 533,
+      "sha256": "b8d2a66341f06f525b2c3b8cd7e946bf601bb32f5094bc9093bf565dd3003aea",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.2/SHA256SUMS.txt",
+      "downloadVerified": true,
+      "assetID": 714157618
+    },
+    {
+      "name": "jps-Telephone-3.8.2-arm64.zip",
+      "size": 3583567,
+      "sha256": "b7212d18da7bcac375680a7460b42833a5df3f0af76463466d2bbcf371c68ee5",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.2/jps-Telephone-3.8.2-arm64.zip",
+      "downloadVerified": true,
+      "assetID": 714157831
+    },
+    {
+      "name": "jps-Telephone-3.8.2-source.zip",
+      "size": 41251121,
+      "sha256": "8c41b2a40baf1e2c5c6c59a8d6dcf8ac3a5843516f5f07453251099753037299",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.8.2/jps-Telephone-3.8.2-source.zip",
+      "downloadVerified": true,
+      "assetID": 714157659
+    }
+  ],
+  "releaseURL": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.2",
+  "releaseID": 435487527,
+  "latest": true,
+  "previousReleasesPreserved": 10,
+  "previousAssetsPreserved": 65,
+  "previousTagRefsPreserved": 16,
+  "publicVisibilityPreserved": true,
+  "tests": 1046,
+  "failures": 0,
+  "skips": 0,
+  "recordedAt": "2026-11-05",
+  "releaseArchivesUnchanged": true
+}
