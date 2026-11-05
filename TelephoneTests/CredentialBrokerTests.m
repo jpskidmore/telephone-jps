@@ -242,6 +242,25 @@ static OSStatus K77Fault(NSMutableDictionary *faults, NSDictionary *query, OSSta
 }
 @end
 
+// Model an existing canonical item earlier in the search list, outside the
+// source file Keychain. All writes still use the synthetic source store above.
+static id K77EarlierCanonicalData;
+static OSStatus K77EarlierCanonicalStatus;
+@interface SearchList77Keychain : Namespace77Keychain @end
+@implementation SearchList77Keychain
++ (OSStatus)copySecurityItemMatchingQuery:(NSDictionary *)query result:(CFTypeRef *)result {
+    if ([query[(__bridge id)kSecAttrService] isEqual:K77Clean(K77Service)] &&
+        [query[(__bridge id)kSecAttrAccount] isEqual:K77Account] &&
+        !query[(__bridge id)kSecMatchSearchList]) {
+        [K77Operations addObject:@{@"operation":@"read", @"query":query}];
+        *result = K77EarlierCanonicalStatus == errSecSuccess && K77EarlierCanonicalData
+            ? CFBridgingRetain(K77EarlierCanonicalData) : NULL;
+        return K77EarlierCanonicalStatus;
+    }
+    return [super copySecurityItemMatchingQuery:query result:result];
+}
+@end
+
 @interface KeychainNamespaceMigrationTests : XCTestCase @end
 @implementation KeychainNamespaceMigrationTests
 - (void)setUp {
@@ -250,10 +269,12 @@ static OSStatus K77Fault(NSMutableDictionary *faults, NSDictionary *query, OSSta
     K77ReadFaults = [NSMutableDictionary new]; K77AddFaults = [NSMutableDictionary new]; K77UpdateFaults = [NSMutableDictionary new];
     K77Deferrals = [NSMutableDictionary new]; K77ContextStatus = errSecSuccess;
     K77RaceData = K77CorruptCopy = nil; K77BeforeRead = nil; K77ReadDidFinish = nil;
+    K77EarlierCanonicalData = nil; K77EarlierCanonicalStatus = errSecSuccess;
 }
 - (void)tearDown {
     K77BeforeRead = nil; K77ReadDidFinish = nil; K77Items = K77ReadFaults = K77AddFaults = K77UpdateFaults = K77Deferrals = nil;
     K77Operations = nil; K77RaceData = K77CorruptCopy = nil; [super tearDown];
+    K77EarlierCanonicalData = nil;
 }
 - (NSData *)data:(NSString *)value { return [value dataUsingEncoding:NSUTF8StringEncoding]; }
 - (void)seed:(NSString *)namespace service:(NSString *)service account:(NSString *)account password:(NSString *)password {
@@ -417,6 +438,72 @@ static OSStatus K77Fault(NSMutableDictionary *faults, NSDictionary *query, OSSta
             XCTAssertEqual([op[@"query"][(__bridge id)kSecMatchItemList] count],1u);
         } else XCTAssertEqualObjects(op[@"query"][(__bridge id)kSecMatchSearchList],@[K77Keychain]);
     }
+}
+- (void)testSaveReportsPartialFailureWhenAnotherKeychainShadowsTheSavedCanonicalItem {
+    [self seedLegacy];
+    K77EarlierCanonicalData = [self data:@"earlier Keychain password"];
+    NSData *earlier = [K77EarlierCanonicalData copy];
+    id sourceACL = self.legacy[(__bridge id)kSecAttrAccess];
+    NSError *error;
+    XCTAssertFalse([SearchList77Keychain addItemWithService:K77Service account:K77Account
+        password:@"intended replacement" error:&error]);
+    XCTAssertEqual(error.code, errSecDecode);
+    XCTAssertTrue([error.localizedDescription containsString:@"compatibility password was saved"]);
+    XCTAssertEqualObjects(self.legacy[(__bridge id)kSecValueData], [self data:@"intended replacement"]);
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecValueData], [self data:@"intended replacement"]);
+    XCTAssertEqual(self.legacy[(__bridge id)kSecAttrAccess], sourceACL);
+    XCTAssertEqual(self.clean[(__bridge id)kSecAttrAccess], sourceACL);
+    XCTAssertEqualObjects(K77EarlierCanonicalData, earlier);
+    AKCredentialReadResult *effective = [SearchList77Keychain readResultForService:K77Service account:K77Account];
+    XCTAssertEqualObjects(effective.password, @"earlier Keychain password");
+    XCTAssertEqual(effective.migrationStatus, AKCredentialMigrationStatusConflict);
+    for (NSDictionary *op in [self operations:@"update"]) {
+        if ([op[@"query"][(__bridge id)kSecAttrService] isEqual:K77Clean(K77Service)])
+            XCTAssertEqualObjects(op[@"query"][(__bridge id)kSecMatchSearchList], @[K77Keychain]);
+    }
+    for (NSDictionary *op in [self operations:@"add"])
+        XCTAssertEqualObjects(op[@"query"][(__bridge id)kSecUseKeychain], K77Keychain);
+}
+- (void)testSaveCannotSucceedWhenTheEffectiveCanonicalReadIsUnavailable {
+    [self seedLegacy]; K77EarlierCanonicalData = [self data:@"intended replacement"];
+    for (NSNumber *failure in @[@(errSecAuthFailed), @(errSecUserCanceled),
+                               @(errSecInteractionNotAllowed), @(errSecNotAvailable), @(errSecItemNotFound)]) {
+        K77EarlierCanonicalStatus = failure.intValue;
+        NSError *error;
+        XCTAssertFalse([SearchList77Keychain addItemWithService:K77Service account:K77Account
+            password:@"intended replacement" error:&error]);
+        XCTAssertEqual(error.code, failure.intValue);
+        XCTAssertTrue([error.localizedDescription containsString:@"compatibility password was saved"]);
+        NSArray *reads = [self operations:@"read"];
+        XCTAssertEqualObjects(reads[reads.count - 2][@"query"][(__bridge id)kSecMatchSearchList], @[K77Keychain]);
+        XCTAssertNil(reads.lastObject[@"query"][(__bridge id)kSecMatchSearchList]);
+        XCTAssertEqualObjects(reads.lastObject[@"query"][(__bridge id)kSecAttrService], K77Clean(K77Service));
+        XCTAssertEqualObjects(self.clean[(__bridge id)kSecValueData], [self data:@"intended replacement"]);
+    }
+}
+- (void)testSaveRejectsMalformedEffectiveCanonicalDataWithoutChangingThatItem {
+    [self seedLegacy];
+    for (id malformed in @[@"wrong payload type", NSNull.null]) {
+        K77EarlierCanonicalData = malformed;
+        NSError *error;
+        XCTAssertFalse([SearchList77Keychain addItemWithService:K77Service account:K77Account
+            password:@"intended replacement" error:&error]);
+        XCTAssertEqual(error.code, errSecDecode);
+        XCTAssertTrue([error.localizedDescription containsString:@"compatibility password was saved"]);
+        XCTAssertEqual(K77EarlierCanonicalData, malformed);
+    }
+}
+- (void)testSaveVerifiesBothScopedAndEffectiveCanonicalValuesWhenTheyMatch {
+    [self seedLegacy]; K77EarlierCanonicalData = [self data:@"intended replacement"];
+    NSError *error;
+    XCTAssertTrue([SearchList77Keychain addItemWithService:K77Service account:K77Account
+        password:@"intended replacement" error:&error]);
+    XCTAssertNil(error);
+    NSArray *reads = [self operations:@"read"];
+    XCTAssertEqualObjects(reads[reads.count - 2][@"query"][(__bridge id)kSecMatchSearchList], @[K77Keychain]);
+    XCTAssertNil(reads.lastObject[@"query"][(__bridge id)kSecMatchSearchList]);
+    XCTAssertEqualObjects(reads.lastObject[@"query"][(__bridge id)kSecAttrService], K77Clean(K77Service));
+    XCTAssertEqualObjects(self.clean[(__bridge id)kSecValueData], K77EarlierCanonicalData);
 }
 - (void)testLegacySaveFailureStopsBeforeAnyNewNamespaceAccess {
     [self seedLegacy]; [self fault:K77UpdateFaults namespace:@"legacy" statuses:@[@(errSecAuthFailed)]];

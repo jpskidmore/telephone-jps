@@ -4,6 +4,32 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
+## Release preparation — 3.8.2/build 169, 5 November 2026
+
+The owner authorised a new release of the #77 migration and effective-save
+verification repair. The exact candidate is to be built and packaged locally,
+with isolated synthetic tests and ad-hoc signing only. No installation or
+production-profile/Keychain acceptance is included. Read the
+[release notes](releases/3.8.2.md); completed build/package/publication evidence
+will be recorded separately. Prior release archives remain immutable.
+
+## Acceptance tracking correction — 5 November 2026
+
+The owner [closed #62 as not planned on 4 November](https://github.com/jpskidmore/telephone-jps/issues/62#issuecomment-6631639583)
+after stopping practical testing. Its reported observations used installed
+3.8/build 167; they do not validate the later #77 migration. The committed
+24-scenario matrix remains unverified without completed run records. Historical
+references below to pending checks under #62 do not reopen it or authorise more
+manual testing. #77 independently retains its Keychain acceptance; read the
+[step-by-step checklist](maintenance/2026-11-04-keychain-namespace.md#installed-acceptance-still-required).
+
+The 5 November source review also repairs explicit-save verification when an
+earlier Keychain shadows the scoped canonical copy. Fresh local Debug validation
+passed 81 focused synthetic credential/account tests; four new regressions first
+failed on unchanged production code. This does not repeat the historical full
+suite or Release build, or pass installed acceptance. Read the
+[repair and evidence](maintenance/2026-11-04-keychain-namespace.md#follow-up-save-verification--5-november-2026).
+
 ## Source implementation — issue #77 Option B, 4 November 2026
 
 The owner-selected clean Keychain namespace is implemented and source-verified.

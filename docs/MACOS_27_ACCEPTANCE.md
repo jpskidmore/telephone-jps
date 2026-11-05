@@ -2,7 +2,9 @@
 
 Issue [#62](https://github.com/jpskidmore/telephone-jps/issues/62). Prepared 23 October 2026 after source repair [a69ed93](https://github.com/jpskidmore/telephone-jps/commit/a69ed93c00ce20768883473a7f48e278fe719bf7).
 
-**Practical acceptance is incomplete; #62 remains open.** Every practical scenario below is **unverified**. This document is a repeatable worksheet, not evidence that its procedures were executed.
+**Practical acceptance is incomplete.** Every practical scenario below remains **unverified** in the committed run records. This document is a repeatable worksheet, not evidence that its procedures were executed.
+
+**Tracking correction — 5 November 2026:** the owner stopped practical testing and [closed #62 as not planned on 4 November](https://github.com/jpskidmore/telephone-jps/issues/62#issuecomment-6631639583). The closing comment records owner observations on installed 3.8/build 167, without completed per-scenario evidence records. Closure does not pass this matrix or authorise further manual testing. That build predates the #77 namespace migration; [#77](https://github.com/jpskidmore/telephone-jps/issues/77) independently tracks its pending Keychain acceptance. Do not reopen #62 as part of that work.
 
 ## Run record and result rules
 
@@ -91,4 +93,4 @@ Also consult [Apple accessibility testing](https://developer.apple.com/documenta
 
 ## Remaining gate
 
-A test operator must supply the exact candidate/build/hash, hardware/display/device context, controlled provider/endpoints and authorisation for applicable practical variants. A proficient VoiceOver tester and supported older OS are separate prerequisites. Record dated actual observations, log failures in GitHub and retain every unexercised row as unverified. Do not close #62 merely because this worksheet or an automated suite exists.
+A separately authorised future session needs the exact candidate/build/hash, hardware/display/device context, controlled provider/endpoints and authorisation for applicable practical variants. A proficient VoiceOver tester and supported older OS are separate prerequisites. Record dated actual observations and retain every unexercised row as unverified. The owner's closure of #62 ends that round of testing; this worksheet and automated suites do not establish comprehensive practical acceptance.

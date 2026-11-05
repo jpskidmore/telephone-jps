@@ -1,0 +1,115 @@
+{
+  "date": "2026-11-05",
+  "baselineCommit": "bc5ec762ef12d4b708ec40186e30b29d74c697fe",
+  "platform": {
+    "macOS": "27.2",
+    "OSBuild": "26B123",
+    "Xcode": "27.2",
+    "XcodeBuild": "27B52",
+    "arch": "arm64"
+  },
+  "baseline": {
+    "XCTest": 77,
+    "passed": 77,
+    "failed": 0,
+    "skipped": 0
+  },
+  "regressionRed": {
+    "XCTest": 4,
+    "passed": 0,
+    "failed": 4,
+    "skipped": 0,
+    "productionUnchanged": true
+  },
+  "final": {
+    "XCTest": 81,
+    "passed": 81,
+    "failed": 0,
+    "skipped": 0
+  },
+  "scope": "Focused synthetic credential, namespace migration, account, preferences, authentication retry and two account-save regressions; not complete Telephone or framework suites",
+  "build": "Debug build-for-testing CODE_SIGNING_ALLOWED=NO; fresh unique-ID nib-free copied host ad-hoc signed with -, no identity Keychain used",
+  "liveKeychain": false,
+  "SIPProvider": false,
+  "ReleaseBuild": false,
+  "installation": false,
+  "signingIdentityAccess": false,
+  "xcresults": {
+    "baseline": "/private/tmp/jps-issue77-review-kgtp3t14/baseline-focused.xcresult",
+    "regressionRed": "/private/tmp/jps-issue77-review-kgtp3t14/regression-red.xcresult",
+    "final": "/private/tmp/jps-issue77-review-kgtp3t14/final-focused.xcresult"
+  },
+  "finalSourceSHA256": {
+    "Telephone/AKKeychain.m": "9e15134d1a7ff37d6e4eeccba50bcfa8fecb837d4d7d72506759d0a5cf386df9",
+    "Telephone/AKKeychain.h": "63fbe93eabb43e6abee94210ec03a065ec96523c827ffb13b0f2ed4314ae5dde",
+    "TelephoneTests/CredentialBrokerTests.m": "397763a519c120d5eb895ee9b9f95c8f39686856415845cc7d93de26708a4746",
+    "TelephoneTests/CredentialAccountTests.m": "e4fa76a7f5b77059cc74936d6fc7a9047cf159db8ba44e974fd278555773d960",
+    "TelephoneTests/CredentialPreferencesTests.m": "d56d4003231314a72dd11f65a63b759f6121d58470205d878efd7eda4af76eb2",
+    "Telephone/AccountPreferencesViewController.m": "59286796bb527ecebd29668afa7520510e4e59104beed508e61663d33fd34eed"
+  },
+  "artifactSHA256": {
+    "red-source-sha256.json": "731ae7f8298730eb5468d12c81e2a6c4ebbb655fe6924d4d901d32ef492ea9b3",
+    "run-path.txt": "8f487f003240bcd2115d0a988306eadf033bed6a412e072170ae9d3a1e583a2b",
+    "baseline-focused.log": "66a51e0121dbc197cee5ba421ba45e2577e7effe1c41ad9ca60b8b428db2d856",
+    "final-summary.json": "a9758a23e9144c36876aea7cb69b79feb500d2ad709eda6fbab57055768ca59d",
+    "final-isolation.json": "51566e984fa13aca530a773cc4217ecfee067cfd22228be116d07623f3ed0364",
+    "commands.json": "570a06cd03d0dacef598f770cf1bf69ce8074fc83ada9868be4fd3600df79d7a",
+    "red-prepare.log": "8d60beb0121055a01602d6069bf2be33c86f68d375ad9ef55545faa60807361c",
+    "final-build.log": "2b9689066c96b259dc512e169ff3dc66c2514ce26b3e5a962432750c46bd22af",
+    "final-source-sha256.json": "5d3d7868c47eddc253762c9c82a08b0d98b2e0f7cf499435ef3255e6144e4079",
+    "red-build.log": "dbd90e71fde7a2f836385e7f0e6b7487a65fc1d8ede9ca68b6de4fcf4a21f414",
+    "regression-red.log": "3d8d16f9f08506b42dfe7e957c0428dccd60aa620ce61a50627f59ff5878150a",
+    "final-focused.log": "db56cf91c6f835673bc69dde742d6b06ac22f51865e8206b5331ceb11719047c",
+    "isolation.json": "478fe736178c8fffc2d5f5ed5929efa548a49c64af257c2bdfc6dd92094aa313",
+    "prepare.log": "8d60beb0121055a01602d6069bf2be33c86f68d375ad9ef55545faa60807361c",
+    "red-isolation.json": "862d71c40430b4c136c58ab07a365bc1380af7c478f8811ba71533bb36e6794c",
+    "final-prepare.log": "8d60beb0121055a01602d6069bf2be33c86f68d375ad9ef55545faa60807361c",
+    "regression-red-summary.json": "91bbcac44dc848f79b8ecf54b018d57c3f271458d32c37f1b99cde9438789515",
+    "baseline-summary.json": "65f53f1a03da8aa781c228a2a54b516b171970d25ab99fa9f5c32571a740bc99",
+    "build.log": "dd7976a56623bb819e9a7a1a598d9d6bb988b43b465e2ad9f03f0351c585e84c"
+  },
+  "counting": "Final 81 XCTest = the original 77 focused cases plus four new regressions; baseline and red runs overlap the final set and are not added to it.",
+  "buildReproduction": "Initial Debug build used a fresh /private/tmp DerivedData directory. Regression-red and final-fixed Debug builds incrementally rebuilt the changed tests/source in that same directory, then re-created a new unique-ID nib-free isolated host for each run.",
+  "sourceReview": {
+    "issue77": "https://github.com/jpskidmore/telephone-jps/issues/77",
+    "mainInspected": "bc5ec762ef12d4b708ec40186e30b29d74c697fe",
+    "fullIssue77CommentsRead": 3,
+    "fullIssue62CommentsRead": 3,
+    "issue62State": "closed",
+    "issue62StateReason": "not_planned",
+    "issue62ClosedAt": "2026-11-04T13:17:05Z",
+    "closureEvidence": "https://github.com/jpskidmore/telephone-jps/issues/62#issuecomment-6631639583",
+    "reportedInstalledBuild": "3.8 (167), before namespace migration",
+    "canonicalFirstImplementationDuplicated": false
+  },
+  "repair": {
+    "trigger": "Canonical credential earlier in search list than the legacy source Keychain",
+    "before": "Scoped canonical save/readback could succeed while normal lookup still selected a different or unreadable credential",
+    "after": "Additional effective canonical readback must succeed and match intended bytes before save success",
+    "productionAddedLines": 7,
+    "newRegressionCases": 4,
+    "crossKeychainOverwriteOrDeletionAdded": false,
+    "remainingLimits": [
+      "Point-in-time verification, not atomicity across processes or later search-list changes",
+      "Source copies may already have been saved before partial failure is reported",
+      "Persistent shadowing needs deliberate review; repeated save alone cannot reconcile it",
+      "Extra read may cause a prompt; real prompt wording/count and ACL enforcement unverified"
+    ]
+  },
+  "documentationChecks": {
+    "unchangedAcceptanceJSONSHA256": "491e7b6265fbd2bb324df1d1254acc0487f67864d7555c5af19c5b993ef5eae1",
+    "practicalScenarios": 24,
+    "allUnverified": true,
+    "runRecordsAdded": 0,
+    "relativeLinks": "resolved",
+    "diffWhitespace": "passed"
+  },
+  "futureAcceptance": {
+    "status": "all unverified, separate owner authorisation required",
+    "tracker": 77,
+    "steps": 11,
+    "issue62Reopened": false
+  },
+  "cloudWorkflowDispatched": false,
+  "remoteMutationPerformed": false
+}

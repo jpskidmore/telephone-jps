@@ -303,6 +303,13 @@
                             id verified = [self copyPayloadForQuery:query includeItem:NO status:&status];
                             if (status == errSecSuccess && ![[self dataInPayload:verified] isEqual:data]) status = errSecDecode;
                         }
+                        if (status == errSecSuccess) {
+                            // Registration reads the whole search list. Another
+                            // Keychain may shadow this scoped copy; never report
+                            // a successful save while that effective value differs.
+                            id effective = [self copyPayloadForQuery:clean includeItem:NO status:&status];
+                            if (status == errSecSuccess && ![[self dataInPayload:effective] isEqual:data]) status = errSecDecode;
+                        }
                     }
                 }
             }
