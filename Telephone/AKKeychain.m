@@ -277,29 +277,38 @@
     NSRecursiveLock *lock = [self credentialOperationLock];
     OSStatus status = errSecNotAvailable;
     BOOL compatibilitySaved = NO;
+    NSString *saveStage = @"operation-admission";
     if ([lock tryLock]) {
         @try {
             NSData *data = [password dataUsingEncoding:NSUTF8StringEncoding];
             NSDictionary *legacy = [self queryForService:service account:account];
             NSDictionary *clean = [self cleanQueryForService:service account:account];
             [[self migrationDeferrals] removeObjectForKey:@[NSStringFromClass(self), service, account]];
+            saveStage = @"compatibility-write";
             status = data ? (clean ? [self saveCompatibilityData:data identity:legacy]
                 : [self saveData:data identity:legacy additions:@{}]) : errSecParam;
             if (status == errSecSuccess && clean) {
                 compatibilitySaved = YES;
+                saveStage = @"compatibility-readback";
                 id payload = [self copyPayloadForQuery:legacy includeItem:YES status:&status];
                 if (status == errSecSuccess && ![[self dataInPayload:payload] isEqual:data]) status = errSecDecode;
                 if (status == errSecSuccess) {
                     id item = [payload isKindOfClass:NSDictionary.class] ? payload[(__bridge id)kSecValueRef] : nil;
+                    saveStage = @"access-context";
                     NSDictionary *context = [self migrationContextForItem:item status:&status];
                     if (context) {
                         NSDictionary *query = [self scopedCleanQuery:clean context:context];
                         // Add in the source Keychain; update with a precise search
                         // there, without supplying ACL attributes to SecItemUpdate.
+                        saveStage = @"canonical-write";
                         status = [self addSecurityItem:[self cleanItem:clean context:context data:data]];
-                        if (status == errSecDuplicateItem) status = [self updateSecurityItem:query attributes:
-                            @{(__bridge id)kSecValueData:data, (__bridge id)kSecAttrLabel:@"jps Telephone — SIP account"}];
+                        if (status == errSecDuplicateItem) {
+                            saveStage = @"canonical-update";
+                            status = [self updateSecurityItem:query attributes:
+                                @{(__bridge id)kSecValueData:data, (__bridge id)kSecAttrLabel:@"jps Telephone — SIP account"}];
+                        }
                         if (status == errSecSuccess) {
+                            saveStage = @"canonical-readback";
                             id verified = [self copyPayloadForQuery:query includeItem:NO status:&status];
                             if (status == errSecSuccess && ![[self dataInPayload:verified] isEqual:data]) status = errSecDecode;
                         }
@@ -307,6 +316,7 @@
                             // Registration reads the whole search list. Another
                             // Keychain may shadow this scoped copy; never report
                             // a successful save while that effective value differs.
+                            saveStage = @"effective-readback";
                             id effective = [self copyPayloadForQuery:clean includeItem:NO status:&status];
                             if (status == errSecSuccess && ![[self dataInPayload:effective] isEqual:data]) status = errSecDecode;
                         }
@@ -326,7 +336,22 @@
             : (status == errSecNotAvailable
                 ? NSLocalizedString(@"The Keychain is busy or unavailable. Try saving again after any password request finishes.", @"Busy Keychain save.")
                 : (CFBridgingRelease(SecCopyErrorMessageString(status, NULL)) ?: @"The password could not be saved in the Keychain."));
-        *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:status userInfo:@{NSLocalizedDescriptionKey:message}];
+        // Fixed operation names and an OSStatus are safe to share. Never put
+        // service/account names, Keychain paths or password values in errors.
+        NSDictionary *steps = @{
+            @"operation-admission": NSLocalizedString(@"Starting the password save", @"Keychain save diagnostic stage."),
+            @"compatibility-write": NSLocalizedString(@"Saving the compatibility entry", @"Keychain save diagnostic stage."),
+            @"compatibility-readback": NSLocalizedString(@"Verifying the compatibility entry", @"Keychain save diagnostic stage."),
+            @"access-context": NSLocalizedString(@"Preserving Keychain permissions", @"Keychain save diagnostic stage."),
+            @"canonical-write": NSLocalizedString(@"Saving the new Keychain entry", @"Keychain save diagnostic stage."),
+            @"canonical-update": NSLocalizedString(@"Updating the new Keychain entry", @"Keychain save diagnostic stage."),
+            @"canonical-readback": NSLocalizedString(@"Verifying the new Keychain entry", @"Keychain save diagnostic stage."),
+            @"effective-readback": NSLocalizedString(@"Verifying the entry selected for sign-in", @"Keychain save diagnostic stage.")
+        };
+        message = [NSString stringWithFormat:NSLocalizedString(@"%@\n\n%@ (Keychain error %d).", @"Credential save failure with safe diagnostic."),
+                   message, steps[saveStage], (int)status];
+        *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:status userInfo:@{
+            NSLocalizedDescriptionKey:message, @"AKCredentialSaveStage":saveStage}];
     }
     return status == errSecSuccess;
 }

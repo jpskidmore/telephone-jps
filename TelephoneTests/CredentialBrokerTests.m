@@ -511,6 +511,46 @@ static OSStatus K77EarlierCanonicalStatus;
     XCTAssertEqual(K77Operations.count,2u); XCTAssertNil(self.clean);
     XCTAssertEqualObjects(self.legacy[(__bridge id)kSecValueData],[self data:@"synthetic password"]);
 }
+- (void)assertSaveDiagnosticStage:(NSString *)stage status:(OSStatus)status {
+    NSError *error;
+    XCTAssertFalse([self save:@"private synthetic replacement" error:&error]);
+    XCTAssertEqual(error.code, status);
+    XCTAssertEqualObjects(error.userInfo[@"AKCredentialSaveStage"], stage);
+    NSString *statusText = [NSString stringWithFormat:@"Keychain error %d", (int)status];
+    XCTAssertTrue([error.localizedDescription containsString:statusText]);
+    for (NSString *privateValue in @[@"private synthetic replacement", K77Service, K77Account, K77Keychain]) {
+        XCTAssertFalse([error.description containsString:privateValue], @"Diagnostic exposed a credential or identity");
+    }
+}
+- (void)testSaveDiagnosticIdentifiesCompatibilityWriteFailure {
+    [self seedLegacy]; [self fault:K77UpdateFaults namespace:@"legacy" statuses:@[@(errSecAuthFailed)]];
+    [self assertSaveDiagnosticStage:@"compatibility-write" status:errSecAuthFailed];
+}
+- (void)testSaveDiagnosticIdentifiesCompatibilityReadbackFailure {
+    [self seedLegacy]; [self fault:K77ReadFaults namespace:@"legacy" statuses:@[@(errSecSuccess), @(errSecUserCanceled)]];
+    [self assertSaveDiagnosticStage:@"compatibility-readback" status:errSecUserCanceled];
+}
+- (void)testSaveDiagnosticIdentifiesPermissionContextFailure {
+    [self seedLegacy]; K77ContextStatus = errSecParam;
+    [self assertSaveDiagnosticStage:@"access-context" status:errSecParam];
+}
+- (void)testSaveDiagnosticIdentifiesNewEntryWriteFailure {
+    [self seedLegacy]; [self fault:K77AddFaults namespace:@"clean" statuses:@[@(errSecReadOnly)]];
+    [self assertSaveDiagnosticStage:@"canonical-write" status:errSecReadOnly];
+}
+- (void)testSaveDiagnosticIdentifiesNewEntryUpdateFailure {
+    [self seedLegacy]; [self seed:@"clean" service:K77Service account:K77Account password:@"previous value"];
+    [self fault:K77UpdateFaults namespace:@"clean" statuses:@[@(errSecAuthFailed)]];
+    [self assertSaveDiagnosticStage:@"canonical-update" status:errSecAuthFailed];
+}
+- (void)testSaveDiagnosticIdentifiesNewEntryReadbackFailure {
+    [self seedLegacy]; [self fault:K77ReadFaults namespace:@"clean" statuses:@[@(errSecDecode)]];
+    [self assertSaveDiagnosticStage:@"canonical-readback" status:errSecDecode];
+}
+- (void)testSaveDiagnosticIdentifiesEffectiveLookupFailure {
+    [self seedLegacy]; [self fault:K77ReadFaults namespace:@"clean" statuses:@[@(errSecSuccess), @(errSecNotAvailable)]];
+    [self assertSaveDiagnosticStage:@"effective-readback" status:errSecNotAvailable];
+}
 - (void)testPartialSaveIsReportedHonestlyAndCanBeRetried {
     [self seedLegacy]; [self fault:K77AddFaults namespace:@"clean" statuses:@[@(errSecReadOnly)]];
     NSError *error; XCTAssertFalse([self save:@"edited password" error:&error]); XCTAssertEqual(error.code,errSecReadOnly);
