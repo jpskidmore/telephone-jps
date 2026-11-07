@@ -49,7 +49,7 @@ final class CallHistoryViewEventTargetFactory {
         globalHistory = GlobalCallHistory(histories: histories)
     }
 
-    func make(account: Account, view: CallHistoryView, purchaseCheck: UseCase) async -> CallHistoryViewEventTarget {
+    func make(account: Account, view: CallHistoryView) async -> CallHistoryViewEventTarget {
         let history = await histories.history(withUUID: account.uuid)
         let factory = FallingBackMatchedContactFactory(
             matching: IndexedContactMatching(
@@ -68,7 +68,6 @@ final class CallHistoryViewEventTargetFactory {
                     )
                 )
             ),
-            purchaseCheck: purchaseCheck,
             recordRemoveAll: CallHistoryRecordRemoveAllUseCase(history: history),
             recordRemove: DefaultCallHistoryRecordRemoveUseCaseFactory(history: history),
             callMake: DefaultCallHistoryCallMakeUseCaseFactory(account: account, history: history, factory: factory)
@@ -106,7 +105,6 @@ final class CallHistoryViewEventTargetFactory {
                     output: CallHistoryViewPresenter(view: view, dateFormatter: dateFormatter, durationFormatter: durationFormatter)
                 )
             ),
-            purchaseCheck: GlobalHistoryPurchaseCheck(),
             recordRemoveAll: CallHistoryRecordRemoveAllUseCase(history: globalHistory),
             recordRemove: DefaultCallHistoryRecordRemoveUseCaseFactory(history: globalHistory),
             callMake: DefaultCallHistoryCallMakeUseCaseFactory(history: globalHistory, factory: factory, route: route)
@@ -115,9 +113,4 @@ final class CallHistoryViewEventTargetFactory {
         dayChangeEventTargets.add(WeakDayChangeEventTarget(origin: result))
         return result
     }
-}
-
-// The shared dialler is always fully enabled. Keep the legacy no-op check parameter until its callers are retired.
-private final class GlobalHistoryPurchaseCheck: UseCase {
-    func execute() {}
 }

@@ -39,10 +39,10 @@ final class AsyncCallHistoryViewEventTargetFactory: NSObject {
         self.origin = origin
     }
 
-    @objc func make(account: Account, view: CallHistoryView, purchaseCheck: UseCase, completion: @escaping (CallHistoryViewEventTarget) -> Void) {
+    @objc func make(account: Account, view: CallHistoryView, completion: @escaping (CallHistoryViewEventTarget) -> Void) {
         configureRecordingActions(for: view)
         Task {
-            completion(await origin.make(account: account, view: view, purchaseCheck: purchaseCheck))
+            completion(await origin.make(account: account, view: view))
         }
     }
 
