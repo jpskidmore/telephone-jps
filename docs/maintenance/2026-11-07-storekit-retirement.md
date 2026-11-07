@@ -24,6 +24,13 @@ All changes are source commits with `[skip ci]`, on main. No CI/cloud build was 
 
 **Evidence boundary:** static inspection and project-reference checks only. There has been **no fresh native macOS Xcode type-check, XCTest run, Release compilation, ad-hoc signing, packaged-file parity, installed Light/Dark inspection, live SIP/account/device test or VoiceOver acceptance** for this candidate. Historical 3.8.2 tests do not certify these changes.
 
+## 7 November continuation — reference scan and test hardening
+
+- [`2b852c1`](https://github.com/jpskidmore/telephone-jps/commit/2b852c13ac3b8c68e871b41d9e84a2489d359240): the portable source gate now searches the eight relevant source directories instead of all vendor/build/archive folders; it also checks production source lines for retired purchasing and receipt type references and verifies uniqueness of the project's 24-character object IDs. Both macOS validation and candidate-build scripts now run `plutil -lint Telephone.xcodeproj/project.pbxproj` and `xcodebuild -list -project Telephone.xcodeproj` before compiling.
+- A separate connector-based read-back fetched **all 386 currently tracked production .swift/.m/.h/.c/.mm/.cpp files** under `Telephone/`, `UseCases/` and `Domain/` in sequential 16-file batches. A token search for 14 retired payment/receipt type names, ignoring comment-only lines, returned **zero matches and zero fetch failures**. This is source-reference evidence only; an Apple SDK type-check may still detect other defects.
+- The exact `Scripts/verify-local-edition.py` content from GitHub (blob SHA `11779682c188d05764e4e1d8b199058895f2bd44`) was reproduced byte-for-byte in an isolated Linux scratch directory; `git hash-object` matched the GitHub blob SHA and `python -m py_compile` **PASSED**. This proves Python syntax only: the full source gate has **not been executed against a full local checkout**, nor has an Xcode project been parsed by macOS `plutil`.
+- [`73c3ef9`](https://github.com/jpskidmore/telephone-jps/commit/73c3ef987bd99018e2f23fd169c909d371a1ef41) expands `LocalBuildInformationViewControllerTests.swift` to four XCTest methods, including a bundled GPL licence and Credits lookup and connected three-button target/action checks. These XCTest cases are **not run**; passing status must be recorded only after native execution.
+
 ## Next required macOS execution gate
 
 On a clean Apple silicon Mac with supported macOS/Xcode, checkout the exact current main revision, confirm no personal data/defaults are used, then run:
