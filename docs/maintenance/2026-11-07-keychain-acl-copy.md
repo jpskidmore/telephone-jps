@@ -25,14 +25,20 @@ Apple's [ACL implementation](https://github.com/apple-oss-distributions/Security
 
 Local logs are in this chat's `work/keychain-save-2026-11-07`: `acl-final-build.log`, `acl-final-tests.log`, `acl-release-build.log`, `acl-fixture-final.log`, `acl-signature.log`; final result bundle `/private/tmp/jps-keychain-acl-final.xcresult`. The output verification JSON records their SHA-256 values.
 
-## Owner candidate, not a public release
+## Owner candidate, not a public release — delivery checkpoint
 
 **3.9.1/build 172**, source `80c5493c00432251bd99f13c17087ff0484140fa`, uses command-line version overrides and diagnostic Info.plist markers. Project metadata remains 3.9/170. Candidate `jps-Telephone-3.9.1-candidate-172-arm64.zip`: **3,053,033 bytes**, SHA-256 `1e5eb4f1c7529b45ade65198a0a87327673da116f58f844c76ede04ca650787b`. The candidate and verification JSON are in `outputs/keychain-candidate-172` in this chat. It is ad-hoc signed, unnotarised, without a public tag/release.
 
 The owner can quit the old app and try the same save once in build 172. Keep #77 open until the result is known; record only success or its fixed operation/error-code line. A successful owner save would be separate installed evidence, not full multi-account/upgrade/rollback acceptance. Do not delete credentials, reset Keychain, relax permissions, bypass verification or retry automatically. Published 3.9 and all prior tags/assets remain unchanged. #71 stays completed; #62 stays closed not planned. No cloud workflow was dispatched and no Cloudflare resource was altered.
 
-## Owner follow-up — build 172 visible state
+## Owner follow-up — build 172 visible state (before restart confirmation)
 
 After trying the candidate, the owner reported **“seems better — take a look”**. The agent confirmed installed bundle metadata **3.9.1/build 172**, source `80c5493c00432251bd99f13c17087ff0484140fa`. Read-only inspection of Accounts showed the selected account enabled, its information fields disabled with the normal disable-to-edit instruction, and **no password-save error alert**. This is consistent with an accepted save and improves on the observed build 171 rejection; it is not independent observation of the save operation or password readback. No account identifiers, credential values or other private field contents are reproduced here.
 
 The agent navigated to Accounts only; it did not press Save, toggle the account, reveal a password, query the Keychain, restart the app or initiate a call. Persistence after relaunch, registration, additional accounts and rollback remain unverified. Keep #77 open for explicit save/persistence confirmation; no public release or further installation is implied.
+
+## Owner acceptance — save survives restart
+
+The owner subsequently confirmed **“it survives a restart”**. Together with the earlier owner improvement report and directly observed enabled/no-error Accounts state in installed **3.9.1/build 172**, this is acceptance of the reported save/restart failure on the owner's installation. Close #77 as completed on that scoped owner confirmation. The earlier keep-open requests above describe earlier checkpoints and are superseded by this acceptance.
+
+The agent did not restart the app or inspect its persisted password. No independent Keychain readback, call/registration, additional-account, denial/cancellation or rollback validation is claimed. Historical unchecked acceptance rows remain unverified. The precise cause of build 171's -25293 remains an inference: the clean unchanged-copy control succeeded. No source or app-package bytes changed after validation; this acceptance update is documentation only, with no fresh test run. Published 3.9/build 170 and all tags/assets remain unchanged; build 172 is still a local candidate, not a public 3.9.1 release. No agent installation or live-data change, cloud dispatch or Cloudflare operation is implied.

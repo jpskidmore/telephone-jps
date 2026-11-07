@@ -1,6 +1,6 @@
 Version **3.9/build 170** is published as [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9). Retires obsolete StoreKit purchasing and receipts while retaining all local features, full history, 30-call capacity and native build/licence information. **929 fresh native tests passed**, and all seven published downloads match their verified local hashes. No local installation was performed. Read [3.9 publication proof](docs/releases/3.9-verification.json).
 
-**Known issue under investigation:** [#77 — account save can fail after Keychain permission is allowed](https://github.com/jpskidmore/telephone-jps/issues/77). Creation rejection -25293 was directly observed in diagnostic build 171. A [locally verified ACL-copy candidate](docs/maintenance/2026-11-07-keychain-acl-copy.md) is ready as build 172; the installed failure is not yet confirmed resolved.
+**Installed save failure resolved:** the owner confirms that the [#77 correction in local 3.9.1/build 172](docs/maintenance/2026-11-07-keychain-acl-copy.md) survives a restart. #77 is closed on that confirmation; call/registration, multi-account and rollback checks remain unverified. This correction is not yet in the public 3.9 release.
 
 For current status, the ordered roadmap and maintenance instructions, start with
 [Current maintenance](docs/MAINTENANCE.md). Older release and audit records are
