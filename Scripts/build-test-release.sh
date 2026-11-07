@@ -3,6 +3,7 @@
 set -euo pipefail
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$project_root"
+python3 Scripts/verify-local-edition.py
 python3 Scripts/verify-repair-gate.py
 test "$(uname -s)" = Darwin
 test "$(uname -m)" = arm64

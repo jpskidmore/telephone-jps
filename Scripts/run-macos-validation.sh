@@ -3,6 +3,7 @@
 set -eu
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$project_root"
+python3 Scripts/verify-local-edition.py
 python3 Scripts/verify-repair-gate.py
 if [ "$(uname -s)" != Darwin ] || [ "$(uname -m)" != arm64 ]; then
     echo "Native validation requires an Apple silicon Mac with Xcode and macOS 15.6+." >&2
