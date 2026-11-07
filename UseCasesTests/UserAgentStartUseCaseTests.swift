@@ -22,25 +22,14 @@ import XCTest
 
 @MainActor
 final class UserAgentStartUseCaseTests: XCTestCase {
-    func testSetsMaxCallsToThirtyAndStartsUserAgentWhenReceiptIsValid() {
+    func testLocalEditionStartsWithThirtyCallCapacityWithoutPurchaseCheck() {
         let didCallStart = expectation(description: "Calls start on agent")
         let agent = UserAgentSpy(startCallback: didCallStart.fulfill)
-        let sut = UserAgentStartUseCase(agent: agent, factory: PurchaseCheckUseCaseFactory(receipt: ValidReceipt()))
+        let sut = UserAgentStartUseCase(agent: agent)
 
         sut.execute()
 
         wait(for: [didCallStart], timeout: 1)
         XCTAssertEqual(agent.maxCalls, 30)
-    }
-
-    func testSetsMaxCallsToThreeAndStartsUserAgentWhenReceiptIsInvalid() {
-        let didCallStart = expectation(description: "Calls start on agent")
-        let agent = UserAgentSpy(startCallback: didCallStart.fulfill)
-        let sut = UserAgentStartUseCase(agent: agent, factory: PurchaseCheckUseCaseFactory(receipt: InvalidReceipt()))
-
-        sut.execute()
-
-        wait(for: [didCallStart], timeout: 1)
-        XCTAssertEqual(agent.maxCalls, 3)
     }
 }

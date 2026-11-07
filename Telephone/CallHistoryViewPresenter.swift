@@ -44,7 +44,7 @@ nonisolated extension CallHistoryViewPresenter: ContactCallHistoryRecordGetAllUs
 
 private extension CallHistoryViewPresenter {
     func present(records: [ContactCallHistoryRecord], request: CallHistoryReloadRequest?) {
-        // Check at the actual MainActor presentation hop, after Contacts/receipt awaits.
+        // Check at the actual MainActor presentation hop, after Contacts actor awaits.
         guard request?.isCurrent != false else { return }
         view.show(records.map(makeRecord))
     }

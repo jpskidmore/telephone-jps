@@ -69,11 +69,8 @@ final class CallHistoryViewEventTargetFactory {
                 history: history,
                 output: ContactCallHistoryRecordGetAllUseCase(
                     factory: factory,
-                    output: ReceiptValidatingContactCallHistoryRecordGetAllUseCaseOutput(
-                        origin: CallHistoryViewPresenter(
-                            view: view, dateFormatter: dateFormatter, durationFormatter: durationFormatter
-                        ),
-                        receipt: receipt
+                    output: CallHistoryViewPresenter(
+                        view: view, dateFormatter: dateFormatter, durationFormatter: durationFormatter
                     )
                 )
             ),
@@ -113,10 +110,7 @@ final class CallHistoryViewEventTargetFactory {
                 history: globalHistory,
                 output: ContactCallHistoryRecordGetAllUseCase(
                     factory: factory,
-                    output: ReceiptValidatingContactCallHistoryRecordGetAllUseCaseOutput(
-                        origin: CallHistoryViewPresenter(view: view, dateFormatter: dateFormatter, durationFormatter: durationFormatter),
-                        receipt: receipt
-                    )
+                    output: CallHistoryViewPresenter(view: view, dateFormatter: dateFormatter, durationFormatter: durationFormatter)
                 )
             ),
             purchaseCheck: GlobalHistoryPurchaseCheck(),

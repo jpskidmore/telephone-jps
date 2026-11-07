@@ -123,7 +123,7 @@ final class CompositionRoot: NSObject {
             output: storeWindowPresenter
         )
 
-        userAgentStart = UserAgentStartUseCase(agent: userAgent, factory: PurchaseCheckUseCaseFactory(receipt: receipt))
+        userAgentStart = UserAgentStartUseCase(agent: userAgent)
 
         let storeEventTargets = StoreEventTargets(
             targets: [storeViewEventTarget, ObjCStoreEventTargetAdapter(target: storeEventTarget)]
