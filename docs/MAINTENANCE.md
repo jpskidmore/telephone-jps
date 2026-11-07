@@ -33,8 +33,9 @@ SHA-256. Ten prior releases, 65 assets and 16 existing tag refs were preserved.
 Read [publication and package proof](releases/3.8.2-verification.json).
 
 No local installation or production-profile/live-Keychain test was performed.
-Real labels, ACL enforcement, prompts, multiple-account upgrade/registration and
-rollback remain unverified in open #77. #62 stays closed by owner decision.
+The owner subsequently reported the fix worked and #77 was closed; detailed
+Keychain label, ACL, prompt, multi-account upgrade/registration and rollback
+scenarios remain unverified. #62 stays closed by owner decision.
 All release builds were local; no cloud build/release workflow was dispatched.
 GitHub's existing automatic CodeQL scan ran despite `[skip ci]` and completed
 before cancellation was available; it was not used as release validation.
