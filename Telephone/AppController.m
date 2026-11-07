@@ -47,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
 // Presentation guidance only. Native driver work is never timed out or cancelled.
 static const NSTimeInterval AKAudioRecoverySlowInterval = 5.0;
 
-@interface AppController () <AKSIPUserAgentDelegate, NSUserNotificationCenterDelegate, NSMenuItemValidation, NameServersChangeEventTarget, PreferencesControllerDelegate, ObjCStoreEventTarget>
+@interface AppController () <AKSIPUserAgentDelegate, NSUserNotificationCenterDelegate, NSMenuItemValidation, NameServersChangeEventTarget, PreferencesControllerDelegate>
 
 @property(nonatomic, readonly) AKSIPUserAgent *userAgent;
 @property(nonatomic, readonly) AccountControllers *accountControllers;
@@ -157,7 +157,7 @@ NS_ASSUME_NONNULL_END
 
     _compositionRoot = [[CompositionRoot alloc] initWithPreferencesControllerDelegate:self
                                                          nameServersChangeEventTarget:self
-                                                                     storeEventTarget:self];
+                                                         ];
     
     _userAgent = _compositionRoot.userAgent;
     [[self userAgent] setDelegate:self];
@@ -595,12 +595,6 @@ NS_ASSUME_NONNULL_END
     [[NSApp dockTile] setBadgeLabel:badgeString];
 }
 
-- (void)remindAboutPurchasingAfterDelay {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self.compositionRoot.purchaseReminder execute];
-    });
-}
-
 - (void)showAccountPreferencesIfNeeded {
     if (self.accountControllers.enabled.count == 0)  {
         [self.preferencesController showWindowCentered];
@@ -934,7 +928,6 @@ NS_ASSUME_NONNULL_END
     [self.accountsMenuItems update];
     [self.sharedDialler refreshAccounts];
     [self setShouldPresentUserAgentLaunchError:YES];
-    [self remindAboutPurchasingAfterDelay];
     [self bootstrapDefaultRouteIfNeeded];
     [self showSharedDialler];
     [self.accountControllers registerAllAccounts];
@@ -1344,10 +1337,5 @@ NS_ASSUME_NONNULL_END
     }
 }
 
-#pragma mark - ObjCStoreEventTarget
-
-- (void)didPurchase {
-    [self restartUserAgentAfterDelayOrMarkForRestart];
-}
 
 @end

@@ -29,10 +29,3 @@ final class StoreWindowPresenter: NSObject {
     }
 }
 
-nonisolated extension StoreWindowPresenter: PurchaseReminderUseCaseOutput {
-    func remindAboutPurchasing() {
-        Task {
-            await present()
-        }
-    }
-}

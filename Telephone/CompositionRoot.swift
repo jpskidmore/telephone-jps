@@ -18,7 +18,6 @@
 
 import Contacts
 import Foundation
-import StoreKit
 import UseCases
 import Domain
 
@@ -28,7 +27,6 @@ final class CompositionRoot: NSObject {
     @objc let preferencesController: PreferencesController
     @objc let ringtonePlayback: RingtonePlaybackUseCase
     @objc let storeWindowPresenter: StoreWindowPresenter
-    @objc let purchaseReminder: PurchaseReminderUseCase
     @objc let userAgentStart: UseCase
     @objc let settingsMigration: ProgressiveSettingsMigration
     @objc let orphanLogFileRemoval: OrphanLogFileRemoval
@@ -43,7 +41,6 @@ final class CompositionRoot: NSObject {
     @objc let nameServers: NameServers?
     private let defaults: UserDefaults
 
-    private let storeEventSource: SKPaymentQueueStoreEventSource
     private let userAgentEventSource: AKSIPUserAgentEventSource
     private let devicesChangeEventSource: CoreAudioSystemAudioDevicesChangeEventSource
     private let soundIOChangeEventSource: CoreAudioDefaultSystemSoundIOChangeEventSource
@@ -58,7 +55,7 @@ final class CompositionRoot: NSObject {
         if !suspended { contactsRecoveryController.refresh() }
     }
 
-    @objc init(preferencesControllerDelegate: PreferencesControllerDelegate, nameServersChangeEventTarget: NameServersChangeEventTarget, storeEventTarget: ObjCStoreEventTarget) {
+    @objc init(preferencesControllerDelegate: PreferencesControllerDelegate, nameServersChangeEventTarget: NameServersChangeEventTarget) {
         userAgent = AKSIPUserAgent.shared()
         defaults = UserDefaults.standard
 
@@ -87,52 +84,23 @@ final class CompositionRoot: NSObject {
             delegate: userAgent
         )
 
-        let productsEventTargets = ProductsEventTargets()
-
+        // Local edition: present information only. Do not create StoreKit
+        // products, payment queues, receipt refreshes or purchase observers.
         let storeViewController = StoreViewController(
             target: NullStoreViewEventTarget(), workspace: NSWorkspace.shared
         )
-        let products = SKProductsRequestToProductsAdapter(expected: ExpectedProducts(), target: productsEventTargets)
-        let store = SKPaymentQueueToStoreAdapter(queue: SKPaymentQueue.default(), products: products)
-        #if LOCAL_PRO_BUILD
+        storeViewController.loadViewIfNeeded()
+        storeViewController.showPurchased(until: .distantFuture)
+        storeViewController.showSubscriptionManagement()
+        storeWindowPresenter = StoreWindowPresenter(
+            controller: StoreWindowController(contentViewController: storeViewController)
+        )
+
+        // This no-op legacy bridge is retained only for the not-yet-removed
+        // account-history purchase-check factory; no payment path uses it.
         let receipt: Receipt = LocalProReceipt()
-        #else
-        let receipt: Receipt = BundleReceipt(bundle: Bundle.main, gateway: ReceiptXPCGateway())
-        #endif
-        let storeViewEventTarget = DefaultStoreViewEventTarget(
-            factory: DefaultStoreUseCaseFactory(
-                products: products,
-                store: store,
-                receipt: receipt,
-                targets: productsEventTargets
-            ),
-            purchaseRestoration: PurchaseRestorationUseCase(store: store),
-            receiptRefresh: ReceiptRefreshUseCase(),
-            presenter: DefaultStoreViewPresenter(output: storeViewController)
-        )
-        storeViewController.updateTarget(storeViewEventTarget)
-
-        storeWindowPresenter = StoreWindowPresenter(controller: StoreWindowController(contentViewController: storeViewController))
-
-        purchaseReminder = PurchaseReminderUseCase(
-            accounts: SettingsAccounts(settings: defaults),
-            receipt: receipt,
-            settings: UserDefaultsPurchaseReminderSettings(defaults: defaults),
-            now: Date(),
-            version: Bundle.main.infoDictionary!["CFBundleShortVersionString"] as! String,
-            output: storeWindowPresenter
-        )
-
         userAgentStart = UserAgentStartUseCase(agent: userAgent)
-
-        let storeEventTargets = StoreEventTargets(
-            targets: [storeViewEventTarget, ObjCStoreEventTargetAdapter(target: storeEventTarget)]
-        )
-
-        storeEventSource = SKPaymentQueueStoreEventSource(
-            queue: SKPaymentQueue.default(),
-            target: ReceiptValidatingStoreEventTarget(origin: storeEventTargets, receipt: receipt)
-        )
+        let storeEventTargets = StoreEventTargets(targets: [])
 
         let soundIOSelection = QueuedSoundIOSelectionUseCase(
             devicesFactory: systemAudioDevicesFactory,
