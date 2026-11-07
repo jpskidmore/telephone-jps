@@ -36,9 +36,49 @@ for required in (
 
 # This also catches dangling source-phase file references after project edits.
 source_names = set(re.findall(r"/\* ([^*\n]+?\.(?:swift|m|mm|c|cpp)) in Sources \*/", project))
-repository_names = {p.name for p in root.rglob("*") if p.is_file()}
+# Scan only the eight project source trees, not vendor archives, build outputs
+# or a possibly enormous .git directory. These trees contain all project Sources.
+source_roots = (
+    "Telephone", "TelephoneTests", "UseCases", "UseCasesTests",
+    "UseCasesTestDoubles", "Domain", "DomainTests", "DomainTestDoubles",
+)
+source_paths = [
+    p for folder in source_roots
+    for p in (root / folder).rglob("*")
+    if p.is_file()
+]
+repository_names = {p.name for p in source_paths}
 missing_sources = sorted(source_names - repository_names)
 require(not missing_sources, "missing source files: " + ", ".join(missing_sources))
+
+# Inspect surviving production code, not just its application composition root.
+# Historical upstream comments are not active SDK dependencies.
+retired_production_symbol = re.compile(
+    r"\b(?:SKPaymentQueue|SKProductsRequest|ReceiptXPCGateway|"
+    r"PurchaseCheckUseCase|PurchaseCheckUseCaseFactory|"
+    r"ReceiptValidatingContactCallHistoryRecordGetAllUseCaseOutput|"
+    r"DefaultStoreViewEventTarget|StoreViewController|PresentationProduct|"
+    r"LocalProReceipt|BundleReceipt|StoreEventTargets|ObjCStoreEventTarget|"
+    r"UserDefaultsPurchaseReminderSettings)\b"
+)
+production_paths = (
+    p for p in source_paths
+    if p.parts[len(root.parts)] in {"Telephone", "UseCases", "Domain"}
+    and p.suffix in {".swift", ".m", ".mm", ".h", ".c", ".cpp"}
+)
+for path in production_paths:
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if line.lstrip().startswith(("//", "/*", "*")):
+            continue
+        match = retired_production_symbol.search(line)
+        require(match is None,
+                f"retired production symbol {match.group()} in "
+                f"{path.relative_to(root)}:{lineno}" if match else "")
+
+# These 24-character keys are Xcode object identifiers, not SDK/build metadata.
+object_ids = re.findall(r"^\t\t([0-9A-F]{24}) /\*[^\n]*\*/ = \{", project, re.M)
+require(len(object_ids) == len(set(object_ids)), "duplicate Xcode project object IDs")
+require(len(object_ids) >= 100, "Xcode project source inventory is unexpectedly small")
 
 composition = (root / "Telephone/CompositionRoot.swift").read_text(encoding="utf-8")
 startup = (root / "UseCases/UserAgentStartUseCase.swift").read_text(encoding="utf-8")

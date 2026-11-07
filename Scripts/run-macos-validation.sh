@@ -9,7 +9,7 @@ if [ "$(uname -s)" != Darwin ] || [ "$(uname -m)" != arm64 ]; then
     echo "Native validation requires an Apple silicon Mac with Xcode and macOS 15.6+." >&2
     exit 69
 fi
-for tool in xcodebuild xcrun python3 rg strings; do
+for tool in xcodebuild xcrun python3 rg strings plutil; do
     command -v "$tool" >/dev/null 2>&1 || {
         echo "Missing prerequisite: $tool" >&2
         exit 69
@@ -22,6 +22,8 @@ if version < (15, 6):
     raise SystemExit("Native validation requires macOS 15.6 or later")
 PYTHON
 xcrun --sdk macosx --show-sdk-path >/dev/null
+plutil -lint Telephone.xcodeproj/project.pbxproj >/dev/null
+xcodebuild -list -project Telephone.xcodeproj >/dev/null
 xcodebuild -version
 ./Scripts/verify-vendor-security.sh
 ./Scripts/run-recording-tests.sh

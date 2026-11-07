@@ -7,6 +7,8 @@ python3 Scripts/verify-local-edition.py
 python3 Scripts/verify-repair-gate.py
 test "$(uname -s)" = Darwin
 test "$(uname -m)" = arm64
+plutil -lint Telephone.xcodeproj/project.pbxproj >/dev/null
+xcodebuild -list -project Telephone.xcodeproj >/dev/null
 xcodebuild -version
 xcrun --sdk macosx --show-sdk-version
 ./Scripts/verify-vendor-security.sh
