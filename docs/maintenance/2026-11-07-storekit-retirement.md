@@ -1,3 +1,5 @@
+> **Later native evidence — 7 November 2026:** corrected source now passes 929 native cases and unsigned arm64 Release. See [native repairs, results and limits](2026-11-07-storekit-native-validation.md). The source-only statements below describe the earlier connector audit; #71 remains open.
+
 # Issue #71 — Purchase/receipt retirement, source checkpoint (7 November 2026)
 
 This record is for the owner-selected **Option B**: this GPL fork has **no in-app purchase, subscription or receipt gates**. If a commercial distribution is considered later, the previously discussed single up-front sale is not authorised by this change. The original release baseline is immutable [3.8.2/build 169](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.2).

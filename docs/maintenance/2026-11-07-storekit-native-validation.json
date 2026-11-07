@@ -1,0 +1,139 @@
+{
+  "date": "2026-11-07",
+  "sourceCommit": "a82611fa8e5f33bcfe97dacfcc23f56e31fb9815",
+  "sourceTree": "40f4138812765df9116425efb0a4dcce20f246b9",
+  "baselineCommit": "a35aa1b877f72fba1b55ca6852d339880f6a42b7",
+  "environment": {
+    "architecture": "arm64",
+    "macOS": "27.2",
+    "macOSBuild": "26B123",
+    "xcode": "27.2",
+    "xcodeBuild": "27B52",
+    "swift": "6.4.2",
+    "macOSSDK": "27.2"
+  },
+  "command": "./Scripts/run-macos-validation.sh",
+  "exitCode": 0,
+  "artifactsDirectory": "/private/tmp/jps-telephone-validation.SlOFo3",
+  "suites": {
+    "Domain": {
+      "result": "Passed",
+      "totalTestCount": 28,
+      "passedTests": 28,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "UseCasesTests": {
+      "result": "Passed",
+      "totalTestCount": 315,
+      "passedTests": 315,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "TelephoneTests": {
+      "result": "Passed",
+      "totalTestCount": 586,
+      "passedTests": 586,
+      "failedTests": 0,
+      "skippedTests": 0
+    }
+  },
+  "caseBreakdown": {
+    "DomainXCTest": 28,
+    "UseCasesXCTest": 192,
+    "UseCasesSwiftTesting": 123,
+    "TelephoneXCTest": 538,
+    "TelephoneSwiftTesting": 48
+  },
+  "totalSuiteCases": 929,
+  "separateChecks": {
+    "recordingOwnershipAssertions": 105,
+    "audioSourceWiring": 11,
+    "recordingLifecycleModelAndWiring": 6,
+    "priorDefectiveInputsRejectedBySourceGate": 6,
+    "dependencySourceFiles": 7,
+    "staticArchives": 24,
+    "linkedLibraries": 21,
+    "sourceFilenames": 503,
+    "baselineRepairEntries": 50
+  },
+  "releaseInspection": {
+    "application": "/private/tmp/jps-telephone-validation.SlOFo3/Products/Release/jps Telephone.app",
+    "arch": "arm64",
+    "version": "3.8.2",
+    "build": "169",
+    "binarySha256": "8ee55487faf427bdd048eaf97e361c0a10c411d03bdd91995600685968f7742f",
+    "resources": {
+      "LICENSE": {
+        "bytes": 35142,
+        "sha256": "d62f065830aa3739cc031156b9690805c7b2e811b4a178c8b4acd8725d561c94",
+        "matchesSource": true
+      },
+      "Credits.rtf": {
+        "bytes": 66141,
+        "sha256": "f919862df34b867b1b5c2a9948ed2d1741702c0cfb125427fd3770e7b41f1196",
+        "matchesSource": true
+      }
+    },
+    "storeKitLinkAbsent": true,
+    "xpcBundlesAbsent": true,
+    "dynamicLibraries": "/private/tmp/jps-telephone-validation.SlOFo3/Products/Release/jps Telephone.app/Contents/MacOS/jps Telephone:\n\t/System/Library/Frameworks/AudioUnit.framework/Versions/A/AudioUnit (compatibility version 1.0.0, current version 1.0.0)\n\t/System/Library/Frameworks/AudioToolbox.framework/Versions/A/AudioToolbox (compatibility version 1.0.0, current version 1000.0.0)\n\t/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation (compatibility version 300.0.0, current version 5027.1.8)\n\t/usr/lib/libobjc.A.dylib (compatibility version 1.0.0, current version 228.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.40.3)\n\t/System/Library/Frameworks/AddressBook.framework/Versions/A/AddressBook (compatibility version 1.0.0, current version 2768.200.91)\n\t/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit (compatibility version 45.0.0, current version 2775.20.133)\n\t/System/Library/Frameworks/Contacts.framework/Versions/A/Contacts (compatibility version 0.0.0, current version 3846.200.91)\n\t/System/Library/Frameworks/CoreAudio.framework/Versions/A/CoreAudio (compatibility version 1.0.0, current version 1.0.0)\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5027.1.8)\n\t/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics (compatibility version 64.0.0, current version 2050.1.6)\n\t/System/Library/Frameworks/CryptoKit.framework/Versions/A/CryptoKit (compatibility version 1.0.0, current version 1.0.0)\n\t/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit (compatibility version 1.0.0, current version 275.0.0)\n\t/System/Library/Frameworks/ScriptingBridge.framework/Versions/A/ScriptingBridge (compatibility version 1.0.0, current version 1.0.0)\n\t/System/Library/Frameworks/Security.framework/Versions/A/Security (compatibility version 1.0.0, current version 62460.40.78)\n\t/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration (compatibility version 1.0.0, current version 1453.40.1)\n\t/usr/lib/swift/libswiftCore.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t/usr/lib/swift/libswiftCoreAudio.dylib (compatibility version 1.0.0, current version 482.208.0)\n\t/usr/lib/swift/libswiftCoreFoundation.dylib (compatibility version 1.0.0, current version 120.100.0)\n\t/usr/lib/swift/libswiftCoreImage.dylib (compatibility version 1.0.0, current version 3.0.0, weak)\n\t/usr/lib/swift/libswiftDarwin.dylib (compatibility version 1.0.0, current version 428.40.1)\n\t/usr/lib/swift/libswiftDispatch.dylib (compatibility version 1.0.0, current version 1605.40.4)\n\t/usr/lib/swift/libswiftIOKit.dylib (compatibility version 1.0.0, current version 1.0.0, weak)\n\t/usr/lib/swift/libswiftMetal.dylib (compatibility version 1.0.0, current version 383.1.0, weak)\n\t/usr/lib/swift/libswiftOSLog.dylib (compatibility version 1.0.0, current version 10.0.0, weak)\n\t/usr/lib/swift/libswiftObjectiveC.dylib (compatibility version 1.0.0, current version 973.1.0)\n\t/usr/lib/swift/libswiftQuartzCore.dylib (compatibility version 1.0.0, current version 5.0.0, weak)\n\t/usr/lib/swift/libswiftSpatial.dylib (compatibility version 1.0.0, current version 1.0.0, weak)\n\t/usr/lib/swift/libswiftUniformTypeIdentifiers.dylib (compatibility version 1.0.0, current version 917.1.12, weak)\n\t/usr/lib/swift/libswiftXPC.dylib (compatibility version 1.0.0, current version 167.0.2, weak)\n\t/usr/lib/swift/libswift_Builtin_float.dylib (compatibility version 0.0.0, current version 0.0.0, weak)\n\t/usr/lib/swift/libswift_Concurrency.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t/usr/lib/swift/libswiftos.dylib (compatibility version 1.0.0, current version 1090.40.3, weak)\n\t/usr/lib/swift/libswiftsimd.dylib (compatibility version 1.0.0, current version 25.0.0, weak)\n\t@rpath/Domain.framework/Versions/A/Domain (compatibility version 1.0.0, current version 1.0.0)\n\t@rpath/UseCases.framework/Versions/A/UseCases (compatibility version 1.0.0, current version 1.0.0)\n\t/usr/lib/swift/libswift_errno.dylib (compatibility version 1.0.0, current version 428.40.1)\n"
+  },
+  "isolatedHost": {
+    "bundleIdentifier": "uk.jpsit.telephone.tests.a5bb10d4fbc6499db2ed45a9f13032a3",
+    "mainNibAbsent": true,
+    "productionBundleIdentifier": "uk.jpsit.telephone",
+    "productionMainNib": "MainMenu",
+    "onlyDisposableHostAdHocSigned": true
+  },
+  "manualComponentChecks": {
+    "lightAndDark": "Observed native source-component preview using a disposable app identity and synthetic metadata",
+    "licenceAndCredits": "Clicked both original view actions in the disposable preview; TextEdit opened exact copies of built Debug bundle resources",
+    "nativeWindowNib": "testInformationWindowLoadsItsNativeNibWithTheInformationController passed in isolated TelephoneTests",
+    "installedApplication": false,
+    "productionProfile": false,
+    "realSIPKeychainContactsAudioOrRecordings": false
+  },
+  "issue71State": "OPEN",
+  "releasePublished": false,
+  "cloudWorkflowDispatched": false,
+  "cloudflareChanged": false,
+  "logs": {
+    "information-render.log": {
+      "bytes": 111,
+      "sha256": "247e9e7011553d8c33199a5c15d643e0f2f9f321e7e2d1d204cf7e3897a90cea"
+    },
+    "native-validation-1.log": {
+      "bytes": 428733,
+      "sha256": "77081d225206786e65653629bea3d2ca6eb2c0514e4568e2fba768f4601c3ae3"
+    },
+    "native-validation-2.log": {
+      "bytes": 777705,
+      "sha256": "ba28b3fe8a672a9f9af9f475dbe061c247ea489fdcceae1fe6892ca476be8b25"
+    },
+    "native-validation-complete.log": {
+      "bytes": 6776034,
+      "sha256": "7dcf0bcedabab2cf2498d7fa810b2a7d0195111b42e8a6aea2e2adcd7a87f7ec"
+    },
+    "native-validation-final.log": {
+      "bytes": 4332827,
+      "sha256": "bbaeb161e93a95a4483657491b7236f805b03518f1aeace1e86313d27078cf78"
+    },
+    "source-gate-regressions.log": {
+      "bytes": 1418,
+      "sha256": "d6d0ed7a0ab0ddab75a40f2274f134efa895d21c25aa7ce9f96d667b8a2c62a1"
+    },
+    "telephone-build-3.log": {
+      "bytes": 333116,
+      "sha256": "665c3ef5b9472cec2c262d90eeed612f12734f50aa0e312b4d1fd9d0d9d4ccb1"
+    },
+    "telephone-build-4.log": {
+      "bytes": 1349949,
+      "sha256": "974010458a77d95889a461ccd9af6ac3cd07fc5056aa35190832291b020e236c"
+    },
+    "telephone-build-5.log": {
+      "bytes": 2274182,
+      "sha256": "1636e02756a7a6a698252e0031a993109ffb300c5edde654a8a6d1f85a5105e1"
+    }
+  }
+}
