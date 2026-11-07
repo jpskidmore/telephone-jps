@@ -2,6 +2,7 @@
 #import "AKKeychain.h"
 
 @interface AKKeychain (Credential73SecuritySeam)
++ (OSStatus)prepareAccessForNewItem:(SecAccessRef)access;
 + (OSStatus)copySecurityItemMatchingQuery:(NSDictionary *)query result:(CFTypeRef *)result;
 @end
 static NSDictionary *Credential73LastQuery;
@@ -510,6 +511,69 @@ static OSStatus K77EarlierCanonicalStatus;
     NSError *error; XCTAssertFalse([self save:@"edited password" error:&error]); XCTAssertEqual(error.code,errSecAuthFailed);
     XCTAssertEqual(K77Operations.count,2u); XCTAssertNil(self.clean);
     XCTAssertEqualObjects(self.legacy[(__bridge id)kSecValueData],[self data:@"synthetic password"]);
+}
+// Real Security-framework ACL objects only. No keychain/file/credential API.
+- (NSArray *)aclEntries:(SecAccessRef)access {
+    CFArrayRef entries = NULL;
+    XCTAssertEqual(SecAccessCopyACLList(access, &entries), errSecSuccess);
+    return CFBridgingRelease(entries);
+}
+- (id)addACL:(SecAccessRef)access authorizations:(NSArray *)authorizations {
+    SecACLRef acl = NULL;
+    OSStatus status = SecACLCreateWithSimpleContents(access, NULL, CFSTR("Synthetic ACL fixture"),
+        kSecKeychainPromptRequirePassphase, &acl);
+    XCTAssertEqual(status, errSecSuccess);
+    if (status != errSecSuccess) return nil;
+    XCTAssertEqual(SecACLUpdateAuthorizations(acl, (__bridge CFArrayRef)authorizations), errSecSuccess);
+    return CFBridgingRelease(acl);
+}
+- (NSDictionary *)aclContents:(id)entry {
+    CFArrayRef applications = NULL; CFStringRef description = NULL; SecKeychainPromptSelector selector;
+    XCTAssertEqual(SecACLCopyContents((__bridge SecACLRef)entry, &applications, &description, &selector), errSecSuccess);
+    NSArray *authorizations = CFBridgingRelease(SecACLCopyAuthorizations((__bridge SecACLRef)entry));
+    return @{@"applications":CFBridgingRelease(applications) ?: NSNull.null,
+        @"description":CFBridgingRelease(description) ?: NSNull.null,
+        @"selector":@(selector), @"authorizations":authorizations ?: @[]};
+}
+- (void)testAccessCopyDropsOnlyPerItemManagedBindingsAndRetainsUserPermissions {
+    SecAccessRef access = NULL;
+    XCTAssertEqual(SecAccessCreate(CFSTR("Synthetic access fixture"), NULL, &access), errSecSuccess);
+    NSArray *ordinary = [self aclEntries:access];
+    NSMutableArray *contents = [NSMutableArray array];
+    for (id acl in ordinary) [contents addObject:[self aclContents:acl]];
+    id integrity = [self addACL:access authorizations:@[(__bridge id)kSecACLAuthorizationIntegrity]];
+    id partition = [self addACL:access authorizations:@[(__bridge id)kSecACLAuthorizationPartitionID]];
+    XCTAssertNotNil(integrity); XCTAssertNotNil(partition);
+    XCTAssertEqual([AKKeychain prepareAccessForNewItem:access], errSecSuccess);
+    // Removed entries remain as tombstones in a SecAccess snapshot. Neither
+    // must advertise a managed tag that destination integrity setup can select.
+    for (id managed in @[integrity, partition]) {
+        NSArray *rights = CFBridgingRelease(SecACLCopyAuthorizations((__bridge SecACLRef)managed));
+        XCTAssertEqualObjects(rights, @[]);
+    }
+    XCTAssertEqual([AKKeychain prepareAccessForNewItem:access], errSecSuccess);
+    for (NSUInteger index = 0; index < ordinary.count; index++)
+        XCTAssertEqualObjects([self aclContents:ordinary[index]], contents[index]);
+    CFRelease(access);
+}
+- (void)testAccessCopyLeavesAnOrdinaryAccessPolicyUnchanged {
+    SecAccessRef access = NULL;
+    XCTAssertEqual(SecAccessCreate(CFSTR("Synthetic access fixture"), NULL, &access), errSecSuccess);
+    NSArray *before = [self aclEntries:access];
+    XCTAssertEqual([AKKeychain prepareAccessForNewItem:access], errSecSuccess);
+    XCTAssertEqualObjects([self aclEntries:access], before);
+    CFRelease(access);
+}
+- (void)testAccessCopyRejectsMixedManagedAndUserPermissionsWithoutEditingThePolicy {
+    SecAccessRef access = NULL;
+    XCTAssertEqual(SecAccessCreate(CFSTR("Synthetic access fixture"), NULL, &access), errSecSuccess);
+    id mixed = [self addACL:access authorizations:@[(__bridge id)kSecACLAuthorizationPartitionID,
+        (__bridge id)kSecACLAuthorizationDecrypt]];
+    NSArray *before = [self aclEntries:access]; NSDictionary *contents = [self aclContents:mixed];
+    XCTAssertEqual([AKKeychain prepareAccessForNewItem:access], errSecParam);
+    XCTAssertEqualObjects([self aclEntries:access], before);
+    XCTAssertEqualObjects([self aclContents:mixed], contents);
+    CFRelease(access);
 }
 - (void)assertSaveDiagnosticStage:(NSString *)stage status:(OSStatus)status {
     NSError *error;

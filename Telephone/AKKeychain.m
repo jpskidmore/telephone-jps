@@ -63,6 +63,45 @@
     return SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)attributes);
 }
 
+// This receives only the detached snapshot returned by CopyAccess.
++ (OSStatus)prepareAccessForNewItem:(SecAccessRef)access {
+    // CopyAccess returns a detached snapshot, not the persisted source policy.
+    // Apple excludes these per-item bindings when copying an item: securityd
+    // regenerates them for the destination. Keep the owner, trusted applications,
+    // prompt selectors and every ordinary permission exactly as copied.
+    if (!access) return errSecParam;
+    CFArrayRef copied = NULL;
+    OSStatus status = SecAccessCopyACLList(access, &copied);
+    NSArray *entries = CFBridgingRelease(copied);
+    if (status != errSecSuccess) return status;
+    if (!entries) return errSecParam;
+    NSMutableArray *managed = [NSMutableArray array];
+    for (id entry in entries) {
+        NSArray *rights = CFBridgingRelease(SecACLCopyAuthorizations((__bridge SecACLRef)entry));
+        if (!rights) return errSecParam;
+        BOOL hasManaged = NO, hasOrdinary = NO;
+        for (id right in rights) {
+            if ([right isEqual:(__bridge id)kSecACLAuthorizationIntegrity] ||
+                [right isEqual:(__bridge id)kSecACLAuthorizationPartitionID]) hasManaged = YES;
+            else hasOrdinary = YES;
+        }
+        // An unfamiliar mixed policy must not lose user permissions. Reject it
+        // before editing even this disposable snapshot, rather than broadening it.
+        if (hasManaged && hasOrdinary) return errSecParam;
+        if (hasManaged) [managed addObject:entry];
+    }
+    for (id entry in managed) {
+        // SecACLRemove marks an entry deleted but leaves it in the snapshot's
+        // list. Clear its managed tags first so destination integrity setup
+        // cannot select that deleted entry instead of making a fresh binding.
+        status = SecACLUpdateAuthorizations((__bridge SecACLRef)entry, (__bridge CFArrayRef)@[]);
+        if (status != errSecSuccess) return status;
+        status = SecACLRemove((__bridge SecACLRef)entry);
+        if (status != errSecSuccess) return status;
+    }
+    return errSecSuccess;
+}
+
 + (NSDictionary *)migrationContextForItem:(id)item status:(OSStatus *)status {
     // The authorised legacy read returns its actual item reference. Copy its
     // access list and stay in that same login/file Keychain; never substitute a
@@ -75,6 +114,7 @@
     *status = SecKeychainItemCopyAccess((__bridge SecKeychainItemRef)item, &access);
     if (*status == errSecSuccess) *status = SecKeychainItemCopyKeychain((__bridge SecKeychainItemRef)item, &keychain);
     NSDictionary *context = nil;
+    if (*status == errSecSuccess && access && keychain) *status = [self prepareAccessForNewItem:access];
     if (*status == errSecSuccess && access && keychain) {
         context = @{(__bridge id)kSecAttrAccess: (__bridge id)access,
                     (__bridge id)kSecUseKeychain: (__bridge id)keychain};
