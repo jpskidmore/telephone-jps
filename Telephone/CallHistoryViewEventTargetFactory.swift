@@ -23,10 +23,8 @@ final class CallHistoryViewEventTargetFactory {
     private let histories: CallHistories
     private let index: ContactMatchingIndex
     private let settings: ContactMatchingSettings
-    private let receipt: Receipt
     private let dateFormatter: DateFormatter
     private let durationFormatter: DateComponentsFormatter
-    private let storeEventTargets: StoreEventTargets
     private let dayChangeEventTargets: DayChangeEventTargets
     private let globalHistory: GlobalCallHistory
     private let accountCatalog: CallHistoryAccountCatalog
@@ -36,20 +34,16 @@ final class CallHistoryViewEventTargetFactory {
         histories: CallHistories,
         index: ContactMatchingIndex,
         settings: ContactMatchingSettings,
-        receipt: Receipt,
         dateFormatter: DateFormatter,
         durationFormatter: DateComponentsFormatter,
-        storeEventTargets: StoreEventTargets,
         dayChangeEventTargets: DayChangeEventTargets,
         accountCatalog: CallHistoryAccountCatalog = CallHistoryAccountCatalog()
         ) {
         self.histories = histories
         self.index = index
         self.settings = settings
-        self.receipt = receipt
         self.dateFormatter = dateFormatter
         self.durationFormatter = durationFormatter
-        self.storeEventTargets = storeEventTargets
         self.dayChangeEventTargets = dayChangeEventTargets
         self.accountCatalog = accountCatalog
         globalHistory = GlobalCallHistory(histories: histories)
@@ -80,7 +74,6 @@ final class CallHistoryViewEventTargetFactory {
             callMake: DefaultCallHistoryCallMakeUseCaseFactory(account: account, history: history, factory: factory)
         )
         await history.updateTarget(WeakCallHistoryEventTarget(origin: result))
-        storeEventTargets.add(WeakStoreEventTarget(origin: result))
         dayChangeEventTargets.add(WeakDayChangeEventTarget(origin: result))
         return result
     }
@@ -119,13 +112,12 @@ final class CallHistoryViewEventTargetFactory {
             callMake: DefaultCallHistoryCallMakeUseCaseFactory(history: globalHistory, factory: factory, route: route)
         )
         await globalHistory.updateTarget(WeakCallHistoryEventTarget(origin: result))
-        storeEventTargets.add(WeakStoreEventTarget(origin: result))
         dayChangeEventTargets.add(WeakDayChangeEventTarget(origin: result))
         return result
     }
 }
 
-// This local Pro build retains receipt validation in the records pipeline and has no purchase overlay in its shared dialler.
+// The shared dialler is always fully enabled. Keep the legacy no-op check parameter until its callers are retired.
 private final class GlobalHistoryPurchaseCheck: UseCase {
     func execute() {}
 }

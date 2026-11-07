@@ -94,7 +94,6 @@ static const NSTimeInterval AKAudioRecoverySlowInterval = 5.0;
 @property(nonatomic, readonly) id<UseCase> userAgentStart;
 @property(nonatomic, readonly) WorkspaceSleepStatus *sleepStatus;
 @property(nonatomic, readonly) AsyncCallHistoryViewEventTargetFactory *callHistoryViewEventTargetFactory;
-@property(nonatomic, readonly) AsyncCallHistoryPurchaseCheckUseCaseFactory *purchaseCheckUseCaseFactory;
 @property(nonatomic, getter=isFinishedLaunching) BOOL finishedLaunching;
 @property(nonatomic, copy) NSString *destinationToCall;
 @property(nonatomic, getter=isUserSessionActive) BOOL userSessionActive;
@@ -167,7 +166,6 @@ NS_ASSUME_NONNULL_END
     _userAgentStart = _compositionRoot.userAgentStart;
     _sleepStatus = _compositionRoot.workstationSleepStatus;
     _callHistoryViewEventTargetFactory = _compositionRoot.callHistoryViewEventTargetFactory;
-    _purchaseCheckUseCaseFactory = _compositionRoot.callHistoryPurchaseCheckUseCaseFactory;
     _destinationToCall = @"";
     _userSessionActive = YES;
     _accountControllers = _compositionRoot.accountControllers;
@@ -614,10 +612,7 @@ NS_ASSUME_NONNULL_END
                                                                accountDescription:description
                                                                         userAgent:self.userAgent
                                                                  ringtonePlayback:self.ringtonePlayback
-                                                                      sleepStatus:self.sleepStatus
-                                                callHistoryViewEventTargetFactory:self.callHistoryViewEventTargetFactory
-                                                      purchaseCheckUseCaseFactory:self.purchaseCheckUseCaseFactory
-                                                             storeWindowPresenter:self.storeWindowPresenter];
+                                                                      sleepStatus:self.sleepStatus];
 
     controller.contactCompletions = self.compositionRoot.diallerContacts;
     [controller setEnabled:[dict[UserDefaultsKeys.accountEnabled] boolValue]];

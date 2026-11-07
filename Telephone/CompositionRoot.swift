@@ -32,7 +32,6 @@ final class CompositionRoot: NSObject {
     @objc let orphanLogFileRemoval: OrphanLogFileRemoval
     @objc let workstationSleepStatus: WorkspaceSleepStatus
     @objc let callHistoryViewEventTargetFactory: AsyncCallHistoryViewEventTargetFactory
-    @objc let callHistoryPurchaseCheckUseCaseFactory: AsyncCallHistoryPurchaseCheckUseCaseFactory
     @objc let logFileURL: LogFileURL
     @objc let defaultAppSettings: DefaultAppSettings
     @objc let helpMenuActionTarget: HelpMenuActionTarget
@@ -96,11 +95,7 @@ final class CompositionRoot: NSObject {
             controller: StoreWindowController(contentViewController: storeViewController)
         )
 
-        // This no-op legacy bridge is retained only for the not-yet-removed
-        // account-history purchase-check factory; no payment path uses it.
-        let receipt: Receipt = LocalProReceipt()
         userAgentStart = UserAgentStartUseCase(agent: userAgent)
-        let storeEventTargets = StoreEventTargets(targets: [])
 
         let soundIOSelection = QueuedSoundIOSelectionUseCase(
             devicesFactory: systemAudioDevicesFactory,
@@ -258,17 +253,11 @@ final class CompositionRoot: NSObject {
                 histories: callHistories,
                 index: contactMatchingIndex,
                 settings: contactMatchingSettings,
-                receipt: receipt,
                 dateFormatter: ShortRelativeDateTimeFormatter(),
                 durationFormatter: DurationFormatter(),
-                storeEventTargets: storeEventTargets,
                 dayChangeEventTargets: dayChangeEventTargets,
                 accountCatalog: historyAccountCatalog
             )
-        )
-
-        callHistoryPurchaseCheckUseCaseFactory = AsyncCallHistoryPurchaseCheckUseCaseFactory(
-            origin: CallHistoryPurchaseCheckUseCaseFactory(histories: callHistories, receipt: receipt)
         )
 
         logFileURL = LogFileURL(locations: applicationDataLocations, filename: "Telephone.log")

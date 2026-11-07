@@ -29,8 +29,7 @@ extern NSString * const kEmailSIPLabel;
 FOUNDATION_EXPORT NSNotificationName const JPSPendingRoutedCallsDidChangeNotification;
 
 @class AKSIPURI, AKNetworkReachability, AKCredentialBroker, JPSDiallerContacts;
-@class AsyncCallHistoryPurchaseCheckUseCaseFactory, AsyncCallHistoryViewEventTargetFactory;
-@class CallTransferController, SanitizedCallDestination, StoreWindowPresenter, WorkspaceSleepStatus;
+@class CallTransferController, SanitizedCallDestination, WorkspaceSleepStatus;
 @protocol RingtonePlaybackUseCase;
 
 @interface AccountController : NSObject <AKSIPAccountDelegate, CallControllerDelegate>
@@ -67,10 +66,7 @@ FOUNDATION_EXPORT NSNotificationName const JPSPendingRoutedCallsDidChangeNotific
                 accountDescription:(NSString *)accountDescription
                          userAgent:(AKSIPUserAgent *)userAgent
                   ringtonePlayback:(id<RingtonePlaybackUseCase>)ringtonePlayback
-                       sleepStatus:(WorkspaceSleepStatus *)sleepStatus
- callHistoryViewEventTargetFactory:(AsyncCallHistoryViewEventTargetFactory *)callHistoryViewEventTargetFactory
-       purchaseCheckUseCaseFactory:(AsyncCallHistoryPurchaseCheckUseCaseFactory *)purchaseCheckUseCaseFactory
-              storeWindowPresenter:(StoreWindowPresenter *)storeWindowPresenter;
+                       sleepStatus:(WorkspaceSleepStatus *)sleepStatus;
 
 // Credential requests are fenced independently of native SIP operations.
 @property(nonatomic, readonly) NSUInteger credentialAccessGeneration;

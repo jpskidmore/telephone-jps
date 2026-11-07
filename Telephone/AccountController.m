@@ -235,10 +235,7 @@ NSNotificationName const JPSPendingRoutedCallsDidChangeNotification = @"JPSPendi
                 accountDescription:(NSString *)accountDescription
                          userAgent:(AKSIPUserAgent *)userAgent
                   ringtonePlayback:(id<RingtonePlaybackUseCase>)ringtonePlayback
-                       sleepStatus:(WorkspaceSleepStatus *)sleepStatus
- callHistoryViewEventTargetFactory:(AsyncCallHistoryViewEventTargetFactory *)callHistoryViewEventTargetFactory
-       purchaseCheckUseCaseFactory:(AsyncCallHistoryPurchaseCheckUseCaseFactory *)purchaseCheckUseCaseFactory
-              storeWindowPresenter:(StoreWindowPresenter *)storeWindowPresenter{
+                       sleepStatus:(WorkspaceSleepStatus *)sleepStatus{
 
     self = [super init];
     if (self == nil) {
