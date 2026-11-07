@@ -26,7 +26,7 @@ final class CompositionRoot: NSObject {
     @objc let userAgent: AKSIPUserAgent
     @objc let preferencesController: PreferencesController
     @objc let ringtonePlayback: RingtonePlaybackUseCase
-    @objc let storeWindowPresenter: StoreWindowPresenter
+    @objc let localBuildInformationPresenter: LocalBuildInformationWindowPresenter
     @objc let userAgentStart: UseCase
     @objc let settingsMigration: ProgressiveSettingsMigration
     @objc let orphanLogFileRemoval: OrphanLogFileRemoval
@@ -86,8 +86,8 @@ final class CompositionRoot: NSObject {
         // Local edition: present information only. Do not create StoreKit
         // products, payment queues, receipt refreshes or purchase observers.
         let information = LocalBuildInformationViewController(bundle: .main, workspace: .shared)
-        storeWindowPresenter = StoreWindowPresenter(
-            controller: StoreWindowController(contentViewController: information)
+        localBuildInformationPresenter = LocalBuildInformationWindowPresenter(
+            controller: LocalBuildInformationWindowController(contentViewController: information)
         )
 
         userAgentStart = UserAgentStartUseCase(agent: userAgent)

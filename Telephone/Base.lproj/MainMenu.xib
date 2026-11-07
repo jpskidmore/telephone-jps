@@ -26,7 +26,7 @@
                             <menuItem title="Local Build Information…" id="rMu-ch-wsu">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
-                                    <action selector="showStoreWindow:" target="450" id="UXk-hd-Ptc"/>
+                                    <action selector="showLocalBuildInformation:" target="450" id="UXk-hd-Ptc"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="236">

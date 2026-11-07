@@ -1,5 +1,5 @@
 //
-//  StoreWindowController.swift
+//  LocalBuildInformationWindowController.swift
 //  Telephone
 //
 //  Copyright © 2008-2016 Alexey Kuznetsov
@@ -19,9 +19,9 @@
 import Cocoa
 import UseCases
 
-final class StoreWindowController: NSWindowController {
+final class LocalBuildInformationWindowController: NSWindowController {
     convenience init(contentViewController controller: NSViewController) {
-        self.init(windowNibName: "StoreWindowController")
+        self.init(windowNibName: "LocalBuildInformationWindowController")
         contentViewController = controller
     }
 

@@ -1,5 +1,5 @@
 //
-//  StoreWindowPresenter.swift
+//  LocalBuildInformationWindowPresenter.swift
 //  Telephone
 //
 //  Copyright © 2008-2016 Alexey Kuznetsov
@@ -17,10 +17,10 @@
 //
 
 @MainActor
-final class StoreWindowPresenter: NSObject {
-    private let controller: StoreWindowController
+final class LocalBuildInformationWindowPresenter: NSObject {
+    private let controller: LocalBuildInformationWindowController
 
-    init(controller: StoreWindowController) {
+    init(controller: LocalBuildInformationWindowController) {
         self.controller = controller
     }
 

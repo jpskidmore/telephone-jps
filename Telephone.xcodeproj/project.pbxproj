@@ -170,7 +170,7 @@
 		8A68C95C1FFE9B71005125AF /* WebBrowserSpy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A68C95B1FFE9B71005125AF /* WebBrowserSpy.swift */; };
 		8A68C95E1FFE9BBD005125AF /* WebBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A68C95D1FFE9BBD005125AF /* WebBrowser.swift */; };
 		8A68C95F1FFE9BBD005125AF /* WebBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A68C95D1FFE9BBD005125AF /* WebBrowser.swift */; };
-		8A69821A1F753A5800B20AFD /* StoreWindowPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6982191F753A5800B20AFD /* StoreWindowPresenter.swift */; };
+		8A69821A1F753A5800B20AFD /* LocalBuildInformationWindowPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A6982191F753A5800B20AFD /* LocalBuildInformationWindowPresenter.swift */; };
 		8A6BA7AB1F3CB110001EB8C1 /* AccountWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = 8A6BA7AA1F3CB110001EB8C1 /* AccountWindowController.m */; };
 		8A6D2A282540D51800A978A7 /* PJSUAOnAccountFindForIncoming.m in Sources */ = {isa = PBXBuildFile; fileRef = 8A6D2A272540D51800A978A7 /* PJSUAOnAccountFindForIncoming.m */; };
 		8A70C46D1DAE832E002E8754 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 8A70C46C1DAE832E002E8754 /* Credits.rtf */; };
@@ -296,7 +296,7 @@
 		8AA748BF1D704A44000587DC /* MusicPlayers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA748BB1D704962000587DC /* MusicPlayers.swift */; };
 		8AA748C11D704B9F000587DC /* AvailableMusicPlayers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA748C01D704B9F000587DC /* AvailableMusicPlayers.swift */; };
 		8AA748F71D74986A000587DC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8AA748F91D74986A000587DC /* Localizable.strings */; };
-		8AA748FE1D749E05000587DC /* StoreWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 8AA749001D749E05000587DC /* StoreWindowController.xib */; };
+		8AA748FE1D749E05000587DC /* LocalBuildInformationWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 8AA749001D749E05000587DC /* LocalBuildInformationWindowController.xib */; };
 		8AA891DC1F83F69F0064B2EA /* SanitizedCallDestinationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA891DB1F83F69F0064B2EA /* SanitizedCallDestinationTests.swift */; };
 		8AA891DE1F83F6EA0064B2EA /* SanitizedCallDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA891DD1F83F6EA0064B2EA /* SanitizedCallDestination.swift */; };
 		8AA891DF1F83F7100064B2EA /* SanitizedCallDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AA891DD1F83F6EA0064B2EA /* SanitizedCallDestination.swift */; };
@@ -401,7 +401,7 @@
 		8ADD6A6A1CE0C8CF001EDBBA /* PresenterFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADD6A691CE0C8CF001EDBBA /* PresenterFactory.swift */; };
 		8ADD6A6B1CE0C8CF001EDBBA /* PresenterFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADD6A691CE0C8CF001EDBBA /* PresenterFactory.swift */; };
 		8ADD6A801CE0F995001EDBBA /* LocalBuildInformationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADD6A7C1CE0F995001EDBBA /* LocalBuildInformationViewController.swift */; };
-		8ADD6A821CE0F995001EDBBA /* StoreWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADD6A7E1CE0F995001EDBBA /* StoreWindowController.swift */; };
+		8ADD6A821CE0F995001EDBBA /* LocalBuildInformationWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADD6A7E1CE0F995001EDBBA /* LocalBuildInformationWindowController.swift */; };
 		8ADD6B6D1C528F720029C3D8 /* UseCasesError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADD6B6C1C528F720029C3D8 /* UseCasesError.swift */; };
 		8ADED1E11EFD7F85009558E0 /* ContactMatchingIndexStub.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADED1E01EFD7F85009558E0 /* ContactMatchingIndexStub.swift */; };
 		8ADEDBF51ECF49AA00987B77 /* SimpleContactMatchingSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADEDBF41ECF49AA00987B77 /* SimpleContactMatchingSettingsTests.swift */; };
@@ -880,7 +880,7 @@
 		8A68C9591FFE8EB0005125AF /* FileBrowserSpy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserSpy.swift; sourceTree = "<group>"; };
 		8A68C95B1FFE9B71005125AF /* WebBrowserSpy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebBrowserSpy.swift; sourceTree = "<group>"; };
 		8A68C95D1FFE9BBD005125AF /* WebBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebBrowser.swift; sourceTree = "<group>"; };
-		8A6982191F753A5800B20AFD /* StoreWindowPresenter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StoreWindowPresenter.swift; sourceTree = "<group>"; };
+		8A6982191F753A5800B20AFD /* LocalBuildInformationWindowPresenter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LocalBuildInformationWindowPresenter.swift; sourceTree = "<group>"; };
 		8A6BA7A91F3CB110001EB8C1 /* AccountWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AccountWindowController.h; sourceTree = "<group>"; };
 		8A6BA7AA1F3CB110001EB8C1 /* AccountWindowController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AccountWindowController.m; sourceTree = "<group>"; };
 		8A6D2A272540D51800A978A7 /* PJSUAOnAccountFindForIncoming.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PJSUAOnAccountFindForIncoming.m; sourceTree = "<group>"; };
@@ -1010,8 +1010,8 @@
 		8AA748D21D744FAB000587DC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/AuthenticationFailure.xib; sourceTree = "<group>"; };
 		8AA748D31D744FAB000587DC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/AccountSetup.xib; sourceTree = "<group>"; };
 		8AA748F81D74986A000587DC /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/Localizable.strings; sourceTree = "<group>"; };
-		8AA748FF1D749E05000587DC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/StoreWindowController.xib; sourceTree = "<group>"; };
-		8AA7492E1D75E5DF000587DC /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/StoreWindowController.strings; sourceTree = "<group>"; };
+		8AA748FF1D749E05000587DC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LocalBuildInformationWindowController.xib; sourceTree = "<group>"; };
+		8AA7492E1D75E5DF000587DC /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/LocalBuildInformationWindowController.strings; sourceTree = "<group>"; };
 		8AA749301D75E5E7000587DC /* en-GB */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "en-GB"; path = en-GB.lproj/MainMenu.strings; sourceTree = "<group>"; };
 		8AA891DB1F83F69F0064B2EA /* SanitizedCallDestinationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SanitizedCallDestinationTests.swift; path = TelephoneTests/SanitizedCallDestinationTests.swift; sourceTree = SOURCE_ROOT; };
 		8AA891DD1F83F6EA0064B2EA /* SanitizedCallDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SanitizedCallDestination.swift; sourceTree = "<group>"; };
@@ -1109,7 +1109,7 @@
 		8ADD6A5C1CDCFEC3001EDBBA /* LocalBuildInformationViewControllerTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = LocalBuildInformationViewControllerTests.swift; path = TelephoneTests/LocalBuildInformationViewControllerTests.swift; sourceTree = SOURCE_ROOT; };
 		8ADD6A691CE0C8CF001EDBBA /* PresenterFactory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PresenterFactory.swift; sourceTree = "<group>"; };
 		8ADD6A7C1CE0F995001EDBBA /* LocalBuildInformationViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LocalBuildInformationViewController.swift; sourceTree = "<group>"; };
-		8ADD6A7E1CE0F995001EDBBA /* StoreWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StoreWindowController.swift; sourceTree = "<group>"; };
+		8ADD6A7E1CE0F995001EDBBA /* LocalBuildInformationWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LocalBuildInformationWindowController.swift; sourceTree = "<group>"; };
 		8ADD6B6C1C528F720029C3D8 /* UseCasesError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UseCasesError.swift; sourceTree = "<group>"; };
 		8ADED1E01EFD7F85009558E0 /* ContactMatchingIndexStub.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContactMatchingIndexStub.swift; sourceTree = "<group>"; };
 		8ADEDBF41ECF49AA00987B77 /* SimpleContactMatchingSettingsTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = SimpleContactMatchingSettingsTests.swift; path = UseCasesTests/SimpleContactMatchingSettingsTests.swift; sourceTree = SOURCE_ROOT; };
@@ -1714,9 +1714,9 @@
 				8A859A071D2EC69200118A66 /* Store */,
 				8ADD6A7C1CE0F995001EDBBA /* LocalBuildInformationViewController.swift */,
 				8AD6597D1D37C95E008A1007 /* StoreViewEventTarget */,
-				8ADD6A7E1CE0F995001EDBBA /* StoreWindowController.swift */,
-				8AA749001D749E05000587DC /* StoreWindowController.xib */,
-				8A6982191F753A5800B20AFD /* StoreWindowPresenter.swift */,
+				8ADD6A7E1CE0F995001EDBBA /* LocalBuildInformationWindowController.swift */,
+				8AA749001D749E05000587DC /* LocalBuildInformationWindowController.xib */,
+				8A6982191F753A5800B20AFD /* LocalBuildInformationWindowPresenter.swift */,
 			);
 			name = Store;
 			sourceTree = "<group>";
@@ -2963,7 +2963,7 @@
 				AA7CB51F11442249004D79DA /* ActiveAccountTransferView.xib in Resources */,
 				AA7CB51D11442241004D79DA /* CallTransfer.xib in Resources */,
 				AA7CB528114423A4004D79DA /* ActiveCallTransferView.xib in Resources */,
-				8AA748FE1D749E05000587DC /* StoreWindowController.xib in Resources */,
+				8AA748FE1D749E05000587DC /* LocalBuildInformationWindowController.xib in Resources */,
 				AA7CB5301144242F004D79DA /* EndedCallTransferView.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3075,7 +3075,7 @@
 				AA3FABA71BBC0A0D0064B2C3 /* CoreAudioSystemAudioDevicesChangeEventSource.swift in Sources */,
 				AAC0FFC21BE38CEE00A5C7E5 /* AKSIPUserAgentNotifications.m in Sources */,
 				AA2C03FC1BD7F670001D25F9 /* UserAgentAudioDevices.swift in Sources */,
-				8A69821A1F753A5800B20AFD /* StoreWindowPresenter.swift in Sources */,
+				8A69821A1F753A5800B20AFD /* LocalBuildInformationWindowPresenter.swift in Sources */,
 				8A78F33921259AB200B64867 /* CoreAudioDefaultIO.swift in Sources */,
 				8A78F33B2125A56700B64867 /* CoreAudioDefaultSystemSoundIOFactory.swift in Sources */,
 				AA0302F20EB9F347000738F7 /* AKSIPURI.m in Sources */,
@@ -3159,7 +3159,7 @@
                 A61000000000000000000003 /* AKLiquidGlass.m in Sources */,
 				8AA748BC1D704962000587DC /* MusicPlayers.swift in Sources */,
 				8AA748811D6DECAB000587DC /* SettingsAccounts.swift in Sources */,
-				8ADD6A821CE0F995001EDBBA /* StoreWindowController.swift in Sources */,
+				8ADD6A821CE0F995001EDBBA /* LocalBuildInformationWindowController.swift in Sources */,
 				8ACC4F0B27EA59140007DE65 /* DefaultAppSettings.swift in Sources */,
 				AAD92136107A607C00F142A4 /* IncomingCallViewController.m in Sources */,
 				8A9843D02746C02000EC0ACF /* UserDefaultsKeys.swift in Sources */,
@@ -3747,13 +3747,13 @@
 			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
-		8AA749001D749E05000587DC /* StoreWindowController.xib */ = {
+		8AA749001D749E05000587DC /* LocalBuildInformationWindowController.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
 				8AA748FF1D749E05000587DC /* Base */,
 				8AA7492E1D75E5DF000587DC /* en-GB */,
 			);
-			name = StoreWindowController.xib;
+			name = LocalBuildInformationWindowController.xib;
 			sourceTree = "<group>";
 		};
 		AA167A1C0F07BF9E00AF8B71 /* SIPResponses.strings */ = {

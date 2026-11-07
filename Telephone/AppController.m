@@ -89,7 +89,7 @@ static const NSTimeInterval AKAudioRecoverySlowInterval = 5.0;
 
 @property(nonatomic, readonly) CompositionRoot *compositionRoot;
 @property(nonatomic, readonly) PreferencesController *preferencesController;
-@property(nonatomic, readonly) StoreWindowPresenter *storeWindowPresenter;
+@property(nonatomic, readonly) LocalBuildInformationWindowPresenter *localBuildInformationPresenter;
 @property(nonatomic, readonly) id<RingtonePlaybackUseCase> ringtonePlayback;
 @property(nonatomic, readonly) id<UseCase> userAgentStart;
 @property(nonatomic, readonly) WorkspaceSleepStatus *sleepStatus;
@@ -161,7 +161,7 @@ NS_ASSUME_NONNULL_END
     _userAgent = _compositionRoot.userAgent;
     [[self userAgent] setDelegate:self];
     _preferencesController = _compositionRoot.preferencesController;
-    _storeWindowPresenter = _compositionRoot.storeWindowPresenter;
+    _localBuildInformationPresenter = _compositionRoot.localBuildInformationPresenter;
     _ringtonePlayback = _compositionRoot.ringtonePlayback;
     _userAgentStart = _compositionRoot.userAgentStart;
     _sleepStatus = _compositionRoot.workstationSleepStatus;
@@ -280,8 +280,8 @@ NS_ASSUME_NONNULL_END
     }
 }
 
-- (IBAction)showStoreWindow:(id)sender {
-    [self.storeWindowPresenter present];
+- (IBAction)showLocalBuildInformation:(id)sender {
+    [self.localBuildInformationPresenter present];
 }
 
 - (void)bootstrapDefaultRouteIfNeeded {
