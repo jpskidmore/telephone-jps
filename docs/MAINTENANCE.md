@@ -4,11 +4,21 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
+## Current published release — 3.9/build 170, 7 November 2026
+
+**[3.9/build 170](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9) is public GitHub Latest**, from immutable tag/source `370b6bb7e1603b238f32082865302eaeed197225` (tree `ef633ec4c619c914bab234a03b4244d7aa9e8102`). It includes #71's owner-selected retirement of obsolete StoreKit purchases/receipts and native Local Build Information, retaining all local features, full history and 30-call capacity.
+
+Fresh release native suites passed **929 cases, zero failures/skips** (Domain 28 XCTest; UseCases 192 XCTest + 123 Swift Testing; isolated Telephone 538 XCTest + 48 Swift Testing). Separate dependency, audio and recording checks passed. Release compilation, ad-hoc signatures/entitlements, UK-English metadata and ZIP extraction passed. All **52 regular app payloads, six symlinks and 1,392 source Git blobs** match their packaged counterparts; all seven public downloads were fetched and matched local sizes/SHA-256. Eleven prior releases, 72 assets and sixteen prior tag references were verified unchanged. Read [exact publication proof and diagnostic history](releases/3.9-verification.json).
+
+Native tests/compilation ran at `76c6e3879eeb7dc3367287b0f4258ca53b813398`; final release source changes only executable modes on the signing/verifying entrypoints after the packaging script stopped with Permission denied. Every source blob is identical across those commits. The same script's signing/packaging sequence then completed successfully; no extra native test run is claimed. A final standalone Foundation check is recorded separately in the publication proof.
+
+No local installation, normal production-profile launch, actual Keychain/Contacts/SIP/history/recordings, provider/hardware/grant/VoiceOver acceptance or Cloudflare change was performed. This is ad-hoc signed and unnotarised. No cloud workflow was manually dispatched; automatic GitHub scans are not release validation. The owner explicitly instructed finishing with credits after the allowance checkpoint; its scheduled continuation is paused. #71 remains completed; #62 remains closed not planned with its practical matrix incomplete. Source tags and previously published assets stay immutable.
+
 ## Completed work — issue #71 Option B, 7 November 2026
 
 The purchase/receipt retirement has completed its required native acceptance and issue [#71](https://github.com/jpskidmore/telephone-jps/issues/71) is complete. The reviewed source is [`a82611f`](https://github.com/jpskidmore/telephone-jps/commit/a82611fa8e5f33bcfe97dacfcc23f56e31fb9815); later changes are documentation only. The completed native run passed **929 tests, zero failures/skips**, dependency checks, 105 separate recording ownership assertions and unsigned arm64 Release. Saved logs, result bundles and Release/resource hashes were rechecked at completion; no further full-suite run is claimed. Read the [acceptance mapping and delivery limits](maintenance/2026-11-07-storekit-acceptance.md).
 
-The original roadmap is **18 implemented / one closed not planned (#62)**, with no remaining open implementation item. #62's practical matrix is not passed or reopened. The current published release remains immutable **3.8.2/build 169** and does not contain this later #71 change. No installation, release, normal production-profile/live-data acceptance, cloud dispatch or Cloudflare change is made. No further implementation or delivery task is started automatically. Earlier status entries below retain their checkpoint dates and are superseded by this completion entry.
+The original roadmap is **18 implemented / one closed not planned (#62)**, with no remaining open implementation item. #62's practical matrix is not passed or reopened. At that acceptance checkpoint the published release was immutable **3.8.2/build 169**, which does not contain the later #71 change; the subsequent 3.9 publication is recorded above. No installation, release, normal production-profile/live-data acceptance, cloud dispatch or Cloudflare change is made. No further implementation or delivery task is started automatically. Earlier status entries below retain their checkpoint dates and are superseded by this completion entry.
 
 ## Historical native checkpoint — 7 November 2026
 
@@ -26,7 +36,7 @@ Issue [#71](https://github.com/jpskidmore/telephone-jps/issues/71) remains **OPE
 
 **Execution boundaries:** one issue at a time on main, local Mac/Xcode checks, synthetic data, `[skip ci]` in code/documentation commits, no manually dispatched cloud workflow, no change to public visibility, licences, release archives or user data. This native macOS repository has no identified Cloudflare deployment dependency; leave Cloudflare resources unchanged. The dated release and other issue history below is retained as original evidence, not a live backlog.
 
-## Current published release — 3.8.2/build 169, 5 November 2026
+## Previous published release — 3.8.2/build 169, 5 November 2026
 
 **3.8.2/build 169** is [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.2),
 from immutable source/tag `361f7fe3d639c11cb4fdf40fc5e72c92e77cfb58`

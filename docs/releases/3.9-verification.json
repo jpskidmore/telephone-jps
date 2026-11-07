@@ -1,0 +1,143 @@
+{
+  "status": "published_verified",
+  "version": "3.9",
+  "build": 170,
+  "sourceCommit": "370b6bb7e1603b238f32082865302eaeed197225",
+  "nativeTestSourceCommit": "76c6e3879eeb7dc3367287b0f4258ca53b813398",
+  "sourceDeltaSinceTests": "only executable modes of sign-adhoc-release.sh and verify-adhoc-release.sh; no blob changes",
+  "sourceTree": "ef633ec4c619c914bab234a03b4244d7aa9e8102",
+  "suites": {
+    "Domain": {
+      "totalTestCount": 28,
+      "passedTests": 28,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "UseCasesTests": {
+      "totalTestCount": 315,
+      "passedTests": 315,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "TelephoneTests": {
+      "totalTestCount": 586,
+      "passedTests": 586,
+      "failedTests": 0,
+      "skippedTests": 0
+    }
+  },
+  "suiteTotals": {
+    "passed": 929,
+    "failed": 0,
+    "skipped": 0
+  },
+  "appFiles": 52,
+  "appSymlinks": 6,
+  "sourceBlobs": 1392,
+  "packageParity": "passed",
+  "installation": false,
+  "productionProfileLaunch": false,
+  "assets": [
+    {
+      "name": "BUILD-VERIFICATION.md",
+      "size": 1635,
+      "sha256": "71109d50e9753da0aa42fc1349f4d6ab496f4367488ded21b144298d41a646f2",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9/BUILD-VERIFICATION.md",
+      "assetID": 722171888,
+      "downloadVerified": true
+    },
+    {
+      "name": "DIAL-PLAN-NUMBERING.md",
+      "size": 8002,
+      "sha256": "f4beb21fb0668366ab23af977f02166c0594ac08973c05c6b757507a73591c2a",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9/DIAL-PLAN-NUMBERING.md",
+      "assetID": 722171911,
+      "downloadVerified": true
+    },
+    {
+      "name": "DIAL-PLANS.md",
+      "size": 8475,
+      "sha256": "43a6b379110d45b0b94c2d8a5682dba5d62dfc3556bd09c12b3e34f75dc16bcc",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9/DIAL-PLANS.md",
+      "assetID": 722171928,
+      "downloadVerified": true
+    },
+    {
+      "name": "RELEASE-NOTES.md",
+      "size": 1542,
+      "sha256": "bd8bd9a6efc814c49c52c56d977df1efe2ff7e84ecfa19c275fc67a97944a6aa",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9/RELEASE-NOTES.md",
+      "assetID": 722171947,
+      "downloadVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 529,
+      "sha256": "0562333a1285d2b38eb7e201b95e833cb9ac53919f88c7683f72514386e4a49f",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9/SHA256SUMS.txt",
+      "assetID": 722171963,
+      "downloadVerified": true
+    },
+    {
+      "name": "jps-Telephone-3.9-arm64.zip",
+      "size": 3019635,
+      "sha256": "d615635a64504d034ff8c3135f0124f4301305e07d2a4405df80c3b30995616d",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9/jps-Telephone-3.9-arm64.zip",
+      "assetID": 722171974,
+      "downloadVerified": true
+    },
+    {
+      "name": "jps-Telephone-3.9-source.zip",
+      "size": 41036290,
+      "sha256": "1cc988907904240debc040297f892dbacc5cc89d9d42cb2956cd8a988f928ffa",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9/jps-Telephone-3.9-source.zip",
+      "assetID": 722172015,
+      "downloadVerified": true
+    }
+  ],
+  "buildLogSHA256": "129ea0ffad5b1a06cb144609fb11fa4ea3b7f4d1d2152683628994932ff7a9cb",
+  "releaseURL": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9",
+  "releaseID": 437890934,
+  "publishedAt": "2026-11-07T22:45:15Z",
+  "verifiedAt": "2026-11-07T22:46:00.155142+00:00",
+  "latest": true,
+  "prerelease": false,
+  "tagObject": {
+    "sha": "370b6bb7e1603b238f32082865302eaeed197225",
+    "type": "commit",
+    "url": "https://api.github.com/repos/jpskidmore/telephone-jps/git/commits/370b6bb7e1603b238f32082865302eaeed197225"
+  },
+  "priorReleasesPreserved": 11,
+  "priorAssetsPreserved": 72,
+  "priorTagsPreserved": 16,
+  "visibility": "public_unchanged",
+  "cloudWorkflowDispatched": false,
+  "cloudflareChanged": false,
+  "usageOverride": "Owner explicitly requested finish using credits after allowance checkpoint; scheduled continuation paused.",
+  "packagingLogSHA256": "97bd3a084d9eab08b555bf47c4509fa17969568fc76b5ae69136f1be88e172d8",
+  "environment": {
+    "architecture": "arm64",
+    "macOS": "27.2 (26B123)",
+    "Xcode": "27.2 (27B52)",
+    "macOSSDK": "27.2",
+    "Swift": "6.4.2"
+  },
+  "suiteBreakdown": {
+    "DomainXCTest": 28,
+    "UseCasesXCTest": 192,
+    "UseCasesSwiftTesting": 123,
+    "TelephoneXCTest": 538,
+    "TelephoneSwiftTesting": 48
+  },
+  "separateChecks": {
+    "recordingOwnershipAssertions": 105,
+    "audioDeviceControllerAssertions": 309,
+    "audioSourceWiring": 11,
+    "recordingLifecycleModelAndWiring": 6,
+    "foundationAssertions": 15
+  },
+  "foundationLogSHA256": "9e01bdb9df61613fe8ed9ed776b8967eba3efd037759a0a9696e8c82715121a7",
+  "signing": "ad-hoc hardened runtime, app sandbox, established ad-hoc library-validation exception; verified before and after ZIP extraction",
+  "notarised": false,
+  "allSourceBlobsUnchangedSinceNativeTests": true
+}

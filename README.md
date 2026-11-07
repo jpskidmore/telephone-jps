@@ -1,4 +1,4 @@
-Version **3.8.2/build 169** is published as [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.2). It includes the stable SIP Keychain namespace and effective-save verification repair (#77). **1,046 fresh local tests passed**, and all seven release downloads match their recorded hashes. No local installation was performed. Read [3.8.2 publication proof](docs/releases/3.8.2-verification.json).
+Version **3.9/build 170** is published as [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9). Retires obsolete StoreKit purchasing and receipts while retaining all local features, full history, 30-call capacity and native build/licence information. **929 fresh native tests passed**, and all seven published downloads match their verified local hashes. No local installation was performed. Read [3.9 publication proof](docs/releases/3.9-verification.json).
 
 For current status, the ordered roadmap and maintenance instructions, start with
 [Current maintenance](docs/MAINTENANCE.md). Older release and audit records are
@@ -18,7 +18,7 @@ Historical version **3.5/build 162** added one compact dialler, configurable Gui
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.2">Latest release: 3.8.2 (169)</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9">Latest release: 3.9 (170)</a>
   <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained baseline: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
@@ -26,7 +26,7 @@ Historical version **3.5/build 162** added one compact dialler, configurable Gui
 </p>
 
 > [!IMPORTANT]
-> **3.8.2 is published on GitHub; it has not been installed locally.** Fresh validation passed 1,046 tests, and all seven uploaded/downloaded asset sizes and SHA-256 hashes match. The immutable release source is [`361f7fe`](https://github.com/jpskidmore/telephone-jps/commit/361f7fe3d639c11cb4fdf40fc5e72c92e77cfb58). Read [delivery proof](docs/releases/3.8.2-verification.json). Issue #77 was later closed after the owner confirmed the fix worked; detailed Keychain label/ACL/prompt, multiple-account upgrade/registration and rollback scenarios remain unverified. #62 is closed by owner decision. GitHub ran its automatic CodeQL scan despite `[skip ci]`; all release builds were local.
+> **Historical 3.8.2 delivery:** published on GitHub without a local installation. Fresh validation passed 1,046 tests, and all seven uploaded/downloaded asset sizes and SHA-256 hashes match. The immutable release source is [`361f7fe`](https://github.com/jpskidmore/telephone-jps/commit/361f7fe3d639c11cb4fdf40fc5e72c92e77cfb58). Read [delivery proof](docs/releases/3.8.2-verification.json). Issue #77 was later closed after the owner confirmed the fix worked; detailed Keychain label/ACL/prompt, multiple-account upgrade/registration and rollback scenarios remain unverified. #62 is closed by owner decision. GitHub ran its automatic CodeQL scan despite `[skip ci]`; all release builds were local.
 >
 > Read [the verified repair map](docs/REPAIR_VERIFICATION.md), [tracked evidence](docs/audit-2.1.8/repair-progress.json), [3.0 notes](docs/releases/3.0.md) and [maintenance handover](docs/BUG_FIX_HANDOVER.md). The owner chose public repository visibility on 21 October 2026. Work stays on main, and all builds remain local with `[skip ci]` commits and no cloud dispatch.
 >
