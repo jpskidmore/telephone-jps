@@ -4,6 +4,18 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
+## Active work order — 7 November 2026
+
+**Current outstanding issues: exactly one, [#71](https://github.com/jpskidmore/telephone-jps/issues/71). No open PRs were found.** The [ranked roadmap #52](https://github.com/jpskidmore/telephone-jps/issues/52) has been refreshed; its original 19-item baseline is **17 implemented / one closed not planned (#62) / one open (#71)**. The only remaining code issue is **historically P3 and rank 19/19, now the first actionable item because all others are closed**. No currently reported P0/P1 issue is open.
+
+1. **Next — #71, owner-selected Option B.** Retire unused StoreKit purchase, restore, subscription, receipt-refresh and payment-gating infrastructure from the maintained local app and its active build/test graph. [Owner decision of 29 October](https://github.com/jpskidmore/telephone-jps/issues/71#issuecomment-6508472369) replaces the former Option A plan. All local features are included without purchasing/entitlement; retain the existing 30-call engine capacity, full history, lifecycle/recording guards, compact interface and truthful version/build/source/GPL/Credits.
+2. **Then — verification gate for #71.** Inventory active references before deletion; freshly run isolated local feature/startup/capacity/history and native information-view cases, appropriate complete native suites, dependency/recording checks and unsigned arm64 Release build. Check absence of active payment observers or purchasing operations. Record actual results and unresolved limits in #71. The 29 October Option A candidate (1,034/1,035 passes) is not a validated implementation B and the obsolete StoreKit purchase-test error must not be described as its blocker.
+3. **After passing gates — close #71 and separately decide whether to build/release.** Do not infer signing, installation, real provider/hardware/permission tests or a new release from a source fix. Keep releases/tags/assets immutable and never touch real owner credentials or profiles during synthetic tests.
+
+**Already resolved:** #76 Mute/Hold icon regression and #77 Keychain namespace/save verification were closed. #77 was shipped in **[3.8.2/build 169](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.2)** and the owner subsequently reported it worked; the published release passed 1,046 suite tests and seven published downloads were hash-verified. No installation of 3.8.2 was recorded in the release process, and the general owner's confirmation does not constitute per-scenario Keychain/VoiceOver testing. #62's 24-scenario matrix is intentionally incomplete and **closed not planned**, not passed; do not reopen it without a new owner decision.
+
+**Execution boundaries:** one issue at a time on main, local Mac/Xcode checks, synthetic data, `[skip ci]` in code/documentation commits, no manually dispatched cloud workflow, no change to public visibility, licences, release archives or user data. This native macOS repository has no identified Cloudflare deployment dependency; leave Cloudflare resources unchanged. The dated release and other issue history below is retained as original evidence, not a live backlog.
+
 ## Current published release — 3.8.2/build 169, 5 November 2026
 
 **3.8.2/build 169** is [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.8.2),
