@@ -27,6 +27,29 @@ final class LocalBuildInformationViewControllerTests: XCTestCase {
         XCTAssertEqual(LocalBuildInformation.sourceURL.host, "github.com")
     }
 
+    func testApplicationBundleIncludesLicenceAndCredits() {
+        let bundle = Bundle.main
+        XCTAssertNotNil(bundle.url(forResource: "LICENSE", withExtension: nil),
+                        "The GPL licence must be included in the built app")
+        XCTAssertNotNil(bundle.url(forResource: "Credits", withExtension: "rtf"),
+                        "Original author and third-party credits must remain available")
+    }
+
+    func testInformationButtonsAreConnectedToTheViewController() {
+        let sut = LocalBuildInformationViewController(bundle: .main, workspace: .shared)
+        sut.loadViewIfNeeded()
+        guard let stack = sut.view.subviews.compactMap({ $0 as? NSStackView }).first else {
+            return XCTFail("Missing information stack")
+        }
+        let buttons = stack.arrangedSubviews.compactMap { $0 as? NSStackView }
+            .flatMap { $0.arrangedSubviews.compactMap { $0 as? NSButton } }
+        XCTAssertEqual(buttons.count, 3)
+        for button in buttons {
+            XCTAssertTrue(button.target === sut, "Information button has an unexpected target")
+            XCTAssertNotNil(button.action, "Information button is not wired")
+        }
+    }
+
     func testInformationScreenHasNoStoreOrPaymentActions() {
         let sut = LocalBuildInformationViewController(bundle: .main, workspace: .shared)
         sut.loadViewIfNeeded()
