@@ -4,6 +4,10 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
+## Active incident — #77 account-save failure, 7 November 2026
+
+The owner reports that 3.9 refuses an account save after a Keychain prompt was allowed: compatibility copy saved, new-entry verification failed. **#77 is reopened; the underlying cause is not yet established.** The published release's full test pass does not reproduce or resolve this installed failure. Source [`e7b8650`](https://github.com/jpskidmore/telephone-jps/commit/e7b865008fab2e473a6b6e8132b1c4c21af08a4f) adds only privacy-safe failure-stage/code diagnostics; it does not weaken verification or change credential operations. **66 focused native tests** and a diagnostic Release build passed. A local 3.9.1/build 171 diagnostic candidate is prepared for the owner to report the final error line; it is not a public release or a confirmed fix. Read [the incident, exact checks, candidate hash and next evidence](maintenance/2026-11-07-keychain-save-diagnostics.md). No live credentials, Keychain settings or installed app were touched by the agent. #71 remains completed; #62 stays closed not planned. Earlier zero-open-issue statements are checkpoint history.
+
 ## Current published release — 3.9/build 170, 7 November 2026
 
 **[3.9/build 170](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9) is public GitHub Latest**, from immutable tag/source `370b6bb7e1603b238f32082865302eaeed197225` (tree `ef633ec4c619c914bab234a03b4244d7aa9e8102`). It includes #71's owner-selected retirement of obsolete StoreKit purchases/receipts and native Local Build Information, retaining all local features, full history and 30-call capacity.

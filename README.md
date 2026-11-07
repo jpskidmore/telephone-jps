@@ -1,5 +1,7 @@
 Version **3.9/build 170** is published as [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9). Retires obsolete StoreKit purchasing and receipts while retaining all local features, full history, 30-call capacity and native build/licence information. **929 fresh native tests passed**, and all seven published downloads match their verified local hashes. No local installation was performed. Read [3.9 publication proof](docs/releases/3.9-verification.json).
 
+**Known issue under investigation:** [#77 — account save can fail after Keychain permission is allowed](https://github.com/jpskidmore/telephone-jps/issues/77). Diagnostic work is source-only/local-candidate at this stage; no root-cause fix is claimed.
+
 For current status, the ordered roadmap and maintenance instructions, start with
 [Current maintenance](docs/MAINTENANCE.md). Older release and audit records are
 dated evidence, not outstanding work or new test results.
