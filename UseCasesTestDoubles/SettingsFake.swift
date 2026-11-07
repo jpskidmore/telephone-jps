@@ -83,5 +83,3 @@ extension SettingsFake: KeyValueSettings {
         }
     }
 }
-
-extension SettingsFake: PurchaseReminderSettings {}

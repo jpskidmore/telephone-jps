@@ -35,6 +35,15 @@ final class LocalBuildInformationViewControllerTests: XCTestCase {
                         "Original author and third-party credits must remain available")
     }
 
+    func testInformationWindowLoadsItsNativeNibWithTheInformationController() throws {
+        let information = LocalBuildInformationViewController(bundle: .main, workspace: .shared)
+        let controller = LocalBuildInformationWindowController(contentViewController: information)
+        let window = try XCTUnwrap(controller.window)
+        defer { window.close() }
+        XCTAssertTrue(window.contentViewController === information)
+        XCTAssertEqual(window.title, "jps Telephone — Local Build Information")
+    }
+
     func testInformationButtonsAreConnectedToTheViewController() {
         let sut = LocalBuildInformationViewController(bundle: .main, workspace: .shared)
         sut.loadViewIfNeeded()

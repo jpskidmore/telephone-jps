@@ -311,7 +311,7 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         defer { window.close() }
         let call = CallHistoryCallMakeUseCaseFactorySpy(callMake: UseCaseSpy())
         let remove = CallHistoryRecordRemoveUseCaseFactorySpy(remove: UseCaseSpy())
-        let target = CallHistoryViewEventTarget(recordsGet: UseCaseSpy(), purchaseCheck: UseCaseSpy(),
+        let target = CallHistoryViewEventTarget(recordsGet: UseCaseSpy(),
                                               recordRemoveAll: UseCaseSpy(), recordRemove: remove, callMake: call)
         sut.target = target
         sut.setHistoryExpanded(false)
@@ -415,7 +415,7 @@ final class CompactCallHistoryViewControllerTests: XCTestCase {
         defer { window.close() }
         let call = CallHistoryCallMakeUseCaseFactorySpy(callMake: UseCaseSpy())
         let target = CallHistoryViewEventTarget(
-            recordsGet: UseCaseSpy(), purchaseCheck: UseCaseSpy(),
+            recordsGet: UseCaseSpy(),
             recordRemoveAll: UseCaseSpy(),
             recordRemove: CallHistoryRecordRemoveUseCaseFactorySpy(remove: UseCaseSpy()),
             callMake: call

@@ -47,28 +47,3 @@ final class AccountViewBottomViewPresenter: NSObject {
         constraint.animator().constant = 0
     }
 }
-
-extension AccountViewBottomViewPresenter: RecordCountingPurchaseCheckUseCaseOutput {
-    nonisolated func didCheckPurchase() {
-        Task { @MainActor in
-            hide()
-        }
-    }
-
-    nonisolated func didFailCheckingPurchase(recordCount count: Int) {
-        Task { @MainActor in
-            if count > controller.recordCount {
-                button.title = makeButtionTitleWithCounts(total: count, current: controller.recordCount)
-                show()
-            } else {
-                hide()
-            }
-        }
-    }
-}
-
-private func makeButtionTitleWithCounts(total: Int, current: Int) -> String {
-    return String(
-        format: NSLocalizedString("Show %d more…", comment: "Show more call history records button."), total - current
-    )
-}

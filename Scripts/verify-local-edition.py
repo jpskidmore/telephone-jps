@@ -51,28 +51,28 @@ repository_names = {p.name for p in source_paths}
 missing_sources = sorted(source_names - repository_names)
 require(not missing_sources, "missing source files: " + ", ".join(missing_sources))
 
-# Inspect surviving production code, not just its application composition root.
+# Inspect surviving production and test code, including shared test doubles.
 # Historical upstream comments are not active SDK dependencies.
-retired_production_symbol = re.compile(
-    r"\b(?:SKPaymentQueue|SKProductsRequest|ReceiptXPCGateway|"
-    r"PurchaseCheckUseCase|PurchaseCheckUseCaseFactory|"
+retired_source_symbol = re.compile(
+    r"\b(?:SKPaymentQueue|SKProductsRequest|ReceiptValidation|ReceiptXPCGateway|"
+    r"PurchaseCheckUseCase|PurchaseCheckUseCaseFactory|RecordCountingPurchaseCheckUseCaseOutput|"
     r"ReceiptValidatingContactCallHistoryRecordGetAllUseCaseOutput|"
     r"DefaultStoreViewEventTarget|StoreViewController|PresentationProduct|"
-    r"LocalProReceipt|BundleReceipt|StoreEventTargets|ObjCStoreEventTarget|"
+    r"AsyncCallHistoryPurchaseCheckUseCaseFactory|StoreWindowPresenter|purchaseCheck|showStoreWindow|"
+    r"LocalProReceipt|BundleReceipt|StoreEventTargets|ObjCStoreEventTarget|PurchaseReminderSettings|"
     r"UserDefaultsPurchaseReminderSettings)\b"
 )
-production_paths = (
+compiled_paths = (
     p for p in source_paths
-    if p.parts[len(root.parts)] in {"Telephone", "UseCases", "Domain"}
-    and p.suffix in {".swift", ".m", ".mm", ".h", ".c", ".cpp"}
+    if p.suffix in {".swift", ".m", ".mm", ".h", ".c", ".cpp", ".xib"}
 )
-for path in production_paths:
+for path in compiled_paths:
     for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         if line.lstrip().startswith(("//", "/*", "*")):
             continue
-        match = retired_production_symbol.search(line)
+        match = retired_source_symbol.search(line)
         require(match is None,
-                f"retired production symbol {match.group()} in "
+                f"retired source symbol {match.group()} in "
                 f"{path.relative_to(root)}:{lineno}" if match else "")
 
 # These 24-character keys are Xcode object identifiers, not SDK/build metadata.

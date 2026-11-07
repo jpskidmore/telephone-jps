@@ -7,8 +7,6 @@
 // Local CoreAudio driver extension; exact physical UID for a PJSIP global index.
 PJ_DECL(pj_status_t) jps_coreaudio_device_uid(pjmedia_aud_dev_index global_index, char *buffer, unsigned capacity);
 
-#import "ReceiptValidation-Bridging-Header.h"
-
 #import "AccountController.h"
 #import "AccountControllers.h"
 #import "AppController.h"

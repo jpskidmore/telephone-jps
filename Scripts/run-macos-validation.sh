@@ -1,5 +1,6 @@
 #!/bin/sh
-# Native validation only. Does not sign, deploy, make calls, or change settings.
+# Native validation only. Ad-hoc signs the disposable test host for isolation.
+# Does not sign a release, deploy, make calls, or change production settings.
 set -eu
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$project_root"
