@@ -4,7 +4,13 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
-## Native validation update — 7 November 2026
+## Completed work — issue #71 Option B, 7 November 2026
+
+The purchase/receipt retirement has completed its required native acceptance and issue [#71](https://github.com/jpskidmore/telephone-jps/issues/71) is complete. The reviewed source is [`a82611f`](https://github.com/jpskidmore/telephone-jps/commit/a82611fa8e5f33bcfe97dacfcc23f56e31fb9815); later changes are documentation only. The completed native run passed **929 tests, zero failures/skips**, dependency checks, 105 separate recording ownership assertions and unsigned arm64 Release. Saved logs, result bundles and Release/resource hashes were rechecked at completion; no further full-suite run is claimed. Read the [acceptance mapping and delivery limits](maintenance/2026-11-07-storekit-acceptance.md).
+
+The original roadmap is **18 implemented / one closed not planned (#62)**, with no remaining open implementation item. #62's practical matrix is not passed or reopened. The current published release remains immutable **3.8.2/build 169** and does not contain this later #71 change. No installation, release, normal production-profile/live-data acceptance, cloud dispatch or Cloudflare change is made. No further implementation or delivery task is started automatically. Earlier status entries below retain their checkpoint dates and are superseded by this completion entry.
+
+## Historical native checkpoint — 7 November 2026
 
 Issue [#71](https://github.com/jpskidmore/telephone-jps/issues/71) remains **OPEN**, with fresh local Apple silicon evidence now available. Corrected source [`a82611f`](https://github.com/jpskidmore/telephone-jps/commit/a82611fa8e5f33bcfe97dacfcc23f56e31fb9815) removes compile-blocking purchase/receipt remnants missed by the earlier audit. The complete native entrypoint passed **929 tests, zero failures/skips**, dependency checks, 105 separate recording ownership assertions and an unsigned arm64 Release build. The native information-window nib passed its integration test; Light/Dark component previews and opening bundled GPL/Credits were checked in a disposable app. No installed/production-profile or live-account acceptance is implied. Read the [exact native evidence, diagnostic failures and limits](maintenance/2026-11-07-storekit-native-validation.md) and [hash/count record](maintenance/2026-11-07-storekit-native-validation.json). No release, installation, cloud dispatch or Cloudflare change was made. The source-only work order below is historical and its NOT RUN statements are superseded by this dated native record.
 

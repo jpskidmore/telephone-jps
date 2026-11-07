@@ -1,3 +1,5 @@
+> **Subsequent acceptance review — 7 November 2026:** the saved native results and artifact hashes were rechecked with no runtime source changes. #71 is completed; see the [acceptance mapping and unchanged delivery boundaries](2026-11-07-storekit-acceptance.md). The OPEN status below records the earlier run checkpoint.
+
 # Issue #71 — fresh native validation, 7 November 2026
 
 Option B now passes the local Apple silicon automated gate. **Issue #71 remains OPEN; no installation or release was performed.** This supersedes the earlier source-only status, while preserving its dated evidence.
