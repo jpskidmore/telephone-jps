@@ -19,8 +19,7 @@ done
 test -x /usr/libexec/PlistBuddy || { echo "Missing prerequisite: PlistBuddy" >&2; exit 69; }
 
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-plutil -lint "$project_root/Telephone/Telephone.entitlements" \
-    "$project_root/ReceiptValidation/ReceiptValidation.entitlements" >/dev/null
+plutil -lint "$project_root/Telephone/Telephone.entitlements" >/dev/null
 source_app_path=$1
 app_path=${2:-$source_app_path}
 
@@ -60,13 +59,6 @@ if [ -d "$app_path/Contents/Frameworks" ]; then
         while IFS= read -r framework_path; do
             codesign --force --sign - --options runtime "$framework_path"
         done
-fi
-
-xpc_path="$app_path/Contents/XPCServices/ReceiptValidation.xpc"
-if [ -d "$xpc_path" ]; then
-    codesign --force --sign - --options runtime \
-        --entitlements "$project_root/ReceiptValidation/ReceiptValidation.entitlements" \
-        "$xpc_path"
 fi
 
 codesign --force --sign - --options runtime \

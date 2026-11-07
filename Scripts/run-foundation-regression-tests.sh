@@ -11,8 +11,8 @@ xcrun --find swiftc >/dev/null
 build_directory=$(mktemp -d "${TMPDIR:-/tmp}/telephone-foundation-regression.XXXXXX")
 trap 'rm -rf "$build_directory"' EXIT HUP INT TERM
 
-# A small real UseCases module lets the production adapters compile unchanged,
-# without linking the app or accessing its user's defaults, sound, or SIP state.
+# A small real UseCases module exercises the production ringtone/timer adapters
+# without linking the app or accessing user defaults, sound devices or SIP state.
 xcrun swiftc -swift-version 6 -emit-module -emit-library -module-name UseCases \
     -emit-module-path "$build_directory/UseCases.swiftmodule" \
     -Xlinker -install_name -Xlinker @rpath/libUseCases.dylib \
@@ -21,18 +21,14 @@ xcrun swiftc -swift-version 6 -emit-module -emit-library -module-name UseCases \
     "$project_root/UseCases/Sound.swift" \
     "$project_root/UseCases/Ringtone.swift" \
     "$project_root/UseCases/RepeatingSound.swift" \
-    "$project_root/UseCases/PurchaseReminderSettings.swift" \
     -o "$build_directory/libUseCases.dylib"
 
 # Match the application's approachable-concurrency isolated conformance rule.
-# DeviceGUID is compiled, but tests inject CF properties and never query IOKit.
 xcrun swiftc -swift-version 6 -enable-upcoming-feature InferIsolatedConformances \
     -I "$build_directory" -L "$build_directory" -lUseCases \
     -Xlinker -rpath -Xlinker "$build_directory" \
     "$project_root/Telephone/FoundationToUseCasesTimerAdapter.swift" \
     "$project_root/Telephone/FoundationToUseCasesTimerAdapterFactory.swift" \
-    "$project_root/Telephone/UserDefaultsPurchaseReminderSettings.swift" \
-    "$project_root/ReceiptValidation/DeviceGUID.swift" \
     "$project_root/Tests/FoundationRegressionHarness.swift" \
     -o "$build_directory/foundation-regression-harness"
 

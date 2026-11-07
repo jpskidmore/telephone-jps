@@ -25,12 +25,12 @@ xcodebuild -version
 ./Scripts/verify-vendor-security.sh
 ./Scripts/run-recording-tests.sh
 
-# The four checked-in schemes below cover all four XCTest bundles. Fresh result
-# paths avoid xcodebuild's refusal to overwrite an existing .xcresult bundle.
+# Domain and UseCasesTests run directly; TelephoneTests uses an isolated host.
+# Fresh result paths prevent overwriting an existing .xcresult bundle.
 # Build products must stay outside iCloud/FileProvider-managed source folders.
 run_dir=$(mktemp -d /private/tmp/jps-telephone-validation.XXXXXX)
 echo "Native validation artifacts: $run_dir"
-for scheme in Domain UseCasesTests ReceiptValidationTests; do
+for scheme in Domain UseCasesTests; do
     xcodebuild -project Telephone.xcodeproj -scheme "$scheme" \
         -configuration Debug -destination 'platform=macOS,arch=arm64' \
         -derivedDataPath "$run_dir/DerivedData" \
@@ -55,5 +55,5 @@ xcodebuild -project Telephone.xcodeproj -target Telephone \
     "CLANG_MODULE_CACHE_PATH=$run_dir/ModuleCache" \
     'OTHER_CFLAGS=$(inherited) -ffile-prefix-map=$(SRCROOT)=.' build
 
-echo "Native harness, four XCTest bundles, and unsigned Release build passed."
+echo "Native harness, three XCTest bundles, and unsigned Release build passed."
 echo "App launch, signing, sandbox behavior, audio, and live SIP remain separate checks."

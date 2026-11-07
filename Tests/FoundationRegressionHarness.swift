@@ -40,8 +40,6 @@ private struct FoundationRegressionHarness {
         testRingtoneOwnerRelease()
         testStoppedRingtoneRelease()
         testUnstartedRingtoneRelease()
-        testReminderDefaults()
-        testOptionalRegistryProperty()
         print("Foundation regression harness passed \(checks) checks")
     }
 
@@ -111,33 +109,5 @@ private struct FoundationRegressionHarness {
         expect(counts.stops == 0, "unstarted sound does not receive a redundant stop")
     }
 
-    @MainActor private static func testReminderDefaults() {
-        let suite = "uk.jpsit.telephone.foundation-regression.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let settings = UserDefaultsPurchaseReminderSettings(defaults: defaults)
-        expect(settings.date == .distantPast, "missing reminder date uses the established default")
-        expect(settings.version == "", "missing reminder version uses the established default")
-        let date = Date(timeIntervalSince1970: 1_700_000_000)
-        settings.date = date
-        settings.version = "2.1.3"
-        expect(settings.date == date, "valid reminder date round trips")
-        expect(settings.version == "2.1.3", "valid reminder version round trips")
-        defaults.set("invalid-date", forKey: "PurchaseReminderDate")
-        defaults.set(["invalid-version"], forKey: "PurchaseReminderVersion")
-        expect(settings.date == .distantPast, "wrong-type stored reminder date does not crash")
-        expect(settings.version == "", "wrong-type stored reminder version does not crash")
-        settings.date = date
-        settings.version = "2.1.3"
-        expect(settings.date == date && settings.version == "2.1.3", "valid writes recover invalid settings")
-    }
 
-    @MainActor private static func testOptionalRegistryProperty() {
-        expect(DeviceGUID.macAddressData(from: nil) == nil, "absent IOKit property does not crash")
-        let wrongType = Unmanaged<CFTypeRef>.passRetained(NSString(string: "not-MAC-data"))
-        expect(DeviceGUID.macAddressData(from: wrongType) == nil, "wrong-type IOKit property does not crash")
-        let bytes = Data([0x02, 0x11, 0x22, 0x33, 0x44, 0x55])
-        let property = Unmanaged<CFTypeRef>.passRetained(bytes as NSData)
-        expect(DeviceGUID.macAddressData(from: property) == bytes, "valid IOKit MAC data retains its exact bytes")
-    }
 }

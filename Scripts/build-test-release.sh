@@ -23,7 +23,7 @@ fi
 run_dir=${JPS_LOCAL_BUILD_DIR:-$(mktemp -d /private/tmp/jps-telephone-release.XXXXXX)}
 test ! -e "$run_dir/distribution" || { echo 'Use a fresh local build directory for a test release.' >&2; exit 73; }
 mkdir -p "$run_dir/distribution"
-for scheme in Domain UseCasesTests ReceiptValidationTests; do
+for scheme in Domain UseCasesTests; do
     xcodebuild -project Telephone.xcodeproj -scheme "$scheme" \
         -configuration Debug -destination 'platform=macOS,arch=arm64' \
         -derivedDataPath "$run_dir/TestDerivedData" \
@@ -69,9 +69,9 @@ git archive --format=zip --prefix="telephone-jps-${version}/" \
     xcodebuild -version
     printf 'macOS SDK: '
     xcrun --sdk macosx --show-sdk-version
-    printf '\nPassed: dependency verification, audio recovery and recording harnesses, portable lifecycle checks, four XCTest suites, arm64 Release build, ad-hoc signing and bundle verification.\n'
+    printf '\nPassed: dependency verification, audio recovery and recording harnesses, portable lifecycle checks, three XCTest suites, arm64 Release build, ad-hoc signing and bundle verification.\n'
     if [ -x Scripts/run-foundation-regression-tests.sh ]; then
-        printf 'Passed: standalone production Foundation/receipt regression harness.\n'
+        printf 'Passed: standalone production Foundation/timer regression harness.\n'
     fi
     printf '\nThis is an ad-hoc signed local test build, not notarized. Live SIP, real audio devices, VoiceOver and visual acceptance remain manual tests.\n'
 } > "$dist/BUILD-VERIFICATION.md"

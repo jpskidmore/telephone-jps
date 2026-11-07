@@ -71,9 +71,11 @@ for framework in ("Domain", "UseCases"):
     framework_info = read_dictionary(framework_path / "Resources/Info.plist")
     if framework_info.get("CFBundleDevelopmentRegion") != "en-GB":
         raise SystemExit(f"{framework} framework development language is not UK English")
-receipt_info = read_dictionary(app / "Contents/XPCServices/ReceiptValidation.xpc/Contents/Info.plist")
-if receipt_info.get("CFBundleDevelopmentRegion") != "en-GB":
-    raise SystemExit("ReceiptValidation service development language is not UK English")
+if (app / "Contents/XPCServices/ReceiptValidation.xpc").exists():
+    raise SystemExit("Retired receipt-validation XPC service is still embedded")
+for required in ("LICENSE", "Credits.rtf"):
+    if not (app / "Contents/Resources" / required).is_file():
+        raise SystemExit(f"Missing local edition licensing resource: {required}")
 if not (app / "Contents/Resources/en-GB.lproj").is_dir():
     raise SystemExit("Missing UK English application resources")
 if not (app / "Contents/Frameworks/UseCases.framework/Resources/en-GB.lproj").is_dir():
