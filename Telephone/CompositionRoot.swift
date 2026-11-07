@@ -85,14 +85,9 @@ final class CompositionRoot: NSObject {
 
         // Local edition: present information only. Do not create StoreKit
         // products, payment queues, receipt refreshes or purchase observers.
-        let storeViewController = StoreViewController(
-            target: NullStoreViewEventTarget(), workspace: NSWorkspace.shared
-        )
-        storeViewController.loadViewIfNeeded()
-        storeViewController.showPurchased(until: .distantFuture)
-        storeViewController.showSubscriptionManagement()
+        let information = LocalBuildInformationViewController(bundle: .main, workspace: .shared)
         storeWindowPresenter = StoreWindowPresenter(
-            controller: StoreWindowController(contentViewController: storeViewController)
+            controller: StoreWindowController(contentViewController: information)
         )
 
         userAgentStart = UserAgentStartUseCase(agent: userAgent)
