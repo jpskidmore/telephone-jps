@@ -1,5 +1,8 @@
 # Contacts first-use permission — issue #78, 8 November 2026
 
+**Resolved and published:** the owner accepted local build174 as good and requested release/merge. The repair is public in [3.9.2/build175](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.2); #78 is closed on that scoped acceptance. Earlier pending/candidate statements below retain their original checkpoints.
+
+
 The owner reported missing names in both dialler completion and caller/history lookup, then identified that access required the Settings **Allow Contacts** button. The owner explicitly requested an automatic request. This is a first-use permission/discoverability defect, not evidence of a failed Contacts enumeration or broken matching algorithm. No actual contact values or system permission settings were inspected or changed.
 
 ## Source change
@@ -27,3 +30,9 @@ Unsigned arm64 Release compilation passed using version overrides **3.9.2/build 
 Local candidate `jps-Telephone-3.9.2-contacts-candidate-174-arm64.zip`: **3,021,533 bytes**, SHA-256 `80547324465acbfe012e6959016ea09574b97e4800ab7d47a189f1bf3dcbc7da`. It and the verification JSON are under this chat's `outputs/contacts-first-use`; detailed logs are in `work/contacts-first-use`, result bundle `/private/tmp/jps-contacts-first-use-final.xcresult`. This is ad-hoc signed, unnotarised and not a public release/tag. Public Latest remains immutable 3.9.1/build 173.
 
 No real CNContactStore, Contacts prompt, owner data or normal production profile was used by these tests. No installation, permission grant, actual contact lookup, call, cloud CI dispatch or Cloudflare change was performed. Real first-use prompting and permitted names still require owner confirmation; #78 stays open. A prior denial requires System Settings recovery; a prior grant is reused and should not prompt again. Do not reset real privacy grants merely to demonstrate a prompt. #77 and #71 remain completed; #62 remains closed not planned.
+
+## Owner acceptance and publication
+
+The owner said **“release, merge etc - it's good”** after receiving local build174. This accepts the reported Contacts behavior and authorises publication; the fix was already on main. It is not a per-scenario record proving an actual undecided-to-granted OS prompt, denied/restricted choice, every real address-book lookup or live-call/rollback behavior. No agent Contacts access or installation is inferred.
+
+Published **3.9.2/build175**, exact source/tag `c4454fc8f3315b09f706d13662f8762d02dcbbc6`, passed a fresh full **942-case** release run (zero failures/skips), mandatory Contacts gates, separate components, Release/signing/package/source checks and all seven published-download hash checks. No diagnostic-only markers remain. [Publication proof](../releases/3.9.2-verification.json) records unchanged prior releases/tags/assets. #78 is closed completed; #77/#71 completed and #62 closed not planned. No production-profile launch, user-data operation, privacy grant, cloud workflow dispatch or Cloudflare change was made.

@@ -1,0 +1,131 @@
+{
+  "status": "published_verified",
+  "version": "3.9.2",
+  "build": 175,
+  "sourceCommit": "c4454fc8f3315b09f706d13662f8762d02dcbbc6",
+  "nativeTestSourceCommit": "c4454fc8f3315b09f706d13662f8762d02dcbbc6",
+  "sourceTree": "e2113aefbf8f8eb6dd3e82203c116a50b5f30618",
+  "suites": {
+    "Domain": {
+      "totalTestCount": 28,
+      "passedTests": 28,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "UseCasesTests": {
+      "totalTestCount": 315,
+      "passedTests": 315,
+      "failedTests": 0,
+      "skippedTests": 0
+    },
+    "TelephoneTests": {
+      "totalTestCount": 599,
+      "passedTests": 599,
+      "failedTests": 0,
+      "skippedTests": 0
+    }
+  },
+  "suiteTotals": {
+    "passed": 942,
+    "failed": 0,
+    "skipped": 0
+  },
+  "appFiles": 52,
+  "appSymlinks": 6,
+  "sourceBlobs": 1401,
+  "packageParity": "passed",
+  "installation": false,
+  "productionProfileLaunch": false,
+  "diagnosticMarkers": false,
+  "ownerAcceptance": "Owner accepted local Contacts candidate build174 as good and requested release; exact first-use prompt/denial and comprehensive real-data checks not independently verified",
+  "assets": [
+    {
+      "name": "BUILD-VERIFICATION.md",
+      "size": 2322,
+      "sha256": "f3a2f9e71d89e89d001522a20065c0c1a53cc8bfde7f810feaf33ccbaff74c1a",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9.2/BUILD-VERIFICATION.md",
+      "assetID": 723601542,
+      "downloadVerified": true
+    },
+    {
+      "name": "DIAL-PLAN-NUMBERING.md",
+      "size": 8002,
+      "sha256": "f4beb21fb0668366ab23af977f02166c0594ac08973c05c6b757507a73591c2a",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9.2/DIAL-PLAN-NUMBERING.md",
+      "assetID": 723601567,
+      "downloadVerified": true
+    },
+    {
+      "name": "DIAL-PLANS.md",
+      "size": 8475,
+      "sha256": "43a6b379110d45b0b94c2d8a5682dba5d62dfc3556bd09c12b3e34f75dc16bcc",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9.2/DIAL-PLANS.md",
+      "assetID": 723601575,
+      "downloadVerified": true
+    },
+    {
+      "name": "RELEASE-NOTES.md",
+      "size": 1428,
+      "sha256": "c57f42497359cf29be74e40a15e60c1fdb0851df54657b7293fc636a1aa5ee54",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9.2/RELEASE-NOTES.md",
+      "assetID": 723608095,
+      "downloadVerified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 533,
+      "sha256": "6e2281b2f85b55ab813680b2cd119b51f7518f4309ece14b631492d1f66c9fef",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9.2/SHA256SUMS.txt",
+      "assetID": 723608162,
+      "downloadVerified": true
+    },
+    {
+      "name": "jps-Telephone-3.9.2-arm64.zip",
+      "size": 3021429,
+      "sha256": "b570c52dedd62721cf780fab47cfea9eb2e713051091298fa509c82da9e31d8a",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9.2/jps-Telephone-3.9.2-arm64.zip",
+      "assetID": 723601583,
+      "downloadVerified": true
+    },
+    {
+      "name": "jps-Telephone-3.9.2-source.zip",
+      "size": 41067970,
+      "sha256": "3cd671290d37868c3c6328070c12eaf13314174ca8b058bfd84ba5602ef46fb7",
+      "url": "https://github.com/jpskidmore/telephone-jps/releases/download/v3.9.2/jps-Telephone-3.9.2-source.zip",
+      "assetID": 723601872,
+      "downloadVerified": true
+    }
+  ],
+  "logs": {
+    "acl-fixture.log": "20bf7990d3a5e409a55627c647c47596ff1aaecfbeb9270e6d256a7e305e0ada",
+    "acl-fixture-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "package-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build-release.log": "5aa2bc0555a30b6a99eac5f56d6a374587278b48b84d84144c8d8caf9757211c",
+    "foundation-check.log": "9e01bdb9df61613fe8ed9ed776b8967eba3efd037759a0a9696e8c82715121a7"
+  },
+  "releaseURL": "https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.2",
+  "releaseID": 438171934,
+  "publishedAt": "2026-11-08T10:31:13Z",
+  "verifiedAt": "2026-11-08T10:36:31.770080+00:00",
+  "latest": true,
+  "prerelease": false,
+  "tagObject": {
+    "sha": "c4454fc8f3315b09f706d13662f8762d02dcbbc6",
+    "type": "commit",
+    "url": "https://api.github.com/repos/jpskidmore/telephone-jps/git/commits/c4454fc8f3315b09f706d13662f8762d02dcbbc6"
+  },
+  "priorReleasesPreserved": 13,
+  "priorAssetsPreserved": 86,
+  "priorTagsPreserved": 18,
+  "visibility": "public_unchanged",
+  "cloudWorkflowDispatched": false,
+  "cloudflareChanged": false,
+  "usageAtStart": "Five-hour 72 percent used; weekly 93 percent used; ordinary usage allowed with credits; no reset credit consumed.",
+  "packagingLogSHA256": "5aa2bc0555a30b6a99eac5f56d6a374587278b48b84d84144c8d8caf9757211c",
+  "downloadDiagnostics": "Initial ordinary download URLs returned HTTP504; fresh cache-busting query requests completed with exact original hashes. No release asset was rewritten.",
+  "downloadDiagnosticLogs": {
+    "publication-check-retry.log": "f55cefcac2035bf1cfc9cb4955f3431105445b4f95daf509a5ca437d2df3c4d4",
+    "publication-check-final.log": "b2c7cfecce15dab3b4c2dd8add1c2f81596fd9efe8185b13f04a6cc1b0b8a041",
+    "publication-check.log": "f16173cc23ff138a829a4b54db0cb9c78668f3bd52ea719187c36caa8b0dcecf"
+  }
+}

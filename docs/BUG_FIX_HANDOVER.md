@@ -1,6 +1,9 @@
 # Maintenance handover — 3.5.1 Guided routes crash repair
 
-**Current publication — 8 November 2026:** [3.9.1/build 173](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1), source/tag `6dcbe2d0984d2b2760867898a0fb4e0420b19130`, is public Latest. Fresh full native validation passed 939 tests with zero failures/skips; all seven published downloads match verified hashes. Read [publication proof](releases/3.9.1-verification.json). The owner confirmed the preceding installed local build 172 survives restart; no build 173 installation or live-call/multi-account/rollback acceptance is claimed. #77/#71 are completed; #62 stays closed not planned. The older delivery records below are historical and do not describe the current release.
+**Current publication:** [3.9.2/build175](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.2), source/tag `c4454fc8f3315b09f706d13662f8762d02dcbbc6`, is public Latest. Fresh full local validation passed 942 tests with zero failures/skips, mandatory Contacts gates and seven download hash checks. The owner accepted preceding local build174; no build175 installation or comprehensive permission/live-call acceptance is claimed. #78 is completed. Read [publication proof](releases/3.9.2-verification.json); older checkpoint summaries below are superseded.
+
+
+**Historical 3.9.1 publication — 8 November 2026:** [3.9.1/build 173](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1), source/tag `6dcbe2d0984d2b2760867898a0fb4e0420b19130`, is public Latest. Fresh full native validation passed 939 tests with zero failures/skips; all seven published downloads match verified hashes. Read [publication proof](releases/3.9.1-verification.json). The owner confirmed the preceding installed local build 172 survives restart; no build 173 installation or live-call/multi-account/rollback acceptance is claimed. #77/#71 are completed; #62 stays closed not planned. The older delivery records below are historical and do not describe the current release.
 
 
 Start with [Current maintenance](MAINTENANCE.md) for the live roadmap, current

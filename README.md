@@ -1,8 +1,6 @@
-**Contacts first-use follow-up:** [#78](https://github.com/jpskidmore/telephone-jps/issues/78) now has an automatic permission request and mandatory synthetic lookup regressions on main. A [local build 174 candidate](docs/maintenance/2026-11-08-contacts-first-use.md) is ready; public 3.9.1 below still uses the Settings → General → Allow Contacts action. Real first-use/lookup acceptance remains pending.
+Version **3.9.2/build 175** is published as [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.2). Requests Contacts permission automatically on first use when macOS has not recorded a choice, and refreshes dialler/caller/history names after permission completion. **942 fresh native tests passed**, including mandatory Contacts regressions. Read [publication and download proof](docs/releases/3.9.2-verification.json). Ad-hoc signed and unnotarised; no installation was performed by this release process.
 
-Version **3.9.1/build 173** is published as [public GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1). Fixes the Keychain account-save failure and adds privacy-safe error details, retaining all 3.9 features. **939 fresh native tests passed**, with source/package and published-download verification recorded in [3.9.1 publication proof](docs/releases/3.9.1-verification.json). Ad-hoc signed and unnotarised; no installation was performed by this release process.
-
-The owner confirmed that the preceding local **3.9.1/build 172** save correction survives a restart, resolving [#77](https://github.com/jpskidmore/telephone-jps/issues/77). Build 173 has fresh automated release checks; call/registration, multi-account, denied/cancelled and rollback acceptance remain separate. Read [the repair and owner acceptance](docs/maintenance/2026-11-07-keychain-acl-copy.md).
+The owner accepted preceding local **3.9.2/build 174** and requested release, resolving [#78](https://github.com/jpskidmore/telephone-jps/issues/78). Existing Contacts permission choices remain respected. Detailed real first-use prompt, denial/restriction and live-call/rollback checks remain separate from that general confirmation. All earlier Keychain fixes and 3.9 features remain. Read [Contacts repair and acceptance](docs/maintenance/2026-11-08-contacts-first-use.md).
 
 For current status, the ordered roadmap and maintenance instructions, start with
 [Current maintenance](docs/MAINTENANCE.md). Older release and audit records are
@@ -22,7 +20,7 @@ Historical version **3.5/build 162** added one compact dialler, configurable Gui
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1">Latest release: 3.9.1 (173)</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.2">Latest release: 3.9.2 (175)</a>
   <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained baseline: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">
