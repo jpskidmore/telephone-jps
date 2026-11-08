@@ -4,6 +4,10 @@ Start here for current work on jps Telephone. Release archives and dated test
 records describe their original builds; later documentation commits do not
 replace those archives or certify a changed app.
 
+## Active work — #78 Contacts first-use permission, 8 November 2026
+
+The owner identified that missing dialler/caller/history names required the hidden-in-Settings **Allow Contacts** action and requested automatic permission on first use. Source [`92d2616`](https://github.com/jpskidmore/telephone-jps/commit/92d2616d11b5fae22f14cabd61f919ff66fd39bb) requests once during normal startup only while OS permission is undetermined, respects previous choices and retains explicit recovery. **599 isolated application tests passed**, including new adapter-to-history/dialler permission-flow regressions. Both validation/release scripts now require six executed Contacts regressions and startup source wiring; signed release verification also requires Contacts permission metadata. Release/candidate package checks passed. A local **3.9.2/build 174** candidate is ready; it is not published or installed. **#78 stays open for real first-use/lookup confirmation.** Read [exact evidence, candidate hash and acceptance limits](maintenance/2026-11-08-contacts-first-use.md). No actual Contacts were accessed and no privacy grants changed. The published release and its earlier no-open-issues checkpoint below are historical with respect to this new incident.
+
 ## Current published release — 3.9.1/build 173, 8 November 2026
 
 **[3.9.1/build 173](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1) is public GitHub Latest**, from immutable source/tag `6dcbe2d0984d2b2760867898a0fb4e0420b19130` (tree `b814c9beed0a874ad313e2f82a376396fae0e39f`). It includes the #77 account-save correction and privacy-safe failure-stage/error-code diagnostics. The owner confirmed preceding local build 172 survives restart; this is distinct from build 173's automated release verification.

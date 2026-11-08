@@ -1,5 +1,9 @@
 # Validation and release checks
 
+## Mandatory Contacts gate — 8 November 2026
+
+Both native validation and local release entrypoints run `python3 Scripts/verify-contacts-regressions.py <TelephoneTests.xcresult>`. Six named first-use, matching/completion, denial and revocation cases must execute and pass; source wiring independently checks the normal startup hook. Release verification also requires signed/project address-book entitlements and a non-empty Contacts usage description. The gate rejects the old result bundle without the new cases. Fresh app-only validation passed **599 cases**, zero failures/skips; this does not rerun the full release suites below. Read [#78 evidence and limits](maintenance/2026-11-08-contacts-first-use.md). No real Contacts or privacy grants are used for these regressions.
+
 ## Current 3.9.1 release — 8 November 2026
 
 Public [GitHub Latest v3.9.1](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1), build 173, is verified from immutable exact source/tag `6dcbe2d0984d2b2760867898a0fb4e0420b19130`. Fresh local suites passed **939 tests**, zero failures/skips: Domain 28 XCTest; UseCases 192 XCTest + 123 Swift Testing; uniquely identified nib-free Telephone 548 XCTest + 48 Swift Testing. Separate vendor, audio/recording, Foundation and private synthetic Keychain checks passed; assertion counts are not added to this total.
