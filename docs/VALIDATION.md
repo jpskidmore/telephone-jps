@@ -1,6 +1,12 @@
 # Validation and release checks
 
-## Current 3.7 release — 27 October 2026
+## Current 3.9.1 release — 8 November 2026
+
+Public [GitHub Latest v3.9.1](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1), build 173, is verified from immutable exact source/tag `6dcbe2d0984d2b2760867898a0fb4e0420b19130`. Fresh local suites passed **939 tests**, zero failures/skips: Domain 28 XCTest; UseCases 192 XCTest + 123 Swift Testing; uniquely identified nib-free Telephone 548 XCTest + 48 Swift Testing. Separate vendor, audio/recording, Foundation and private synthetic Keychain checks passed; assertion counts are not added to this total.
+
+Release compilation, ad-hoc signatures, metadata and ZIP/source parity passed (52 app files, six symlinks, 1,397 source blobs). All seven public downloads match local sizes/SHA-256. Twelve prior releases, 79 assets and 17 tags were preserved. No diagnostic-only bundle markers, installation, production-profile/live-data or call/hardware checks. Owner-reported restart acceptance applies to preceding local build 172, not a new installed build 173 test. Read [publication proof](releases/3.9.1-verification.json). #77 remains completed/#62 closed not planned. This ad-hoc release is unnotarised; no cloud workflow was manually dispatched or Cloudflare changed.
+
+## Historical 3.7 release — 27 October 2026
 
 Public [GitHub Latest v3.7](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.7), build 166, is verified from exact source/tag `58956a9906cbe1221640a926446341e6a71fdcb9`. Fresh local suites passed **920 cases**, zero failures: Domain 28 XCTest; UseCases 206 XCTest + 147 Swift Testing; ReceiptValidation 5 XCTest; isolated Telephone 486 XCTest + 48 Swift Testing. Separate component assertions are not added to this total.
 
