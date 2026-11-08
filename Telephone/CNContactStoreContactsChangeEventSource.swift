@@ -88,6 +88,8 @@ final class ContactsStatusRelay {
     private var refreshPending = false
     private var isBusy = false
     private var requestFailed = false
+    private var firstUseStarted = false
+    private var automaticRequestPending = false
 
     init(index: LazyDiscardingContactMatchingIndex,
          requestAccess: @escaping @Sendable () async -> Bool,
@@ -122,11 +124,20 @@ final class ContactsStatusRelay {
         if state != .loading, state != .notLoaded { reloadHistory() }
     }
 
+    // Normal startup requests access once. The adapter prompts only while the
+    // OS choice is undetermined; activation/retry never overrides a denial.
+    @objc func startContactAccess() {
+        guard !firstUseStarted else { return }
+        firstUseStarted = true
+        automaticRequestPending = true
+        refresh()
+    }
+
     @objc func refresh() {
         completionInvalidated()
         refreshPending = true
         guard operation == nil else { return }
-        start(requestPermission: false)
+        start(requestPermission: automaticRequestPending)
     }
 
     @objc func performAction() {
@@ -142,7 +153,7 @@ final class ContactsStatusRelay {
     private func start(requestPermission: Bool) {
         completionInvalidated()
         isBusy = true
-        if requestPermission { requestFailed = false }
+        if requestPermission { requestFailed = false; automaticRequestPending = false }
         updatePresentation()
         operation = Task { [weak self] in
             guard let self else { return }
@@ -155,6 +166,7 @@ final class ContactsStatusRelay {
             operation = nil
             requestFailed = !requestCompleted
             updatePresentation()
+            if automaticRequestPending { refresh() }
         }
     }
 

@@ -62,7 +62,7 @@ final class CNContactStoreToContactsAdapter: UseCases.Contacts {
         }
     }
 
-    // Called only by the explicit Settings action, never by enumeration/rechecks.
+    // Called by first-use startup or explicit Settings recovery, never by enumeration.
     func requestAccessIfNeeded() async -> Bool {
         guard authorization() == .notDetermined else { return true }
         do { _ = try await request(); return true }

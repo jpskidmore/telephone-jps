@@ -49,6 +49,8 @@ final class CompositionRoot: NSObject {
     private let contactsChangeEventSource: Any
     private let dayChangeEventSource: NSCalendarDayChangeEventSource
 
+    @objc func startContactAccess() { contactsRecoveryController.startContactAccess() }
+
     @objc func setContactCompletionSuspended(_ suspended: Bool) {
         diallerContacts.setSuspended(suspended)
         if !suspended { contactsRecoveryController.refresh() }

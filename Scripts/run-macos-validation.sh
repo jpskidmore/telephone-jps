@@ -51,6 +51,7 @@ isolated_run=$(python3 Scripts/prepare-isolated-test-host.py "$run_dir/DerivedDa
 xcodebuild test-without-building -xctestrun "$isolated_run" \
     -destination 'platform=macOS,arch=arm64' \
     -resultBundlePath "$run_dir/TelephoneTests.xcresult"
+python3 Scripts/verify-contacts-regressions.py "$run_dir/TelephoneTests.xcresult"
 
 # An explicit target works on a clean checkout without an auto-created app scheme.
 xcodebuild -project Telephone.xcodeproj -target Telephone \

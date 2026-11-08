@@ -86,6 +86,13 @@ if "com.apple.security.cs.disable-library-validation" in normal:
 if normal.get("com.apple.security.app-sandbox") is not True:
     raise SystemExit("Normal project sandbox entitlement is missing or disabled")
 signed = read_dictionary(temporary / "entitlements.plist")
+if normal.get("com.apple.security.personal-information.addressbook") is not True:
+    raise SystemExit("Normal project Contacts entitlement is missing or disabled")
+if signed.get("com.apple.security.personal-information.addressbook") is not True:
+    raise SystemExit("Signed app Contacts entitlement is missing or disabled")
+if not isinstance(info.get("NSContactsUsageDescription"), str) or not info["NSContactsUsageDescription"].strip():
+    raise SystemExit("Contacts permission usage description is missing")
+
 for key in ("com.apple.security.app-sandbox", "com.apple.security.cs.disable-library-validation"):
     if signed.get(key) is not True:
         raise SystemExit(f"Ad-hoc signature is missing true entitlement: {key}")

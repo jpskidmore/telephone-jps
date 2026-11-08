@@ -43,6 +43,7 @@ isolated_run=$(python3 Scripts/prepare-isolated-test-host.py "$run_dir/TestDeriv
 xcodebuild test-without-building -xctestrun "$isolated_run" \
     -destination 'platform=macOS,arch=arm64' \
     -resultBundlePath "$run_dir/TelephoneTests.xcresult"
+python3 Scripts/verify-contacts-regressions.py "$run_dir/TelephoneTests.xcresult"
 xcodebuild -project Telephone.xcodeproj -target Telephone \
     -configuration Release ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
     DEPLOYMENT_POSTPROCESSING=YES STRIP_INSTALLED_PRODUCT=YES \

@@ -8,6 +8,82 @@ import XCTest
 // launch, SIP account, real address book or persisted defaults are used here.
 @MainActor
 final class ContactsRecoveryTests: XCTestCase {
+    // Exercise the production adapter -> index -> dialler publication boundary.
+    // The first-use entry point is invoked dynamically so this regression also
+    // runs against the unchanged implementation, where that entry point is absent.
+    func testFirstUseRequestsOnceThenPublishesHistoryAndDiallerMatches() async {
+        await verifyFirstUse(status: .notDetermined)
+    }
+
+    func testFirstUseRespectsExistingAuthorizedDeniedAndRestrictedChoices() async {
+        for status in [CNAuthorizationStatus.authorized, .denied, .restricted] {
+            await verifyFirstUse(status: status)
+        }
+    }
+
+    func testFailedFirstUseDoesNotPromptAgainOnActivationButExplicitRetryCanRequest() async {
+        let fixture = await FirstUseContactsFixture(status: .notDetermined, requestFails: true)
+        let adapter = await fixture.adapter
+        let relay = ContactsStatusRelay()
+        let index = LazyDiscardingContactMatchingIndex(factory: fixture, stateDidChange: { relay.enqueue($0) })
+        let center = NotificationCenter()
+        let controller = ContactsRecoveryController(index: index, requestAccess: { await adapter.requestAccessIfNeeded() }, center: center, openSettings: {})
+        relay.controller = controller
+        let selector = NSSelectorFromString("startContactAccess")
+        guard controller.responds(to: selector) else { return XCTFail("Missing first-use entry point") }
+        controller.perform(selector)
+        await waitUntil { controller.actionEnabled && controller.statusText.contains("Access request failed") }
+        center.post(name: NSApplication.didBecomeActiveNotification, object: nil)
+        controller.refresh()
+        controller.perform(selector)
+        await waitUntil { controller.actionEnabled }
+        let automaticRequests = await fixture.requests
+        XCTAssertEqual(automaticRequests, 1)
+        controller.performAction()
+        await waitUntil { controller.actionEnabled && controller.statusText.contains("Access request failed") }
+        let explicitRequests = await fixture.requests
+        XCTAssertEqual(explicitRequests, 2)
+        let fetches = await fixture.fetches
+        XCTAssertEqual(fetches, 0)
+    }
+
+    private func verifyFirstUse(status: CNAuthorizationStatus) async {
+        let fixture = await FirstUseContactsFixture(status: status)
+        let adapter = await fixture.adapter
+        let completion = JPSDiallerContacts(authorization: { fixture.authorization.status == .authorized })
+        let relay = ContactsStatusRelay()
+        let index = LazyDiscardingContactMatchingIndex(factory: fixture,
+            stateDidChange: { relay.enqueue($0) }, completionTicket: { completion.currentTicket() },
+            completionInvalidated: { completion.invalidate() },
+            completionDidLoad: { ticket, snapshot in _ = completion.enqueue(ticket, snapshot: snapshot) })
+        let center = NotificationCenter()
+        let controller = ContactsRecoveryController(index: index,
+            requestAccess: { await adapter.requestAccessIfNeeded() }, center: center, openSettings: {})
+        relay.controller = controller
+        let selector = NSSelectorFromString("startContactAccess")
+        guard controller.responds(to: selector) else { return XCTFail("Normal first use must request Contacts access") }
+        controller.perform(selector)
+        controller.perform(selector)
+        await waitUntil { (controller.actionEnabled || status == .restricted) && controller.statusText != "Contacts: Not checked" && controller.statusText != "Contacts: Checking…" }
+        let allowed = status == .notDetermined || status == .authorized
+        let history = await index.contact(forPhone: ExtractedPhoneNumber("1234", maxLength: 4))
+        if allowed {
+            await waitUntil { !completion.completions(for: "Synthetic").isEmpty }
+            XCTAssertEqual(history?.name, "Synthetic Person")
+            XCTAssertEqual(completion.completions(for: "Synthetic"), ["Synthetic Person <1234>"])
+        } else {
+            XCTAssertNil(history)
+            XCTAssertTrue(completion.completions(for: "Synthetic").isEmpty)
+        }
+        center.post(name: NSApplication.didBecomeActiveNotification, object: nil)
+        controller.refresh()
+        await waitUntil { controller.actionEnabled || status == .restricted }
+        let requests = await fixture.requests
+        XCTAssertEqual(requests, status == .notDetermined ? 1 : 0)
+        let fetches = await fixture.fetches
+        XCTAssertEqual(fetches > 0, allowed)
+    }
+
     func testUndeterminedContactsDoNotFetchOrRequestAccessDuringEnumeration() async {
         await verifyUnavailableEnumeration(.notDetermined, failure: .notDetermined)
     }
@@ -562,4 +638,33 @@ private func verifyMappedSingleEnumeration() {
     XCTAssertEqual(index.completionSnapshot?.completionStrings(for: "Synthetic"), ["Synthetic Person <1234>"])
     XCTAssertEqual(fetches, 1, "Synchronous snapshot queries must not enumerate again")
     XCTAssertEqual(requests, 0)
+}
+
+// No CNContactStore is constructed: this fixture feeds only detached values
+// through the actual adapter, matching index and publication callbacks.
+@ContactsActor
+private final class FirstUseContactsFixture: ContactMatchingIndexFactory {
+    nonisolated let authorization: RecoveryAuthorization
+    private(set) var requests = 0
+    private(set) var fetches = 0
+    private let requestFails: Bool
+    init(status: CNAuthorizationStatus, requestFails: Bool = false) { authorization = RecoveryAuthorization(status); self.requestFails = requestFails }
+    lazy var adapter = CNContactStoreToContactsAdapter(authorization: { [authorization] in authorization.status }, fetch: { [self] body in
+        fetches += 1
+        body(Contact(name: "Synthetic Person", phones: [.init(number: "1234", label: "home")], emails: [],
+            completionMetadata: .init(identifier: "synthetic-first-use", givenName: "Synthetic", familyName: "Person",
+                organisation: "", isCompany: false, displayName: "Synthetic Person")))
+    }, request: { [self] in
+        requests += 1
+        if requestFails { throw RecoveryFetchError.failed }
+        authorization.status = .authorized
+        return true
+    })
+    func make() async -> ContactMatchingIndexLoadResult {
+        let index = SimpleContactMatchingIndex(contacts: adapter, maxPhoneNumberLength: 4)
+        switch index.loadResult {
+        case .success: return .success(index)
+        case .failure(let failure): return .failure(failure)
+        }
+    }
 }
