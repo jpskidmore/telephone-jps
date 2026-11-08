@@ -1,6 +1,6 @@
 # Issue #77 reopened — save failure diagnostics, 7 November 2026
 
-**Superseded diagnostic checkpoint:** build 171 now identifies canonical creation returning -25293. See [direct observation and build 172 ACL-copy candidate](2026-11-07-keychain-acl-copy.md). The historical unknown-status and requested-next-evidence statements below describe the earlier checkpoint.
+**Superseded diagnostic checkpoint:** build 171 identified canonical creation returning -25293. #77 is now closed on owner save/restart confirmation, and the correction is published in 3.9.1/build 173. See [direct observation, correction, owner acceptance and publication](2026-11-07-keychain-acl-copy.md). Unknown-status, open-issue and requested-next-evidence statements below describe the earlier checkpoint.
 
 The owner reports the compatibility-saved/new-entry-not-verified alert in **3.9/build 170**, after **allowing** the Keychain prompt. The actual failing Security operation/status is **not yet known**. #77 is reopened; #71 remains completed and #62 remains closed not planned. Published 3.9 and its immutable assets are unchanged.
 

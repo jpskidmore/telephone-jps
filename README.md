@@ -20,7 +20,7 @@ Historical version **3.5/build 162** added one compact dialler, configurable Gui
 </p>
 
 <p align="center">
-  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9">Latest release: 3.9 (170)</a>
+  <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1">Latest release: 3.9.1 (173)</a>
   <a href="https://github.com/jpskidmore/telephone-jps/releases/tag/v2.1.8">Retained baseline: 2.1.8 (160)</a>
   <img alt="macOS 15.6 or later" src="https://img.shields.io/badge/macOS-15.6%2B-147EFB?logo=apple">
   <img alt="Apple silicon" src="https://img.shields.io/badge/architecture-Apple%20silicon-000000?logo=apple">

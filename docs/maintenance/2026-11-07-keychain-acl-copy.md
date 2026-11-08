@@ -1,5 +1,8 @@
 # Issue #77 — observed creation rejection and ACL-copy candidate
 
+**Current status — 8 November 2026:** #77 is closed on the owner's save/restart confirmation, and the correction is published in [3.9.1/build 173](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1). See [publication](#publication--8-november-2026) and [owner acceptance](#owner-acceptance--save-survives-restart). Diagnostic/candidate instructions below retain their original checkpoints; later acceptance/publication supersedes them. Exact causality of the earlier error and broader live acceptance remain unproven.
+
+
 ## Direct observation
 
 On 7 November 2026 the agent read only the installed app's visible alert and bundle metadata. The owner-installed **3.9.1/build 171**, diagnostic source `e7b865008fab2e473a6b6e8132b1c4c21af08a4f`, showed:
@@ -27,7 +30,7 @@ Local logs are in this chat's `work/keychain-save-2026-11-07`: `acl-final-build.
 
 ## Owner candidate, not a public release — delivery checkpoint
 
-**3.9.1/build 172**, source `80c5493c00432251bd99f13c17087ff0484140fa`, uses command-line version overrides and diagnostic Info.plist markers. Project metadata remains 3.9/170. Candidate `jps-Telephone-3.9.1-candidate-172-arm64.zip`: **3,053,033 bytes**, SHA-256 `1e5eb4f1c7529b45ade65198a0a87327673da116f58f844c76ede04ca650787b`. The candidate and verification JSON are in `outputs/keychain-candidate-172` in this chat. It is ad-hoc signed, unnotarised, without a public tag/release.
+**3.9.1/build 172**, source `80c5493c00432251bd99f13c17087ff0484140fa`, uses command-line version overrides and diagnostic Info.plist markers. At this candidate checkpoint, project metadata remained 3.9/170. Candidate `jps-Telephone-3.9.1-candidate-172-arm64.zip`: **3,053,033 bytes**, SHA-256 `1e5eb4f1c7529b45ade65198a0a87327673da116f58f844c76ede04ca650787b`. The candidate and verification JSON are in `outputs/keychain-candidate-172` in this chat. It is ad-hoc signed, unnotarised, without a public tag/release.
 
 The owner can quit the old app and try the same save once in build 172. Keep #77 open until the result is known; record only success or its fixed operation/error-code line. A successful owner save would be separate installed evidence, not full multi-account/upgrade/rollback acceptance. Do not delete credentials, reset Keychain, relax permissions, bypass verification or retry automatically. Published 3.9 and all prior tags/assets remain unchanged. #71 stays completed; #62 stays closed not planned. No cloud workflow was dispatched and no Cloudflare resource was altered.
 

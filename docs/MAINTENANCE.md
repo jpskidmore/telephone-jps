@@ -131,7 +131,7 @@ Fresh local validation passed **1,014 suite cases, zero failures**: Domain 28 XC
 
 No local installation or production profile launch was performed. This ad-hoc signed, unnotarised release supports Apple silicon and macOS 15.6+. Actual provider, hardware, OS grants, playback and proficient VoiceOver acceptance remain pending in #62. No cloud workflow was dispatched. Historical release and source-only delivery statements below retain their original dates.
 
-## Current published release — 27 October 2026
+## Historical published release — 27 October 2026
 
 - **3.7/build 166** is public [GitHub Latest](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.7), release ID 425883772, from immutable source/tag `58956a9906cbe1221640a926446341e6a71fdcb9`.
 - Fresh local validation passed **920 suite cases**, zero failures. All seven uploaded/downloaded assets, 57 app file payloads, six symlinks and 1,510 source Git blobs were verified. Read [3.7 delivery proof](releases/3.7-verification.md) and [the JSON record](releases/3.7-verification.json).

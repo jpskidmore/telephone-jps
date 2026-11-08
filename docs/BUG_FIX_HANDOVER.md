@@ -1,10 +1,13 @@
 # Maintenance handover — 3.5.1 Guided routes crash repair
 
+**Current publication — 8 November 2026:** [3.9.1/build 173](https://github.com/jpskidmore/telephone-jps/releases/tag/v3.9.1), source/tag `6dcbe2d0984d2b2760867898a0fb4e0420b19130`, is public Latest. Fresh full native validation passed 939 tests with zero failures/skips; all seven published downloads match verified hashes. Read [publication proof](releases/3.9.1-verification.json). The owner confirmed the preceding installed local build 172 survives restart; no build 173 installation or live-call/multi-account/rollback acceptance is claimed. #77/#71 are completed; #62 stays closed not planned. The older delivery records below are historical and do not describe the current release.
+
+
 Start with [Current maintenance](MAINTENANCE.md) for the live roadmap, current
 baseline and owner's execution controls. The detailed release/repair records
 below retain their original dates and verification limits.
 
-**Current release: 3.6.1/build 165**, installed and publicly published from
+**Historical release: 3.6.1/build 165**, installed and publicly published from
 `407bd1ceb8c39995a986180c8ec70dad87d1a8fc`. [Issue #72 delivery proof](releases/3.6.1-verification.md)
 records694 fresh passes, native screenshots and package/download checks.
 Repository visibility is owner-controlled: leave it alone.
