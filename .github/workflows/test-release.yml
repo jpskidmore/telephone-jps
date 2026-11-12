@@ -58,12 +58,14 @@ jobs:
             build/test-release/*.xcresult
             build/test-release.log
           if-no-files-found: ignore
+          retention-days: 5
       - name: Preserve local test candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: local-test-release-${{ github.sha }}
           path: build/test-release/distribution/*
           if-no-files-found: error
+          retention-days: 5
       - name: Upload verified local test build and source
         if: github.event_name == 'workflow_dispatch' && inputs.publish_release
         shell: bash
